@@ -156,7 +156,7 @@ public class DaprWorkflowClientTest {
     when(mockInnerClient.getInstanceMetadata(instanceId, true)).thenReturn(expectedMetadata);
 
     // Act
-    WorkflowInstanceStatus metadata = client.getInstanceState(instanceId, true);
+    WorkflowInstanceStatus metadata = client.getWorkflowState(instanceId, true);
 
     // Assert
     verify(mockInnerClient, times(1)).getInstanceMetadata(instanceId, true);
@@ -179,7 +179,7 @@ public class DaprWorkflowClientTest {
     when(mockInnerClient.waitForInstanceStart(instanceId, timeout, true)).thenReturn(expectedMetadata);
 
     // Act
-    WorkflowInstanceStatus result = client.waitForInstanceStart(instanceId, timeout, true);
+    WorkflowInstanceStatus result = client.waitForWorkflowStart(instanceId, timeout, true);
 
     // Assert
     verify(mockInnerClient, times(1)).waitForInstanceStart(instanceId, timeout, true);

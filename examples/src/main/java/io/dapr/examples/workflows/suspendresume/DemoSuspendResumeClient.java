@@ -38,21 +38,21 @@ public class DemoSuspendResumeClient {
       System.out.printf("Suspending Workflow Instance: %s%n", instanceId );
       client.suspendWorkflow(instanceId, "suspending workflow instance.");
 
-      WorkflowInstanceStatus instanceState = client.getInstanceState(instanceId, false);
+      WorkflowInstanceStatus instanceState = client.getWorkflowState(instanceId, false);
       assert instanceState != null;
       System.out.printf("Workflow Instance Status: %s%n", instanceState.getRuntimeStatus().name() );
 
       System.out.printf("Let's resume the Workflow Instance before sending the external event: %s%n", instanceId );
       client.resumeWorkflow(instanceId, "resuming workflow instance.");
 
-      instanceState = client.getInstanceState(instanceId, false);
+      instanceState = client.getWorkflowState(instanceId, false);
       assert instanceState != null;
       System.out.printf("Workflow Instance Status: %s%n", instanceState.getRuntimeStatus().name() );
 
       System.out.printf("Now that the instance is RUNNING again, lets send the external event. %n");
       client.raiseEvent(instanceId, "Approval", true);
 
-      client.waitForInstanceCompletion(instanceId, null, true);
+      client.waitForWorkflowCompletion(instanceId, null, true);
       System.out.printf("workflow instance with ID: %s completed.", instanceId);
 
     } catch (TimeoutException | InterruptedException e) {

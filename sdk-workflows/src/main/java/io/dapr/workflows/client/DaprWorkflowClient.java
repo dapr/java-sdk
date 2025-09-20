@@ -116,8 +116,8 @@ public class DaprWorkflowClient implements AutoCloseable {
   /**
    * Schedules a new workflow with a specified set of options for execution.
    *
-   * @param <T>        any Workflow type
-   * @param clazz      Class extending Workflow to start an instance of.
+   * @param <T>     any Workflow type
+   * @param clazz   Class extending Workflow to start an instance of.
    * @param options the options for the new workflow, including input, instance ID, etc.
    * @return the <code>instanceId</code> parameter value.
    */
@@ -165,9 +165,26 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param getInputsAndOutputs <code>true</code> to fetch the workflow instance's
    *                            inputs, outputs, and custom status, or <code>false</code> to omit them
    * @return a metadata record that describes the workflow instance and it execution status, or a default instance
+   * @deprecated Use {@link #getWorkflowState(String, boolean)} instead.
    */
   @Nullable
+  @Deprecated(forRemoval = true)
   public WorkflowInstanceStatus getInstanceState(String instanceId, boolean getInputsAndOutputs) {
+    OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
+
+    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+  }
+
+  /**
+   * Fetches workflow instance metadata from the configured durable store.
+   *
+   * @param instanceId          the unique ID of the workflow instance to fetch
+   * @param getInputsAndOutputs <code>true</code> to fetch the workflow instance's
+   *                            inputs, outputs, and custom status, or <code>false</code> to omit them
+   * @return a metadata record that describes the workflow instance and it execution status, or a default instance
+   */
+  @Nullable
+  public WorkflowInstanceStatus getWorkflowState(String instanceId, boolean getInputsAndOutputs) {
     OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
 
     return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
@@ -189,9 +206,38 @@ public class DaprWorkflowClient implements AutoCloseable {
    *                            inputs, outputs, and custom status, or false to omit them
    * @return the workflow instance metadata or null if no such instance is found
    * @throws TimeoutException when the workflow instance is not started within the specified amount of time
+   * @deprecated Use {@link #waitForWorkflowStart(String, Duration, boolean)} instead.
    */
+  @Deprecated(forRemoval = true)
   @Nullable
   public WorkflowInstanceStatus waitForInstanceStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
+      throws TimeoutException {
+
+    OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
+
+    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+  }
+
+
+  /**
+   * Waits for a workflow to start running and returns an
+   * {@link WorkflowInstanceStatus} object that contains metadata about the started
+   * instance and optionally its input, output, and custom status payloads.
+   *
+   * <p>A "started" workflow instance is any instance not in the Pending state.
+   *
+   * <p>If an workflow instance is already running when this method is called,
+   * the method will return immediately.
+   *
+   * @param instanceId          the unique ID of the workflow instance to wait for
+   * @param timeout             the amount of time to wait for the workflow instance to start
+   * @param getInputsAndOutputs true to fetch the workflow instance's
+   *                            inputs, outputs, and custom status, or false to omit them
+   * @return the workflow instance metadata or null if no such instance is found
+   * @throws TimeoutException when the workflow instance is not started within the specified amount of time
+   */
+  @Nullable
+  public WorkflowInstanceStatus waitForWorkflowStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
       throws TimeoutException {
 
     OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
@@ -217,10 +263,40 @@ public class DaprWorkflowClient implements AutoCloseable {
    *                            status, or false to omit them
    * @return the workflow instance metadata or null if no such instance is found
    * @throws TimeoutException when the workflow instance is not completed within the specified amount of time
+   * @deprecated Use {@link #waitForWorkflowCompletion(String, Duration, boolean)} instead.
    */
   @Nullable
-  public WorkflowInstanceStatus waitForInstanceCompletion(String instanceId, Duration timeout,
-      boolean getInputsAndOutputs) throws TimeoutException {
+  @Deprecated(forRemoval = true)
+  public WorkflowInstanceStatus waitForInstanceCompletion(String instanceId, Duration timeout, boolean getInputsAndOutputs) throws TimeoutException {
+
+    OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
+        getInputsAndOutputs);
+    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+  }
+
+
+  /**
+   * Waits for an workflow to complete and returns an {@link WorkflowInstanceStatus} object that contains
+   * metadata about the completed instance.
+   *
+   * <p>A "completed" workflow instance is any instance in one of the terminal states. For example, the
+   * Completed, Failed, or Terminated states.
+   *
+   * <p>Workflows are long-running and could take hours, days, or months before completing.
+   * Workflows can also be eternal, in which case they'll never complete unless terminated.
+   * In such cases, this call may block indefinitely, so care must be taken to ensure appropriate timeouts are used.
+   * If an workflow instance is already complete when this method is called, the method will return immediately.
+   *
+   * @param instanceId          the unique ID of the workflow instance to wait for
+   * @param timeout             the amount of time to wait for the workflow instance to complete
+   * @param getInputsAndOutputs true to fetch the workflow instance's inputs, outputs, and custom
+   *                            status, or false to omit them
+   * @return the workflow instance metadata or null if no such instance is found
+   * @throws TimeoutException when the workflow instance is not completed within the specified amount of time
+   */
+  @Nullable
+  public WorkflowInstanceStatus waitForWorkflowCompletion(String instanceId, Duration timeout,
+                                                          boolean getInputsAndOutputs) throws TimeoutException {
 
     OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
         getInputsAndOutputs);

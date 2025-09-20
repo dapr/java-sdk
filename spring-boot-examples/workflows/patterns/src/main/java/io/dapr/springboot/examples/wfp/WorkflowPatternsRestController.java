@@ -167,7 +167,7 @@ public class WorkflowPatternsRestController {
   public String suspendResumeExecuteSuspend(@RequestParam("orderId") String orderId) {
     String instanceId = ordersToApprove.get(orderId);
     daprWorkflowClient.suspendWorkflow(instanceId, "testing suspend");
-    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(instanceId, false);
+    WorkflowInstanceStatus instanceState = daprWorkflowClient.getWorkflowState(instanceId, false);
     return instanceState.getRuntimeStatus().name();
   }
 
@@ -175,7 +175,7 @@ public class WorkflowPatternsRestController {
   public String suspendResumeExecuteResume(@RequestParam("orderId") String orderId) {
     String instanceId = ordersToApprove.get(orderId);
     daprWorkflowClient.resumeWorkflow(instanceId, "testing resume");
-    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(instanceId, false);
+    WorkflowInstanceStatus instanceState = daprWorkflowClient.getWorkflowState(instanceId, false);
     return instanceState.getRuntimeStatus().name();
   }
 

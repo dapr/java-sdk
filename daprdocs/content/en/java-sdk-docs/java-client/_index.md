@@ -514,7 +514,7 @@ public class DemoWorkflowClient {
 
       System.out.println(separatorStr);
       System.out.println("**GetInstanceMetadata:Running Workflow**");
-      WorkflowInstanceStatus workflowMetadata = client.getInstanceState(instanceId, true);
+      WorkflowInstanceStatus workflowMetadata = client.getWorkflowState(instanceId, true);
       System.out.printf("Result: %s%n", workflowMetadata);
 
       System.out.println(separatorStr);
@@ -545,13 +545,13 @@ public class DemoWorkflowClient {
 
 
       System.out.println(separatorStr);
-      System.out.println("**WaitForInstanceCompletion**");
+      System.out.println("**waitForWorkflowCompletion**");
       try {
-        WorkflowInstanceStatus waitForInstanceCompletionResult =
-            client.waitForInstanceCompletion(instanceId, Duration.ofSeconds(60), true);
-        System.out.printf("Result: %s%n", waitForInstanceCompletionResult);
+        WorkflowInstanceStatus waitForWorkflowCompletionResult =
+            client.waitForWorkflowCompletion(instanceId, Duration.ofSeconds(60), true);
+        System.out.printf("Result: %s%n", waitForWorkflowCompletionResult);
       } catch (TimeoutException ex) {
-        System.out.printf("waitForInstanceCompletion has an exception:%s%n", ex);
+        System.out.printf("waitForWorkflowCompletion has an exception:%s%n", ex);
       }
 
       System.out.println(separatorStr);
