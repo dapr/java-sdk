@@ -267,7 +267,8 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   @Nullable
   @Deprecated(forRemoval = true)
-  public WorkflowInstanceStatus waitForInstanceCompletion(String instanceId, Duration timeout, boolean getInputsAndOutputs) throws TimeoutException {
+  public WorkflowInstanceStatus waitForInstanceCompletion(String instanceId, Duration timeout,
+                                                          boolean getInputsAndOutputs) throws TimeoutException {
 
     OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
         getInputsAndOutputs);
