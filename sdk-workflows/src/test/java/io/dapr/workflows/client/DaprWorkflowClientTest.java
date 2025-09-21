@@ -199,7 +199,7 @@ public class DaprWorkflowClientTest {
     when(mockInnerClient.waitForInstanceCompletion(instanceId, timeout, true)).thenReturn(expectedMetadata);
 
     // Act
-    WorkflowInstanceStatus result = client.waitForInstanceCompletion(instanceId, timeout, true);
+    WorkflowInstanceStatus result = client.waitForWorkflowCompletion(instanceId, timeout, true);
 
     // Assert
     verify(mockInnerClient, times(1)).waitForInstanceCompletion(instanceId, timeout, true);
