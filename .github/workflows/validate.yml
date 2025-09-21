@@ -82,10 +82,17 @@ jobs:
           make
           sudo cp dist/linux_amd64/release/dapr /usr/local/bin/dapr
           cd ..
-      - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
+      - name: Uninstall Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
+        run: dapr uninstall --all
+      - name: Ensure Dapr runtime uninstalled
         run: |
-          dapr uninstall --all
-          dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
+          while [ "$(docker ps -aq --filter 'name=^/dapr')" ]; do
+            echo "Waiting for Dapr containers to be deleted..."
+            sleep 5
+          done
+          echo "All dapr containers are deleted."
+      - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
+        run: dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
       - name: Build and override daprd with referenced commit.
         if: env.DAPR_REF != ''
         run: |
