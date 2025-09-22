@@ -30,7 +30,7 @@ flowchart LR
     end
 ```
 
-For the full list of available APIs, see the [Dapr API reference](https://docs.dapr.io/reference/api/).
+For the full list of available APIs, see the [Dapr API reference](https://docs.dapr.io/reference/api/)
 
 ### Pre-Requisites
 * SDKMAN! installed (recommended):
