@@ -13,9 +13,6 @@ This is the Dapr SDK for Java, including the following features:
 
 ## Getting Started
 
-Va, te paso un snippet ajustado tomando la idea de #897 pero siguiendo la recomendación de la review (generalizar y enlazar docs):
-
-
 ### Architecture Overview
 
 The diagram below shows how a Java application interacts with the Dapr runtime through the Java SDK:
