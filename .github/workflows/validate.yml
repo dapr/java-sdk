@@ -58,7 +58,7 @@ jobs:
         run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash -s ${{ env.DAPR_CLI_VER }}
       - name: Set up Go ${{ env.GOVER }}
         if: env.DAPR_REF != '' || env.DAPR_CLI_REF != ''
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GOVER }}
       - name: Checkout Dapr CLI repo to override dapr command.
@@ -82,10 +82,17 @@ jobs:
           make
           sudo cp dist/linux_amd64/release/dapr /usr/local/bin/dapr
           cd ..
-      - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
+      - name: Uninstall Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
+        run: dapr uninstall --all
+      - name: Ensure Dapr runtime uninstalled
         run: |
-          dapr uninstall --all
-          dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
+          while [ "$(docker ps -aq --filter 'name=^/dapr')" ]; do
+            echo "Waiting for Dapr containers to be deleted..."
+            sleep 5
+          done
+          echo "All dapr containers are deleted."
+      - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
+        run: dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
       - name: Build and override daprd with referenced commit.
         if: env.DAPR_REF != ''
         run: |
@@ -123,8 +130,8 @@ jobs:
           mm.py README.md
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
-      - name: Validate Spring Boot Workflow examples
-        working-directory: ./spring-boot-examples/workflows
+      - name: Validate Spring Boot Workflow Patterns examples
+        working-directory: ./spring-boot-examples/workflows/patterns
         run: |
           mm.py README.md
         env:
