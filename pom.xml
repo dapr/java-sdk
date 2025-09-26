@@ -62,8 +62,26 @@
     <commons-lang.version>3.18.0</commons-lang.version>
     <commons-cli.version>1.9.0</commons-cli.version>
     <commons-io.version>2.14.0</commons-io.version>
+    <commons-validator.version>1.7</commons-validator.version>
     <zipkin.version>3.4.0</zipkin.version>
     <microcks.version>0.3.1</microcks.version>
+    <json-path.version>2.9.0</json-path.version>
+    <retry4j.version>0.15.0</retry4j.version>
+    <system-rules.version>1.19.0</system-rules.version>
+    <system-stubs.version>2.1.1</system-stubs.version>
+    <mockito-inline.version>4.2.0</mockito-inline.version>
+    <junit-vintage-engine.version>5.7.0</junit-vintage-engine.version>
+    <junit-platform-console.version>1.7.0</junit-platform-console.version>
+    <reactor.version>3.5.12</reactor.version>
+    <durabletask-client.version>1.5.10</durabletask-client.version>
+    <testcontainers-redis.version>2.2.2</testcontainers-redis.version>
+    <slf4j.version>2.0.9</slf4j.version>
+    <mockito.version>3.11.2</mockito.version>
+    <reactor-test.version>3.5.12</reactor-test.version>
+    <opentelemetry-bom.version>2.1.0</opentelemetry-bom.version>
+    <microcks-testcontainers.version>5.5.1</microcks-testcontainers.version>
+    <kotlin.version>2.1.0</kotlin.version>
+    <rest-assured.version>5.5.1</rest-assured.version>
   </properties>
 
   <distributionManagement>
@@ -87,7 +105,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>2.0.9</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
@@ -111,12 +129,12 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>3.11.2</version>
+        <version>${mockito.version}</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-test</artifactId>
-        <version>3.5.12</version>
+        <version>${reactor-test.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -134,7 +152,7 @@
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-stdlib</artifactId>
-        <version>2.1.0</version>
+        <version>${kotlin.version}</version>
       </dependency>
       <dependency>
         <groupId>org.yaml</groupId>
@@ -201,7 +219,7 @@
       <dependency>
         <groupId>io.rest-assured</groupId>
         <artifactId>rest-assured</artifactId>
-        <version>5.5.1</version>
+        <version>${rest-assured.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
@@ -370,6 +388,66 @@
         <groupId>org.wiremock</groupId>
         <artifactId>wiremock-standalone</artifactId>
         <version>${wiremock.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-validator</groupId>
+        <artifactId>commons-validator</artifactId>
+        <version>${commons-validator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.jayway.jsonpath</groupId>
+        <artifactId>json-path</artifactId>
+        <version>${json-path.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.evanlennick</groupId>
+        <artifactId>retry4j</artifactId>
+        <version>${retry4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.stefanbirkner</groupId>
+        <artifactId>system-rules</artifactId>
+        <version>${system-rules.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>uk.org.webcompere</groupId>
+        <artifactId>system-stubs-jupiter</artifactId>
+        <version>${system-stubs.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-inline</artifactId>
+        <version>${mockito-inline.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>${junit-vintage-engine.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-console-standalone</artifactId>
+        <version>${junit-platform-console.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+        <version>${reactor.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>durabletask-client</artifactId>
+        <version>${durabletask-client.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.redis</groupId>
+        <artifactId>testcontainers-redis</artifactId>
+        <version>${testcontainers-redis.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
