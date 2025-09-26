@@ -84,7 +84,7 @@ public class CustomersRestController {
     if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
       return "N/A";
     }
-    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
+    WorkflowInstanceStatus instanceState = daprWorkflowClient.getWorkflowState(workflowIdForCustomer, true);
     assert instanceState != null;
     return "Workflow for Customer: " + customer.getCustomerName() + " is " + instanceState.getRuntimeStatus().name();
   }
@@ -101,7 +101,7 @@ public class CustomersRestController {
     if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
       return null;
     }
-    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
+    WorkflowInstanceStatus instanceState = daprWorkflowClient.getWorkflowState(workflowIdForCustomer, true);
     assert instanceState != null;
     return instanceState.readOutputAs(Customer.class);
   }

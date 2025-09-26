@@ -31,7 +31,7 @@ public class DemoChildWorkerflowClient {
       String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
       System.out.printf("Started a new child-workflow model workflow with instance ID: %s%n", instanceId);
       WorkflowInstanceStatus workflowInstanceStatus =
-          client.waitForInstanceCompletion(instanceId, null, true);
+          client.waitForWorkflowCompletion(instanceId, null, true);
 
       String result = workflowInstanceStatus.readOutputAs(String.class);
       System.out.printf("workflow instance with ID: %s completed with result: %s%n", instanceId, result);

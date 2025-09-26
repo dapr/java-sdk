@@ -49,7 +49,7 @@ public class MultiAppWorkflowClient {
       // Wait for the workflow to complete
       System.out.println("Waiting for workflow completion...");
       WorkflowInstanceStatus workflowInstanceStatus = 
-          client.waitForInstanceCompletion(instanceId, null, true);
+          client.waitForWorkflowCompletion(instanceId, null, true);
       
       // Get the result
       String result = workflowInstanceStatus.readOutputAs(String.class);

@@ -48,7 +48,7 @@ public class DemoFanInOutClient {
       System.out.printf("Started a new fan out/fan in model workflow with instance ID: %s%n", instanceId);
 
       // Block until the orchestration completes. Then print the final status, which includes the output.
-      WorkflowInstanceStatus workflowInstanceStatus = client.waitForInstanceCompletion(
+      WorkflowInstanceStatus workflowInstanceStatus = client.waitForWorkflowCompletion(
           instanceId,
           Duration.ofSeconds(30),
           true);

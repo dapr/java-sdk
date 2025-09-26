@@ -30,7 +30,7 @@ public class DemoContinueAsNewClient {
       String instanceId = client.scheduleNewWorkflow(DemoContinueAsNewWorkflow.class);
       System.out.printf("Started a new continue-as-new model workflow with instance ID: %s%n", instanceId);
 
-      client.waitForInstanceCompletion(instanceId, null, true);
+      client.waitForWorkflowCompletion(instanceId, null, true);
       System.out.printf("workflow instance with ID: %s completed.", instanceId);
 
     } catch (TimeoutException | InterruptedException e) {

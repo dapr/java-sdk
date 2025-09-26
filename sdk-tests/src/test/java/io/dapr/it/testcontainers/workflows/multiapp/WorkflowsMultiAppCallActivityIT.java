@@ -175,9 +175,9 @@ public class WorkflowsMultiAppCallActivityIT {
     try {
       String instanceId = workflowClient.scheduleNewWorkflow(MultiAppWorkflow.class, input);
       assertNotNull(instanceId, "Workflow instance ID should not be null");
-      workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(30), false);
+      workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(30), false);
 
-      WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, null, true);
+      WorkflowInstanceStatus workflowStatus = workflowClient.waitForWorkflowCompletion(instanceId, null, true);
       assertNotNull(workflowStatus, "Workflow status should not be null");
       assertEquals(WorkflowRuntimeStatus.COMPLETED, workflowStatus.getRuntimeStatus(),
           "Workflow should complete successfully");

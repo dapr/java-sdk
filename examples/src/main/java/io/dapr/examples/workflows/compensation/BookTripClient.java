@@ -27,7 +27,7 @@ public class BookTripClient {
             String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(BookTripWorkflow.class), Duration.ofSeconds(60));
             System.out.printf("Started a new trip booking workflow with instance ID: %s%n", instanceId);
 
-            WorkflowInstanceStatus status = client.waitForInstanceCompletion(instanceId, Duration.ofMinutes(30), true);
+            WorkflowInstanceStatus status = client.waitForWorkflowCompletion(instanceId, Duration.ofMinutes(30), true);
             System.out.printf("Workflow instance with ID: %s completed with status: %s%n", instanceId, status);
             System.out.printf("Workflow output: %s%n", status.getSerializedOutput());
         } catch (TimeoutException | InterruptedException e) {
