@@ -30,8 +30,7 @@
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
-      <artifactId>grpc-netty-shaded</artifactId>
-      <scope>runtime</scope>
+      <artifactId>grpc-netty</artifactId>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>

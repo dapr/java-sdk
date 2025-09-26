@@ -37,6 +37,13 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk</artifactId>
         <version>${dapr.sdk.version}</version>
@@ -81,7 +88,6 @@
         <artifactId>dapr-spring-boot-tests</artifactId>
         <version>${dapr.spring.version}</version>
       </dependency>
-
     </dependencies>
   </dependencyManagement>
 
