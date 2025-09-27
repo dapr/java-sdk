@@ -53,8 +53,6 @@
     <!-- Do NOT UPGRADE springframework.version without checking springboot.version alignment -->
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <assertj.version>3.27.3</assertj.version>
-    <grpc.version>1.69.0</grpc.version>
-    <protobuf.version>3.25.5</protobuf.version>
     <opentelemetry.version>1.41.0</opentelemetry.version>
     <wiremock.version>3.9.1</wiremock.version>
     <jakarta.annotation.version>2.1.1</jakarta.annotation.version>
@@ -203,6 +201,7 @@
         <artifactId>spring-boot-dependencies</artifactId>
         <version>${springboot.version}</version>
         <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>

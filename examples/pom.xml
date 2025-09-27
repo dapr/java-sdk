@@ -109,7 +109,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-workflows</artifactId>
-      <version>${dapr.sdk.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>

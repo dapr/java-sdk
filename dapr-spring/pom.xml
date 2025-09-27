@@ -37,28 +37,6 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${springboot.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr</groupId>
-        <artifactId>dapr-sdk</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr</groupId>
-        <artifactId>dapr-sdk-actors</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr</groupId>
-        <artifactId>dapr-sdk-workflows</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-data</artifactId>
         <version>${dapr.spring.version}</version>
@@ -77,11 +55,6 @@
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-autoconfigure</artifactId>
         <version>${dapr.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr</groupId>
-        <artifactId>dapr-sdk-springboot</artifactId>
-        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
