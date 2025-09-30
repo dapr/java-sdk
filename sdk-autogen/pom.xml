@@ -21,7 +21,7 @@
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <grpc.version>1.69.0</grpc.version>
+    <grpc.version>1.75.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
   </properties>
 
