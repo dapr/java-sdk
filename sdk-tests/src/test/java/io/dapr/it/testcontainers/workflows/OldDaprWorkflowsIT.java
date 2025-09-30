@@ -46,6 +46,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/**
+ * This class tests the old API (not aligned with other languages).
+ * <p>
+ * See <a href="https://github.com/dapr/java-sdk/issues/1554">https://github.com/dapr/java-sdk/issues/1554.</code>
+ */
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     classes = {
@@ -55,7 +60,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 )
 @Testcontainers
 @Tag("testcontainers")
-public class DaprWorkflowsIT {
+@Deprecated(forRemoval = true)
+public class OldDaprWorkflowsIT {
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
 

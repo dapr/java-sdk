@@ -22,7 +22,7 @@ import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.config.Properties;
-import net.bytebuddy.utility.dispatcher.JavaDispatcher;
+import io.dapr.workflows.client.WorkflowState;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
@@ -175,7 +175,46 @@ public class WorkflowsMultiAppCallActivityIT {
     try {
       String instanceId = workflowClient.scheduleNewWorkflow(MultiAppWorkflow.class, input);
       assertNotNull(instanceId, "Workflow instance ID should not be null");
-      workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(30), false);
+      workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(30), false);
+
+      WorkflowState workflowStatus = workflowClient.waitForWorkflowCompletion(instanceId, null, true);
+      assertNotNull(workflowStatus, "Workflow status should not be null");
+      assertEquals(WorkflowRuntimeStatus.COMPLETED, workflowStatus.getRuntimeStatus(),
+          "Workflow should complete successfully");
+      String workflowOutput = workflowStatus.readOutputAs(String.class);
+      assertEquals(expectedOutput, workflowOutput, "Workflow output should match expected result");
+    } finally {
+      workflowClient.close();
+    }
+  }
+
+  /**
+   * It duplicates the {@link #testMultiAppWorkflow()} due to deprecated APIs.
+   * It must be deleted after {@link WorkflowInstanceStatus} be removed.
+   */
+  @Test
+  @Deprecated(forRemoval = true)
+  public void testMultiAppWorkflowOldApi() throws Exception {
+    // TestContainers wait strategies ensure all containers are ready before this test runs
+
+    String input = "Hello World";
+    String expectedOutput = "HELLO WORLD [TRANSFORMED BY APP2] [FINALIZED BY APP3]";
+
+    // Create workflow client connected to the main workflow orchestrator
+    // Use the same endpoint configuration that the workers use
+    // The workers use host.testcontainers.internal:50001
+    Map<String, String> propertyOverrides = Map.of(
+        "dapr.grpc.endpoint", MAIN_WORKFLOW_SIDECAR.getGrpcEndpoint(),
+        "dapr.http.endpoint", MAIN_WORKFLOW_SIDECAR.getHttpEndpoint()
+    );
+
+    Properties clientProperties = new Properties(propertyOverrides);
+    DaprWorkflowClient workflowClient = new DaprWorkflowClient(clientProperties);
+
+    try {
+      String instanceId = workflowClient.scheduleNewWorkflow(MultiAppWorkflow.class, input);
+      assertNotNull(instanceId, "Workflow instance ID should not be null");
+      workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(30), false);
 
       WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, null, true);
       assertNotNull(workflowStatus, "Workflow status should not be null");
