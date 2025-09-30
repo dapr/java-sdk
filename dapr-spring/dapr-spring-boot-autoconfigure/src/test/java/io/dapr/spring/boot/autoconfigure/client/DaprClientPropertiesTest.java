@@ -65,6 +65,21 @@ public class DaprClientPropertiesTest {
   }
 
   @Test
+  @DisplayName("Should create DaprClientProperties default values correctly")
+  public void shouldSetDaprClientDefaultPropertiesCorrectly() {
+
+    DaprClientProperties properties = new DaprClientProperties();
+
+    SoftAssertions.assertSoftly(softAssertions -> {
+      softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
+      softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
+      softAssertions.assertThat(properties.getHttpPort()).isEqualTo(3500);
+      softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+      softAssertions.assertThat(properties.getApiToken()).isNull();
+    });
+  }
+
+  @Test
   @DisplayName("Should map DaprClient properties correctly")
   public void shouldMapDaprClientProperties() {
 
@@ -104,6 +119,8 @@ public class DaprClientPropertiesTest {
 
     });
   }
+
+
 
   @EnableConfigurationProperties(DaprClientProperties.class)
   static class EnableDaprClientProperties {
