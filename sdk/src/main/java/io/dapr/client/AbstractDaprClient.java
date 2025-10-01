@@ -48,11 +48,7 @@ import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -505,6 +501,24 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
     if (value != null) {
       meta = Collections.singletonMap("contentType", stateSerializer.getContentType());
     }
+    State<?> state = new State<>(key, value, etag, meta, options);
+    return this.saveBulkState(storeName, Collections.singletonList(state));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> saveState(String storeName, String key, String etag, Object value, Map<String, String> meta,
+                              StateOptions options) {
+    if (meta == null) {
+      meta = new HashMap<>();
+    }
+
+    if( value != null){
+      meta.put("contentType", stateSerializer.getContentType());
+    }
+
     State<?> state = new State<>(key, value, etag, meta, options);
     return this.saveBulkState(storeName, Collections.singletonList(state));
   }
