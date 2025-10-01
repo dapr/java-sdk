@@ -51,9 +51,9 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -520,7 +520,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
       meta = new HashMap<>();
     }
 
-    if( value != null){
+    if (value != null) {
       meta.put("contentType", stateSerializer.getContentType());
     }
 
