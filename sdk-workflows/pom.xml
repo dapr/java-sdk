@@ -12,7 +12,6 @@
 
   <artifactId>dapr-sdk-workflows</artifactId>
   <packaging>jar</packaging>
-  <version>1.17.0-SNAPSHOT</version>
   <name>dapr-sdk-workflows</name>
   <description>SDK for Workflows on Dapr</description>
 
@@ -30,7 +29,6 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-inline</artifactId>
-      <version>4.2.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -41,13 +39,11 @@
     <dependency>
       <groupId>org.junit.vintage</groupId>
       <artifactId>junit-vintage-engine</artifactId>
-      <version>5.7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>durabletask-client</artifactId>
-      <version>1.5.10</version>
     </dependency>
     <!--
     manually declare durabletask-client's jackson dependencies
@@ -57,22 +53,18 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
   </dependencies>
 

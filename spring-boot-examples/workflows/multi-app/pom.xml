@@ -10,7 +10,6 @@
   </parent>
 
   <artifactId>multi-app</artifactId>
-  <version>1.17.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>

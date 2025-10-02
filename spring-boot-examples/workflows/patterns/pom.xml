@@ -43,7 +43,6 @@
     <dependency>
       <groupId>io.github.microcks</groupId>
       <artifactId>microcks-testcontainers</artifactId>
-      <version>${microcks.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
