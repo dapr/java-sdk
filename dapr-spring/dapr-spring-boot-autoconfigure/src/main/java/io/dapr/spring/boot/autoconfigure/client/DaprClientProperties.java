@@ -17,10 +17,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "dapr.client")
 public class DaprClientProperties {
-  private String httpEndpoint;
-  private String grpcEndpoint;
-  private Integer httpPort;
-  private Integer grpcPort;
+  private String httpEndpoint = "http://localhost";
+  private String grpcEndpoint = "localhost";
+  private Integer httpPort = 3500;
+  private Integer grpcPort = 50001;
   private String apiToken;
 
   /**
