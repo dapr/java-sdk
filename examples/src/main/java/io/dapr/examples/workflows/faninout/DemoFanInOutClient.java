@@ -16,7 +16,7 @@ package io.dapr.examples.workflows.faninout;
 import io.dapr.examples.workflows.utils.PropertyUtils;
 import io.dapr.examples.workflows.utils.RetryUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -48,12 +48,12 @@ public class DemoFanInOutClient {
       System.out.printf("Started a new fan out/fan in model workflow with instance ID: %s%n", instanceId);
 
       // Block until the orchestration completes. Then print the final status, which includes the output.
-      WorkflowInstanceStatus workflowInstanceStatus = client.waitForInstanceCompletion(
+      WorkflowState workflowState = client.waitForWorkflowCompletion(
           instanceId,
           Duration.ofSeconds(30),
           true);
       System.out.printf("workflow instance with ID: %s completed with result: %s%n", instanceId,
-          workflowInstanceStatus.readOutputAs(int.class));
+          workflowState.readOutputAs(int.class));
     } catch (TimeoutException e) {
       throw new RuntimeException(e);
     }

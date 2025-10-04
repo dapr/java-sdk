@@ -17,7 +17,7 @@ import io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow;
 import io.dapr.examples.workflows.utils.PropertyUtils;
 import io.dapr.examples.workflows.utils.RetryUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -38,21 +38,21 @@ public class DemoSuspendResumeClient {
       System.out.printf("Suspending Workflow Instance: %s%n", instanceId );
       client.suspendWorkflow(instanceId, "suspending workflow instance.");
 
-      WorkflowInstanceStatus instanceState = client.getInstanceState(instanceId, false);
+      WorkflowState instanceState = client.getWorkflowState(instanceId, false);
       assert instanceState != null;
       System.out.printf("Workflow Instance Status: %s%n", instanceState.getRuntimeStatus().name() );
 
       System.out.printf("Let's resume the Workflow Instance before sending the external event: %s%n", instanceId );
       client.resumeWorkflow(instanceId, "resuming workflow instance.");
 
-      instanceState = client.getInstanceState(instanceId, false);
+      instanceState = client.getWorkflowState(instanceId, false);
       assert instanceState != null;
       System.out.printf("Workflow Instance Status: %s%n", instanceState.getRuntimeStatus().name() );
 
       System.out.printf("Now that the instance is RUNNING again, lets send the external event. %n");
       client.raiseEvent(instanceId, "Approval", true);
 
-      client.waitForInstanceCompletion(instanceId, null, true);
+      client.waitForWorkflowCompletion(instanceId, null, true);
       System.out.printf("workflow instance with ID: %s completed.", instanceId);
 
     } catch (TimeoutException | InterruptedException e) {
