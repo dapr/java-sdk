@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 )
 @Testcontainers
 @Tag("testcontainers")
-public class DaprWorkflowsIIT {
+public class DaprWorkflowsIT {
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
