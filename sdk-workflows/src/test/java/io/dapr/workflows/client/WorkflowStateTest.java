@@ -17,6 +17,7 @@ import io.dapr.durabletask.FailureDetails;
 import io.dapr.durabletask.OrchestrationMetadata;
 import io.dapr.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.runtime.DefaultWorkflowState;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -201,4 +202,12 @@ public class WorkflowStateTest {
     assertEquals(expected, result);
   }
 
+  @Test
+  public void testWithNoMetadata() {
+    String message = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+      DefaultWorkflowState workflowState = new DefaultWorkflowState(null);
+    }).getMessage();
+
+    Assertions.assertTrue(message.contains("OrchestrationMetadata cannot be null"));
+  }
 }
