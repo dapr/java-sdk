@@ -7,11 +7,11 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.16.0</version>
+    <version>1.16.1-rc-1</version>
   </parent>
 
   <artifactId>dapr-sdk-tests</artifactId>
-  <version>1.16.0</version>
+  <version>1.16.1-rc-1</version>
   <name>dapr-sdk-tests</name>
   <description>Tests for Dapr's Java SDK - not to be published as a jar.</description>
 

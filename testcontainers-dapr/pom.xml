@@ -5,13 +5,13 @@
     <parent>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk-parent</artifactId>
-        <version>1.16.0</version>
+        <version>1.16.1-rc-1</version>
     </parent>
 
 	<artifactId>testcontainers-dapr</artifactId>
 	<name>testcontainers-dapr</name>
 	<description>Testcontainers Dapr Module</description>
-  <version>1.16.0</version>
+  <version>1.16.1-rc-1</version>
 	<packaging>jar</packaging>
 
 	<dependencies>
