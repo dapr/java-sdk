@@ -6,11 +6,11 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.16.1-rc-1</version>
+    <version>1.16.1-rc-2</version>
   </parent>
 
   <artifactId>spring-boot-examples</artifactId>
-  <version>1.16.1-rc-1</version>
+  <version>1.16.1-rc-2</version>
   <packaging>pom</packaging>
 
   <properties>
