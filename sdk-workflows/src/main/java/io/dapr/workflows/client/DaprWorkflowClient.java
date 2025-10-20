@@ -238,7 +238,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @throws TimeoutException when the workflow instance is not started within the specified amount of time
    */
   @Nullable
-  public DefaultWorkflowState waitForWorkflowStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
+  public WorkflowState waitForWorkflowStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
       throws TimeoutException {
 
     OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
