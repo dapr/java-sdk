@@ -145,8 +145,8 @@ public class DemoWorkflowClient {
       }
 
       System.out.println(separatorStr);
-      System.out.println("**purgeInstance**");
-      boolean purgeResult = client.purgeInstance(instanceId);
+      System.out.println("**purgeWorkflow**");
+      boolean purgeResult = client.purgeWorkflow(instanceId);
       System.out.printf("purgeResult: %s%n", purgeResult);
 
       System.out.println(separatorStr);
@@ -202,7 +202,7 @@ Started new workflow instance with random ID: 0b4cc0d5-413a-4c1c-816a-a71fa24740
 **GetInstanceMetadata:Running Workflow**
 Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: RUNNING, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:30.699Z, Input: '"input data"', Output: '']
 *******
-**WaitForInstanceStart**
+**WaitForWorkflowStart**
 Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: RUNNING, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:30.699Z, Input: '"input data"', Output: '']
 *******
 **SendExternalMessage**
@@ -216,7 +216,7 @@ Event raised for workflow with instanceId: 0b4cc0d5-413a-4c1c-816a-a71fa24740d4
 **WaitForWorkflowCompletion**
 Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: FAILED, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:55.054Z, Input: '"input data"', Output: '']
 *******
-**purgeInstance**
+**purgeWorkflow**
 purgeResult: true
 *******
 **raiseEvent**
