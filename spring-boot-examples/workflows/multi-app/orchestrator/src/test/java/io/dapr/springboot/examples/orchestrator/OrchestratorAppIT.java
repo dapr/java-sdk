@@ -24,8 +24,6 @@ import java.time.Duration;
 
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = {TestOrchestratorApplication.class, DaprTestContainersConfig.class, CustomersRestController.class},

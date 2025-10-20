@@ -104,17 +104,17 @@ public class DemoWorkflowClient {
 
       System.out.println(separatorStr);
       System.out.println("**GetInstanceMetadata:Running Workflow**");
-      WorkflowInstanceStatus workflowMetadata = client.getInstanceState(instanceId, true);
+      WorkflowState workflowMetadata = client.getWorkflowState(instanceId, true);
       System.out.printf("Result: %s%n", workflowMetadata);
 
       System.out.println(separatorStr);
-      System.out.println("**WaitForInstanceStart**");
+      System.out.println("**WaitForWorkflowStart**");
       try {
-        WorkflowInstanceStatus waitForInstanceStartResult =
-            client.waitForInstanceStart(instanceId, Duration.ofSeconds(60), true);
-        System.out.printf("Result: %s%n", waitForInstanceStartResult);
+        WorkflowState waitForWorkflowStartResult =
+            client.waitForWorkflowStart(instanceId, Duration.ofSeconds(60), true);
+        System.out.printf("Result: %s%n", waitForWorkflowStartResult);
       } catch (TimeoutException ex) {
-        System.out.printf("waitForInstanceStart has an exception:%s%n", ex);
+        System.out.printf("waitForWorkflowStart has an exception:%s%n", ex);
       }
 
       System.out.println(separatorStr);
@@ -135,18 +135,18 @@ public class DemoWorkflowClient {
 
 
       System.out.println(separatorStr);
-      System.out.println("**WaitForInstanceCompletion**");
+      System.out.println("**waitForWorkflowCompletion**");
       try {
-        WorkflowInstanceStatus waitForInstanceCompletionResult =
-            client.waitForInstanceCompletion(instanceId, Duration.ofSeconds(60), true);
-        System.out.printf("Result: %s%n", waitForInstanceCompletionResult);
+        WorkflowState waitForWorkflowCompletionResult =
+            client.waitForWorkflowCompletion(instanceId, Duration.ofSeconds(60), true);
+        System.out.printf("Result: %s%n", waitForWorkflowCompletionResult);
       } catch (TimeoutException ex) {
-        System.out.printf("waitForInstanceCompletion has an exception:%s%n", ex);
+        System.out.printf("waitForWorkflowCompletion has an exception:%s%n", ex);
       }
 
       System.out.println(separatorStr);
-      System.out.println("**purgeInstance**");
-      boolean purgeResult = client.purgeInstance(instanceId);
+      System.out.println("**purgeWorkflow**");
+      boolean purgeResult = client.purgeWorkflow(instanceId);
       System.out.printf("purgeResult: %s%n", purgeResult);
 
       System.out.println(separatorStr);
@@ -202,7 +202,7 @@ Started new workflow instance with random ID: 0b4cc0d5-413a-4c1c-816a-a71fa24740
 **GetInstanceMetadata:Running Workflow**
 Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: RUNNING, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:30.699Z, Input: '"input data"', Output: '']
 *******
-**WaitForInstanceStart**
+**WaitForWorkflowStart**
 Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: RUNNING, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:30.699Z, Input: '"input data"', Output: '']
 *******
 **SendExternalMessage**
@@ -213,10 +213,10 @@ Events raised for workflow with instanceId: 0b4cc0d5-413a-4c1c-816a-a71fa24740d4
 ** Registering Event to be captured by anyOf(t1,t2,t3) **
 Event raised for workflow with instanceId: 0b4cc0d5-413a-4c1c-816a-a71fa24740d4
 *******
-**WaitForInstanceCompletion**
+**WaitForWorkflowCompletion**
 Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: FAILED, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:55.054Z, Input: '"input data"', Output: '']
 *******
-**purgeInstance**
+**purgeWorkflow**
 purgeResult: true
 *******
 **raiseEvent**

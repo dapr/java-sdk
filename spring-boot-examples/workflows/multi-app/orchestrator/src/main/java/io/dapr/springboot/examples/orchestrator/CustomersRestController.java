@@ -13,9 +13,8 @@ limitations under the License.
 
 package io.dapr.springboot.examples.orchestrator;
 
-import io.dapr.spring.workflows.config.EnableDaprWorkflows;
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +83,7 @@ public class CustomersRestController {
     if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
       return "N/A";
     }
-    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
+    WorkflowState instanceState = daprWorkflowClient.getWorkflowState(workflowIdForCustomer, true);
     assert instanceState != null;
     return "Workflow for Customer: " + customer.getCustomerName() + " is " + instanceState.getRuntimeStatus().name();
   }
@@ -101,7 +100,7 @@ public class CustomersRestController {
     if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
       return null;
     }
-    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
+    WorkflowState instanceState = daprWorkflowClient.getWorkflowState(workflowIdForCustomer, true);
     assert instanceState != null;
     return instanceState.readOutputAs(Customer.class);
   }
