@@ -13,6 +13,7 @@
 
 package io.dapr.it.testcontainers.workflows.multiapp;
 
+import io.dapr.it.testcontainers.ContainerConstants;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -113,7 +114,7 @@ public class WorkflowsMultiAppCallActivityIT {
 
   // TestContainers for each app
   @Container
-  private static GenericContainer<?> multiappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private static GenericContainer<?> multiappWorker = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -127,7 +128,7 @@ public class WorkflowsMultiAppCallActivityIT {
       .withLogConsumer(outputFrame -> System.out.println("MultiAppWorker: " + outputFrame.getUtf8String()));
 
   @Container
-  private final static GenericContainer<?> app2Worker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private final static GenericContainer<?> app2Worker = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -141,7 +142,7 @@ public class WorkflowsMultiAppCallActivityIT {
       .withLogConsumer(outputFrame -> System.out.println("App2Worker: " + outputFrame.getUtf8String()));
 
   @Container
-  private final static GenericContainer<?> app3Worker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private final static GenericContainer<?> app3Worker = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
