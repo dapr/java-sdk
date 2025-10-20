@@ -20,7 +20,9 @@ import java.time.Instant;
 /**
  * Represents a snapshot of a workflow instance's current state, including
  * metadata.
+ * @deprecated Use {@link WorkflowState} instead.
  */
+@Deprecated(forRemoval = true)
 public interface WorkflowInstanceStatus {
 
   /**
