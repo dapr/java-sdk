@@ -17,8 +17,8 @@ import io.dapr.durabletask.FailureDetails;
 import io.dapr.durabletask.OrchestrationMetadata;
 import io.dapr.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.client.WorkflowFailureDetails;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
+import io.dapr.workflows.client.WorkflowState;
 
 import javax.annotation.Nullable;
 
@@ -27,10 +27,8 @@ import java.time.Instant;
 /**
  * Represents a snapshot of a workflow instance's current state, including
  * metadata.
- * @deprecated Use {@link DefaultWorkflowState} instead.
  */
-@Deprecated(forRemoval = true)
-public class DefaultWorkflowInstanceStatus implements WorkflowInstanceStatus {
+public class DefaultWorkflowState implements WorkflowState {
 
   private final OrchestrationMetadata orchestrationMetadata;
 
@@ -42,7 +40,7 @@ public class DefaultWorkflowInstanceStatus implements WorkflowInstanceStatus {
    *
    * @param orchestrationMetadata Durable task orchestration metadata
    */
-  public DefaultWorkflowInstanceStatus(OrchestrationMetadata orchestrationMetadata) {
+  public DefaultWorkflowState(OrchestrationMetadata orchestrationMetadata) {
     if (orchestrationMetadata == null) {
       throw new IllegalArgumentException("OrchestrationMetadata cannot be null");
     }
@@ -71,7 +69,7 @@ public class DefaultWorkflowInstanceStatus implements WorkflowInstanceStatus {
    *
    * @return the unique ID of the workflow instance
    */
-  public String getInstanceId() {
+  public String getWorkflowId() {
     return orchestrationMetadata.getInstanceId();
   }
 
