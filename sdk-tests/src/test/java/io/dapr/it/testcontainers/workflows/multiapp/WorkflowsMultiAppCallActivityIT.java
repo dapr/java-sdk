@@ -20,10 +20,9 @@ import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.DaprPlacementContainer;
 import io.dapr.testcontainers.DaprSchedulerContainer;
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.config.Properties;
-import net.bytebuddy.utility.dispatcher.JavaDispatcher;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
@@ -176,9 +175,9 @@ public class WorkflowsMultiAppCallActivityIT {
     try {
       String instanceId = workflowClient.scheduleNewWorkflow(MultiAppWorkflow.class, input);
       assertNotNull(instanceId, "Workflow instance ID should not be null");
-      workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(30), false);
+      workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(30), false);
 
-      WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, null, true);
+      WorkflowState workflowStatus = workflowClient.waitForWorkflowCompletion(instanceId, null, true);
       assertNotNull(workflowStatus, "Workflow status should not be null");
       assertEquals(WorkflowRuntimeStatus.COMPLETED, workflowStatus.getRuntimeStatus(),
           "Workflow should complete successfully");
