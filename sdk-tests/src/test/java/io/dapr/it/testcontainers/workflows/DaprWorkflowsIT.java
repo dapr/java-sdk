@@ -20,7 +20,7 @@ import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
@@ -104,11 +104,11 @@ public class DaprWorkflowsIT {
     TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
     String instanceId = workflowClient.scheduleNewWorkflow(TestWorkflow.class, payload);
 
-    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(10), false);
+    workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(10), false);
     workflowClient.raiseEvent(instanceId, "MoveForward", payload);
 
     Duration timeout = Duration.ofSeconds(10);
-    WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+    WorkflowState workflowStatus = workflowClient.waitForWorkflowCompletion(instanceId, timeout, true);
 
     assertNotNull(workflowStatus);
 
@@ -124,25 +124,25 @@ public class DaprWorkflowsIT {
   public void testSuspendAndResumeWorkflows() throws Exception {
     TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
     String instanceId = workflowClient.scheduleNewWorkflow(TestWorkflow.class, payload);
-    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(10), false);
+    workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(10), false);
 
     workflowClient.suspendWorkflow(instanceId, "testing suspend.");
 
 
-    WorkflowInstanceStatus instanceState = workflowClient.getInstanceState(instanceId, false);
+    WorkflowState instanceState = workflowClient.getWorkflowState(instanceId, false);
     assertNotNull(instanceState);
     assertEquals(WorkflowRuntimeStatus.SUSPENDED, instanceState.getRuntimeStatus());
 
     workflowClient.resumeWorkflow(instanceId, "testing resume");
 
-    instanceState = workflowClient.getInstanceState(instanceId, false);
+    instanceState = workflowClient.getWorkflowState(instanceId, false);
     assertNotNull(instanceState);
     assertEquals(WorkflowRuntimeStatus.RUNNING, instanceState.getRuntimeStatus());
 
     workflowClient.raiseEvent(instanceId, "MoveForward", payload);
 
     Duration timeout = Duration.ofSeconds(10);
-    instanceState = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+    instanceState = workflowClient.waitForWorkflowCompletion(instanceId, timeout, true);
 
     assertNotNull(instanceState);
     assertEquals(WorkflowRuntimeStatus.COMPLETED, instanceState.getRuntimeStatus());
@@ -154,10 +154,10 @@ public class DaprWorkflowsIT {
     TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
     String instanceId = workflowClient.scheduleNewWorkflow(TestNamedActivitiesWorkflow.class, payload);
 
-    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(10), false);
+    workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(10), false);
 
     Duration timeout = Duration.ofSeconds(10);
-    WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+    WorkflowState workflowStatus = workflowClient.waitForWorkflowCompletion(instanceId, timeout, true);
 
     assertNotNull(workflowStatus);
 
@@ -178,10 +178,10 @@ public class DaprWorkflowsIT {
     TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
     String instanceId = workflowClient.scheduleNewWorkflow(TestExecutionKeysWorkflow.class, payload);
 
-    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(100), false);
+    workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(100), false);
     
     Duration timeout = Duration.ofSeconds(1000);
-    WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+    WorkflowState workflowStatus = workflowClient.waitForWorkflowCompletion(instanceId, timeout, true);
 
     assertNotNull(workflowStatus);
 

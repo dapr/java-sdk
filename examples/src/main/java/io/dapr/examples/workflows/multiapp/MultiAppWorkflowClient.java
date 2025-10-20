@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.examples.workflows.multiapp;
 
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 
 import java.util.concurrent.TimeoutException;
 
@@ -48,8 +48,8 @@ public class MultiAppWorkflowClient {
       
       // Wait for the workflow to complete
       System.out.println("Waiting for workflow completion...");
-      WorkflowInstanceStatus workflowInstanceStatus = 
-          client.waitForInstanceCompletion(instanceId, null, true);
+      WorkflowState workflowInstanceStatus =
+          client.waitForWorkflowCompletion(instanceId, null, true);
       
       // Get the result
       String result = workflowInstanceStatus.readOutputAs(String.class);
