@@ -33,11 +33,6 @@
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <!--
-        manually declare durabletask-client's jackson dependencies for workflows sdk
-        which conflict with dapr-sdk's jackson dependencies
-        https://github.com/dapr/durabletask-java/blob/main/client/build.gradle#L16
-        -->
     <jackson.version>2.16.2</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.fail>true</spotbugs.fail>
@@ -72,7 +67,6 @@
     <junit-vintage-engine.version>5.7.0</junit-vintage-engine.version>
     <junit-platform-console.version>1.7.0</junit-platform-console.version>
     <reactor.version>3.5.12</reactor.version>
-    <durabletask-client.version>1.5.10</durabletask-client.version>
     <testcontainers-redis.version>2.2.2</testcontainers-redis.version>
     <slf4j.version>2.0.9</slf4j.version>
     <mockito.version>3.11.2</mockito.version>
@@ -481,11 +475,6 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
         <version>${reactor.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr</groupId>
-        <artifactId>durabletask-client</artifactId>
-        <version>${durabletask-client.version}</version>
       </dependency>
       <dependency>
         <groupId>com.redis</groupId>

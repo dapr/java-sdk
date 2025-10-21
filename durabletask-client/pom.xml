@@ -68,10 +68,6 @@
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>durabletask-client</artifactId>
-    </dependency>
   </dependencies>
   <build>
     <plugins>
