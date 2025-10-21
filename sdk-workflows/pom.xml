@@ -44,27 +44,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>durabletask-client</artifactId>
-    </dependency>
-    <!--
-    manually declare durabletask-client's jackson dependencies
-    which conflict with dapr-sdk's jackson dependencies
-    https://github.com/dapr/durabletask-java/blob/main/client/build.gradle#L16
-    -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
   </dependencies>
 
