@@ -52,6 +52,12 @@ jobs:
     env:
       JDK_VER: 17
     steps:
+    - uses: actions/checkout@v5
+    - name: Set up OpenJDK ${{ env.JDK_VER }}
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JDK_VER }}
     - name: Checkout Durable Task Sidecar
       uses: actions/checkout@v4
       with:
