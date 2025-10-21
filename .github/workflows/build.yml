@@ -152,7 +152,7 @@ jobs:
       run: ./mvnw clean install -B -q -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
-      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -Pintegration-tests dependency:copy-dependencies verify
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
       env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Upload failsafe test report for sdk-tests on failure
@@ -167,6 +167,32 @@ jobs:
       with:
         name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/surefire-reports
+    # Integration tests for Durable Task Client
+    - name: Checkout Durable Task Sidecar
+      uses: actions/checkout@v4
+      with:
+        repository: dapr/durabletask-go
+        path: durabletask-sidecar
+
+    # TODO: Move the sidecar into a central image repository
+    - name: Initialize Durable Task Sidecar
+      run: docker run -d --name durabletask-sidecar -p 4001:4001 --rm -i $(docker build -q ./durabletask-sidecar)
+
+    - name: Display Durable Task Sidecar Logs
+      run: nohup docker logs --since=0 durabletask-sidecar > durabletask-sidecar.log 2>&1 &
+
+      # wait for 10 seconds, so sidecar container can be fully up, this will avoid intermittent failing issues for integration tests causing by failed to connect to sidecar
+    - name: Wait for 10 seconds
+      run: sleep 10
+
+    - name: Integration Tests For Durable Tasks
+      run: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify || echo "TEST_FAILED=true" >> $GITHUB_ENV
+      continue-on-error: true
+
+    - name: Kill Durable Task Sidecar
+      run: docker kill durabletask-sidecar
+
+
 
   publish:
     runs-on: ubuntu-latest
