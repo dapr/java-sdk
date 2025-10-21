@@ -13,16 +13,16 @@
 
 package io.dapr.it.testcontainers.workflows.multiapp;
 
+import io.dapr.it.testcontainers.ContainerConstants;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.DaprPlacementContainer;
 import io.dapr.testcontainers.DaprSchedulerContainer;
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.config.Properties;
-import net.bytebuddy.utility.dispatcher.JavaDispatcher;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
@@ -113,7 +113,7 @@ public class WorkflowsMultiAppCallActivityIT {
 
   // TestContainers for each app
   @Container
-  private static GenericContainer<?> multiappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private static GenericContainer<?> multiappWorker = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -127,7 +127,7 @@ public class WorkflowsMultiAppCallActivityIT {
       .withLogConsumer(outputFrame -> System.out.println("MultiAppWorker: " + outputFrame.getUtf8String()));
 
   @Container
-  private final static GenericContainer<?> app2Worker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private final static GenericContainer<?> app2Worker = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -141,7 +141,7 @@ public class WorkflowsMultiAppCallActivityIT {
       .withLogConsumer(outputFrame -> System.out.println("App2Worker: " + outputFrame.getUtf8String()));
 
   @Container
-  private final static GenericContainer<?> app3Worker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private final static GenericContainer<?> app3Worker = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -175,9 +175,9 @@ public class WorkflowsMultiAppCallActivityIT {
     try {
       String instanceId = workflowClient.scheduleNewWorkflow(MultiAppWorkflow.class, input);
       assertNotNull(instanceId, "Workflow instance ID should not be null");
-      workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(30), false);
+      workflowClient.waitForWorkflowStart(instanceId, Duration.ofSeconds(30), false);
 
-      WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, null, true);
+      WorkflowState workflowStatus = workflowClient.waitForWorkflowCompletion(instanceId, null, true);
       assertNotNull(workflowStatus, "Workflow status should not be null");
       assertEquals(WorkflowRuntimeStatus.COMPLETED, workflowStatus.getRuntimeStatus(),
           "Workflow should complete successfully");

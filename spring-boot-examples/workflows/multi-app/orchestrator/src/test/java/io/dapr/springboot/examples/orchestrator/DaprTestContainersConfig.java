@@ -123,7 +123,7 @@ public class DaprTestContainersConfig {
                                                 @Qualifier("workerOneDapr") DaprContainer workerOneDapr,
                                                 DaprPlacementContainer daprPlacementContainer,
                                                 DaprSchedulerContainer daprSchedulerContainer){
-    return new GenericContainer<>("openjdk:17-jdk-slim")
+    return new GenericContainer<>(DockerImages.JDK_17_TEMURIN_JAMMY)
             .withCopyFileToContainer(MountableFile.forHostPath("../worker-one/target"), "/app")
             .withWorkingDirectory("/app")
             .withCommand("java",
@@ -165,7 +165,7 @@ public class DaprTestContainersConfig {
                                                 @Qualifier("workerTwoDapr") DaprContainer workerTwoDapr,
                                                 DaprPlacementContainer daprPlacementContainer,
                                                 DaprSchedulerContainer daprSchedulerContainer){
-    return new GenericContainer<>("openjdk:17-jdk-slim")
+    return new GenericContainer<>(DockerImages.JDK_17_TEMURIN_JAMMY)
             .withCopyFileToContainer(MountableFile.forHostPath("../worker-two/target"), "/app")
             .withWorkingDirectory("/app")
             .withCommand("java",

@@ -27,7 +27,7 @@ import io.dapr.springboot.examples.wfp.remoteendpoint.RemoteEndpointWorkflow;
 import io.dapr.springboot.examples.wfp.timer.DurationTimerWorkflow;
 import io.dapr.springboot.examples.wfp.timer.ZonedDateTimeTimerWorkflow;
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +67,7 @@ public class WorkflowPatternsRestController {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ChainWorkflow.class);
     logger.info("Workflow instance " + instanceId + " started");
     return daprWorkflowClient
-            .waitForInstanceCompletion(instanceId, Duration.ofSeconds(10), true)
+            .waitForWorkflowCompletion(instanceId, Duration.ofSeconds(10), true)
             .readOutputAs(String.class);
   }
 
@@ -81,7 +81,7 @@ public class WorkflowPatternsRestController {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ParentWorkflow.class);
     logger.info("Workflow instance " + instanceId + " started");
     return daprWorkflowClient
-            .waitForInstanceCompletion(instanceId, Duration.ofSeconds(10), true)
+            .waitForWorkflowCompletion(instanceId, Duration.ofSeconds(10), true)
             .readOutputAs(String.class);
   }
 
@@ -97,13 +97,13 @@ public class WorkflowPatternsRestController {
     logger.info("Workflow instance " + instanceId + " started");
 
     // Block until the orchestration completes. Then print the final status, which includes the output.
-    WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient.waitForInstanceCompletion(
+    WorkflowState workflowState = daprWorkflowClient.waitForWorkflowCompletion(
             instanceId,
             Duration.ofSeconds(30),
             true);
     logger.info("workflow instance with ID: %s completed with result: %s%n", instanceId,
-            workflowInstanceStatus.readOutputAs(Result.class));
-    return workflowInstanceStatus.readOutputAs(Result.class);
+            workflowState.readOutputAs(Result.class));
+    return workflowState.readOutputAs(Result.class);
   }
 
     /**
@@ -124,8 +124,8 @@ public class WorkflowPatternsRestController {
     String instanceId = ordersToApprove.get(orderId);
     logger.info("Workflow instance " + instanceId + " continue");
     daprWorkflowClient.raiseEvent(instanceId, "Approval", decision);
-    WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient
-            .waitForInstanceCompletion(instanceId, null, true);
+    WorkflowState workflowInstanceStatus = daprWorkflowClient
+            .waitForWorkflowCompletion(instanceId, null, true);
     return workflowInstanceStatus.readOutputAs(Decision.class);
   }
 
@@ -137,7 +137,7 @@ public class WorkflowPatternsRestController {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ContinueAsNewWorkflow.class);
     logger.info("Workflow instance " + instanceId + " started");
 
-    WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient.waitForInstanceCompletion(instanceId, null, true);
+    WorkflowState workflowInstanceStatus = daprWorkflowClient.waitForWorkflowCompletion(instanceId, null, true);
     System.out.printf("workflow instance with ID: %s completed.", instanceId);
     return workflowInstanceStatus.readOutputAs(CleanUpLog.class);
   }
@@ -149,8 +149,8 @@ public class WorkflowPatternsRestController {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(RemoteEndpointWorkflow.class, payload);
     logger.info("Workflow instance " + instanceId + " started");
 
-    WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient
-            .waitForInstanceCompletion(instanceId, null, true);
+    WorkflowState workflowInstanceStatus = daprWorkflowClient
+            .waitForWorkflowCompletion(instanceId, null, true);
     System.out.printf("workflow instance with ID: %s completed.", instanceId);
     return workflowInstanceStatus.readOutputAs(Payload.class);
   }
@@ -167,7 +167,7 @@ public class WorkflowPatternsRestController {
   public String suspendResumeExecuteSuspend(@RequestParam("orderId") String orderId) {
     String instanceId = ordersToApprove.get(orderId);
     daprWorkflowClient.suspendWorkflow(instanceId, "testing suspend");
-    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(instanceId, false);
+    WorkflowState instanceState = daprWorkflowClient.getWorkflowState(instanceId, false);
     return instanceState.getRuntimeStatus().name();
   }
 
@@ -175,7 +175,7 @@ public class WorkflowPatternsRestController {
   public String suspendResumeExecuteResume(@RequestParam("orderId") String orderId) {
     String instanceId = ordersToApprove.get(orderId);
     daprWorkflowClient.resumeWorkflow(instanceId, "testing resume");
-    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(instanceId, false);
+    WorkflowState instanceState = daprWorkflowClient.getWorkflowState(instanceId, false);
     return instanceState.getRuntimeStatus().name();
   }
 
@@ -186,8 +186,8 @@ public class WorkflowPatternsRestController {
     String instanceId = ordersToApprove.get(orderId);
     logger.info("Workflow instance " + instanceId + " continue");
     daprWorkflowClient.raiseEvent(instanceId, "Approval", decision);
-    WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient
-            .waitForInstanceCompletion(instanceId, null, true);
+    WorkflowState workflowInstanceStatus = daprWorkflowClient
+            .waitForWorkflowCompletion(instanceId, null, true);
     return workflowInstanceStatus.readOutputAs(Decision.class);
   }
 

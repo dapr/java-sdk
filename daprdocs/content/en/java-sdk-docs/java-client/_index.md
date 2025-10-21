@@ -486,7 +486,7 @@ public class DistributedLockGrpcClient {
 package io.dapr.examples.workflows;
 
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -513,18 +513,18 @@ public class DemoWorkflowClient {
       System.out.printf("Started new workflow instance with random ID: %s%n", instanceId);
 
       System.out.println(separatorStr);
-      System.out.println("**GetInstanceMetadata:Running Workflow**");
-      WorkflowInstanceStatus workflowMetadata = client.getInstanceState(instanceId, true);
+      System.out.println("**GetWorkflowMetadata:Running Workflow**");
+      WorkflowState workflowMetadata = client.getWorkflowState(instanceId, true);
       System.out.printf("Result: %s%n", workflowMetadata);
 
       System.out.println(separatorStr);
-      System.out.println("**WaitForInstanceStart**");
+      System.out.println("**WaitForWorkflowStart**");
       try {
-        WorkflowInstanceStatus waitForInstanceStartResult =
-            client.waitForInstanceStart(instanceId, Duration.ofSeconds(60), true);
-        System.out.printf("Result: %s%n", waitForInstanceStartResult);
+        WorkflowState waitForWorkflowStartResult =
+            client.waitForWorkflowStart(instanceId, Duration.ofSeconds(60), true);
+        System.out.printf("Result: %s%n", waitForWorkflowStartResult);
       } catch (TimeoutException ex) {
-        System.out.printf("waitForInstanceStart has an exception:%s%n", ex);
+        System.out.printf("waitForWorkflowStart has an exception:%s%n", ex);
       }
 
       System.out.println(separatorStr);
@@ -545,18 +545,18 @@ public class DemoWorkflowClient {
 
 
       System.out.println(separatorStr);
-      System.out.println("**WaitForInstanceCompletion**");
+      System.out.println("**waitForWorkflowCompletion**");
       try {
-        WorkflowInstanceStatus waitForInstanceCompletionResult =
-            client.waitForInstanceCompletion(instanceId, Duration.ofSeconds(60), true);
-        System.out.printf("Result: %s%n", waitForInstanceCompletionResult);
+        WorkflowState waitForWorkflowCompletionResult =
+            client.waitForWorkflowCompletion(instanceId, Duration.ofSeconds(60), true);
+        System.out.printf("Result: %s%n", waitForWorkflowCompletionResult);
       } catch (TimeoutException ex) {
-        System.out.printf("waitForInstanceCompletion has an exception:%s%n", ex);
+        System.out.printf("waitForWorkflowCompletion has an exception:%s%n", ex);
       }
 
       System.out.println(separatorStr);
-      System.out.println("**purgeInstance**");
-      boolean purgeResult = client.purgeInstance(instanceId);
+      System.out.println("**purgeWorkflow**");
+      boolean purgeResult = client.purgeWorkflow(instanceId);
       System.out.printf("purgeResult: %s%n", purgeResult);
 
       System.out.println(separatorStr);

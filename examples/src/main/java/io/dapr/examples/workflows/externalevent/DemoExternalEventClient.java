@@ -33,7 +33,7 @@ public class DemoExternalEventClient {
       client.raiseEvent(instanceId, "Approval", true);
       //client.raiseEvent(instanceId, "Approval", false);
 
-      client.waitForInstanceCompletion(instanceId, null, true);
+      client.waitForWorkflowCompletion(instanceId, null, true);
       System.out.printf("workflow instance with ID: %s completed.", instanceId);
 
     } catch (TimeoutException | InterruptedException e) {
