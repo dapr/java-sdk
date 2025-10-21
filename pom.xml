@@ -17,6 +17,7 @@
     <grpc.version>1.69.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
     <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.16.0-rc.5/dapr/proto</dapr.proto.baseurl>
+    <durabletask.proto.url>https://raw.githubusercontent.com/dapr/durabletask-protobuf/main/protos/orchestrator_service.proto</durabletask.proto.url>
     <dapr.sdk.version>1.17.0-SNAPSHOT</dapr.sdk.version>
     <dapr.sdk.alpha.version>0.17.0-SNAPSHOT</dapr.sdk.alpha.version>
     <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
@@ -37,7 +38,7 @@
         which conflict with dapr-sdk's jackson dependencies
         https://github.com/dapr/durabletask-java/blob/main/client/build.gradle#L16
         -->
-    <jackson.version>2.16.1</jackson.version>
+    <jackson.version>2.16.2</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.fail>true</spotbugs.fail>
     <spotbugs.exclude.filter.file>../spotbugs-exclude.xml</spotbugs.exclude.filter.file>
@@ -472,6 +473,11 @@
         <version>${jackson.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
         <version>${reactor.version}</version>
@@ -783,6 +789,7 @@
     <module>spring-boot-examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
+    <module>durabletask-client</module>
   </modules>
 
   <profiles>
@@ -791,6 +798,7 @@
       <modules>
         <module>sdk-tests</module>
         <module>spring-boot-examples</module>
+        <module>durabletask-client</module>
       </modules>
         <build>
             <plugins>
