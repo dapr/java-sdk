@@ -47,7 +47,7 @@ jobs:
   build:
     name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-display-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
