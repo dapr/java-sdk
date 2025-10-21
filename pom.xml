@@ -590,6 +590,10 @@
                 <goal>check</goal>
               </goals>
               <configuration>
+                <excludes>
+                  <exclude>io/dapr/durabletask/**/*</exclude>
+                  <exclude>io/dapr/springboot/examples/**/*</exclude>
+                </excludes>
                 <rules>
                   <rule>
                     <element>BUNDLE</element>
