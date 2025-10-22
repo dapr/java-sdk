@@ -17,12 +17,14 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
+import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
@@ -54,8 +56,19 @@ public class DaprWorkflowsConfiguration implements ApplicationContextAware {
     Map<String, WorkflowActivity> workflowActivitiesBeans = applicationContext.getBeansOfType(WorkflowActivity.class);
 
     for (WorkflowActivity activity :  workflowActivitiesBeans.values()) {
-      LOGGER.info("Dapr Workflow Activity: '{}' registered", activity.getClass().getName());
+      // Get the @Component annotation
+      Component componentAnnotation = activity.getClass().getAnnotation(Component.class);
 
+      if (componentAnnotation != null) {
+        var componentValue = componentAnnotation.value();
+        if (StringUtils.isNotEmpty(componentValue)) {
+          LOGGER.info("Dapr Workflow Activity: '{}' with name '{}' registered", activity.getClass().getName(), componentValue);
+          workflowRuntimeBuilder.registerActivity(componentValue, activity);
+          return;
+        }
+      }
+
+      LOGGER.info("Dapr Workflow Activity: '{}' registered", activity.getClass().getName());
       workflowRuntimeBuilder.registerActivity(activity);
     }
 
