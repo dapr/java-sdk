@@ -13,6 +13,25 @@ This is the Dapr SDK for Java, including the following features:
 
 ## Getting Started
 
+### Architecture Overview
+
+The diagram below shows how a Java application interacts with the Dapr runtime through the Java SDK:
+
+```mermaid
+flowchart LR
+    A[End User Application] -->|HTTP or gRPC| B[Dapr Java SDK]
+    B -->|Dapr API calls| C[Dapr Sidecar]
+    C -->|Components| D[State Stores, Pub/Sub, Services, etc.]
+
+    %% Optional grouping for clarity
+    subgraph R[Dapr Runtime]
+        C
+        D
+    end
+```
+
+For the full list of available APIs, see the [Dapr API reference](https://docs.dapr.io/reference/api/)
+
 ### Pre-Requisites
 * SDKMAN! installed (recommended):
     * [SDKMAN!](https://sdkman.io)
