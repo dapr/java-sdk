@@ -67,6 +67,18 @@ class ProducerAppIT {
 
   }
 
+  @Test
+  void testOrdersOutboxEndpointAndMessaging() {
+    given().contentType(ContentType.JSON)
+        .body("{ \"id\": \"outbox-order-123\",\"item\": \"Lorem ipsum\",\"amount\": 1000}")
+        .when()
+        .post("/orders/outbox")
+        .then()
+        .statusCode(200);
+
+    await().atMost(Duration.ofSeconds(15))
+        .until(controller.getAllEvents()::size, equalTo(1));
+  }
 
   @Test
   void testOrdersEndpointAndMessaging() throws InterruptedException, IOException {
