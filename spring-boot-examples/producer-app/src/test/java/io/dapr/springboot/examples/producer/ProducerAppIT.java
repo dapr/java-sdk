@@ -21,6 +21,7 @@ import io.dapr.springboot.examples.producer.workflow.RegisterCustomerActivity;
 import io.dapr.testcontainers.DaprContainer;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +68,11 @@ class ProducerAppIT {
 
   }
 
+  @AfterEach
+  void cleanUp() {
+    controller.getAllEvents().clear();
+  }
+
   @Test
   void testOrdersOutboxEndpointAndMessaging() {
     given().contentType(ContentType.JSON)
@@ -78,6 +84,7 @@ class ProducerAppIT {
 
     await().atMost(Duration.ofSeconds(15))
         .until(controller.getAllEvents()::size, equalTo(1));
+
   }
 
   @Test
