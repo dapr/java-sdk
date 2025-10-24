@@ -75,8 +75,10 @@ class ProducerAppIT {
 
   @Test
   void testOrdersOutboxEndpointAndMessaging() {
+    OrderDTO order = new OrderDTO("outbox-order-123", "Lorem ipsum", 1000);
+
     given().contentType(ContentType.JSON)
-        .body("{ \"id\": \"outbox-order-123\",\"item\": \"Lorem ipsum\",\"amount\": 1000}")
+        .body(order)
         .when()
         .post("/orders/outbox")
         .then()
@@ -88,10 +90,10 @@ class ProducerAppIT {
   }
 
   @Test
-  void testOrdersEndpointAndMessaging() throws InterruptedException, IOException {
-
+  void testOrdersEndpointAndMessaging() {
+    OrderDTO order = new OrderDTO("abc-123", "the mars volta LP", 1);
     given().contentType(ContentType.JSON)
-            .body("{ \"id\": \"abc-123\",\"item\": \"the mars volta LP\",\"amount\": 1}")
+            .body(order)
             .when()
             .post("/orders")
             .then()
@@ -137,7 +139,7 @@ class ProducerAppIT {
   }
 
   @Test
-  void testCustomersWorkflows() throws InterruptedException, IOException {
+  void testCustomersWorkflows() {
 
     given().contentType(ContentType.JSON)
             .body("{\"customerName\": \"salaboy\"}")
