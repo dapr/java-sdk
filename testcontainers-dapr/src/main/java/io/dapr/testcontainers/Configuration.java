@@ -29,6 +29,20 @@ public class Configuration {
   // @TODO: add disallow components https://github.com/dapr/java-sdk/issues/1285 
   // @TODO: add mtls https://github.com/dapr/java-sdk/issues/1286
 
+
+  /**
+   * Creates a new configuration.
+   *
+   * @param name            Configuration name.
+   * @param tracing         TracingConfigParameters tracing configuration
+   *                        parameters.
+   * @param appHttpPipeline AppHttpPipeline middleware configuration.
+   */
+  public Configuration(String name, TracingConfigurationSettings tracing,
+                       AppHttpPipeline appHttpPipeline) {
+    this(name, tracing, appHttpPipeline, null);
+  }
+
   /**
    * Creates a new configuration.
    * 
