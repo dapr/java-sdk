@@ -38,6 +38,15 @@ public class TestSubscriberRestController {
     events.add(cloudEvent);
   }
 
+  @PostMapping("outbox-subscribe")
+  @Topic(pubsubName = "pubsub", name = "outbox-topic")
+  public void outboxSubscribe(@RequestBody CloudEvent<String> cloudEvent) {
+    // we are receiving the Order with CloudEvent as String due to the
+    // following issue https://github.com/dapr/java-sdk/issues/1580
+    logger.info("Outbox Order Event Received: " + cloudEvent.getData());
+    events.add(cloudEvent);
+  }
+
   public List<CloudEvent> getAllEvents() {
     return events;
   }
