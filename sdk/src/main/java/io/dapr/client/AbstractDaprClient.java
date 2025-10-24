@@ -527,7 +527,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
       metaCopy.putIfAbsent("contentType", stateSerializer.getContentType());
     }
 
-    State<?> state = new State<>(key, value, etag, meta, options);
+    State<?> state = new State<>(key, value, etag, metaCopy, options);
     return this.saveBulkState(storeName, Collections.singletonList(state));
   }
 
