@@ -13,6 +13,10 @@ limitations under the License.
 
 package io.dapr.springboot.examples.producer;
 
+import io.dapr.client.DaprClient;
+import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.State;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.spring.data.repository.config.EnableDaprRepositories;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import org.slf4j.Logger;
@@ -24,17 +28,22 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @EnableDaprRepositories
 public class OrdersRestController {
 
-  private final Logger logger = LoggerFactory.getLogger(OrdersRestController.class);
+  private static final Logger logger = LoggerFactory.getLogger(OrdersRestController.class);
 
   @Autowired
   private OrderRepository repository;
 
   @Autowired
   private DaprMessagingTemplate<Order> messagingTemplate;
+
+  @Autowired
+  private DaprClient daprClient;
 
   /**
    * Store orders from customers.
@@ -49,6 +58,28 @@ public class OrdersRestController {
     logger.info("Publishing Order Event: " + order);
     messagingTemplate.send("topic", order);
     return "Order Stored and Event Published";
+  }
+
+  @PostMapping("/orders/outbox")
+  public String storeOrderOutbox(@RequestBody Order order) {
+    logger.info("Storing Order with Outbox: {}", order);
+    ExecuteStateTransactionRequest transactionRequest = new ExecuteStateTransactionRequest("kvstore-outbox");
+
+    State<Order> state = new State<>(
+        order.getId(), order, null
+    );
+
+    TransactionalStateOperation<Order> operation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.UPSERT, state
+    );
+
+    transactionRequest.setOperations(List.of(operation));
+
+    daprClient.executeStateTransaction(transactionRequest).block();
+
+    logger.info("Order Stored with Outbox: {}", order);
+
+    return "Order Stored with Outbox";
   }
 
   @GetMapping("/orders")
