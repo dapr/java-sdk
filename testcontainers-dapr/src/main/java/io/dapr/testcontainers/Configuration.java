@@ -20,11 +20,11 @@ public class Configuration {
   private final String name;
   private final TracingConfigurationSettings tracing;
   private final AppHttpPipeline appHttpPipeline;
+  private final HttpPipeline httpPipeline;
 
   // @TODO: add secrets https://github.com/dapr/java-sdk/issues/1280
   // @TODO: add metrics https://github.com/dapr/java-sdk/issues/1281
   // @TODO: add logging https://github.com/dapr/java-sdk/issues/1282
-  // @TODO: add middleware httpPipeline https://github.com/dapr/java-sdk/issues/1283
   // @TODO: add nameResolution https://github.com/dapr/java-sdk/issues/1284
   // @TODO: add disallow components https://github.com/dapr/java-sdk/issues/1285 
   // @TODO: add mtls https://github.com/dapr/java-sdk/issues/1286
@@ -36,11 +36,15 @@ public class Configuration {
    * @param tracing         TracingConfigParameters tracing configuration
    *                        parameters.
    * @param appHttpPipeline AppHttpPipeline middleware configuration.
+   * @param httpPipeline    HttpPipeline middleware configuration.
    */
-  public Configuration(String name, TracingConfigurationSettings tracing, AppHttpPipeline appHttpPipeline) {
+  public Configuration(String name, TracingConfigurationSettings tracing,
+                       AppHttpPipeline appHttpPipeline,
+                       HttpPipeline httpPipeline) {
     this.name = name;
     this.tracing = tracing;
     this.appHttpPipeline = appHttpPipeline;
+    this.httpPipeline = httpPipeline;
   }
 
   public String getName() {
@@ -53,5 +57,9 @@ public class Configuration {
 
   public AppHttpPipeline getAppHttpPipeline() {
     return appHttpPipeline;
+  }
+
+  public HttpPipeline getHttpPipeline() {
+    return httpPipeline;
   }
 }
