@@ -516,12 +516,15 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   @Override
   public Mono<Void> saveState(String storeName, String key, String etag, Object value, Map<String, String> meta,
                               StateOptions options) {
+    Map<String, String> metaCopy = null;
     if (meta == null) {
-      meta = new HashMap<>();
+      metaCopy = new HashMap<>();
+    } else{
+      metaCopy = new HashMap<>(meta);
     }
 
     if (value != null) {
-      meta.put("contentType", stateSerializer.getContentType());
+      metaCopy.putIfAbsent("contentType", stateSerializer.getContentType());
     }
 
     State<?> state = new State<>(key, value, etag, meta, options);
