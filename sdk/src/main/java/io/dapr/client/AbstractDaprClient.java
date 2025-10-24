@@ -519,7 +519,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
     Map<String, String> metaCopy = null;
     if (meta == null) {
       metaCopy = new HashMap<>();
-    } else{
+    } else {
       metaCopy = new HashMap<>(meta);
     }
 
