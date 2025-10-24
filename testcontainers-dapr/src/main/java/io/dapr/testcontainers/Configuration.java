@@ -28,8 +28,7 @@ public class Configuration {
   // @TODO: add nameResolution https://github.com/dapr/java-sdk/issues/1284
   // @TODO: add disallow components https://github.com/dapr/java-sdk/issues/1285 
   // @TODO: add mtls https://github.com/dapr/java-sdk/issues/1286
-
-
+  
   /**
    * Creates a new configuration.
    *
