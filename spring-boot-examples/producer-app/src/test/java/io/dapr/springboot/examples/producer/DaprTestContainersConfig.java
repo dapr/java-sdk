@@ -41,7 +41,7 @@ public class DaprTestContainersConfig {
   static final String CONNECTION_STRING =
           "host=postgres user=postgres password=password port=5432 connect_timeout=10 database=dapr_db_repository";
   static final Map<String, String> STATE_STORE_PROPERTIES = createStateStoreProperties();
-
+  static final Map<String, String> STATE_STORE_OUTBOX_PROPERTIES = createStateStoreOutboxProperties();
   static final Map<String, String> BINDING_PROPERTIES = Collections.singletonMap("connectionString", CONNECTION_STRING);
 
 
@@ -118,9 +118,8 @@ public class DaprTestContainersConfig {
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))
             .withComponent(new Component("kvbinding", "bindings.postgresql", "v1", BINDING_PROPERTIES))
             .withComponent(new Component("pubsub", "pubsub.rabbitmq", "v1", rabbitMqProperties))
+            .withComponent(new Component("kvstore-outbox", "state.postgresql", "v1", STATE_STORE_OUTBOX_PROPERTIES))
             .withSubscription(new Subscription("app", "pubsub", "topic", "/subscribe"))
-//             .withDaprLogLevel(DaprLogLevel.DEBUG)
-//             .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
             .withAppPort(8080)
             .withAppHealthCheckPath("/actuator/health")
             .withAppChannelAddress("host.testcontainers.internal")
@@ -135,6 +134,15 @@ public class DaprTestContainersConfig {
     result.put("keyPrefix", "name");
     result.put("actorStateStore", String.valueOf(true));
     result.put("connectionString", CONNECTION_STRING);
+
+    return result;
+  }
+
+  private static Map<String, String> createStateStoreOutboxProperties() {
+    Map<String, String> result = new HashMap<>();
+    result.put("connectionString", CONNECTION_STRING);
+    result.put("outboxPublishPubsub", "pubsub");
+    result.put("outboxPublishTopic", "outbox-topic");
 
     return result;
   }
