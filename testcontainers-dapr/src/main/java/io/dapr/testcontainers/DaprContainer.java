@@ -48,7 +48,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DaprContainer.class);
   private static final int DAPRD_DEFAULT_HTTP_PORT = 3500;
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
-  private static final DaprProtocol DAPR_PROTOCOL = DaprProtocol.HTTP;
   private static final DockerImageName DEFAULT_IMAGE_NAME =
           DockerImageName.parse(DAPR_RUNTIME_IMAGE_TAG);
   private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
@@ -76,6 +75,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private DaprSchedulerContainer schedulerContainer;
   private String appName;
   private Integer appPort;
+  private DaprProtocol appProtocol;
   private String appHealthCheckPath;
   private Integer appHealthCheckProbeInterval = 5; //default from docs
   private Integer appHealthCheckProbeTimeout = 500; //default from docs
@@ -123,6 +123,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DaprContainer withAppPort(Integer port) {
     this.appPort = port;
+    return this;
+  }
+
+  public DaprContainer withAppProtocol(DaprProtocol protocol) {
+    this.appProtocol = protocol;
     return this;
   }
 
@@ -308,8 +313,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     cmds.add("--app-id");
     cmds.add(appName);
     cmds.add("--dapr-listen-addresses=0.0.0.0");
-    cmds.add("--app-protocol");
-    cmds.add(DAPR_PROTOCOL.getName());
     cmds.add("--placement-host-address");
     cmds.add(placementService + ":50005");
     cmds.add("--scheduler-host-address");
@@ -323,6 +326,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     if (appPort != null) {
       cmds.add("--app-port");
       cmds.add(Integer.toString(appPort));
+    }
+
+    if (appProtocol != null) {
+      cmds.add("--app-protocol");
+      cmds.add(appProtocol.getName());
     }
 
     if (appHealthCheckPath != null && !appHealthCheckPath.isEmpty()) {
@@ -411,6 +419,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public Integer getAppPort() {
     return appPort;
+  }
+
+  public DaprProtocol getAppProtocol() {
+    return appProtocol;
   }
 
   public String getAppHealthCheckPath() {
