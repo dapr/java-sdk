@@ -78,4 +78,22 @@ public class DaprContainerTest {
     assertEquals(3, dapr2.getAppHealthCheckThreshold());
 
   }
+
+  @Test
+  public void appProtocolDefaultsTest() {
+    try (DaprContainer daprContainer = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+            .withAppName("dapr-app")) {
+      daprContainer.configure();
+      assertEquals(DaprProtocol.HTTP, daprContainer.getAppProtocol());
+    }
+
+    DaprProtocol protocol = DaprProtocol.GRPC;
+    try (DaprContainer daprContainer = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+            .withAppName("dapr-app4")
+            .withAppProtocol(protocol)) {
+      daprContainer.configure();
+      assertEquals(protocol, daprContainer.getAppProtocol());
+    }
+
+  }
 }
