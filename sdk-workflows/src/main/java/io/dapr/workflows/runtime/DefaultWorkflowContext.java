@@ -246,7 +246,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    */
   @Override
   public UUID newUuid() {
-    return this.innerContext.newUUID();
+    return this.innerContext.newUuid();
   }
 
   private TaskOptions toTaskOptions(WorkflowTaskOptions options) {
