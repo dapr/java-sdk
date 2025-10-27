@@ -6,7 +6,6 @@ import org.testcontainers.utility.DockerImageName;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class DaprContainerTest {
 
@@ -81,22 +80,18 @@ public class DaprContainerTest {
   }
 
   @Test
-  public void appPortProtocolDefaultsTest() {
+  public void appProtocolDefaultsTest() {
     try (DaprContainer daprContainer = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("dapr-app")) {
       daprContainer.configure();
-      assertNull(daprContainer.getAppPort());
-      assertNull(daprContainer.getAppProtocol());
+      assertEquals(DaprProtocol.HTTP, daprContainer.getAppProtocol());
     }
 
-    Integer port = 50003;
     DaprProtocol protocol = DaprProtocol.GRPC;
     try (DaprContainer daprContainer = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("dapr-app4")
-            .withAppPort(port)
             .withAppProtocol(protocol)) {
       daprContainer.configure();
-      assertEquals(port, daprContainer.getAppPort());
       assertEquals(protocol, daprContainer.getAppProtocol());
     }
 

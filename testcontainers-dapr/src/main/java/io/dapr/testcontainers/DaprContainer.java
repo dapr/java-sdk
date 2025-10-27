@@ -75,7 +75,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private DaprSchedulerContainer schedulerContainer;
   private String appName;
   private Integer appPort;
-  private DaprProtocol appProtocol;
+  private DaprProtocol appProtocol = DaprProtocol.HTTP; // default from docs
   private String appHealthCheckPath;
   private Integer appHealthCheckProbeInterval = 5; //default from docs
   private Integer appHealthCheckProbeTimeout = 500; //default from docs
