@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<FindBugsFilter>
+  <Match>
+    <Package name="~io\.dapr\.spring.*"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+
+  <Match>
+    <Package name="~io\.dapr\.spring.*"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="~io.dapr.spring.boot.cloudconfig.configdata.*"/>
+    <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+  </Match>
+  <Match>
+    <Class name="~io.dapr.spring.boot.cloudconfig.*"/>
+    <Bug pattern="MS_EXPOSE_REP"/>
+  </Match>
+</FindBugsFilter>
