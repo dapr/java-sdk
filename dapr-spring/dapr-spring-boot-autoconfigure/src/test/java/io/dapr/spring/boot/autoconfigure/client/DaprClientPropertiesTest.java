@@ -71,8 +71,8 @@ public class DaprClientPropertiesTest {
     DaprClientProperties properties = new DaprClientProperties();
 
     SoftAssertions.assertSoftly(softAssertions -> {
-      softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
-      softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
+      softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost:50001");
+      softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost:3500");
       softAssertions.assertThat(properties.getHttpPort()).isEqualTo(3500);
       softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(50001);
       softAssertions.assertThat(properties.getApiToken()).isNull();
@@ -111,8 +111,8 @@ public class DaprClientPropertiesTest {
     ).run(context -> {
       DaprClientProperties properties = context.getBean(DaprClientProperties.class);
       SoftAssertions.assertSoftly(softly -> {
-        softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost:50001");
-        softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost:3500");
+        softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
+        softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
         softly.assertThat(properties.getHttpPort()).isEqualTo(3500);
         softly.assertThat(properties.getGrpcPort()).isEqualTo(50001);
       });
