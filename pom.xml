@@ -44,7 +44,7 @@
     <snakeyaml.version>2.0</snakeyaml.version>
     <testcontainers.version>1.21.3</testcontainers.version>
     <!-- Do NOT UPGRADE spring.version without checking springboot.version alignment -->
-    <springboot.version>3.4.6</springboot.version>
+    <springboot.version>3.4.9</springboot.version>
     <springframework.version>6.2.7</springframework.version>
     <!-- Do NOT UPGRADE springframework.version without checking springboot.version alignment -->
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
@@ -195,6 +195,34 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
         <version>${springboot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-bom</artifactId>
+        <version>${protobuf.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
