@@ -22,7 +22,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 public class DaprClientPropertiesTest {
 
-
   private final ApplicationContextRunner runner = new ApplicationContextRunner()
       .withUserConfiguration(EnableDaprClientProperties.class);
 
@@ -119,8 +118,6 @@ public class DaprClientPropertiesTest {
 
     });
   }
-
-
 
   @EnableConfigurationProperties(DaprClientProperties.class)
   static class EnableDaprClientProperties {
