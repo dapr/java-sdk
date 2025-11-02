@@ -111,8 +111,8 @@ public class DaprClientPropertiesTest {
     ).run(context -> {
       DaprClientProperties properties = context.getBean(DaprClientProperties.class);
       SoftAssertions.assertSoftly(softly -> {
-        softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
-        softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
+        softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost:50001");
+        softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost:3500");
         softly.assertThat(properties.getHttpPort()).isEqualTo(3500);
         softly.assertThat(properties.getGrpcPort()).isEqualTo(50001);
       });
