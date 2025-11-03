@@ -21,6 +21,7 @@ import io.dapr.springboot.examples.producer.workflow.RegisterCustomerActivity;
 import io.dapr.testcontainers.DaprContainer;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,12 +68,32 @@ class ProducerAppIT {
 
   }
 
+  @AfterEach
+  void cleanUp() {
+    controller.getAllEvents().clear();
+  }
 
   @Test
-  void testOrdersEndpointAndMessaging() throws InterruptedException, IOException {
+  void testOrdersOutboxEndpointAndMessaging() {
+    OrderDTO order = new OrderDTO("outbox-order-123", "Lorem ipsum", 1000);
 
     given().contentType(ContentType.JSON)
-            .body("{ \"id\": \"abc-123\",\"item\": \"the mars volta LP\",\"amount\": 1}")
+        .body(order)
+        .when()
+        .post("/orders/outbox")
+        .then()
+        .statusCode(200);
+
+    await().atMost(Duration.ofSeconds(15))
+        .until(controller.getAllEvents()::size, equalTo(1));
+
+  }
+
+  @Test
+  void testOrdersEndpointAndMessaging() {
+    OrderDTO order = new OrderDTO("abc-123", "the mars volta LP", 1);
+    given().contentType(ContentType.JSON)
+            .body(order)
             .when()
             .post("/orders")
             .then()
@@ -118,7 +139,7 @@ class ProducerAppIT {
   }
 
   @Test
-  void testCustomersWorkflows() throws InterruptedException, IOException {
+  void testCustomersWorkflows() {
 
     given().contentType(ContentType.JSON)
             .body("{\"customerName\": \"salaboy\"}")

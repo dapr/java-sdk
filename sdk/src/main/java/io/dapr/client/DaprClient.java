@@ -498,6 +498,21 @@ public interface DaprClient extends AutoCloseable {
    */
   Mono<Void> saveState(String storeName, String key, String etag, Object value, StateOptions options);
 
+
+  /**
+   * Save/Update a state.
+   *
+   * @param storeName The name of the state store.
+   * @param key            The key of the state.
+   * @param etag           The etag to be used.
+   * @param value          The value of the state.
+   * @param meta           The metadata to be set to the state.
+   * @param options        The Options to use for each state.
+   * @return a Mono plan of type Void.
+   */
+  Mono<Void> saveState(String storeName, String key, String etag, Object value, Map<String, String> meta,
+                       StateOptions options);
+
   /**
    * Delete a state.
    *
