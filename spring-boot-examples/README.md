@@ -1,12 +1,14 @@
 # Dapr Spring Boot and Testcontainers integration Example
 
-This example consists of two applications:
+This example consists of three applications:
 - Producer App: 
   - Publish messages using a Spring Messaging approach 
   - Store and retrieve information using Spring Data CrudRepository 
   - Implements a Workflow with Dapr Workflows
 - Consumer App:
   - Subscribe to messages
+- Cloud Config Demo:
+  - Import and use configs
 
 ## Running these examples from source code
 
@@ -27,7 +29,7 @@ expected_stdout_lines:
 background: true
 expected_return_code: 143
 sleep: 30
-timeout_seconds: 45
+timeout_seconds: 75
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -67,6 +69,31 @@ cd consumer-app/
 
 <!-- END_STEP -->
 The `consumer-app` starts in port `8081` by default.
+
+To run `cloud-config-demo`, you should run in a terminal (`cloud-config-demo` doesn't depends on two applications above):
+<!-- STEP
+name: Run Cloud Config Demo Service
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- 'Started CloudConfigApplication'
+background: true
+expected_return_code: 143
+sleep: 30
+timeout_seconds: 45
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+```sh
+cd cloud-config-demo/
+../../mvnw -Dspring-boot.run.arguments="--reuse=true" spring-boot:test-run
+```
+
+<!-- END_STEP -->
+
+The `cloud-config-demo` starts in port `8082` by default.
+
+It will work and gain secrets from secret store. you can also uncomment the lines in application.yaml to enable more configuration imports.
 
 ## Interacting with the applications
 
@@ -170,6 +197,28 @@ Let's book a follow up for the customer: salaboy
 Customer: salaboy follow-up done.
 Congratulations the customer: salaboy is happy!
 ```
+
+You can check the config in CloudConfig app, just run:
+
+<!-- STEP
+name: Send GET request to CloudConfig App
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- 'testvalue'
+background: true
+sleep: 1
+timeout_seconds: 2
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+```sh
+curl -X GET localhost:8082/config
+```
+
+<!-- END_STEP -->
+
+You will get `testvalue` in terminal stdout.
 
 ## Running on Kubernetes
 
