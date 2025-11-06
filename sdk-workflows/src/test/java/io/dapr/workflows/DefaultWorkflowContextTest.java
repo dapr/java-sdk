@@ -422,7 +422,7 @@ public class DefaultWorkflowContextTest {
   @Test
   public void newUuidTest() {
     context.newUuid();
-    verify(mockInnerContext, times(1)).newUUID();
+    verify(mockInnerContext, times(1)).newUuid();
   }
 
   @Test
