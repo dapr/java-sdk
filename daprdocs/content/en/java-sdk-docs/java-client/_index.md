@@ -632,6 +632,124 @@ try (DaprClient client = new DaprClientBuilder().build()) {
 
 Learn more about the [Dapr Java SDK packages available to add to your Java applications](https://dapr.github.io/java-sdk/).
 
+## Security
+
+### App API Token Authentication
+
+The building blocks like pubsub, input bindings, or jobs require Dapr to make incoming calls to your application, you can secure these requests using [Dapr App API Token Authentication]({{% ref app-api-token.md %}}). This ensures that only Dapr can invoke your application's endpoints.
+
+#### Understanding the two tokens
+
+Dapr uses two different tokens for securing communication. See [Properties]({{% ref properties.md %}}) for detailed information about both tokens:
+
+- **`DAPR_API_TOKEN`** (Your app → Dapr sidecar): Automatically handled by the Java SDK when using `DaprClient`
+- **`APP_API_TOKEN`** (Dapr → Your app): Requires server-side validation in your application
+
+The examples below show how to implement server-side validation for `APP_API_TOKEN`.
+
+#### Implementing server-side token validation
+
+When using gRPC protocol, implement a server interceptor to capture the metadata.
+
+```java
+import io.grpc.Context;
+import io.grpc.Contexts;
+import io.grpc.Metadata;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
+import io.grpc.ServerInterceptor;
+
+public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
+  public static final Context.Key<Metadata> METADATA_KEY = Context.key("grpc-metadata");
+  
+  // gRPC interceptor to capture metadata
+  public static class MetadataInterceptor implements ServerInterceptor {
+    @Override
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
+        ServerCall<ReqT, RespT> call,
+        Metadata headers,
+        ServerCallHandler<ReqT, RespT> next) {
+      Context contextWithMetadata = Context.current().withValue(METADATA_KEY, headers);
+      return Contexts.interceptCall(contextWithMetadata, call, headers, next);
+    }
+  }
+  
+  // Your service methods go here...
+}
+```
+
+Register the interceptor when building your gRPC server:
+
+```java
+Server server = ServerBuilder.forPort(port)
+    .intercept(new SubscriberGrpcService.MetadataInterceptor())
+    .addService(new SubscriberGrpcService())
+    .build();
+server.start();
+```
+
+Then, in your service methods, extract the token from metadata:
+
+```java
+@Override
+public void onTopicEvent(DaprAppCallbackProtos.TopicEventRequest request,
+    StreamObserver<DaprAppCallbackProtos.TopicEventResponse> responseObserver) {
+  try {
+    // Extract metadata from context
+    Context context = Context.current();
+    Metadata metadata = METADATA_KEY.get(context);
+    
+    if (metadata != null) {
+      String apiToken = metadata.get(
+          Metadata.Key.of("dapr-api-token", Metadata.ASCII_STRING_MARSHALLER));
+      
+      // Validate token accordingly
+    }
+    
+    // Process the request
+    // ...
+    
+  } catch (Throwable e) {
+    responseObserver.onError(e);
+  }
+}
+```
+
+#### Using with HTTP endpoints
+
+For HTTP-based endpoints, extract the token from the headers:
+
+```java
+@RestController
+public class SubscriberController {
+  
+  @PostMapping(path = "/endpoint")
+  public Mono<Void> handleRequest(
+      @RequestBody(required = false) byte[] body,
+      @RequestHeader Map<String, String> headers) {
+    return Mono.fromRunnable(() -> {
+      try {
+        // Extract the token from headers
+        String apiToken = headers.get("dapr-api-token");
+        
+        // Validate token accordingly
+        
+        // Process the request
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+}
+```
+
+#### Examples
+
+For working examples with pubsub, bindings, and jobs:
+- [PubSub with App API Token Authentication](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/pubsub#app-api-token-authentication-optional)
+- [Bindings with App API Token Authentication](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/bindings/http#app-api-token-authentication-optional)
+- [Jobs with App API Token Authentication](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/jobs#app-api-token-authentication-optional)
+
 ## Related links
 - [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples)
 
