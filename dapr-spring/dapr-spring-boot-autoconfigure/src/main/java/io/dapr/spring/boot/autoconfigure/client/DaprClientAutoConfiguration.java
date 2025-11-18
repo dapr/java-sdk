@@ -20,12 +20,16 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.config.Properties;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
+import io.micrometer.observation.ObservationRegistry;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -84,9 +88,12 @@ public class DaprClientAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  DaprWorkflowClient daprWorkflowClient(DaprConnectionDetails daprConnectionDetails) {
+  DaprWorkflowClient daprWorkflowClient(DaprConnectionDetails daprConnectionDetails,
+                                        @Nullable ObservationRegistry observationRegistry,
+                                        @Nullable Tracer tracer,
+                                        @Nullable Meter meter) {
     Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
-    return new DaprWorkflowClient(properties);
+    return new DaprWorkflowClient(properties,  observationRegistry, tracer, meter);
   }
 
   @Bean
