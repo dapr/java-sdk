@@ -48,8 +48,9 @@ public class Subscriber {
     int port = Integer.parseInt(cmd.getOptionValue("port"));
 
     //start a grpc server
-    Server server = ServerBuilder.forPort(port)  
-        .addService(new SubscriberGrpcService())  
+    Server server = ServerBuilder.forPort(port)
+        .intercept(new SubscriberGrpcService.MetadataInterceptor())
+        .addService(new SubscriberGrpcService())
         .addService(new BulkSubscriberGrpcService())  
         .build();  
     server.start();  

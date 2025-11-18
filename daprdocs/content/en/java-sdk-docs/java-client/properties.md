@@ -32,11 +32,16 @@ When these variables are set, the client will automatically use them to connect 
 | `DAPR_GRPC_PORT` | The gRPC port for the Dapr sidecar (legacy, `DAPR_GRPC_ENDPOINT` takes precedence) | `50001` |
 | `DAPR_HTTP_PORT` | The HTTP port for the Dapr sidecar (legacy, `DAPR_HTTP_ENDPOINT` takes precedence) | `3500` |
 
-### API Token
+### API Tokens
+
+Dapr supports two types of API tokens for securing communication:
 
 | Environment Variable | Description | Default |
 |---------------------|-------------|---------|
-| `DAPR_API_TOKEN` | API token for authentication between app and Dapr sidecar. This is the same token used by the Dapr runtime for API authentication. For more details, see [Dapr API token authentication](https://docs.dapr.io/operations/security/api-token/) and [Environment variables reference](https://docs.dapr.io/reference/environment/#dapr_api_token). | `null` |
+| `DAPR_API_TOKEN` | API token for authenticating requests **from your app to the Dapr sidecar**. The Java SDK automatically includes this token in requests when using `DaprClient`. | `null` |
+| `APP_API_TOKEN` | API token for authenticating requests **from Dapr to your app**. When set, Dapr includes this token in the `dapr-api-token` header/metadata when calling your application (for pubsub subscribers, input bindings, or job triggers). Your application must validate this token. | `null` |
+
+For implementation examples, see [App API Token Authentication]({{% ref java-client#app-api-token-authentication %}}). For more details, see [Dapr API token authentication](https://docs.dapr.io/operations/security/api-token/).
 
 ### gRPC Configuration
 
