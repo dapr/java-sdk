@@ -239,7 +239,7 @@ public class DaprWorkflowClient implements AutoCloseable {
     try {
       this.innerClient.resumeInstance(workflowInstanceId, reason);
     } finally {
-        span.end();
+      span.end();
     }
   }
 
