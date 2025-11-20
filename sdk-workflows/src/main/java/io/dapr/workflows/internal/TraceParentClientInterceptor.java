@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.workflows.internal;
 
-import io.dapr.client.Headers;
-import io.dapr.config.Properties;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -41,17 +39,27 @@ public class TraceParentClientInterceptor implements ClientInterceptor {
     // TBD: do we need timeout in workflow client?
     ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, options);
     return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
+
         @Override
         public void start(final Listener<RespT> responseListener, final Metadata metadata) {
           if (tracer == null) {
             super.start(responseListener, metadata);
           }
-          Span span = tracer.spanBuilder("dapr.workflow.scheduleNewWorkflow")
+          Span span = tracer.spanBuilder("dapr.workflow.grpc")
               .setAttribute("method", methodDescriptor.getFullMethodName())
               .setAttribute("options", options.toString())
               .setAttribute("metadata", metadata.toString())
               .startSpan();
           try {
+            String traceId = span.getSpanContext().getTraceId();
+            String traceState = span.getSpanContext().getTraceState().toString();
+            byte[] traceIdBytes = span.getSpanContext().getTraceIdBytes();
+            metadata.put(Metadata.Key.of("traceparent", Metadata.ASCII_STRING_MARSHALLER), traceId);
+            metadata.put(Metadata.Key.of("tracestate", Metadata.ASCII_STRING_MARSHALLER), traceState);
+            metadata.put(Metadata.Key.of("grpc-trace-bin", Metadata.BINARY_BYTE_MARSHALLER), traceIdBytes);
+            System.out.println("Trace Id in interceptor: " + traceId);
+            System.out.println("Trace State in interceptor: " + traceState);
+            System.out.println("Metadata at the interceptor: " + metadata);
             super.start(responseListener, metadata);
           } finally {
             span.end();

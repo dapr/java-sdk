@@ -73,7 +73,7 @@
     <junit-vintage-engine.version>5.7.0</junit-vintage-engine.version>
     <junit-platform-console.version>1.7.0</junit-platform-console.version>
     <reactor.version>3.5.12</reactor.version>
-    <durabletask-client.version>1.5.10</durabletask-client.version>
+    <durabletask-client.version>1.5.11-SNAPSHOT</durabletask-client.version>
     <testcontainers-redis.version>2.2.2</testcontainers-redis.version>
     <slf4j.version>2.0.9</slf4j.version>
     <mockito.version>3.11.2</mockito.version>

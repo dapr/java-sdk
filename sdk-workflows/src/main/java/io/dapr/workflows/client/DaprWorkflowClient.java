@@ -63,7 +63,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param properties Properties for the GRPC Channel.
    */
   public DaprWorkflowClient(Properties properties) {
-    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)));
+    this(properties, null, null, null);
   }
 
   /**
@@ -77,8 +77,7 @@ public class DaprWorkflowClient implements AutoCloseable {
   public DaprWorkflowClient(Properties properties, ObservationRegistry observationRegistry,
                             Tracer tracer, Meter meter) {
     this(NetworkUtils.buildGrpcManagedChannel(properties,
-        new ApiTokenClientInterceptor(properties),
-        new TraceParentClientInterceptor(tracer)));
+        new ApiTokenClientInterceptor(properties)), tracer);
     this.observationRegistry = observationRegistry;
     this.tracer = tracer;
     this.meter = meter;
@@ -90,8 +89,8 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    * @param grpcChannel ManagedChannel for GRPC channel.
    */
-  private DaprWorkflowClient(ManagedChannel grpcChannel) {
-    this(createDurableTaskClient(grpcChannel), grpcChannel);
+  private DaprWorkflowClient(ManagedChannel grpcChannel, Tracer tracer) {
+    this(createDurableTaskClient(grpcChannel, tracer), grpcChannel);
   }
 
   /**
@@ -551,9 +550,8 @@ public class DaprWorkflowClient implements AutoCloseable {
 
       return false;
     }
-    Span span = tracer.spanBuilder("dapr.workflow.waitForWorkflowCompletion")
-        .setAttribute("instanceId", instanceId)
-        .setAttribute("fetchInputOutput", getInputsAndOutputs)
+    Span span = tracer.spanBuilder("dapr.workflow.purgeWorkflow")
+        .setAttribute("instanceId", workflowInstanceId)
         .startSpan();
     try {
       PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
@@ -591,9 +589,10 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param grpcChannel ManagedChannel for GRPC.
    * @return a new instance of a DurableTaskClient with a GRPC channel.
    */
-  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel) {
+  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel, Tracer tracer) {
     return new DurableTaskGrpcClientBuilder()
         .grpcChannel(grpcChannel)
+        .tracer(tracer)
         .build();
   }
 
