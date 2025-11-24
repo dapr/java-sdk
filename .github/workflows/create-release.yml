@@ -29,7 +29,7 @@ jobs:
       JDK_VER: '17'
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.DAPR_BOT_TOKEN }}
