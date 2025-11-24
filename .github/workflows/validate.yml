@@ -43,7 +43,7 @@ jobs:
       DAPR_CLI_REF:
       DAPR_REF:
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up OpenJDK ${{ env.JDK_VER }}
         uses: actions/setup-java@v5
         with:
@@ -62,14 +62,14 @@ jobs:
         with:
           go-version: ${{ env.GOVER }}
       - name: Checkout Dapr CLI repo to override dapr command.
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         if: env.DAPR_CLI_REF != ''
         with:
           repository: dapr/cli
           ref: ${{ env.DAPR_CLI_REF }}
           path: cli
       - name: Checkout Dapr repo to override daprd.
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         if: env.DAPR_REF != ''
         with:
           repository: dapr/dapr
