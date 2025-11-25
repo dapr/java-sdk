@@ -55,7 +55,7 @@
     <surefire.version>3.2.2</surefire.version>
     <junit-bom.version>5.11.4</junit-bom.version>
     <snakeyaml.version>2.0</snakeyaml.version>
-    <testcontainers.version>1.21.3</testcontainers.version>
+    <testcontainers.version>1.20.5</testcontainers.version>
     <!-- Do NOT UPGRADE spring.version without checking springboot.version alignment -->
     <springboot.version>3.4.9</springboot.version>
     <springframework.version>6.2.7</springframework.version>
@@ -163,6 +163,44 @@
       <!-- ====================================================================== -->
       <!-- Direct dependencies - Only versions not managed by BOMs above         -->
       <!-- ====================================================================== -->
+      <!-- Testcontainers - Explicit declarations for compatibility -->
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>kafka</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>rabbitmq</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>toxiproxy</artifactId>
+        <version>${testcontainers.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>mysql</artifactId>
+        <version>${testcontainers.version}</version>
+        <scope>test</scope>
+      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
