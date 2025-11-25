@@ -43,7 +43,7 @@ public class Subscriber {
    */
   public static void main(String[] args) throws Exception {
     String topicName = getTopicName(args);
-    try (var client = new DaprClientBuilder().buildPreviewClient()) {
+    try (var client = new DaprClientBuilder().build()) {
       var subscription = client.subscribeToEvents(
           PUBSUB_NAME,
           topicName,
