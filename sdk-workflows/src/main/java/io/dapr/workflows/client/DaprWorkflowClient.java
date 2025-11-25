@@ -22,10 +22,15 @@ import io.dapr.durabletask.PurgeResult;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
+import io.dapr.workflows.internal.TraceParentClientInterceptor;
 import io.dapr.workflows.runtime.DefaultWorkflowInstanceStatus;
 import io.dapr.workflows.runtime.DefaultWorkflowState;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import io.micrometer.observation.ObservationRegistry;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 
 import javax.annotation.Nullable;
 
@@ -41,6 +46,9 @@ public class DaprWorkflowClient implements AutoCloseable {
   private ClientInterceptor workflowApiTokenInterceptor;
   private DurableTaskClient innerClient;
   private ManagedChannel grpcChannel;
+  private ObservationRegistry observationRegistry;
+  private Tracer tracer;
+  private Meter meter;
 
   /**
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
@@ -55,7 +63,25 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param properties Properties for the GRPC Channel.
    */
   public DaprWorkflowClient(Properties properties) {
-    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)));
+    this(properties, null, null, null);
+  }
+
+  /**
+   * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
+   *
+   * @param properties Properties for the GRPC Channel.
+   * @param observationRegistry micrometer observation registry.
+   * @param tracer otel tracer for traces.
+   * @param meter otel meter for metrics.
+   */
+  public DaprWorkflowClient(Properties properties, ObservationRegistry observationRegistry,
+                            Tracer tracer, Meter meter) {
+    this(NetworkUtils.buildGrpcManagedChannel(properties,
+        new ApiTokenClientInterceptor(properties)), tracer);
+    this.observationRegistry = observationRegistry;
+    this.tracer = tracer;
+    this.meter = meter;
+
   }
 
   /**
@@ -63,8 +89,8 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    * @param grpcChannel ManagedChannel for GRPC channel.
    */
-  private DaprWorkflowClient(ManagedChannel grpcChannel) {
-    this(createDurableTaskClient(grpcChannel), grpcChannel);
+  private DaprWorkflowClient(ManagedChannel grpcChannel, Tracer tracer) {
+    this(createDurableTaskClient(grpcChannel, tracer), grpcChannel);
   }
 
   /**
@@ -86,7 +112,17 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the randomly-generated instance ID for new Workflow instance.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName());
+    if (tracer == null) {
+      return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName());
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.scheduleNewWorkflow")
+        .setAttribute("workflow", clazz.getName())
+        .startSpan();
+    try {
+      return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName());
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -98,7 +134,18 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the randomly-generated instance ID for new Workflow instance.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input);
+    if (tracer == null) {
+      return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.scheduleNewWorkflow")
+        .setAttribute("workflow", clazz.getName())
+        .setAttribute("input", input.toString())
+        .startSpan();
+    try {
+      return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -111,7 +158,19 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the <code>instanceId</code> parameter value.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
+    if (tracer == null) {
+      return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.scheduleNewWorkflow")
+        .setAttribute("workflow", clazz.getName())
+        .setAttribute("input", input.toString())
+        .setAttribute("instanceId", instanceId)
+        .startSpan();
+    try {
+      return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -123,10 +182,22 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the <code>instanceId</code> parameter value.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOptions options) {
-    NewOrchestrationInstanceOptions orchestrationInstanceOptions = fromNewWorkflowOptions(options);
+    if (tracer == null) {
+      return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), options);
+    }
 
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(),
-        orchestrationInstanceOptions);
+    Span span = tracer.spanBuilder("dapr.workflow.scheduleNewWorkflow")
+        .setAttribute("workflow", clazz.getName())
+        .setAttribute("options", options.toString())
+        .startSpan();
+    try {
+      NewOrchestrationInstanceOptions orchestrationInstanceOptions = fromNewWorkflowOptions(options);
+
+      return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(),
+          orchestrationInstanceOptions);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -136,7 +207,18 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param reason             reason for suspending the workflow instance.
    */
   public void suspendWorkflow(String workflowInstanceId, @Nullable String reason) {
-    this.innerClient.suspendInstance(workflowInstanceId, reason);
+    if (tracer == null) {
+      this.innerClient.suspendInstance(workflowInstanceId, reason);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.suspendWorkflow")
+        .setAttribute("instanceId", workflowInstanceId)
+        .setAttribute("reason", reason)
+        .startSpan();
+    try {
+      this.innerClient.suspendInstance(workflowInstanceId, reason);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -146,7 +228,18 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param reason             reason for resuming the workflow instance.
    */
   public void resumeWorkflow(String workflowInstanceId, @Nullable String reason) {
-    this.innerClient.resumeInstance(workflowInstanceId, reason);
+    if (tracer == null) {
+      this.innerClient.suspendInstance(workflowInstanceId, reason);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.resumeWorkflow")
+        .setAttribute("instanceId", workflowInstanceId)
+        .setAttribute("reason", reason)
+        .startSpan();
+    try {
+      this.innerClient.resumeInstance(workflowInstanceId, reason);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -156,7 +249,18 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param output             the optional output to set for the terminated orchestration instance.
    */
   public void terminateWorkflow(String workflowInstanceId, @Nullable Object output) {
-    this.innerClient.terminate(workflowInstanceId, output);
+    if (tracer == null) {
+      this.innerClient.terminate(workflowInstanceId, output);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.terminateWorkflow")
+        .setAttribute("instanceId", workflowInstanceId)
+        .setAttribute("output", output.toString())
+        .startSpan();
+    try {
+      this.innerClient.terminate(workflowInstanceId, output);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -171,9 +275,20 @@ public class DaprWorkflowClient implements AutoCloseable {
   @Nullable
   @Deprecated(forRemoval = true)
   public WorkflowInstanceStatus getInstanceState(String instanceId, boolean getInputsAndOutputs) {
-    OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
-
-    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    if (tracer == null) {
+      OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.getInstanceState")
+        .setAttribute("instanceId", instanceId)
+        .setAttribute("fetchInputOutput", getInputsAndOutputs)
+        .startSpan();
+    try {
+      OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -186,9 +301,20 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   @Nullable
   public WorkflowState getWorkflowState(String instanceId, boolean getInputsAndOutputs) {
-    OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
-
-    return metadata == null ? null : new DefaultWorkflowState(metadata);
+    if (tracer == null) {
+      OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowState(metadata);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.getWorkflowState")
+        .setAttribute("instanceId", instanceId)
+        .setAttribute("fetchInputOutput", getInputsAndOutputs)
+        .startSpan();
+    try {
+      OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowState(metadata);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -214,9 +340,20 @@ public class DaprWorkflowClient implements AutoCloseable {
   public WorkflowInstanceStatus waitForInstanceStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
       throws TimeoutException {
 
-    OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
-
-    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    if (tracer == null) {
+      OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.waitForInstanceStart")
+        .setAttribute("instanceId", instanceId)
+        .setAttribute("fetchInputOutput", getInputsAndOutputs)
+        .startSpan();
+    try {
+      OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    } finally {
+      span.end();
+    }
   }
 
 
@@ -241,9 +378,20 @@ public class DaprWorkflowClient implements AutoCloseable {
   public WorkflowState waitForWorkflowStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
       throws TimeoutException {
 
-    OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
-
-    return metadata == null ? null : new DefaultWorkflowState(metadata);
+    if (tracer == null) {
+      OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowState(metadata);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.waitForWorkflowStart")
+        .setAttribute("instanceId", instanceId)
+        .setAttribute("fetchInputOutput", getInputsAndOutputs)
+        .startSpan();
+    try {
+      OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowState(metadata);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -271,9 +419,22 @@ public class DaprWorkflowClient implements AutoCloseable {
   public WorkflowInstanceStatus waitForInstanceCompletion(String instanceId, Duration timeout,
                                                           boolean getInputsAndOutputs) throws TimeoutException {
 
-    OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
-        getInputsAndOutputs);
-    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    if (tracer == null) {
+      OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
+          getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.waitForWorkflowStart")
+        .setAttribute("instanceId", instanceId)
+        .setAttribute("fetchInputOutput", getInputsAndOutputs)
+        .startSpan();
+    try {
+      OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
+          getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+    } finally {
+      span.end();
+    }
   }
 
 
@@ -300,9 +461,22 @@ public class DaprWorkflowClient implements AutoCloseable {
   public WorkflowState waitForWorkflowCompletion(String instanceId, Duration timeout,
                                                           boolean getInputsAndOutputs) throws TimeoutException {
 
-    OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
-        getInputsAndOutputs);
-    return metadata == null ? null : new DefaultWorkflowState(metadata);
+    if (tracer == null) {
+      OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
+          getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowState(metadata);
+    }
+    Span span = tracer.spanBuilder("dapr.workflow.waitForWorkflowCompletion")
+        .setAttribute("instanceId", instanceId)
+        .setAttribute("fetchInputOutput", getInputsAndOutputs)
+        .startSpan();
+    try {
+      OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
+          getInputsAndOutputs);
+      return metadata == null ? null : new DefaultWorkflowState(metadata);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -313,7 +487,20 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param eventPayload       The serializable data payload to include with the event.
    */
   public void raiseEvent(String workflowInstanceId, String eventName, Object eventPayload) {
-    this.innerClient.raiseEvent(workflowInstanceId, eventName, eventPayload);
+    if (tracer == null) {
+      this.innerClient.raiseEvent(workflowInstanceId, eventName, eventPayload);
+      return;
+    }
+
+    Span span = tracer.spanBuilder("dapr.workflow.raiseEvent")
+        .setAttribute("eventName", eventName)
+        .setAttribute("payload", eventPayload.toString())
+        .startSpan();
+    try {
+      this.innerClient.raiseEvent(workflowInstanceId, eventName, eventPayload);
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -325,13 +512,27 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   @Deprecated(forRemoval = true)
   public boolean purgeInstance(String workflowInstanceId) {
-    PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
+    if (tracer == null) {
+      PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
 
-    if (result != null) {
-      return result.getDeletedInstanceCount() > 0;
+      if (result != null) {
+        return result.getDeletedInstanceCount() > 0;
+      }
     }
+    Span span = tracer.spanBuilder("dapr.workflow.purgeInstance")
+        .setAttribute("instanceId", workflowInstanceId)
+        .startSpan();
+    try {
+      PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
 
-    return false;
+      if (result != null) {
+        return result.getDeletedInstanceCount() > 0;
+      }
+
+      return false;
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -341,13 +542,29 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return Return true if the workflow state was found and purged successfully otherwise false.
    */
   public boolean purgeWorkflow(String workflowInstanceId) {
-    PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
+    if (tracer == null) {
+      PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
 
-    if (result != null) {
-      return result.getDeletedInstanceCount() > 0;
+      if (result != null) {
+        return result.getDeletedInstanceCount() > 0;
+      }
+
+      return false;
     }
+    Span span = tracer.spanBuilder("dapr.workflow.purgeWorkflow")
+        .setAttribute("instanceId", workflowInstanceId)
+        .startSpan();
+    try {
+      PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
 
-    return false;
+      if (result != null) {
+        return result.getDeletedInstanceCount() > 0;
+      }
+
+      return false;
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -373,9 +590,10 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param grpcChannel ManagedChannel for GRPC.
    * @return a new instance of a DurableTaskClient with a GRPC channel.
    */
-  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel) {
+  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel, Tracer tracer) {
     return new DurableTaskGrpcClientBuilder()
         .grpcChannel(grpcChannel)
+        .tracer(tracer)
         .build();
   }
 
