@@ -8,6 +8,7 @@
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
     <version>1.17.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>dapr-sdk-tests</artifactId>
