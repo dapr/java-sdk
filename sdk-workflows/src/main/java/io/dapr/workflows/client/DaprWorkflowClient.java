@@ -489,6 +489,7 @@ public class DaprWorkflowClient implements AutoCloseable {
   public void raiseEvent(String workflowInstanceId, String eventName, Object eventPayload) {
     if (tracer == null) {
       this.innerClient.raiseEvent(workflowInstanceId, eventName, eventPayload);
+      return;
     }
 
     Span span = tracer.spanBuilder("dapr.workflow.raiseEvent")
