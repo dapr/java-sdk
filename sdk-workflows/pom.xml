@@ -77,7 +77,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <version>3.2.1</version>
+        <version>${maven-sources-plugin.version}</version>
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -91,7 +91,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>${maven-javadoc-plugin.version}</version>
         <configuration>
           <notimestamp>true</notimestamp>
         </configuration>
@@ -107,7 +107,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.11</version>
+        <version>${jacoco-maven-plugin.version}</version>
         <executions>
           <execution>
             <id>default-prepare-agent</id>
@@ -138,7 +138,7 @@
                     <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>80%</minimum>
+                      <minimum>${jacoco-maven-plugin.coverage-ratio}</minimum>
                     </limit>
                   </limits>
                 </rule>
