@@ -282,20 +282,6 @@ public interface DaprPreviewClient extends AutoCloseable {
 
   /**
    * Subscribe to pubsub events via streaming using Project Reactor Flux.
-   * <p>
-   * This method returns a reactive stream of events that can be processed using standard Reactor operators.
-   * Events are automatically acknowledged as SUCCESS when processed successfully, or RETRY when an error occurs.
-   * Users can control retry behavior using standard Flux operators like {@code retry()} and {@code onErrorResume()}.
-   * </p>
-   * <p>
-   * Example usage:
-   * <pre>{@code
-   * client.subscribeToEvents("pubsub", "orders", TypeRef.get(Order.class))
-   *     .doOnNext(order -> processOrder(order))
-   *     .retry(3)  // Retry up to 3 times on errors
-   *     .subscribe();
-   * }</pre>
-   * </p>
    * @param pubsubName Name of the pubsub component.
    * @param topic Name of the topic to subscribe to.
    * @param type Type for object deserialization.
