@@ -134,10 +134,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -497,43 +493,15 @@ public class DaprClientImpl extends AbstractDaprClient {
 
     return Flux.create(sink -> {
       var interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
-      BlockingQueue<DaprProtos.SubscribeTopicEventsRequestAlpha1> ackQueue = new LinkedBlockingQueue<>(50);
-      AtomicReference<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>> streamRef =
-          new AtomicReference<>();
-      AtomicBoolean running = new AtomicBoolean(true);
 
-      // Thread to send acknowledgments back to Dapr
-      Thread acker = new Thread(() -> {
-        while (running.get()) {
-          try {
-            var ackResponse = ackQueue.take();
-            if (ackResponse == null) {
-              continue;
-            }
+      // Use array wrapper to allow assignment within anonymous class (Java's effectively final requirement)
+      // This is simpler than AtomicReference since we don't need atomicity - just mutability
+      @SuppressWarnings("unchecked")
+      StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>[] streamHolder = new StreamObserver[1];
 
-            var stream = streamRef.get();
-            if (stream == null) {
-              Thread.sleep(100);
-              continue;
-            }
-
-            stream.onNext(ackResponse);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-          } catch (Exception e) {
-            try {
-              Thread.sleep(100);
-            } catch (InterruptedException ex) {
-              Thread.currentThread().interrupt();
-              return;
-            }
-          }
-        }
-      });
-
-      // Create the gRPC streaming observer
-      var stream = interceptedStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
+      // Create the gRPC bidirectional streaming observer
+      // Note: StreamObserver.onNext() is thread-safe, so we can send acks directly
+      streamHolder[0] = interceptedStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
         @Override
         public void onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1 response) {
           try {
@@ -562,9 +530,9 @@ public class DaprClientImpl extends AbstractDaprClient {
               sink.next(data);
             }
 
-            // Send SUCCESS acknowledgment
+            // Send SUCCESS acknowledgment directly (no blocking queue or thread needed)
             var ack = buildAckRequest(id, SubscriptionListener.Status.SUCCESS);
-            ackQueue.put(ack);
+            streamHolder[0].onNext(ack);
 
           } catch (Exception e) {
             // On error during processing, send RETRY acknowledgment
@@ -572,10 +540,12 @@ public class DaprClientImpl extends AbstractDaprClient {
               var id = response.getEventMessage().getId();
               if (id != null && !id.isEmpty()) {
                 var ack = buildAckRequest(id, SubscriptionListener.Status.RETRY);
-                ackQueue.put(ack);
+                streamHolder[0].onNext(ack);
               }
-            } catch (InterruptedException ex) {
-              Thread.currentThread().interrupt();
+            } catch (Exception ex) {
+              // If we can't send ack, propagate the error
+              sink.error(DaprException.propagate(ex));
+              return;
             }
             sink.error(DaprException.propagate(e));
           }
@@ -583,29 +553,22 @@ public class DaprClientImpl extends AbstractDaprClient {
 
         @Override
         public void onError(Throwable throwable) {
-          running.set(false);
           sink.error(DaprException.propagate(throwable));
         }
 
         @Override
         public void onCompleted() {
-          running.set(false);
           sink.complete();
         }
       });
 
-      streamRef.set(stream);
-      acker.start();
-
       // Send initial request to start receiving events
-      stream.onNext(request);
+      streamHolder[0].onNext(request);
 
       // Cleanup when Flux is cancelled or completed
       sink.onDispose(() -> {
-        running.set(false);
-        acker.interrupt();
         try {
-          stream.onCompleted();
+          streamHolder[0].onCompleted();
         } catch (Exception e) {
           // Ignore cleanup errors
         }
