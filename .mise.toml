@@ -1,0 +1,5 @@
+[tools]
+java = "temurin-17"
+
+[env]
+JAVA_HOME = "{{exec(command='mise where java')}}"
