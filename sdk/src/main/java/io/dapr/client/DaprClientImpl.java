@@ -96,6 +96,7 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
+import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.dapr.v1.DaprProtos.ActiveActorsCount;
@@ -133,6 +134,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -475,6 +480,139 @@ public class DaprClientImpl extends AbstractDaprClient {
     return buildSubscription(listener, type, request);
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
+    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+            .setTopic(topic)
+            .setPubsubName(pubsubName)
+            .build();
+    DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
+        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+            .setInitialRequest(initialRequest)
+            .build();
+
+    return Flux.create(sink -> {
+      var interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
+      BlockingQueue<DaprProtos.SubscribeTopicEventsRequestAlpha1> ackQueue = new LinkedBlockingQueue<>(50);
+      AtomicReference<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>> streamRef =
+          new AtomicReference<>();
+      AtomicBoolean running = new AtomicBoolean(true);
+
+      // Thread to send acknowledgments back to Dapr
+      Thread acker = new Thread(() -> {
+        while (running.get()) {
+          try {
+            var ackResponse = ackQueue.take();
+            if (ackResponse == null) {
+              continue;
+            }
+
+            var stream = streamRef.get();
+            if (stream == null) {
+              Thread.sleep(100);
+              continue;
+            }
+
+            stream.onNext(ackResponse);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          } catch (Exception e) {
+            try {
+              Thread.sleep(100);
+            } catch (InterruptedException ex) {
+              Thread.currentThread().interrupt();
+              return;
+            }
+          }
+        }
+      });
+
+      // Create the gRPC streaming observer
+      var stream = interceptedStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
+        @Override
+        public void onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1 response) {
+          try {
+            if (response.getEventMessage() == null) {
+              return;
+            }
+
+            var message = response.getEventMessage();
+            if ((message.getPubsubName() == null) || message.getPubsubName().isEmpty()) {
+              return;
+            }
+
+            var id = message.getId();
+            if ((id == null) || id.isEmpty()) {
+              return;
+            }
+
+            // Deserialize the event data
+            T data = null;
+            if (type != null) {
+              data = DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
+            }
+
+            // Emit the data to the Flux (only if not null)
+            if (data != null) {
+              sink.next(data);
+            }
+
+            // Send SUCCESS acknowledgment
+            var ack = buildAckRequest(id, SubscriptionListener.Status.SUCCESS);
+            ackQueue.put(ack);
+
+          } catch (Exception e) {
+            // On error during processing, send RETRY acknowledgment
+            try {
+              var id = response.getEventMessage().getId();
+              if (id != null && !id.isEmpty()) {
+                var ack = buildAckRequest(id, SubscriptionListener.Status.RETRY);
+                ackQueue.put(ack);
+              }
+            } catch (InterruptedException ex) {
+              Thread.currentThread().interrupt();
+            }
+            sink.error(DaprException.propagate(e));
+          }
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+          running.set(false);
+          sink.error(DaprException.propagate(throwable));
+        }
+
+        @Override
+        public void onCompleted() {
+          running.set(false);
+          sink.complete();
+        }
+      });
+
+      streamRef.set(stream);
+      acker.start();
+
+      // Send initial request to start receiving events
+      stream.onNext(request);
+
+      // Cleanup when Flux is cancelled or completed
+      sink.onDispose(() -> {
+        running.set(false);
+        acker.interrupt();
+        try {
+          stream.onCompleted();
+        } catch (Exception e) {
+          // Ignore cleanup errors
+        }
+      });
+    }, FluxSink.OverflowStrategy.BUFFER);
+  }
+
   @Nonnull
   private <T> Subscription<T> buildSubscription(
       SubscriptionListener<T> listener,
@@ -511,6 +649,23 @@ public class DaprClientImpl extends AbstractDaprClient {
     });
     subscription.start();
     return subscription;
+  }
+
+  @Nonnull
+  private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildAckRequest(
+      String id, SubscriptionListener.Status status) {
+    DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1 eventProcessed =
+        DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1.newBuilder()
+            .setId(id)
+            .setStatus(
+                DaprAppCallbackProtos.TopicEventResponse.newBuilder()
+                    .setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.valueOf(
+                        status.name()))
+                    .build())
+            .build();
+    return DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+        .setEventProcessed(eventProcessed)
+        .build();
   }
 
   @Override
