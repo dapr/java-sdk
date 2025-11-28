@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: cloud-config-demo
+  name: cloud-config-demo
+spec:
+  type: NodePort
+  ports:
+    - name: "cloud-config-demo"
+      port: 8082
+      targetPort: 8082
+      nodePort: 31002
+  selector:
+    app: cloud-config-demo
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: cloud-config-demo
+  name: cloud-config-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-config-demo
+  template:
+    metadata:
+      annotations:
+        dapr.io/app-id: cloud-config-demo
+        dapr.io/app-port: "8082"
+        dapr.io/enabled: "true"
+      labels:
+        app: cloud-config-demo
+    spec:
+      containers:
+        - image: localhost:5001/sb-cloud-config-demo
+          name: cloud-config-demo
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8082
+              name: cloud-config
