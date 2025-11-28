@@ -122,12 +122,9 @@ jobs:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
-    - name: Install Stable Docker
-      id: setup_docker
-      uses: docker/setup-docker-action@v4   
-    - name: Check Docker version
-      run: docker version     
     - uses: actions/checkout@v5
+    - name: Check Docker version
+      run: docker version
     - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v5
       with:
@@ -201,8 +198,6 @@ jobs:
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
-      env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v5
