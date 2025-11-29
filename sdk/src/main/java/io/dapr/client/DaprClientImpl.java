@@ -91,11 +91,13 @@ import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
+import io.dapr.internal.subscription.EventSubscriberStreamObserver;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
+import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.dapr.v1.DaprProtos.ActiveActorsCount;
@@ -475,6 +477,42 @@ public class DaprClientImpl extends AbstractDaprClient {
     return buildSubscription(listener, type, request);
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
+    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+            .setTopic(topic)
+            .setPubsubName(pubsubName)
+            .build();
+    DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
+        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+            .setInitialRequest(initialRequest)
+            .build();
+
+    return Flux.create(sink -> {
+      DaprGrpc.DaprStub interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
+      EventSubscriberStreamObserver<T> eventSubscriber = new EventSubscriberStreamObserver<>(
+          interceptedStub,
+          sink,
+          type,
+          this.objectSerializer
+      );
+      StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> requestStream = eventSubscriber.start(request);
+
+      // Cleanup when Flux is cancelled or completed
+      sink.onDispose(() -> {
+        try {
+          requestStream.onCompleted();
+        } catch (Exception e) {
+          // Ignore cleanup errors
+        }
+      });
+    }, FluxSink.OverflowStrategy.BUFFER);
+  }
+
   @Nonnull
   private <T> Subscription<T> buildSubscription(
       SubscriptionListener<T> listener,
@@ -511,6 +549,23 @@ public class DaprClientImpl extends AbstractDaprClient {
     });
     subscription.start();
     return subscription;
+  }
+
+  @Nonnull
+  private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildAckRequest(
+      String id, SubscriptionListener.Status status) {
+    DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1 eventProcessed =
+        DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1.newBuilder()
+            .setId(id)
+            .setStatus(
+                DaprAppCallbackProtos.TopicEventResponse.newBuilder()
+                    .setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.valueOf(
+                        status.name()))
+                    .build())
+            .build();
+    return DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+        .setEventProcessed(eventProcessed)
+        .build();
   }
 
   @Override

@@ -32,6 +32,7 @@ import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -271,11 +272,23 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param topic Name of the topic to subscribe to.
    * @param listener Callback methods to process events.
    * @param type Type for object deserialization.
-   * @return An active subscription.
    * @param <T> Type of object deserialization.
+   * @return An active subscription.
+   * @deprecated Use {@link #subscribeToEvents(String, String, TypeRef)} instead for a more reactive approach.
    */
+  @Deprecated
   <T> Subscription subscribeToEvents(
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux.
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param type Type for object deserialization.
+   * @return A Flux of deserialized event payloads.
+   * @param <T> Type of the event payload.
+   */
+  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
 
   /**
    * Schedules a job using the provided job request details.
