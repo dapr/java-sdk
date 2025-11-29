@@ -636,14 +636,14 @@ public class DaprPreviewClientGrpcTest {
       };
     }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
 
-    final Set<String> receivedEvents = Collections.synchronizedSet(new HashSet<>());
+    final AtomicInteger eventCount = new AtomicInteger(0);
     final Semaphore gotAll = new Semaphore(0);
 
     var disposable = previewClient.subscribeToEvents("pubsubname", "topic", TypeRef.STRING)
             .doOnNext(eventData -> {
               assertEquals(data, eventData);
-              receivedEvents.add(eventData);
-              if (receivedEvents.size() >= numEvents) {
+              int count = eventCount.incrementAndGet();
+              if (count >= numEvents) {
                 gotAll.release();
               }
             })
@@ -652,7 +652,7 @@ public class DaprPreviewClientGrpcTest {
     gotAll.acquire();
     disposable.dispose();
 
-    assertEquals(numEvents, receivedEvents.size());
+    assertEquals(numEvents, eventCount.get());
   }
 
   @Test

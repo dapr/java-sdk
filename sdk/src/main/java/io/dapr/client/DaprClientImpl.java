@@ -134,6 +134,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -494,14 +495,16 @@ public class DaprClientImpl extends AbstractDaprClient {
     return Flux.create(sink -> {
       var interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
 
-      // Use array wrapper to allow assignment within anonymous class (Java's effectively final requirement)
-      // This is simpler than AtomicReference since we don't need atomicity - just mutability
-      @SuppressWarnings("unchecked")
-      StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>[] streamHolder = new StreamObserver[1];
+      // We need AtomicReference because we're accessing the stream reference from within the anonymous
+      // StreamObserver implementation (to send acks). Java requires variables used in lambdas/anonymous
+      // classes to be effectively final, so we can't use a plain variable. AtomicReference provides
+      // the mutable container we need while keeping the reference itself final.
+      AtomicReference<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>> streamRef =
+          new AtomicReference<>();
 
       // Create the gRPC bidirectional streaming observer
       // Note: StreamObserver.onNext() is thread-safe, so we can send acks directly
-      streamHolder[0] = interceptedStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
+      streamRef.set(interceptedStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
         @Override
         public void onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1 response) {
           try {
@@ -509,18 +512,22 @@ public class DaprClientImpl extends AbstractDaprClient {
               return;
             }
 
-            var message = response.getEventMessage();
-            if ((message.getPubsubName() == null) || message.getPubsubName().isEmpty()) {
+            DaprAppCallbackProtos.TopicEventRequest message = response.getEventMessage();
+            String pubsubName = message.getPubsubName();
+
+            if (pubsubName == null || pubsubName.isEmpty()) {
               return;
             }
 
             var id = message.getId();
-            if ((id == null) || id.isEmpty()) {
+
+            if (id == null || id.isEmpty()) {
               return;
             }
 
             // Deserialize the event data
             T data = null;
+
             if (type != null) {
               data = DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
             }
@@ -530,23 +537,26 @@ public class DaprClientImpl extends AbstractDaprClient {
               sink.next(data);
             }
 
-            // Send SUCCESS acknowledgment directly (no blocking queue or thread needed)
+            // Send SUCCESS acknowledgment directly
             var ack = buildAckRequest(id, SubscriptionListener.Status.SUCCESS);
-            streamHolder[0].onNext(ack);
 
+            streamRef.get().onNext(ack);
           } catch (Exception e) {
             // On error during processing, send RETRY acknowledgment
             try {
               var id = response.getEventMessage().getId();
+
               if (id != null && !id.isEmpty()) {
                 var ack = buildAckRequest(id, SubscriptionListener.Status.RETRY);
-                streamHolder[0].onNext(ack);
+
+                streamRef.get().onNext(ack);
               }
             } catch (Exception ex) {
               // If we can't send ack, propagate the error
               sink.error(DaprException.propagate(ex));
               return;
             }
+
             sink.error(DaprException.propagate(e));
           }
         }
@@ -560,15 +570,15 @@ public class DaprClientImpl extends AbstractDaprClient {
         public void onCompleted() {
           sink.complete();
         }
-      });
+      }));
 
       // Send initial request to start receiving events
-      streamHolder[0].onNext(request);
+      streamRef.get().onNext(request);
 
       // Cleanup when Flux is cancelled or completed
       sink.onDispose(() -> {
         try {
-          streamHolder[0].onCompleted();
+          streamRef.get().onCompleted();
         } catch (Exception e) {
           // Ignore cleanup errors
         }
