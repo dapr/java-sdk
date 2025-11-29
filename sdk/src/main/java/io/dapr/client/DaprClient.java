@@ -15,11 +15,14 @@ package io.dapr.client;
 
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DaprMetadata;
+import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.GetJobRequest;
+import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
@@ -27,6 +30,7 @@ import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.SaveStateRequest;
+import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
@@ -701,6 +705,50 @@ public interface DaprClient extends AutoCloseable {
    * @return DaprMetadata containing Dapr Metadata from the metadata endpoint.
    */
   Mono<DaprMetadata> getMetadata();
+
+  /**
+   * Subscribe to pubsub via streaming.
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param listener Callback methods to process events.
+   * @param type Type for object deserialization.
+   * @return An active subscription.
+   * @param <T> Type of object deserialization.
+   */
+  <T> Subscription subscribeToEvents(
+      String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
+
+  /**
+   * Schedules a job using the provided job request details.
+   *
+   * @param scheduleJobRequest The request containing the details of the job to schedule.
+   *                         Must include a name and optional schedule, data, and other related properties.
+   * @return A {@link Mono} that completes when the job scheduling operation is successful or raises an error.
+   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
+   */
+  public Mono<Void> scheduleJob(ScheduleJobRequest scheduleJobRequest);
+
+  /**
+   * Retrieves details of a specific job.
+   *
+   * @param getJobRequest The request containing the job name for which the details are to be fetched.
+   *      The name property is mandatory.
+   * @return A {@link Mono} that emits the {@link GetJobResponse} containing job details or raises an
+   *      error if the job is not found.
+   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
+   */
+
+  public Mono<GetJobResponse> getJob(GetJobRequest getJobRequest);
+
+  /**
+   * Deletes a job based on the given request.
+   *
+   * @param deleteJobRequest The request containing the job name to be deleted.
+   *                        The name property is mandatory.
+   * @return A {@link Mono} that completes when the job is successfully deleted or raises an error.
+   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
+   */
+  public Mono<Void> deleteJob(DeleteJobRequest deleteJobRequest);
 
   /**
    * Gracefully shutdown the dapr runtime.
