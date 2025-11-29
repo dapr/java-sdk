@@ -17,50 +17,60 @@ import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.DaprAppCallbackProtos;
+import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.FluxSink;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
  * StreamObserver implementation for subscribing to Dapr pub/sub events.
- * <p>
- * This class handles the bidirectional gRPC streaming for event subscriptions, including:
- * <ul>
- *   <li>Receiving events from Dapr</li>
- *   <li>Deserializing event payloads</li>
- *   <li>Emitting deserialized data to a Reactor Flux</li>
- *   <li>Sending acknowledgments (SUCCESS/RETRY) back to Dapr</li>
- * </ul>
- * </p>
+ * Thread Safety: This class relies on gRPC's StreamObserver contract, which guarantees that
+ * onNext(), onError(), and onCompleted() are never called concurrently and always from the
+ * same thread. Therefore, no additional synchronization is needed.
  *
  * @param <T> The type of the event payload
  */
 public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1> {
 
+  private final DaprGrpc.DaprStub stub;
   private final FluxSink<T> sink;
   private final TypeRef<T> type;
   private final DaprObjectSerializer objectSerializer;
-  private final AtomicReference<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>> requestStreamRef;
+
+  private StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> requestStream;
 
   /**
    * Creates a new EventSubscriberStreamObserver.
    *
+   * @param stub              The gRPC stub for making Dapr service calls
    * @param sink              The FluxSink to emit deserialized events to
    * @param type              The TypeRef for deserializing event payloads
    * @param objectSerializer  The serializer to use for deserialization
-   * @param requestStreamRef  Reference to the request stream for sending acknowledgments
    */
   public EventSubscriberStreamObserver(
+      DaprGrpc.DaprStub stub,
       FluxSink<T> sink,
       TypeRef<T> type,
-      DaprObjectSerializer objectSerializer,
-      AtomicReference<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>> requestStreamRef) {
+      DaprObjectSerializer objectSerializer) {
+    this.stub = stub;
     this.sink = sink;
     this.type = type;
     this.objectSerializer = objectSerializer;
-    this.requestStreamRef = requestStreamRef;
+  }
+
+  /** Starts the subscription by sending the initial request.
+   *
+   * @param request The subscription request
+   * @return The StreamObserver to send further requests (acknowledgments)
+   */
+  public StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> start(
+      DaprProtos.SubscribeTopicEventsRequestAlpha1 request
+  ) {
+    requestStream = stub.subscribeTopicEventsAlpha1(this);
+
+    requestStream.onNext(request);
+
+    return requestStream;
   }
 
   @Override
@@ -98,7 +108,7 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
       // Send SUCCESS acknowledgment directly
       var ack = buildSuccessAck(id);
 
-      requestStreamRef.get().onNext(ack);
+      requestStream.onNext(ack);
     } catch (Exception e) {
       // On error during processing, send RETRY acknowledgment
       try {
@@ -107,7 +117,7 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
         if (id != null && !id.isEmpty()) {
           var ack = buildRetryAck(id);
 
-          requestStreamRef.get().onNext(ack);
+          requestStream.onNext(ack);
         }
       } catch (Exception ex) {
         // If we can't send ack, propagate the error
@@ -162,12 +172,7 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
 
   /**
    * Builds an acknowledgment request with the specified status.
-   * <p>
-   * This method directly uses the protobuf enum instead of depending on
-   * {@code SubscriptionListener.Status} to keep this class independent
-   * of the older callback-based API.
-   * </p>
-   *
+   * 
    * @param eventId The ID of the event to acknowledge
    * @param status  The acknowledgment status (SUCCESS, RETRY, or DROP)
    * @return The acknowledgment request

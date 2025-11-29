@@ -135,7 +135,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -494,33 +493,19 @@ public class DaprClientImpl extends AbstractDaprClient {
             .build();
 
     return Flux.create(sink -> {
-      var interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
-
-      // We need AtomicReference because we're accessing the stream reference from within the
-      // EventSubscriberStreamObserver (to send acks). Java requires variables used in lambdas/anonymous
-      // classes to be effectively final, so we can't use a plain variable. AtomicReference provides
-      // the mutable container we need while keeping the reference itself final.
-      AtomicReference<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>> streamRef =
-          new AtomicReference<>();
-
-      // Create the gRPC bidirectional streaming observer
-      // Note: StreamObserver.onNext() is thread-safe, so we can send acks directly
-      EventSubscriberStreamObserver<T> observer = new EventSubscriberStreamObserver<>(
+      DaprGrpc.DaprStub interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
+      EventSubscriberStreamObserver<T> eventSubscriber = new EventSubscriberStreamObserver<>(
+          interceptedStub,
           sink,
           type,
-          this.objectSerializer,
-          streamRef
+          this.objectSerializer
       );
-
-      streamRef.set(interceptedStub.subscribeTopicEventsAlpha1(observer));
-
-      // Send initial request to start receiving events
-      streamRef.get().onNext(request);
+      StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> requestStream = eventSubscriber.start(request);
 
       // Cleanup when Flux is cancelled or completed
       sink.onDispose(() -> {
         try {
-          streamRef.get().onCompleted();
+          requestStream.onCompleted();
         } catch (Exception e) {
           // Ignore cleanup errors
         }
