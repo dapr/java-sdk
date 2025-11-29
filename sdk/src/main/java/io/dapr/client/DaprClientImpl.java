@@ -91,6 +91,7 @@ import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
+import io.dapr.internal.subscription.EventSubscriberStreamObserver;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
@@ -495,8 +496,8 @@ public class DaprClientImpl extends AbstractDaprClient {
     return Flux.create(sink -> {
       var interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
 
-      // We need AtomicReference because we're accessing the stream reference from within the anonymous
-      // StreamObserver implementation (to send acks). Java requires variables used in lambdas/anonymous
+      // We need AtomicReference because we're accessing the stream reference from within the
+      // EventSubscriberStreamObserver (to send acks). Java requires variables used in lambdas/anonymous
       // classes to be effectively final, so we can't use a plain variable. AtomicReference provides
       // the mutable container we need while keeping the reference itself final.
       AtomicReference<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>> streamRef =
@@ -504,73 +505,14 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       // Create the gRPC bidirectional streaming observer
       // Note: StreamObserver.onNext() is thread-safe, so we can send acks directly
-      streamRef.set(interceptedStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
-        @Override
-        public void onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1 response) {
-          try {
-            if (response.getEventMessage() == null) {
-              return;
-            }
+      EventSubscriberStreamObserver<T> observer = new EventSubscriberStreamObserver<>(
+          sink,
+          type,
+          this.objectSerializer,
+          streamRef
+      );
 
-            DaprAppCallbackProtos.TopicEventRequest message = response.getEventMessage();
-            String pubsubName = message.getPubsubName();
-
-            if (pubsubName == null || pubsubName.isEmpty()) {
-              return;
-            }
-
-            var id = message.getId();
-
-            if (id == null || id.isEmpty()) {
-              return;
-            }
-
-            // Deserialize the event data
-            T data = null;
-
-            if (type != null) {
-              data = DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
-            }
-
-            // Emit the data to the Flux (only if not null)
-            if (data != null) {
-              sink.next(data);
-            }
-
-            // Send SUCCESS acknowledgment directly
-            var ack = buildAckRequest(id, SubscriptionListener.Status.SUCCESS);
-
-            streamRef.get().onNext(ack);
-          } catch (Exception e) {
-            // On error during processing, send RETRY acknowledgment
-            try {
-              var id = response.getEventMessage().getId();
-
-              if (id != null && !id.isEmpty()) {
-                var ack = buildAckRequest(id, SubscriptionListener.Status.RETRY);
-
-                streamRef.get().onNext(ack);
-              }
-            } catch (Exception ex) {
-              // If we can't send ack, propagate the error
-              sink.error(DaprException.propagate(ex));
-              return;
-            }
-
-            sink.error(DaprException.propagate(e));
-          }
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-          sink.error(DaprException.propagate(throwable));
-        }
-
-        @Override
-        public void onCompleted() {
-          sink.complete();
-        }
-      }));
+      streamRef.set(interceptedStub.subscribeTopicEventsAlpha1(observer));
 
       // Send initial request to start receiving events
       streamRef.get().onNext(request);
