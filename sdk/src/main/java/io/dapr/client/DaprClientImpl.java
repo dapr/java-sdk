@@ -97,7 +97,6 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
-import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.dapr.v1.DaprProtos.ActiveActorsCount;
@@ -549,23 +548,6 @@ public class DaprClientImpl extends AbstractDaprClient {
     });
     subscription.start();
     return subscription;
-  }
-
-  @Nonnull
-  private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildAckRequest(
-      String id, SubscriptionListener.Status status) {
-    DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1 eventProcessed =
-        DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1.newBuilder()
-            .setId(id)
-            .setStatus(
-                DaprAppCallbackProtos.TopicEventResponse.newBuilder()
-                    .setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.valueOf(
-                        status.name()))
-                    .build())
-            .build();
-    return DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
-        .setEventProcessed(eventProcessed)
-        .build();
   }
 
   @Override
