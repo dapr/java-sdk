@@ -2098,32 +2098,29 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Flux.create(sink -> {
         // Create response observer to receive encrypted data
-        StreamObserver<DaprProtos.EncryptResponse> responseObserver = new StreamObserver<DaprProtos.EncryptResponse>() {
-          @Override
-          public void onNext(DaprProtos.EncryptResponse response) {
-            if (response.hasPayload()) {
-              byte[] data = response.getPayload().getData().toByteArray();
-              if (data.length > 0) {
-                sink.next(data);
+        final StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+            new StreamObserver<DaprProtos.EncryptResponse>() {
+              @Override
+              public void onNext(DaprProtos.EncryptResponse response) {
+                if (response.hasPayload()) {
+                  byte[] data = response.getPayload().getData().toByteArray();
+                  if (data.length > 0) {
+                    sink.next(data);
+                  }
+                }
               }
-            }
-          }
 
-          @Override
-          public void onError(Throwable t) {
-            sink.error(DaprException.propagate(new DaprException("ENCRYPT_ERROR", 
-                "Error during encryption: " + t.getMessage(), t)));
-          }
+              @Override
+              public void onError(Throwable t) {
+                sink.error(DaprException.propagate(new DaprException("ENCRYPT_ERROR",
+                    "Error during encryption: " + t.getMessage(), t)));
+              }
 
-          @Override
-          public void onCompleted() {
-            sink.complete();
-          }
-        };
-
-        // Get the request stream observer from gRPC
-        StreamObserver<DaprProtos.EncryptRequest> requestObserver = 
-            intercept(null, asyncStub).encryptAlpha1(responseObserver);
+              @Override
+              public void onCompleted() {
+                sink.complete();
+              }
+            };
 
         // Build options for the first message
         DaprProtos.EncryptRequestOptions.Builder optionsBuilder = DaprProtos.EncryptRequestOptions.newBuilder()
@@ -2142,6 +2139,10 @@ public class DaprClientImpl extends AbstractDaprClient {
         final DaprProtos.EncryptRequestOptions options = optionsBuilder.build();
         final long[] sequenceNumber = {0};
         final boolean[] firstMessage = {true};
+
+        // Get the request stream observer from gRPC
+        final StreamObserver<DaprProtos.EncryptRequest> requestObserver = 
+            intercept(null, asyncStub).encryptAlpha1(responseObserver);
 
         // Subscribe to the plaintext stream and send chunks
         request.getPlainTextStream()
@@ -2193,32 +2194,29 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Flux.create(sink -> {
         // Create response observer to receive decrypted data
-        StreamObserver<DaprProtos.DecryptResponse> responseObserver = new StreamObserver<DaprProtos.DecryptResponse>() {
-          @Override
-          public void onNext(DaprProtos.DecryptResponse response) {
-            if (response.hasPayload()) {
-              byte[] data = response.getPayload().getData().toByteArray();
-              if (data.length > 0) {
-                sink.next(data);
+        final StreamObserver<DaprProtos.DecryptResponse> responseObserver =
+            new StreamObserver<DaprProtos.DecryptResponse>() {
+              @Override
+              public void onNext(DaprProtos.DecryptResponse response) {
+                if (response.hasPayload()) {
+                  byte[] data = response.getPayload().getData().toByteArray();
+                  if (data.length > 0) {
+                    sink.next(data);
+                  }
+                }
               }
-            }
-          }
 
-          @Override
-          public void onError(Throwable t) {
-            sink.error(DaprException.propagate(new DaprException("DECRYPT_ERROR", 
-                "Error during decryption: " + t.getMessage(), t)));
-          }
+              @Override
+              public void onError(Throwable t) {
+                sink.error(DaprException.propagate(new DaprException("DECRYPT_ERROR",
+                    "Error during decryption: " + t.getMessage(), t)));
+              }
 
-          @Override
-          public void onCompleted() {
-            sink.complete();
-          }
-        };
-
-        // Get the request stream observer from gRPC
-        StreamObserver<DaprProtos.DecryptRequest> requestObserver = 
-            intercept(null, asyncStub).decryptAlpha1(responseObserver);
+              @Override
+              public void onCompleted() {
+                sink.complete();
+              }
+            };
 
         // Build options for the first message
         DaprProtos.DecryptRequestOptions.Builder optionsBuilder = DaprProtos.DecryptRequestOptions.newBuilder()
@@ -2231,6 +2229,10 @@ public class DaprClientImpl extends AbstractDaprClient {
         final DaprProtos.DecryptRequestOptions options = optionsBuilder.build();
         final long[] sequenceNumber = {0};
         final boolean[] firstMessage = {true};
+
+        // Get the request stream observer from gRPC
+        final StreamObserver<DaprProtos.DecryptRequest> requestObserver = 
+            intercept(null, asyncStub).decryptAlpha1(responseObserver);
 
         // Subscribe to the ciphertext stream and send chunks
         request.getCipherTextStream()
