@@ -21,7 +21,9 @@ import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationRequestAlpha2;
 import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.ConversationResponseAlpha2;
+import io.dapr.client.domain.DecryptRequestAlpha1;
 import io.dapr.client.domain.DeleteJobRequest;
+import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.LockRequest;
@@ -32,6 +34,7 @@ import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -325,4 +328,24 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return {@link ConversationResponseAlpha2}.
    */
   public Mono<ConversationResponseAlpha2> converseAlpha2(ConversationRequestAlpha2 conversationRequestAlpha2);
+
+  /**
+   * Encrypt data using the Dapr cryptography building block.
+   * This method uses streaming to handle large payloads efficiently.
+   *
+   * @param request The encryption request containing component name, key information, and plaintext stream.
+   * @return A Flux of encrypted byte arrays (ciphertext chunks).
+   * @throws IllegalArgumentException if required parameters are missing.
+   */
+  Flux<byte[]> encrypt(EncryptRequestAlpha1 request);
+
+  /**
+   * Decrypt data using the Dapr cryptography building block.
+   * This method uses streaming to handle large payloads efficiently.
+   *
+   * @param request The decryption request containing component name, optional key name, and ciphertext stream.
+   * @return A Flux of decrypted byte arrays (plaintext chunks).
+   * @throws IllegalArgumentException if required parameters are missing.
+   */
+  Flux<byte[]> decrypt(DecryptRequestAlpha1 request);
 }
