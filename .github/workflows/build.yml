@@ -153,8 +153,6 @@ jobs:
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -Pintegration-tests dependency:copy-dependencies verify
-      env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v5
