@@ -58,13 +58,12 @@ public class DaprWorkflowsConfiguration implements ApplicationContextAware {
     for (WorkflowActivity activity :  workflowActivitiesBeans.values()) {
       // Get the @Component annotation
       Component componentAnnotation = activity.getClass().getAnnotation(Component.class);
-
+      activity.getName()
       if (componentAnnotation != null) {
         var componentValue = componentAnnotation.value();
         if (StringUtils.isNotEmpty(componentValue)) {
           LOGGER.info("Dapr Workflow Activity: '{}' with name '{}' registered", activity.getClass().getName(), componentValue);
           workflowRuntimeBuilder.registerActivity(componentValue, activity);
-          return;
         }
       }
 
