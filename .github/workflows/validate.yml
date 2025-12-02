@@ -185,4 +185,9 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
+      - name: Validate crypto example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/crypto/README.md
+
 

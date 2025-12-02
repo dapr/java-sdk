@@ -1,0 +1,13 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: localstoragecrypto
+spec:
+  type: crypto.dapr.localstorage
+  version: v1
+  metadata:
+    # Path to the directory containing keys (PEM files)
+    # On Linux/Mac: ~/.dapr/keys
+    # On Windows: %USERPROFILE%\.dapr\keys
+    - name: path
+      value: "${HOME}/.dapr/keys"
