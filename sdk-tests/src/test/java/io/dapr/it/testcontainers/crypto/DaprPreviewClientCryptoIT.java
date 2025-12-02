@@ -111,6 +111,11 @@ public class DaprPreviewClientCryptoIT {
 
     Path keyFile = keysDir.resolve(KEY_NAME);
     Files.writeString(keyFile, combinedPem);
+    
+    // Make the key file and directory readable by all (needed for container access)
+    keyFile.toFile().setReadable(true, false);
+    keysDir.toFile().setReadable(true, false);
+    keysDir.toFile().setExecutable(true, false);
   }
 
   @BeforeAll
