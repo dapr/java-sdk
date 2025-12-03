@@ -2220,7 +2220,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
         // Build options for the first message
         DaprProtos.DecryptRequestOptions.Builder optionsBuilder = DaprProtos.DecryptRequestOptions.newBuilder()
-            .setComponentName(request.getComponentName())
+            .setComponentName(request.getComponentName());
 
         if (request.getKeyName() != null && !request.getKeyName().isEmpty()) {
           optionsBuilder.setKeyName(request.getKeyName());
