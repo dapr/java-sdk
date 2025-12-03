@@ -17,6 +17,7 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationRequestAlpha2;
 import io.dapr.client.domain.ConversationResponse;
@@ -285,10 +286,10 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param pubsubName Name of the pubsub component.
    * @param topic Name of the topic to subscribe to.
    * @param type Type for object deserialization.
-   * @return A Flux of deserialized event payloads.
+   * @return A Flux of CloudEvents containing deserialized event payloads and metadata.
    * @param <T> Type of the event payload.
    */
-  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
+  <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
 
   /**
    * Schedules a job using the provided job request details.

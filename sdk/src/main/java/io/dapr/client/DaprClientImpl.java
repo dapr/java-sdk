@@ -480,7 +480,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
+  public <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
     DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
         DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
@@ -506,7 +506,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         try {
           requestStream.onCompleted();
         } catch (Exception e) {
-          // Ignore cleanup errors
+          logger.debug("Completing the subscription stream resulted in an error: {}", e.getMessage());
         }
       });
     }, FluxSink.OverflowStrategy.BUFFER);

@@ -640,8 +640,11 @@ public class DaprPreviewClientGrpcTest {
     final Semaphore gotAll = new Semaphore(0);
 
     var disposable = previewClient.subscribeToEvents("pubsubname", "topic", TypeRef.STRING)
-            .doOnNext(eventData -> {
-              assertEquals(data, eventData);
+            .doOnNext(cloudEvent -> {
+              assertEquals(data, cloudEvent.getData());
+              assertEquals("pubsubname", cloudEvent.getPubsubName());
+              assertEquals("topic", cloudEvent.getTopic());
+              assertNotNull(cloudEvent.getId());
               int count = eventCount.incrementAndGet();
               if (count >= numEvents) {
                 gotAll.release();
