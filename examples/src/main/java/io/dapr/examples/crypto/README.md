@@ -43,31 +43,9 @@ cd examples
 
 Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
 
-### Setting Up the Cryptography Component
-
-Before running the examples, you need to set up a cryptography component. This example uses the local storage crypto component.
-
-1. Create a directory for your keys:
-
-```bash
-mkdir -p ~/.dapr/keys
-```
-
-2. Generate an RSA key pair (you can use OpenSSL):
-
-```bash
-# Generate a 4096-bit RSA private key
-openssl genrsa -out ~/.dapr/keys/mykey 4096
-
-# Extract the public key
-openssl rsa -in ~/.dapr/keys/mykey -pubout -out ~/.dapr/keys/mykey.pub
-```
-
-The component configuration file is already provided in `./components/crypto/localstorage.yaml`.
-
 ### Running the Example
 
-This example uses the Java SDK Dapr client to **Encrypt and Decrypt** data.
+This example uses the Java SDK Dapr client to **Encrypt and Decrypt** data. The example automatically generates RSA keys if they don't exist.
 
 #### Example 1: Basic Crypto Example
 
@@ -76,13 +54,13 @@ This example uses the Java SDK Dapr client to **Encrypt and Decrypt** data.
 ```java
 public class CryptoExample {
   private static final String CRYPTO_COMPONENT_NAME = "localstoragecrypto";
-  private static final String KEY_NAME = "mykey";
-  private static final String KEY_WRAP_ALGORITHM = "RSA-OAEP-256";
+  private static final String KEY_NAME = "rsa-private-key";
+  private static final String KEY_WRAP_ALGORITHM = "RSA";
 
   public static void main(String[] args) {
     try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
-      
-      String originalMessage = "Hello, Dapr Cryptography!";
+
+      String originalMessage = "This is a secret message";
       byte[] plainText = originalMessage.getBytes(StandardCharsets.UTF_8);
 
       // Encrypt the message
@@ -92,7 +70,7 @@ public class CryptoExample {
           KEY_NAME,
           KEY_WRAP_ALGORITHM
       );
-      
+
       byte[] encryptedData = client.encrypt(encryptRequest)
           .collectList()
           .map(chunks -> /* combine chunks */)
@@ -103,7 +81,7 @@ public class CryptoExample {
           CRYPTO_COMPONENT_NAME,
           Flux.just(encryptedData)
       );
-      
+
       byte[] decryptedData = client.decrypt(decryptRequest)
           .collectList()
           .map(chunks -> /* combine chunks */)
@@ -118,7 +96,7 @@ Use the following command to run this example:
 <!-- STEP
 name: Run Crypto Example
 expected_stdout_lines:
-  - "== APP == ✓ Success! The decrypted message matches the original."
+  - "== APP == SUCCESS: The decrypted message matches the original."
 background: true
 output_match_mode: substring
 sleep: 10
@@ -145,7 +123,7 @@ dapr run --resources-path ./components/crypto --app-id crypto-app --dapr-http-po
 
 ```
 === Dapr Cryptography Example ===
-Original message: Hello, Dapr Cryptography! This is a secret message.
+Original message: This is a secret message
 
 Encrypting message...
 Encryption successful!
@@ -153,9 +131,9 @@ Encrypted data length: 512 bytes
 
 Decrypting message...
 Decryption successful!
-Decrypted message: Hello, Dapr Cryptography! This is a secret message.
+Decrypted message: This is a secret message
 
-✓ Success! The decrypted message matches the original.
+SUCCESS: The decrypted message matches the original.
 ```
 
 ### Supported Key Wrap Algorithms

@@ -21,44 +21,50 @@ import io.dapr.config.Properties;
 import io.dapr.config.Property;
 import reactor.core.publisher.Flux;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.Map;
 
 /**
  * CryptoExample demonstrates using the Dapr Cryptography building block
  * to encrypt and decrypt data using a cryptography component.
- * 
+ *
  * <p>This example shows:
  * <ul>
  *   <li>Encrypting plaintext data with a specified key and algorithm</li>
  *   <li>Decrypting ciphertext data back to plaintext</li>
- *   <li>Working with streaming data for large payloads</li>
+ *   <li>Automatic key generation if keys don't exist</li>
  * </ul>
- * 
+ *
  * <p>Prerequisites:
  * <ul>
  *   <li>Dapr installed and initialized</li>
  *   <li>A cryptography component configured (e.g., local storage crypto)</li>
- *   <li>A key pair available for the crypto component</li>
  * </ul>
  */
 public class CryptoExample {
 
-  // The crypto component name as defined in the component YAML file
   private static final String CRYPTO_COMPONENT_NAME = "localstoragecrypto";
-  
-  // The key name to use for encryption/decryption
-  private static final String KEY_NAME = "mykey";
-  
-  // The key wrap algorithm - RSA-OAEP-256 for RSA keys
-  private static final String KEY_WRAP_ALGORITHM = "RSA-OAEP-256";
+  private static final String KEY_NAME = "rsa-private-key";
+  private static final String KEY_WRAP_ALGORITHM = "RSA";
+  private static final String KEYS_DIR = "components/crypto/keys";
 
   /**
    * The main method demonstrating encryption and decryption with Dapr.
    *
    * @param args Command line arguments (unused).
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
+    // Generate keys if they don't exist
+    generateKeysIfNeeded();
+
     Map<Property<?>, String> overrides = Map.of(
         Properties.HTTP_PORT, "3500",
         Properties.GRPC_PORT, "50001"
@@ -66,8 +72,7 @@ public class CryptoExample {
 
     try (DaprPreviewClient client = new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient()) {
 
-      // Original message to encrypt
-      String originalMessage = "Hello, Dapr Cryptography! This is a secret message.";
+      String originalMessage = "This is a secret message";
       byte[] plainText = originalMessage.getBytes(StandardCharsets.UTF_8);
 
       System.out.println("=== Dapr Cryptography Example ===");
@@ -83,19 +88,9 @@ public class CryptoExample {
           KEY_WRAP_ALGORITHM
       );
 
-      // Collect encrypted data from the stream
       byte[] encryptedData = client.encrypt(encryptRequest)
           .collectList()
-          .map(chunks -> {
-            int totalSize = chunks.stream().mapToInt(chunk -> chunk.length).sum();
-            byte[] result = new byte[totalSize];
-            int pos = 0;
-            for (byte[] chunk : chunks) {
-              System.arraycopy(chunk, 0, result, pos, chunk.length);
-              pos += chunk.length;
-            }
-            return result;
-          })
+          .map(CryptoExample::combineChunks)
           .block();
 
       System.out.println("Encryption successful!");
@@ -109,19 +104,9 @@ public class CryptoExample {
           Flux.just(encryptedData)
       );
 
-      // Collect decrypted data from the stream
       byte[] decryptedData = client.decrypt(decryptRequest)
           .collectList()
-          .map(chunks -> {
-            int totalSize = chunks.stream().mapToInt(chunk -> chunk.length).sum();
-            byte[] result = new byte[totalSize];
-            int pos = 0;
-            for (byte[] chunk : chunks) {
-              System.arraycopy(chunk, 0, result, pos, chunk.length);
-              pos += chunk.length;
-            }
-            return result;
-          })
+          .map(CryptoExample::combineChunks)
           .block();
 
       String decryptedMessage = new String(decryptedData, StandardCharsets.UTF_8);
@@ -129,16 +114,60 @@ public class CryptoExample {
       System.out.println("Decrypted message: " + decryptedMessage);
       System.out.println();
 
-      // Verify the message matches
       if (originalMessage.equals(decryptedMessage)) {
-        System.out.println("✓ Success! The decrypted message matches the original.");
+        System.out.println("SUCCESS: The decrypted message matches the original.");
       } else {
-        System.out.println("✗ Error! The decrypted message does not match the original.");
+        System.out.println("ERROR: The decrypted message does not match the original.");
       }
 
     } catch (Exception e) {
       System.err.println("Error during crypto operations: " + e.getMessage());
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Generates RSA key pair if the key file doesn't exist.
+   */
+  private static void generateKeysIfNeeded() throws NoSuchAlgorithmException, IOException {
+    Path keysDir = Paths.get(KEYS_DIR);
+    Path keyFile = keysDir.resolve(KEY_NAME + ".pem");
+
+    if (Files.exists(keyFile)) {
+      System.out.println("Using existing key: " + keyFile.toAbsolutePath());
+      return;
+    }
+
+    System.out.println("Generating RSA key pair...");
+    Files.createDirectories(keysDir);
+
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+    keyGen.initialize(4096);
+    KeyPair keyPair = keyGen.generateKeyPair();
+
+    String privateKeyPem = "-----BEGIN PRIVATE KEY-----\n"
+        + Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(keyPair.getPrivate().getEncoded())
+        + "\n-----END PRIVATE KEY-----\n";
+
+    String publicKeyPem = "-----BEGIN PUBLIC KEY-----\n"
+        + Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(keyPair.getPublic().getEncoded())
+        + "\n-----END PUBLIC KEY-----\n";
+
+    Files.writeString(keyFile, privateKeyPem + publicKeyPem);
+    System.out.println("Key generated: " + keyFile.toAbsolutePath());
+  }
+
+  /**
+   * Combines byte array chunks into a single byte array.
+   */
+  private static byte[] combineChunks(java.util.List<byte[]> chunks) {
+    int totalSize = chunks.stream().mapToInt(chunk -> chunk.length).sum();
+    byte[] result = new byte[totalSize];
+    int pos = 0;
+    for (byte[] chunk : chunks) {
+      System.arraycopy(chunk, 0, result, pos, chunk.length);
+      pos += chunk.length;
+    }
+    return result;
   }
 }

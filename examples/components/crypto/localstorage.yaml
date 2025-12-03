@@ -7,7 +7,6 @@ spec:
   version: v1
   metadata:
     # Path to the directory containing keys (PEM files)
-    # On Linux/Mac: ~/.dapr/keys
-    # On Windows: %USERPROFILE%\.dapr\keys
+    # This should point to a directory containing your key files
     - name: path
-      value: "${HOME}/.dapr/keys"
+      value: "./keys"
