@@ -587,6 +587,87 @@ public class DaprPreviewClientGrpcTest {
   }
 
   @Test
+  public void subscribeEventFluxTest() throws Exception {
+    var numEvents = 100;
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var data = "my message";
+    var started = new Semaphore(0);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1> observer =
+              (StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      var emitterThread = new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+
+        observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+
+        for (int i = 0; i < numEvents; i++) {
+          DaprProtos.SubscribeTopicEventsResponseAlpha1 reponse =
+              DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+                  .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                      .setId(Integer.toString(i))
+                      .setPubsubName(pubsubName)
+                      .setTopic(topicName)
+                      .setData(ByteString.copyFromUtf8("\"" + data + "\""))
+                      .setDataContentType("application/json")
+                      .build())
+                  .build();
+          observer.onNext(reponse);
+        }
+
+        observer.onCompleted();
+      });
+
+      emitterThread.start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprProtos.SubscribeTopicEventsRequestAlpha1 subscribeTopicEventsRequestAlpha1) {
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+          // No-op
+        }
+
+        @Override
+        public void onCompleted() {
+          // No-op
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    final AtomicInteger eventCount = new AtomicInteger(0);
+    final Semaphore gotAll = new Semaphore(0);
+    var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING)
+            .doOnNext(cloudEvent -> {
+              assertEquals(data, cloudEvent.getData());
+              assertEquals(pubsubName, cloudEvent.getPubsubName());
+              assertEquals(topicName, cloudEvent.getTopic());
+              assertNotNull(cloudEvent.getId());
+
+              int count = eventCount.incrementAndGet();
+
+              if (count >= numEvents) {
+                gotAll.release();
+              }
+            })
+            .subscribe();
+
+    gotAll.acquire();
+    disposable.dispose();
+
+    assertEquals(numEvents, eventCount.get());
+  }
+
+  @Test
   public void converseShouldThrowIllegalArgumentExceptionWhenComponentNameIsNull() throws Exception {
     List<ConversationInput> inputs = new ArrayList<>();
     inputs.add(new ConversationInput("Hello there !"));

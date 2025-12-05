@@ -49,7 +49,7 @@ The subscriber uses the `DaprPreviewClient` interface to use a new feature where
 
 The publisher is a simple Java application with a main method that uses the Dapr gRPC Client to publish 10 messages to a specific topic.
 
-In the `Subscriber.java` file, you will find the `Subscriber` class, containing the main method. The main method declares a `DaprPreviewClient` using the `DaprClientBuilder` class. When invoking `subscribeToEvents`, the subscriber provides an implementation of the `SubscriptionListener` interface, receiving a `Subscription` object. The `Subscription` object implements the `Closeable` interface and the `close()` method must be used to stop the subscription.
+In the `Subscriber.java` file, you will find the `Subscriber` class, containing the main method. The main method declares a `DaprPreviewClient` using the `DaprClientBuilder` class. When invoking `subscribeToEvents`, the method returns a `Flux<CloudEvent<T>>` that can be processed using reactive operators like `doOnNext()` for event handling and `doOnError()` for error handling. The example uses `blockLast()` to keep the subscriber running indefinitely. For production use cases requiring explicit subscription lifecycle control, you can use `.subscribe()` which returns a `Disposable` that can be disposed via `disposable.dispose()`.
 
 ```java
 public class Subscriber {
@@ -59,25 +59,19 @@ public class Subscriber {
   public static void main(String[] args) throws Exception {
     String topicName = getTopicName(args);
     try (var client = new DaprClientBuilder().buildPreviewClient()) {
-      var subscription = client.subscribeToEvents(
+      // Subscribe to events using the Flux-based reactive API
+      // The stream will emit CloudEvent<String> objects as they arrive
+      client.subscribeToEvents(
           PUBSUB_NAME,
           topicName,
-          new SubscriptionListener<>() {
-
-            @Override
-            public Mono<Status> onEvent(CloudEvent<String> event) {
-              System.out.println("Subscriber got: " + event.getData());
-              return Mono.just(Status.SUCCESS);
-            }
-
-            @Override
-            public void onError(RuntimeException exception) {
-              System.out.println("Subscriber got exception: " + exception.getMessage());
-            }
-          },
-          TypeRef.STRING);
-
-      subscription.awaitTermination();
+          TypeRef.STRING)
+          .doOnNext(event -> {
+            System.out.println("Subscriber got: " + event.getData());
+          })
+          .doOnError(throwable -> {
+            System.out.println("Subscriber got exception: " + throwable.getMessage());
+          })
+          .blockLast();  // Blocks indefinitely until the stream completes (keeps the subscriber running)
     }
   }
   
