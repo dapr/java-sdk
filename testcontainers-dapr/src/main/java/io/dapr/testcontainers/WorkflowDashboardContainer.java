@@ -16,6 +16,8 @@ package io.dapr.testcontainers;
 import io.dapr.testcontainers.converter.ComponentYamlConverter;
 import io.dapr.testcontainers.converter.YamlConverter;
 import io.dapr.testcontainers.converter.YamlMapperFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
@@ -25,7 +27,7 @@ import org.yaml.snakeyaml.Yaml;
  * Test container for Dapr Workflow Dashboard.
  */
 public class WorkflowDashboardContainer extends GenericContainer<WorkflowDashboardContainer> {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowDashboardContainer.class);
   private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
   private static final YamlConverter<Component> COMPONENT_CONVERTER = new ComponentYamlConverter(YAML_MAPPER);
   public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName
@@ -75,6 +77,14 @@ public class WorkflowDashboardContainer extends GenericContainer<WorkflowDashboa
   public WorkflowDashboardContainer withPort(Integer port) {
     this.dashboardPort = port;
     return this;
+  }
+
+  @Override
+  public void start() {
+    super.start();
+
+    LOGGER.info("Dapr Workflow Dashboard container started.");
+    LOGGER.info("Access the Dashboard at: http://localhost:{}", this.getMappedPort(dashboardPort));
   }
 
   public int getPort() {
