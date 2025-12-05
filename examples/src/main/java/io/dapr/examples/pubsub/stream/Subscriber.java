@@ -14,10 +14,7 @@ limitations under the License.
 package io.dapr.examples.pubsub.stream;
 
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.SubscriptionListener;
-import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
-import reactor.core.publisher.Mono;
 
 /**
  * Subscriber using bi-directional gRPC streaming, which does not require an app port.
@@ -44,25 +41,19 @@ public class Subscriber {
   public static void main(String[] args) throws Exception {
     String topicName = getTopicName(args);
     try (var client = new DaprClientBuilder().buildPreviewClient()) {
-      var subscription = client.subscribeToEvents(
+      // Subscribe to events using the Flux-based reactive API
+      // The stream will emit CloudEvent<String> objects as they arrive
+      client.subscribeToEvents(
           PUBSUB_NAME,
           topicName,
-          new SubscriptionListener<>() {
-
-            @Override
-            public Mono<Status> onEvent(CloudEvent<String> event) {
-              System.out.println("Subscriber got: " + event.getData());
-              return Mono.just(Status.SUCCESS);
-            }
-
-            @Override
-            public void onError(RuntimeException exception) {
-              System.out.println("Subscriber got exception: " + exception.getMessage());
-            }
-          },
-          TypeRef.STRING);
-
-      subscription.awaitTermination();
+          TypeRef.STRING)
+          .doOnNext(event -> {
+            System.out.println("Subscriber got: " + event.getData());
+          })
+          .doOnError(throwable -> {
+            System.out.println("Subscriber got exception: " + throwable.getMessage());
+          })
+          .blockLast();  // Blocks indefinitely until the stream completes (keeps the subscriber running)
     }
   }
 
