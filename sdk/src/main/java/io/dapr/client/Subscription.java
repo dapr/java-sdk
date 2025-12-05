@@ -35,6 +35,7 @@ import java.util.function.Function;
  * Streaming subscription of events for Dapr's pubsub.
  * @param <T> Application's object type.
  */
+@Deprecated
 public class Subscription<T> implements Closeable {
 
   private final BlockingQueue<DaprProtos.SubscribeTopicEventsRequestAlpha1> ackQueue = new LinkedBlockingQueue<>(50);
