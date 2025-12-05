@@ -1,0 +1,13 @@
+{
+  "value1": {
+    "dapr": {
+      "spring": {
+        "demo-config-secret": {
+          "multivalue": {
+            "v4": "config"
+          }
+        }
+      }
+    }
+  }
+}

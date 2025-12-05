@@ -1,7 +1,11 @@
 # Running this example on Kubernetes
 
 To run this example on Kubernetes, you can use any Kubernetes distribution. 
-We install Dapr on a Kubernetes cluster and then we will deploy both the `producer-app` and `consumer-app`.
+We install Dapr on a Kubernetes cluster and then we will deploy the `producer-app`, `consumer-app` and `cloud-config-demo`.
+
+> ___A Note for `cloud-config-demo`:___
+> 
+> Remind that only Kubernetes Secret works on dapr secret, Kubernetes ConfigMap doesn't support in dapr runtime, and there is no easy way to fill data to redis running in cluster before container started automatically, so configuration schema are commented by default.
 
 ## Creating a cluster and installing Dapr
 
@@ -34,6 +38,32 @@ helm upgrade --install dapr dapr/dapr \
 --namespace dapr-system \
 --create-namespace \
 --wait
+```
+__Optional: pre-configure data needed by  `cloud-config-demo`__
+
+If you want to run `cloud-config-demo` on your cluster, you should apply the secrets file from `secrets/kubernates-secrets-multivalue.yaml`, or you can just run following command:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: multivalue-properties
+type: Opaque
+stringData:
+  value1: |
+    dapr.spring.demo-config-secret.multivalue.v1=spring
+    dapr.spring.demo-config-secret.multivalue.v2=dapr
+  value2: "dapr.spring.demo-config-secret.multivalue.v3=cloud"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dapr.spring.demo-config-secret.singlevalue
+type: Opaque
+stringData:
+  dapr.spring.demo-config-secret.singlevalue: "testvalue"
+EOF
 ```
 
 ## Creating containers using Spring Boot and pushing to local registry
@@ -77,6 +107,26 @@ docker push localhost:5001/sb-consumer-app
 podman push localhost:5001/sb-consumer-app --tls-verify=false
 ```
 
+__Optional: deploy `cloud-config-demo`__
+
+From inside the `spring-boot-examples/cloud-config-demo` directory you can run the following command to create a container:
+```bash
+mvn spring-boot:build-image
+```
+
+Once we have the container image created, we need to tag and push to the local registry, so the image can be used from our local cluster.
+Alternatively, you can push the images to a public registry and update the Kubernetes manifests accordingly.
+
+```bash
+docker tag cloud-config-demo:0.15.0-SNAPSHOT localhost:5001/sb-cloud-config-demo
+docker push localhost:5001/sb-cloud-config-demo
+```
+
+**Note**: for Podman you need to run:
+```
+podman push localhost:5001/sb-cloud-config-demo --tls-verify=false
+```
+
 Now we are ready to install our application into the cluster.
 
 ## Installing and interacting with the application
@@ -107,7 +157,7 @@ Next you need to use `kubectl port-forward` to be able to send requests to the a
 kubectl port-forward svc/producer-app 8080:8080
 ```
 
-In a different terminals you can check the logs of the `producer-app` and `consumer-app`:
+In a different terminals you can check the logs of the `producer-app`, `consumer-app` and `cloud-config-demo`:
 
 ```bash
 kubectl logs -f producer-app-<POD_ID>
@@ -117,5 +167,9 @@ and
 ```bash
 kubectl logs -f consumer-app-<POD_ID>
 ```
+and
 
+```bash
+kubectl logs -f cloud-config-demo-<POD_ID>
+```
 

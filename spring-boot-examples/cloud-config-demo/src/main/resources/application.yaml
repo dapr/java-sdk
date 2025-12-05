@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: cloud-config-demo
+  config:
+    import:
+      - dapr:secret:democonfig/multivalue-properties?type=doc
+      - dapr:secret:democonfig/dapr.spring.demo-config-secret.singlevalue?type=value
+# Following line works by default even if no secret store components defined in dapr running
+# inside kubernetes cluster
+# To maintain the compatibility of local version, we defined a secret store to dapr kubernetes,
+# so following lines are commented.
+#      - dapr:secret:kubernetes/multivalue-properties?type=doc
+#      - dapr:secret:kubernetes/dapr.spring.demo-config-secret.singlevalue?type=value
+
+# Following line includes dapr configuration schema of Cloud Config
+# Unfortunately current dapr runtime doesn't support Kubernetes ConfigMap for configuration,
+# so to maintain the compatibility of Kubernetes, following lines are commented.
+#      - dapr:config:democonfigconf/dapr.spring.demo-config-config.singlevalue?type=value
+#      - dapr:config:democonfigconf/multivalue-yaml?type=doc&doc-type=yaml
+server:
+  port: 8082
+

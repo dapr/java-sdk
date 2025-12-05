@@ -40,6 +40,11 @@
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-workflows</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-cloudconfig</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -21,6 +21,7 @@
     <module>producer-app</module>
     <module>consumer-app</module>
     <module>workflows</module>
+    <module>cloud-config-demo</module>
   </modules>
 
   <build>
