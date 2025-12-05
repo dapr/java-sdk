@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
+
 public class CleanUpActivity implements WorkflowActivity {
   @Override
   public Object run(WorkflowActivityContext ctx) {

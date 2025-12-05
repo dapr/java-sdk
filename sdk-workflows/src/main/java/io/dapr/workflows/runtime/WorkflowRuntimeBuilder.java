@@ -116,6 +116,23 @@ public class WorkflowRuntimeBuilder {
     this.builder.addOrchestration(new WorkflowClassWrapper<>(clazz));
     this.workflowSet.add(clazz.getCanonicalName());
     this.workflows.add(clazz.getSimpleName());
+    
+    this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
+
+    return this;
+  }
+
+  /**
+   * Registers a Workflow object.
+   *
+   * @param <T>   any Workflow type
+   * @param clazz the class being registered
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(String name, Class<T> clazz) {
+    this.builder.addOrchestration(new WorkflowClassWrapper<>(clazz));
+    this.workflowSet.add(name);
+    this.workflows.add(name);
 
     this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
 
