@@ -64,9 +64,8 @@ public class WorkflowDashboardContainer extends GenericContainer<WorkflowDashboa
     if (stateStoreComponent != null) {
       String componentYaml = COMPONENT_CONVERTER.convert(stateStoreComponent);
       withCopyToContainer(Transferable.of(componentYaml), "/app/components/" + stateStoreComponent.getName() + ".yaml");
+      withEnv("COMPONENT_FILE", "/app/components/" + stateStoreComponent.getName() + ".yaml");
     }
-
-    withEnv("COMPONENT_FILE", "/app/components/" + stateStoreComponent.getName() + ".yaml");
 
   }
 
