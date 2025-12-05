@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
  * Callback interface to receive events from a streaming subscription of events.
  * @param <T> Object type for deserialization.
  */
+@Deprecated
 public interface SubscriptionListener<T> {
 
   /**

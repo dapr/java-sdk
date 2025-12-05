@@ -91,6 +91,7 @@ import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
+import io.dapr.internal.subscription.EventSubscriberStreamObserver;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
@@ -473,6 +474,42 @@ public class DaprClientImpl extends AbstractDaprClient {
             .setInitialRequest(initialRequest)
             .build();
     return buildSubscription(listener, type, request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
+    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+            .setTopic(topic)
+            .setPubsubName(pubsubName)
+            .build();
+    DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
+        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+            .setInitialRequest(initialRequest)
+            .build();
+
+    return Flux.create(sink -> {
+      DaprGrpc.DaprStub interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
+      EventSubscriberStreamObserver<T> eventSubscriber = new EventSubscriberStreamObserver<>(
+          interceptedStub,
+          sink,
+          type,
+          this.objectSerializer
+      );
+      StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> requestStream = eventSubscriber.start(request);
+
+      // Cleanup when Flux is cancelled or completed
+      sink.onDispose(() -> {
+        try {
+          requestStream.onCompleted();
+        } catch (Exception e) {
+          logger.debug("Completing the subscription stream resulted in an error: {}", e.getMessage());
+        }
+      });
+    }, FluxSink.OverflowStrategy.BUFFER);
   }
 
   @Nonnull
