@@ -113,6 +113,10 @@ jobs:
         run: sleep 30 && docker logs dapr_scheduler && nc -vz localhost 50006
       - name: Install jars
         run: ./mvnw clean install -DskipTests -q
+      - name: Validate crypto example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/crypto/README.md
       - name: Validate workflows example
         working-directory: ./examples
         run: |
@@ -185,4 +189,6 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
+
+
 

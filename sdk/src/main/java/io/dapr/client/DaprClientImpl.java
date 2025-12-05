@@ -48,9 +48,11 @@ import io.dapr.client.domain.ConversationToolCallsOfFunction;
 import io.dapr.client.domain.ConversationTools;
 import io.dapr.client.domain.ConversationToolsFunction;
 import io.dapr.client.domain.DaprMetadata;
+import io.dapr.client.domain.DecryptRequestAlpha1;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DropFailurePolicy;
+import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.FailurePolicy;
 import io.dapr.client.domain.FailurePolicyType;
@@ -2107,5 +2109,197 @@ public class DaprClientImpl extends AbstractDaprClient {
 
     return new AppConnectionPropertiesHealthMetadata(healthCheckPath, healthProbeInterval, healthProbeTimeout,
         healthThreshold);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<byte[]> encrypt(EncryptRequestAlpha1 request) {
+    try {
+      if (request == null) {
+        throw new IllegalArgumentException("EncryptRequestAlpha1 cannot be null.");
+      }
+      if (request.getComponentName() == null || request.getComponentName().trim().isEmpty()) {
+        throw new IllegalArgumentException("Component name cannot be null or empty.");
+      }
+      if (request.getKeyName() == null || request.getKeyName().trim().isEmpty()) {
+        throw new IllegalArgumentException("Key name cannot be null or empty.");
+      }
+      if (request.getKeyWrapAlgorithm() == null || request.getKeyWrapAlgorithm().trim().isEmpty()) {
+        throw new IllegalArgumentException("Key wrap algorithm cannot be null or empty.");
+      }
+      if (request.getPlainTextStream() == null) {
+        throw new IllegalArgumentException("Plaintext stream cannot be null.");
+      }
+
+      return Flux.create(sink -> {
+        // Create response observer to receive encrypted data
+        final StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+            new StreamObserver<DaprProtos.EncryptResponse>() {
+              @Override
+              public void onNext(DaprProtos.EncryptResponse response) {
+                if (response.hasPayload()) {
+                  byte[] data = response.getPayload().getData().toByteArray();
+                  if (data.length > 0) {
+                    sink.next(data);
+                  }
+                }
+              }
+
+              @Override
+              public void onError(Throwable t) {
+                sink.error(DaprException.propagate(new DaprException("ENCRYPT_ERROR",
+                    "Error during encryption: " + t.getMessage(), t)));
+              }
+
+              @Override
+              public void onCompleted() {
+                sink.complete();
+              }
+            };
+
+        // Build options for the first message
+        DaprProtos.EncryptRequestOptions.Builder optionsBuilder = DaprProtos.EncryptRequestOptions.newBuilder()
+            .setComponentName(request.getComponentName())
+            .setKeyName(request.getKeyName())
+            .setKeyWrapAlgorithm(request.getKeyWrapAlgorithm());
+
+        if (request.getDataEncryptionCipher() != null && !request.getDataEncryptionCipher().isEmpty()) {
+          optionsBuilder.setDataEncryptionCipher(request.getDataEncryptionCipher());
+        }
+        optionsBuilder.setOmitDecryptionKeyName(request.isOmitDecryptionKeyName());
+        if (request.getDecryptionKeyName() != null && !request.getDecryptionKeyName().isEmpty()) {
+          optionsBuilder.setDecryptionKeyName(request.getDecryptionKeyName());
+        }
+
+        final DaprProtos.EncryptRequestOptions options = optionsBuilder.build();
+        final long[] sequenceNumber = {0};
+        final boolean[] firstMessage = {true};
+
+        // Get the request stream observer from gRPC
+        final StreamObserver<DaprProtos.EncryptRequest> requestObserver = 
+            intercept(null, asyncStub).encryptAlpha1(responseObserver);
+
+        // Subscribe to the plaintext stream and send chunks
+        request.getPlainTextStream()
+            .doOnNext(chunk -> {
+              DaprProtos.EncryptRequest.Builder reqBuilder = DaprProtos.EncryptRequest.newBuilder()
+                  .setPayload(CommonProtos.StreamPayload.newBuilder()
+                      .setData(ByteString.copyFrom(chunk))
+                      .setSeq(sequenceNumber[0]++)
+                      .build());
+
+              // Include options only in the first message
+              if (firstMessage[0]) {
+                reqBuilder.setOptions(options);
+                firstMessage[0] = false;
+              }
+
+              requestObserver.onNext(reqBuilder.build());
+            })
+            .doOnError(error -> {
+              requestObserver.onError(error);
+              sink.error(DaprException.propagate(new DaprException("ENCRYPT_ERROR", 
+                  "Error reading plaintext stream: " + error.getMessage(), error)));
+            })
+            .doOnComplete(() -> {
+              requestObserver.onCompleted();
+            })
+            .subscribe();
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapFlux(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<byte[]> decrypt(DecryptRequestAlpha1 request) {
+    try {
+      if (request == null) {
+        throw new IllegalArgumentException("DecryptRequestAlpha1 cannot be null.");
+      }
+      if (request.getComponentName() == null || request.getComponentName().trim().isEmpty()) {
+        throw new IllegalArgumentException("Component name cannot be null or empty.");
+      }
+      if (request.getCipherTextStream() == null) {
+        throw new IllegalArgumentException("Ciphertext stream cannot be null.");
+      }
+
+      return Flux.create(sink -> {
+        // Create response observer to receive decrypted data
+        final StreamObserver<DaprProtos.DecryptResponse> responseObserver =
+            new StreamObserver<DaprProtos.DecryptResponse>() {
+              @Override
+              public void onNext(DaprProtos.DecryptResponse response) {
+                if (response.hasPayload()) {
+                  byte[] data = response.getPayload().getData().toByteArray();
+                  if (data.length > 0) {
+                    sink.next(data);
+                  }
+                }
+              }
+
+              @Override
+              public void onError(Throwable t) {
+                sink.error(DaprException.propagate(new DaprException("DECRYPT_ERROR",
+                    "Error during decryption: " + t.getMessage(), t)));
+              }
+
+              @Override
+              public void onCompleted() {
+                sink.complete();
+              }
+            };
+
+        // Build options for the first message
+        DaprProtos.DecryptRequestOptions.Builder optionsBuilder = DaprProtos.DecryptRequestOptions.newBuilder()
+            .setComponentName(request.getComponentName());
+
+        if (request.getKeyName() != null && !request.getKeyName().isEmpty()) {
+          optionsBuilder.setKeyName(request.getKeyName());
+        }
+
+        final DaprProtos.DecryptRequestOptions options = optionsBuilder.build();
+        final long[] sequenceNumber = {0};
+        final boolean[] firstMessage = {true};
+
+        // Get the request stream observer from gRPC
+        final StreamObserver<DaprProtos.DecryptRequest> requestObserver = 
+            intercept(null, asyncStub).decryptAlpha1(responseObserver);
+
+        // Subscribe to the ciphertext stream and send chunks
+        request.getCipherTextStream()
+            .doOnNext(chunk -> {
+              DaprProtos.DecryptRequest.Builder reqBuilder = DaprProtos.DecryptRequest.newBuilder()
+                  .setPayload(CommonProtos.StreamPayload.newBuilder()
+                      .setData(ByteString.copyFrom(chunk))
+                      .setSeq(sequenceNumber[0]++)
+                      .build());
+
+              // Include options only in the first message
+              if (firstMessage[0]) {
+                reqBuilder.setOptions(options);
+                firstMessage[0] = false;
+              }
+
+              requestObserver.onNext(reqBuilder.build());
+            })
+            .doOnError(error -> {
+              requestObserver.onError(error);
+              sink.error(DaprException.propagate(new DaprException("DECRYPT_ERROR", 
+                  "Error reading ciphertext stream: " + error.getMessage(), error)));
+            })
+            .doOnComplete(() -> {
+              requestObserver.onCompleted();
+            })
+            .subscribe();
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapFlux(ex);
+    }
   }
 }
