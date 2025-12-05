@@ -64,7 +64,7 @@ export DAPR_API_TOKEN="your-dapr-api-token"
 
 This example uses the Java SDK Dapr client in order to **Schedule and Get** Jobs.
 `DemoJobsClient.java` is the example class demonstrating these features.
-Kindly check [DaprPreviewClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprPreviewClient.java) for a detailed description of the supported APIs.
+Kindly check [DaprClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprClient.java) for a detailed description of the supported APIs.
 
 ```java
 public class DemoJobsClient {
@@ -77,7 +77,7 @@ public class DemoJobsClient {
         Properties.GRPC_PORT, "51439"
     );
 
-    try (DaprPreviewClient client = new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient()) {
+    try (DaprClient client = new DaprClientBuilder().withPropertyOverrides(overrides).build()) {
 
       // Schedule a job.
       ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest("dapr-job-1",

@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.jobs;
 
-import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.DaprClient;
 import io.dapr.client.domain.ConstantFailurePolicy;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DropFailurePolicy;
@@ -28,7 +28,6 @@ import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.notification.Failure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -85,7 +84,7 @@ public class DaprJobsIT {
   }
 
   @Autowired
-  private DaprPreviewClient daprPreviewClient;
+  private DaprClient daprClient;
 
   @BeforeEach
   public void setUp(){
@@ -98,12 +97,12 @@ public class DaprJobsIT {
             .withZone(ZoneOffset.UTC);
 
     Instant currentTime = Instant.now();
-    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime).setOverwrite(true)).block();
+    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime).setOverwrite(true)).block();
 
     GetJobResponse getJobResponse =
-        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+        daprClient.getJob(new GetJobRequest("Job")).block();
 
-    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
 
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals("Job", getJobResponse.getName());
@@ -115,13 +114,13 @@ public class DaprJobsIT {
             .withZone(ZoneOffset.UTC);
 
     Instant currentTime = Instant.now();
-    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", JobSchedule.hourly())
+    daprClient.scheduleJob(new ScheduleJobRequest("Job", JobSchedule.hourly())
         .setDueTime(currentTime).setOverwrite(true)).block();
 
     GetJobResponse getJobResponse =
-        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+        daprClient.getJob(new GetJobRequest("Job")).block();
 
-    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
 
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
@@ -136,7 +135,7 @@ public class DaprJobsIT {
 
     String cronExpression = "2 * 3 * * FRI";
 
-    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
@@ -144,9 +143,9 @@ public class DaprJobsIT {
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     GetJobResponse getJobResponse =
-        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+        daprClient.getJob(new GetJobRequest("Job")).block();
 
-    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
 
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals("2 * 3 * * FRI", getJobResponse.getSchedule().getExpression());
@@ -165,7 +164,7 @@ public class DaprJobsIT {
 
     String cronExpression = "2 * 3 * * FRI";
 
-    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
@@ -173,9 +172,9 @@ public class DaprJobsIT {
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     GetJobResponse getJobResponse =
-        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+        daprClient.getJob(new GetJobRequest("Job")).block();
 
-    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
 
     assertEquals(FailurePolicyType.DROP, getJobResponse.getFailurePolicy().getFailurePolicyType());
   }
@@ -188,7 +187,7 @@ public class DaprJobsIT {
 
     String cronExpression = "2 * 3 * * FRI";
 
-    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
@@ -197,9 +196,9 @@ public class DaprJobsIT {
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     GetJobResponse getJobResponse =
-        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+        daprClient.getJob(new GetJobRequest("Job")).block();
 
-    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
 
     ConstantFailurePolicy jobFailurePolicyConstant = (ConstantFailurePolicy) getJobResponse.getFailurePolicy();
     assertEquals(FailurePolicyType.CONSTANT, getJobResponse.getFailurePolicy().getFailurePolicyType());
@@ -214,13 +213,13 @@ public class DaprJobsIT {
 
     String cronExpression = "2 * 3 * * FRI";
 
-    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
         .setOverwrite(true)
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
-    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
   }
 }
