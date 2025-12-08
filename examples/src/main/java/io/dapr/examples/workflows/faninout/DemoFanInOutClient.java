@@ -13,8 +13,10 @@ limitations under the License.
 
 package io.dapr.examples.workflows.faninout;
 
+import io.dapr.examples.workflows.utils.PropertyUtils;
+import io.dapr.examples.workflows.utils.RetryUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowState;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -29,7 +31,7 @@ public class DemoFanInOutClient {
    * @throws InterruptedException If program has been interrupted.
    */
   public static void main(String[] args) throws InterruptedException {
-    try (DaprWorkflowClient client = new DaprWorkflowClient()) {
+    try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
       // The input is an arbitrary list of strings.
       List<String> listOfStrings = Arrays.asList(
           "Hello, world!",
@@ -39,18 +41,19 @@ public class DemoFanInOutClient {
           "Always remember that you are absolutely unique. Just like everyone else.");
 
       // Schedule an orchestration which will reliably count the number of words in all the given sentences.
-      String instanceId = client.scheduleNewWorkflow(
+      String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(
           DemoFanInOutWorkflow.class,
-          listOfStrings);
+          listOfStrings), Duration.ofSeconds(60));
+
       System.out.printf("Started a new fan out/fan in model workflow with instance ID: %s%n", instanceId);
 
       // Block until the orchestration completes. Then print the final status, which includes the output.
-      WorkflowInstanceStatus workflowInstanceStatus = client.waitForInstanceCompletion(
+      WorkflowState workflowState = client.waitForWorkflowCompletion(
           instanceId,
           Duration.ofSeconds(30),
           true);
       System.out.printf("workflow instance with ID: %s completed with result: %s%n", instanceId,
-          workflowInstanceStatus.readOutputAs(int.class));
+          workflowState.readOutputAs(int.class));
     } catch (TimeoutException e) {
       throw new RuntimeException(e);
     }

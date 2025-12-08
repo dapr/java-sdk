@@ -17,8 +17,11 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationRequestAlpha2;
 import io.dapr.client.domain.ConversationResponse;
+import io.dapr.client.domain.ConversationResponseAlpha2;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
@@ -30,6 +33,7 @@ import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -269,11 +273,23 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param topic Name of the topic to subscribe to.
    * @param listener Callback methods to process events.
    * @param type Type for object deserialization.
-   * @return An active subscription.
    * @param <T> Type of object deserialization.
+   * @return An active subscription.
+   * @deprecated Use {@link #subscribeToEvents(String, String, TypeRef)} instead for a more reactive approach.
    */
+  @Deprecated
   <T> Subscription subscribeToEvents(
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux.
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param type Type for object deserialization.
+   * @return A Flux of CloudEvents containing deserialized event payloads and metadata.
+   * @param <T> Type of the event payload.
+   */
+  <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
 
   /**
    * Schedules a job using the provided job request details.
@@ -313,5 +329,14 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param conversationRequest request to be passed to the LLM.
    * @return {@link ConversationResponse}.
    */
+  @Deprecated
   public Mono<ConversationResponse> converse(ConversationRequest conversationRequest);
+
+  /*
+   * Converse with an LLM using Alpha2 API.
+   *
+   * @param conversationRequestAlpha2 request to be passed to the LLM with Alpha2 features.
+   * @return {@link ConversationResponseAlpha2}.
+   */
+  public Mono<ConversationResponseAlpha2> converseAlpha2(ConversationRequestAlpha2 conversationRequestAlpha2);
 }

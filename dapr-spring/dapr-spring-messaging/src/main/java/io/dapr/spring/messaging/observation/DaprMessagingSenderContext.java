@@ -58,7 +58,6 @@ public final class DaprMessagingSenderContext extends SenderContext<DaprMessagin
     return carrier.properties();
   }
 
-
   /**
    * The name of the bean sending the message (typically a {@code DaprMessagingTemplate}).
    * @return the name of the bean sending the message
@@ -74,7 +73,6 @@ public final class DaprMessagingSenderContext extends SenderContext<DaprMessagin
   public String getDestination() {
     return this.destination;
   }
-
 
   /**
    * Acts as a carrier for a Dapr message and records the propagated properties for

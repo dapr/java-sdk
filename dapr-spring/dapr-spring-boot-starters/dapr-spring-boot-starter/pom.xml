@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.dapr.spring</groupId>
     <artifactId>dapr-spring-parent</artifactId>
-    <version>0.15.0-SNAPSHOT</version>
+    <version>1.17.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -23,27 +23,22 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>${dapr.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-boot-autoconfigure</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-data</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-messaging</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-workflows</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
   </dependencies>
 

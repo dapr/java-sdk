@@ -19,14 +19,12 @@ import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class WorkflowRuntimeBuilderTest {
   public static class TestWorkflow implements Workflow {
@@ -67,7 +65,8 @@ public class WorkflowRuntimeBuilderTest {
   @Test
   public void buildTest() {
     assertDoesNotThrow(() -> {
-      try (WorkflowRuntime runtime = new WorkflowRuntimeBuilder().build()) {
+      try {
+        WorkflowRuntime runtime = new WorkflowRuntimeBuilder().build();
         System.out.println("WorkflowRuntime created");
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -88,13 +87,11 @@ public class WorkflowRuntimeBuilderTest {
 
     WorkflowRuntimeBuilder workflowRuntimeBuilder = new WorkflowRuntimeBuilder();
 
-    try (WorkflowRuntime runtime = workflowRuntimeBuilder.build()) {
-      verify(testLogger, times(1))
-          .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
+    WorkflowRuntime runtime = workflowRuntimeBuilder.build();
+    verify(testLogger, times(1))
+        .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
 
-      verify(testLogger, times(1))
-          .info(eq("Registered Activity: {}"), eq("TestActivity"));
-    }
+    verify(testLogger, times(1))
+        .info(eq("Registered Activity: {}"), eq("TestActivity"));
   }
-
 }

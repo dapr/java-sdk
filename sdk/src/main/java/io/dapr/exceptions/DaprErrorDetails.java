@@ -217,5 +217,4 @@ public class DaprErrorDetails {
     HELP,
     LOCALIZED_MESSAGE,
   }
-
 }

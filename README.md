@@ -13,6 +13,25 @@ This is the Dapr SDK for Java, including the following features:
 
 ## Getting Started
 
+### Architecture Overview
+
+The diagram below shows how a Java application interacts with the Dapr runtime through the Java SDK:
+
+```mermaid
+flowchart LR
+    A[End User Application] -->|HTTP or gRPC| B[Dapr Java SDK]
+    B -->|Dapr API calls| C[Dapr Sidecar]
+    C -->|Components| D[State Stores, Pub/Sub, Services, etc.]
+
+    %% Optional grouping for clarity
+    subgraph R[Dapr Runtime]
+        C
+        D
+    end
+```
+
+For the full list of available APIs, see the [Dapr API reference](https://docs.dapr.io/reference/api/)
+
 ### Pre-Requisites
 * SDKMAN! installed (recommended):
     * [SDKMAN!](https://sdkman.io)
@@ -50,19 +69,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.14.1</version>
+      <version>1.16.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.14.1</version>
+      <version>1.16.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.14.1</version>
+      <version>1.16.0</version>
     </dependency>
     ...
   </dependencies>
@@ -76,11 +95,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.14.1')
+    compile('io.dapr:dapr-sdk:1.16.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.14.1')
+    compile('io.dapr:dapr-sdk-actors:1.16.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.14.1')
+    compile('io.dapr:dapr-sdk-springboot:1.16.0')
 }
 ```
 

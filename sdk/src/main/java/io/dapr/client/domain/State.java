@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * This class reprent what a State is.
+ * This class represents what a State is.
  *
  * @param <T> The type of the value of the sate
  */

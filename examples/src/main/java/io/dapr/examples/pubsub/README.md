@@ -41,6 +41,88 @@ cd examples
 
 Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
 
+### App API Token Authentication (Optional)
+
+Dapr supports API token authentication to secure communication between Dapr and your application. This feature is useful for numerous APIs like pubsub, bindings, and jobs building blocks where Dapr makes incoming calls to your app.
+
+For more details, see the [Dapr App API Token Authentication documentation](https://docs.dapr.io/operations/security/app-api-token/).
+
+#### How it works
+
+When `APP_API_TOKEN` is set, Dapr includes the token in the gRPC metadata header `dapr-api-token` when calling your app. Your app can validate this token to authenticate requests from Dapr.
+
+#### Setting up tokens
+
+Set a dapr annotation or simply export the environment variables before running your Dapr applications:
+
+```bash
+# Token for your app to authenticate requests FROM Dapr
+export APP_API_TOKEN="your-app-api-token"
+
+# Token for Dapr client to authenticate requests TO Dapr sidecar
+export DAPR_API_TOKEN="your-dapr-api-token"
+```
+
+#### Using with gRPC Subscriber
+
+The gRPC subscriber example includes a `MetadataInterceptor` (see `SubscriberGrpcService.java`) that captures the `dapr-api-token` from incoming requests:
+
+```java
+public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
+  public static final Context.Key<Metadata> METADATA_KEY = Context.key("grpc-metadata");
+  
+  // gRPC interceptor to capture metadata
+  public static class MetadataInterceptor implements ServerInterceptor {
+      @Override
+      public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
+          ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+          Context contextWithMetadata = Context.current().withValue(METADATA_KEY, headers);
+        return Contexts.interceptCall(contextWithMetadata, call, headers, next);
+      }
+  }
+}
+```
+
+Then in your service methods, you can extract and validate the token:
+
+```java
+Context context = Context.current();
+Metadata metadata = METADATA_KEY.get(context);
+String apiToken = metadata.get(Metadata.Key.of("dapr-api-token", Metadata.ASCII_STRING_MARSHALLER));
+
+// Validate token accordingly
+```
+
+#### Using with HTTP Subscriber
+
+For HTTP-based endpoints, extract the token from the headers:
+
+```java
+@RestController
+public class SubscriberController {
+  
+  @PostMapping(path = "/endpoint")
+  public Mono<Void> handleRequest(
+      @RequestBody(required = false) byte[] body,
+      @RequestHeader Map<String, String> headers) {
+    return Mono.fromRunnable(() -> {
+      try {
+        // Extract the token from headers
+        String apiToken = headers.get("dapr-api-token");
+        
+        // Validate token accordingly
+        
+        // Process the request
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+}
+```
+
+Then use the standard `dapr run` commands shown in the sections below. The subscriber will validate incoming requests from Dapr using `APP_API_TOKEN`, and both applications will authenticate to Dapr using `DAPR_API_TOKEN`.
+
 ### Running the publisher
 
 The publisher is a simple Java application with a main method that uses the Dapr gRPC Client to publish 10 messages to a specific topic.

@@ -13,10 +13,10 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import com.microsoft.durabletask.CompositeTaskFailedException;
-import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskCanceledException;
-import com.microsoft.durabletask.TaskFailedException;
+import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.Task;
+import io.dapr.durabletask.TaskCanceledException;
+import io.dapr.durabletask.TaskFailedException;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -347,10 +347,7 @@ public interface WorkflowContext {
    * @param zonedDateTime timestamp with specific zone when the timer should expire
    * @return a new {@code Task} that completes after the specified delay
    */
-  default Task<Void> createTimer(ZonedDateTime zonedDateTime) {
-    throw new UnsupportedOperationException("This method is not implemented.");
-  }
-
+  Task<Void> createTimer(ZonedDateTime zonedDateTime);
 
   /**
    * Gets the deserialized input of the current task orchestration.
@@ -529,4 +526,12 @@ public interface WorkflowContext {
   default UUID newUuid() {
     throw new RuntimeException("No implementation found.");
   }
+
+  /**
+   * Set a custom status to a workflow execution.
+   *
+   * @param status to be set to the current execution
+   */
+  void setCustomStatus(Object status);
+  
 }

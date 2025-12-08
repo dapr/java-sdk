@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;

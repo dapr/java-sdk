@@ -13,14 +13,17 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.CompositeTaskFailedException;
-import com.microsoft.durabletask.RetryPolicy;
-import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskCanceledException;
-import com.microsoft.durabletask.TaskOptions;
-import com.microsoft.durabletask.TaskOrchestrationContext;
+import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.RetryHandler;
+import io.dapr.durabletask.RetryPolicy;
+import io.dapr.durabletask.Task;
+import io.dapr.durabletask.TaskCanceledException;
+import io.dapr.durabletask.TaskOptions;
+import io.dapr.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowTaskOptions;
+import io.dapr.workflows.WorkflowTaskRetryContext;
+import io.dapr.workflows.WorkflowTaskRetryHandler;
 import io.dapr.workflows.WorkflowTaskRetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +33,7 @@ import javax.annotation.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,27 +42,39 @@ public class DefaultWorkflowContext implements WorkflowContext {
   private final Logger logger;
 
   /**
-   * Constructor for DaprWorkflowContextImpl.
+   * Constructor for DefaultWorkflowContext.
    *
    * @param context TaskOrchestrationContext
    * @throws IllegalArgumentException if context is null
    */
   public DefaultWorkflowContext(TaskOrchestrationContext context) throws IllegalArgumentException {
-    this(context, LoggerFactory.getLogger(WorkflowContext.class));
+    this(context, WorkflowContext.class);
   }
 
   /**
-   * Constructor for DaprWorkflowContextImpl.
+   * Constructor for DefaultWorkflowContext.
+   *
+   * @param context TaskOrchestrationContext
+   * @param clazz   Class to use for logger
+   * @throws IllegalArgumentException if context is null
+   */
+  public DefaultWorkflowContext(TaskOrchestrationContext context, Class<?> clazz) throws IllegalArgumentException {
+    this(context, LoggerFactory.getLogger(clazz));
+  }
+
+  /**
+   * Constructor for DefaultWorkflowContext.
    *
    * @param context TaskOrchestrationContext
    * @param logger  Logger
    * @throws IllegalArgumentException if context or logger is null
    */
   public DefaultWorkflowContext(TaskOrchestrationContext context, Logger logger)
-      throws IllegalArgumentException {
+          throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
     }
+
     if (logger == null) {
       throw new IllegalArgumentException("Logger cannot be null");
     }
@@ -110,7 +126,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    */
   @Override
   public <V> Task<V> waitForExternalEvent(String name, Duration timeout, Class<V> dataType)
-      throws TaskCanceledException {
+          throws TaskCanceledException {
     return this.innerContext.waitForExternalEvent(name, timeout, dataType);
   }
 
@@ -126,7 +142,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    * @param timeout the amount of time to wait before canceling the returned
    *                {@code Task}
    * @return a new {@link Task} that completes when the external event is received
-   *         or when {@code timeout} expires
+   *     or when {@code timeout} expires
    * @throws TaskCanceledException if the specified {@code timeout} value expires
    *                               before the event is received
    */
@@ -186,6 +202,11 @@ public class DefaultWorkflowContext implements WorkflowContext {
     return this.innerContext.createTimer(duration);
   }
 
+  @Override
+  public Task<Void> createTimer(ZonedDateTime zonedDateTime) {
+    return this.innerContext.createTimer(zonedDateTime);
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -228,20 +249,74 @@ public class DefaultWorkflowContext implements WorkflowContext {
     return this.innerContext.newUUID();
   }
 
-  private static TaskOptions toTaskOptions(WorkflowTaskOptions options) {
+  private TaskOptions toTaskOptions(WorkflowTaskOptions options) {
     if (options == null) {
       return null;
     }
 
-    WorkflowTaskRetryPolicy workflowTaskRetryPolicy = options.getRetryPolicy();
+    RetryPolicy retryPolicy = toRetryPolicy(options.getRetryPolicy());
+    RetryHandler retryHandler = toRetryHandler(options.getRetryHandler());
+
+    return TaskOptions.builder()
+            .retryPolicy(retryPolicy)
+            .retryHandler(retryHandler)
+            .appID(options.getAppId())
+            .build();
+  }
+
+  /**
+   * Converts a {@link WorkflowTaskRetryPolicy} to a {@link RetryPolicy}.
+   *
+   * @param workflowTaskRetryPolicy The {@link WorkflowTaskRetryPolicy} being converted
+   * @return A {@link RetryPolicy}
+   */
+  private RetryPolicy toRetryPolicy(WorkflowTaskRetryPolicy workflowTaskRetryPolicy) {
+    if (workflowTaskRetryPolicy == null) {
+      return null;
+    }
+
     RetryPolicy retryPolicy = new RetryPolicy(
-        workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
-        workflowTaskRetryPolicy.getFirstRetryInterval()
+            workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
+            workflowTaskRetryPolicy.getFirstRetryInterval()
     );
 
     retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
-    retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+    if (workflowTaskRetryPolicy.getRetryTimeout() != null) {
+      retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+    }
 
-    return new TaskOptions(retryPolicy);
+    return retryPolicy;
+  }
+
+  /**
+   * Converts a {@link WorkflowTaskRetryHandler} to a {@link RetryHandler}.
+   *
+   * @param workflowTaskRetryHandler The {@link WorkflowTaskRetryHandler} being converted
+   * @return A {@link RetryHandler}
+   */
+  private RetryHandler toRetryHandler(WorkflowTaskRetryHandler workflowTaskRetryHandler) {
+    if (workflowTaskRetryHandler == null) {
+      return null;
+    }
+
+    return retryContext -> {
+      WorkflowTaskRetryContext workflowRetryContext = new WorkflowTaskRetryContext(
+              this,
+              retryContext.getLastAttemptNumber(),
+              new DefaultWorkflowFailureDetails(retryContext.getLastFailure()),
+              retryContext.getTotalRetryTime()
+      );
+
+      return workflowTaskRetryHandler.handle(workflowRetryContext);
+    };
+  }
+
+  /**
+   * Set custom status to a workflow execution.
+   *
+   * @param status to set to the execution
+   */
+  public void setCustomStatus(Object status) {
+    innerContext.setCustomStatus(status);
   }
 }

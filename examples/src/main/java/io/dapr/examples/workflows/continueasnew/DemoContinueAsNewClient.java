@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.continueasnew;
 
+import io.dapr.examples.workflows.utils.PropertyUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
 
 import java.util.concurrent.TimeoutException;
@@ -25,11 +26,11 @@ public class DemoContinueAsNewClient {
    * @throws InterruptedException If program has been interrupted.
    */
   public static void main(String[] args) {
-    try (DaprWorkflowClient client = new DaprWorkflowClient()) {
+    try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
       String instanceId = client.scheduleNewWorkflow(DemoContinueAsNewWorkflow.class);
       System.out.printf("Started a new continue-as-new model workflow with instance ID: %s%n", instanceId);
 
-      client.waitForInstanceCompletion(instanceId, null, true);
+      client.waitForWorkflowCompletion(instanceId, null, true);
       System.out.printf("workflow instance with ID: %s completed.", instanceId);
 
     } catch (TimeoutException | InterruptedException e) {

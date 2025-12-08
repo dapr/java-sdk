@@ -75,6 +75,22 @@ b95e7ad31707   confluentinc/cp-zookeeper:7.4.4   "/etc/confluent/dock…"   5 da
 ```
 Click [here](https://github.com/wurstmeister/kafka-docker) for more information about the kafka broker server.
 
+### App API Token Authentication (Optional)
+
+Dapr supports API token authentication to secure communication between Dapr and your application. When using input bindings, Dapr makes incoming calls to your app, and you can validate these requests using the `APP_API_TOKEN`.
+
+For detailed implementation with gRPC interceptors, see the [PubSub README App API Token Authentication section](../pubsub/README.md#app-api-token-authentication-optional).
+
+For HTTP-based apps, check the `dapr-api-token` header in incoming requests. For more details, see the [Dapr App API Token Authentication documentation](https://docs.dapr.io/operations/security/app-api-token/).
+
+**Quick setup:**
+
+```bash
+# Export tokens before running the following `dapr run` commands.
+export APP_API_TOKEN="your-app-api-token"
+export DAPR_API_TOKEN="your-dapr-api-token"
+```
+
 ### Running the Input binding sample
 
 The input binding sample uses the Spring Boot´s DaprApplication class for initializing the `InputBindingController`. In `InputBindingExample.java` file, you will find the `InputBindingExample` class and the `main` method. See the code snippet below:

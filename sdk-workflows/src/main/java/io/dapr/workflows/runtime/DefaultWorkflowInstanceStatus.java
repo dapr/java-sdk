@@ -13,9 +13,9 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.FailureDetails;
-import com.microsoft.durabletask.OrchestrationMetadata;
-import com.microsoft.durabletask.OrchestrationRuntimeStatus;
+import io.dapr.durabletask.FailureDetails;
+import io.dapr.durabletask.OrchestrationMetadata;
+import io.dapr.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.client.WorkflowFailureDetails;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
@@ -27,7 +27,9 @@ import java.time.Instant;
 /**
  * Represents a snapshot of a workflow instance's current state, including
  * metadata.
+ * @deprecated Use {@link DefaultWorkflowState} instead.
  */
+@Deprecated(forRemoval = true)
 public class DefaultWorkflowInstanceStatus implements WorkflowInstanceStatus {
 
   private final OrchestrationMetadata orchestrationMetadata;

@@ -112,6 +112,7 @@
         <module name="ModifierOrder"/>
         <module name="EmptyLineSeparator">
             <property name="allowNoEmptyLineBetweenFields" value="true"/>
+            <property name="allowMultipleEmptyLines" value="false"/>
         </module>
         <module name="SeparatorWrap">
             <property name="id" value="SeparatorWrapDot"/>
@@ -287,4 +288,13 @@
         <module name="SuppressWarningsHolder"/>
     </module>
     <module name="SuppressWarningsFilter"/>
+    <module name="RegexpHeader">
+        <property name="headerFile" value="${checkstyle.header.file}"/>
+        <property name="fileExtensions" value="java,xml"/>
+    </module>
+    <module name="SuppressionSingleFilter">
+        <property name="checks" value="RegexpHeader"/>
+        <property name="files" value=".*\.properties$"/>
+    </module>
+    <module name="NewlineAtEndOfFile"/>
 </module>

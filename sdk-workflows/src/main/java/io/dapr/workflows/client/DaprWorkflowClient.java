@@ -13,16 +13,17 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
-import com.microsoft.durabletask.DurableTaskClient;
-import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
-import com.microsoft.durabletask.NewOrchestrationInstanceOptions;
-import com.microsoft.durabletask.OrchestrationMetadata;
-import com.microsoft.durabletask.PurgeResult;
 import io.dapr.config.Properties;
+import io.dapr.durabletask.DurableTaskClient;
+import io.dapr.durabletask.DurableTaskGrpcClientBuilder;
+import io.dapr.durabletask.NewOrchestrationInstanceOptions;
+import io.dapr.durabletask.OrchestrationMetadata;
+import io.dapr.durabletask.PurgeResult;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.dapr.workflows.runtime.DefaultWorkflowInstanceStatus;
+import io.dapr.workflows.runtime.DefaultWorkflowState;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 
@@ -37,8 +38,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class DaprWorkflowClient implements AutoCloseable {
 
-  private static final ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
-
+  private ClientInterceptor workflowApiTokenInterceptor;
   private DurableTaskClient innerClient;
   private ManagedChannel grpcChannel;
 
@@ -55,7 +55,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param properties Properties for the GRPC Channel.
    */
   public DaprWorkflowClient(Properties properties) {
-    this(NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR));
+    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)));
   }
 
   /**
@@ -117,8 +117,8 @@ public class DaprWorkflowClient implements AutoCloseable {
   /**
    * Schedules a new workflow with a specified set of options for execution.
    *
-   * @param <T>        any Workflow type
-   * @param clazz      Class extending Workflow to start an instance of.
+   * @param <T>     any Workflow type
+   * @param clazz   Class extending Workflow to start an instance of.
    * @param options the options for the new workflow, including input, instance ID, etc.
    * @return the <code>instanceId</code> parameter value.
    */
@@ -127,6 +127,26 @@ public class DaprWorkflowClient implements AutoCloseable {
 
     return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(),
         orchestrationInstanceOptions);
+  }
+
+  /**
+   * Suspend the workflow associated with the provided instance id.
+   *
+   * @param workflowInstanceId Workflow instance id to suspend.
+   * @param reason             reason for suspending the workflow instance.
+   */
+  public void suspendWorkflow(String workflowInstanceId, @Nullable String reason) {
+    this.innerClient.suspendInstance(workflowInstanceId, reason);
+  }
+
+  /**
+   * Resume the workflow associated with the provided instance id.
+   *
+   * @param workflowInstanceId Workflow instance id to resume.
+   * @param reason             reason for resuming the workflow instance.
+   */
+  public void resumeWorkflow(String workflowInstanceId, @Nullable String reason) {
+    this.innerClient.resumeInstance(workflowInstanceId, reason);
   }
 
   /**
@@ -146,12 +166,29 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param getInputsAndOutputs <code>true</code> to fetch the workflow instance's
    *                            inputs, outputs, and custom status, or <code>false</code> to omit them
    * @return a metadata record that describes the workflow instance and it execution status, or a default instance
+   * @deprecated Use {@link #getWorkflowState(String, boolean)} instead.
    */
   @Nullable
+  @Deprecated(forRemoval = true)
   public WorkflowInstanceStatus getInstanceState(String instanceId, boolean getInputsAndOutputs) {
     OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
 
     return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+  }
+
+  /**
+   * Fetches workflow instance metadata from the configured durable store.
+   *
+   * @param instanceId          the unique ID of the workflow instance to fetch
+   * @param getInputsAndOutputs <code>true</code> to fetch the workflow instance's
+   *                            inputs, outputs, and custom status, or <code>false</code> to omit them
+   * @return a metadata record that describes the workflow instance and it execution status, or a default instance
+   */
+  @Nullable
+  public WorkflowState getWorkflowState(String instanceId, boolean getInputsAndOutputs) {
+    OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
+
+    return metadata == null ? null : new DefaultWorkflowState(metadata);
   }
 
   /**
@@ -170,7 +207,9 @@ public class DaprWorkflowClient implements AutoCloseable {
    *                            inputs, outputs, and custom status, or false to omit them
    * @return the workflow instance metadata or null if no such instance is found
    * @throws TimeoutException when the workflow instance is not started within the specified amount of time
+   * @deprecated Use {@link #waitForWorkflowStart(String, Duration, boolean)} instead.
    */
+  @Deprecated(forRemoval = true)
   @Nullable
   public WorkflowInstanceStatus waitForInstanceStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
       throws TimeoutException {
@@ -178,6 +217,33 @@ public class DaprWorkflowClient implements AutoCloseable {
     OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
 
     return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+  }
+
+
+  /**
+   * Waits for a workflow to start running and returns an
+   * {@link WorkflowState} object that contains metadata about the started
+   * instance and optionally its input, output, and custom status payloads.
+   *
+   * <p>A "started" workflow instance is any instance not in the Pending state.
+   *
+   * <p>If an workflow instance is already running when this method is called,
+   * the method will return immediately.
+   *
+   * @param instanceId          the unique ID of the workflow instance to wait for
+   * @param timeout             the amount of time to wait for the workflow instance to start
+   * @param getInputsAndOutputs true to fetch the workflow instance's
+   *                            inputs, outputs, and custom status, or false to omit them
+   * @return the workflow instance metadata or null if no such instance is found
+   * @throws TimeoutException when the workflow instance is not started within the specified amount of time
+   */
+  @Nullable
+  public WorkflowState waitForWorkflowStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
+      throws TimeoutException {
+
+    OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
+
+    return metadata == null ? null : new DefaultWorkflowState(metadata);
   }
 
   /**
@@ -198,14 +264,45 @@ public class DaprWorkflowClient implements AutoCloseable {
    *                            status, or false to omit them
    * @return the workflow instance metadata or null if no such instance is found
    * @throws TimeoutException when the workflow instance is not completed within the specified amount of time
+   * @deprecated Use {@link #waitForWorkflowCompletion(String, Duration, boolean)} instead.
    */
   @Nullable
+  @Deprecated(forRemoval = true)
   public WorkflowInstanceStatus waitForInstanceCompletion(String instanceId, Duration timeout,
-      boolean getInputsAndOutputs) throws TimeoutException {
+                                                          boolean getInputsAndOutputs) throws TimeoutException {
 
     OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
         getInputsAndOutputs);
     return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
+  }
+
+
+  /**
+   * Waits for an workflow to complete and returns an {@link WorkflowState} object that contains
+   * metadata about the completed instance.
+   *
+   * <p>A "completed" workflow instance is any instance in one of the terminal states. For example, the
+   * Completed, Failed, or Terminated states.
+   *
+   * <p>Workflows are long-running and could take hours, days, or months before completing.
+   * Workflows can also be eternal, in which case they'll never complete unless terminated.
+   * In such cases, this call may block indefinitely, so care must be taken to ensure appropriate timeouts are used.
+   * If an workflow instance is already complete when this method is called, the method will return immediately.
+   *
+   * @param instanceId          the unique ID of the workflow instance to wait for
+   * @param timeout             the amount of time to wait for the workflow instance to complete
+   * @param getInputsAndOutputs true to fetch the workflow instance's inputs, outputs, and custom
+   *                            status, or false to omit them
+   * @return the workflow instance metadata or null if no such instance is found
+   * @throws TimeoutException when the workflow instance is not completed within the specified amount of time
+   */
+  @Nullable
+  public WorkflowState waitForWorkflowCompletion(String instanceId, Duration timeout,
+                                                          boolean getInputsAndOutputs) throws TimeoutException {
+
+    OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
+        getInputsAndOutputs);
+    return metadata == null ? null : new DefaultWorkflowState(metadata);
   }
 
   /**
@@ -224,8 +321,26 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    * @param workflowInstanceId The unique ID of the workflow instance to purge.
    * @return Return true if the workflow state was found and purged successfully otherwise false.
+   * @deprecated Use {@link #purgeWorkflow(String)} instead.
    */
+  @Deprecated(forRemoval = true)
   public boolean purgeInstance(String workflowInstanceId) {
+    PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
+
+    if (result != null) {
+      return result.getDeletedInstanceCount() > 0;
+    }
+
+    return false;
+  }
+
+  /**
+   * Purges workflow instance state from the workflow state store.
+   *
+   * @param workflowInstanceId The unique ID of the workflow instance to purge.
+   * @return Return true if the workflow state was found and purged successfully otherwise false.
+   */
+  public boolean purgeWorkflow(String workflowInstanceId) {
     PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
 
     if (result != null) {

@@ -63,8 +63,10 @@ public class NewWorkflowOptions {
   /**
    * Sets the start time of the new workflow.
    *
-   * <p>By default, new workflow instances start executing immediately. This method can be used
-   * to start them at a specific time in the future.
+   * <p>By default, new workflow instances start executing immediately. This
+   * method can be used to start them at a specific time in the future. If set,
+   * Dapr will not wait for the workflow to "start" which can improve
+   * throughput of creating many workflows.
    *
    * @param startTime the start time of the new workflow
    * @return this {@link NewWorkflowOptions} object

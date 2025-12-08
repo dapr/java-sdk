@@ -37,7 +37,7 @@ public class DaprClientAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean(DaprConnectionDetails.class)
   DaprConnectionDetails daprConnectionDetails(DaprClientProperties properties) {
-    return new PropertiesDaprConnectionDetails(properties);
+    return new ClientPropertiesDaprConnectionDetails(properties);
   }
 
   @Bean
@@ -66,6 +66,11 @@ public class DaprClientAutoConfiguration {
 
     if (grpcPort != null) {
       builder.withPropertyOverride(Properties.GRPC_PORT, String.valueOf(grpcPort));
+    }
+
+    String apiToken = daprConnectionDetails.getApiToken();
+    if (apiToken != null) {
+      builder.withPropertyOverride(Properties.API_TOKEN, apiToken);
     }
 
     return builder;
@@ -143,6 +148,11 @@ public class DaprClientAutoConfiguration {
 
     if (grpcPort != null) {
       propertyOverrides.put(Properties.GRPC_PORT.getName(), String.valueOf(grpcPort));
+    }
+
+    String apiToken = daprConnectionDetails.getApiToken();
+    if (apiToken != null) {
+      propertyOverrides.put(Properties.API_TOKEN.getName(), apiToken);
     }
 
     return new Properties(propertyOverrides);

@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.config.Properties;
+import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
@@ -23,12 +23,15 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class WorkflowRuntimeBuilder {
-  private static final ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
+  private ClientInterceptor workflowApiTokenInterceptor;
   private static volatile WorkflowRuntime instance;
   private final Logger logger;
   private final Set<String> workflows = new HashSet<>();
@@ -36,6 +39,8 @@ public class WorkflowRuntimeBuilder {
   private final Set<String> activitySet = Collections.synchronizedSet(new HashSet<>());
   private final Set<String> workflowSet = Collections.synchronizedSet(new HashSet<>());
   private final DurableTaskGrpcWorkerBuilder builder;
+  private final ManagedChannel managedChannel;
+  private ExecutorService executorService;
 
   /**
    * Constructs the WorkflowRuntimeBuilder.
@@ -58,8 +63,9 @@ public class WorkflowRuntimeBuilder {
   }
 
   private WorkflowRuntimeBuilder(Properties properties, Logger logger) {
-    ManagedChannel managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR);
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(managedChannel);
+    this.workflowApiTokenInterceptor = new ApiTokenClientInterceptor(properties);
+    this.managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, workflowApiTokenInterceptor);
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(this.managedChannel);
     this.logger = logger;
   }
 
@@ -71,8 +77,11 @@ public class WorkflowRuntimeBuilder {
   public WorkflowRuntime build() {
     if (instance == null) {
       synchronized (WorkflowRuntime.class) {
+        this.executorService = this.executorService == null ? Executors.newCachedThreadPool() : this.executorService;
         if (instance == null) {
-          instance = new WorkflowRuntime(this.builder.build());
+          instance = new WorkflowRuntime(
+                  this.builder.withExecutorService(this.executorService).build(),
+                  this.managedChannel, this.executorService);
         }
       }
     }
@@ -82,6 +91,18 @@ public class WorkflowRuntimeBuilder {
     this.logger.info("Successfully built dapr workflow runtime");
 
     return instance;
+  }
+
+  /**
+   * Register Executor Service to use with workflow.
+   *
+   * @param executorService to be used.
+   * @return {@link WorkflowRuntimeBuilder}.
+   */
+  public WorkflowRuntimeBuilder withExecutorService(ExecutorService executorService) {
+    this.executorService = executorService;
+    this.builder.withExecutorService(executorService);
+    return this;
   }
 
   /**
@@ -128,9 +149,21 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(Class<T> clazz) {
-    this.builder.addActivity(new WorkflowActivityClassWrapper<>(clazz));
-    this.activitySet.add(clazz.getCanonicalName());
-    this.activities.add(clazz.getSimpleName());
+    return registerActivity(clazz.getCanonicalName(), clazz);
+  }
+
+  /**
+   * Registers an Activity object.
+   *
+   * @param <T>   any WorkflowActivity type
+   * @param name Name of the activity to register.
+   * @param clazz Class of the activity to register.
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(String name, Class<T> clazz) {
+    this.builder.addActivity(new WorkflowActivityClassWrapper<>(name, clazz));
+    this.activitySet.add(name);
+    this.activities.add(name);
 
     this.logger.info("Registered Activity: {}", clazz.getSimpleName());
 
@@ -145,13 +178,23 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(T instance) {
-    Class<T> clazz = (Class<T>) instance.getClass();
+    return this.registerActivity(instance.getClass().getCanonicalName(), instance);
+  }
 
-    this.builder.addActivity(new WorkflowActivityInstanceWrapper<>(instance));
-    this.activitySet.add(clazz.getCanonicalName());
-    this.activities.add(clazz.getSimpleName());
+  /**
+   * Registers an Activity object.
+   *
+   * @param <T>   any WorkflowActivity type
+   * @param name Name of the activity to register.
+   * @param instance the class instance being registered
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(String name, T instance) {
+    this.builder.addActivity(new WorkflowActivityInstanceWrapper<>(name, instance));
+    this.activitySet.add(name);
+    this.activities.add(name);
 
-    this.logger.info("Registered Activity: {}", clazz.getSimpleName());
+    this.logger.info("Registered Activity: {}", name);
 
     return this;
   }

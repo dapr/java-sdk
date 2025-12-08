@@ -1242,6 +1242,64 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void saveStateWithMetaTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("custom", "customValue");
+    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).saveState(argument.capture(), any());
+
+
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, metadata,null);
+    result.block();
+    assertEquals("customValue", argument.getValue().getStates(0).getMetadata().get("custom"));
+  }
+
+  @Test
+  public void saveStateWithMetaContentTypeTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    Map<String, String> metadata = new HashMap<>();
+    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).saveState(argument.capture(), any());
+
+
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, metadata,null);
+    result.block();
+    assertEquals("application/json", argument.getValue().getStates(0).getMetadata().get("contentType"));
+  }
+
+  @Test
+  public void saveStateWithMetaEmptyTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).saveState(argument.capture(), any());
+
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, null, null,null);
+    result.block();
+    assertTrue(argument.getValue().getStates(0).getMetadata().keySet().isEmpty());
+  }
+
+  @Test
   public void saveStateTest() {
     String key = "key1";
     String etag = "ETag1";
@@ -1365,7 +1423,7 @@ public class DaprClientGrpcTest {
    * you will not find the state.
    * <p>This test will execute the following flow:</p>
    * <ol>
-   *   <li>Exeucte client getState for Key=key1</li>
+   *   <li>Execute client getState for Key=key1</li>
    *   <li>Block for result to the the state</li>
    *   <li>Assert the Returned State is the expected to key1</li>
    *   <li>Execute client getState for Key=key2</li>

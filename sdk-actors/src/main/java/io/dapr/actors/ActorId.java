@@ -123,7 +123,6 @@ public class ActorId extends Object implements Comparable<ActorId> {
     return new ActorId(id.toString());
   }
 
-
   /**
    * Compares if two actors have the same content.
    *

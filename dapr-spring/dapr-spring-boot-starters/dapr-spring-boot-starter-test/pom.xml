@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-parent</artifactId>
-        <version>0.15.0-SNAPSHOT</version>
+      <version>1.17.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -23,12 +23,10 @@
         <dependency>
             <groupId>io.dapr.spring</groupId>
             <artifactId>dapr-spring-boot-tests</artifactId>
-            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dapr</groupId>
             <artifactId>testcontainers-dapr</artifactId>
-            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

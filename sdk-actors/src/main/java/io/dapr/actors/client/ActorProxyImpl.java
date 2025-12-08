@@ -42,7 +42,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
   private final String actorType;
 
   /**
-   * Serializer/deserialzier to exchange message for Actors.
+   * Serializer/deserializer to exchange message for Actors.
    */
   private final DaprObjectSerializer serializer;
 

@@ -19,15 +19,16 @@ mvn versions:set-property -Dproperty=dapr.sdk.alpha.version -DnewVersion=$DAPR_J
 ###################
 
 # sdk-workflows
-mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f sdk-workflows/pom.xml
+mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -f sdk-workflows/pom.xml
 
 # testcontainers-dapr
-mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f testcontainers-dapr/pom.xml
+mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -f testcontainers-dapr/pom.xml
 
 # dapr-spring
-mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f dapr-spring/pom.xml
+mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -DprocessDependencies=true -f dapr-spring/pom.xml
+mvn versions:set-property -Dproperty=dapr.spring.version -DnewVersion=$DAPR_JAVA_SDK_VERSION -f dapr-spring/pom.xml
 
 # spring-boot-examples
-mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f spring-boot-examples/pom.xml
+mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -f spring-boot-examples/pom.xml
 
 git clean -f

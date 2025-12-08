@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.TaskActivity;
-import com.microsoft.durabletask.TaskActivityFactory;
+import io.dapr.durabletask.TaskActivity;
+import io.dapr.durabletask.TaskActivityFactory;
 import io.dapr.workflows.WorkflowActivity;
 
 /**
@@ -27,11 +27,21 @@ public class WorkflowActivityInstanceWrapper<T extends WorkflowActivity> impleme
   /**
    * Constructor for WorkflowActivityWrapper.
    *
+   * @param name     Name of the activity to wrap.
+   * @param instance Instance of the activity to wrap.
+   */
+  public WorkflowActivityInstanceWrapper(String name, T instance) {
+    this.name = name;
+    this.activity = instance;
+  }
+
+  /**
+   * Constructor for WorkflowActivityWrapper.
+   *
    * @param instance Instance of the activity to wrap.
    */
   public WorkflowActivityInstanceWrapper(T instance) {
-    this.name = instance.getClass().getCanonicalName();
-    this.activity = instance;
+    this(instance.getClass().getCanonicalName(), instance);
   }
 
   @Override
@@ -41,6 +51,6 @@ public class WorkflowActivityInstanceWrapper<T extends WorkflowActivity> impleme
 
   @Override
   public TaskActivity create() {
-    return ctx -> activity.run(new DefaultWorkflowActivityContext(ctx));
+    return ctx -> activity.run(new DefaultWorkflowActivityContext(ctx, activity.getClass()));
   }
 }

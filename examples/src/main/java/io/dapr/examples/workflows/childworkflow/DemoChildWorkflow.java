@@ -13,8 +13,13 @@ limitations under the License.
 
 package io.dapr.examples.workflows.childworkflow;
 
+import io.dapr.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
+import io.dapr.workflows.WorkflowTaskOptions;
+import io.dapr.workflows.WorkflowTaskRetryPolicy;
+
+import java.time.Duration;
 
 public class DemoChildWorkflow implements Workflow {
   @Override
@@ -22,11 +27,18 @@ public class DemoChildWorkflow implements Workflow {
     return ctx -> {
       ctx.getLogger().info("Starting ChildWorkflow: " + ctx.getName());
 
+      WorkflowTaskRetryPolicy policy = WorkflowTaskRetryPolicy.newBuilder()
+              .setFirstRetryInterval(Duration.ofSeconds(1))
+              .setMaxNumberOfAttempts(10)
+              .build();
+
+      WorkflowTaskOptions options = new WorkflowTaskOptions(policy);
+
       var childWorkflowInput = ctx.getInput(String.class);
       ctx.getLogger().info("ChildWorkflow received input: " + childWorkflowInput);
 
       ctx.getLogger().info("ChildWorkflow is calling Activity: " + ReverseActivity.class.getName());
-      String result = ctx.callActivity(ReverseActivity.class.getName(), childWorkflowInput, String.class).await();
+      String result = ctx.callActivity(ReverseActivity.class.getName(), childWorkflowInput, options, String.class).await();
 
       ctx.getLogger().info("ChildWorkflow finished with: " + result);
       ctx.complete(result);

@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.spring.boot.autoconfigure.client;
 
-import io.dapr.spring.data.DaprKeyValueAdapterResolver;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "dapr.client")
@@ -22,7 +21,7 @@ public class DaprClientProperties {
   private String grpcEndpoint;
   private Integer httpPort;
   private Integer grpcPort;
-
+  private String apiToken;
 
   /**
    * Constructs a {@link DaprClientProperties}.
@@ -36,12 +35,15 @@ public class DaprClientProperties {
    * @param grpcEndpoint grpc endpoint to interact with the Dapr Sidecar
    * @param httpPort http port to interact with the Dapr Sidecar
    * @param grpcPort grpc port to interact with the Dapr Sidecar
+   * @param apiToken dapr API token to interact with the Dapr Sidecar
    */
-  public DaprClientProperties(String httpEndpoint, String grpcEndpoint, Integer httpPort, Integer grpcPort) {
+  public DaprClientProperties(String httpEndpoint, String grpcEndpoint, Integer httpPort, Integer grpcPort,
+                              String apiToken) {
     this.httpEndpoint = httpEndpoint;
     this.grpcEndpoint = grpcEndpoint;
     this.httpPort = httpPort;
     this.grpcPort = grpcPort;
+    this.apiToken = apiToken;
   }
 
   public String getHttpEndpoint() {
@@ -74,5 +76,13 @@ public class DaprClientProperties {
 
   public void setGrpcPort(Integer grpcPort) {
     this.grpcPort = grpcPort;
+  }
+
+  public String getApiToken() {
+    return apiToken;
+  }
+
+  public void setApiToken(String apiToken) {
+    this.apiToken = apiToken;
   }
 }

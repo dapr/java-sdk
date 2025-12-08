@@ -13,21 +13,20 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import com.microsoft.durabletask.CompositeTaskFailedException;
-import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskCanceledException;
-import com.microsoft.durabletask.TaskOptions;
-import com.microsoft.durabletask.TaskOrchestrationContext;
-
+import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.RetryContext;
+import io.dapr.durabletask.RetryHandler;
+import io.dapr.durabletask.Task;
+import io.dapr.durabletask.TaskCanceledException;
+import io.dapr.durabletask.TaskOptions;
+import io.dapr.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.runtime.DefaultWorkflowContext;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -35,24 +34,21 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 public class DefaultWorkflowContextTest {
   private DefaultWorkflowContext context;
+  private DefaultWorkflowContext contextWithClass;
   private TaskOrchestrationContext mockInnerContext;
   private WorkflowContext testWorkflowContext;
 
   @BeforeEach
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
-    context = new DefaultWorkflowContext(mockInnerContext);
     testWorkflowContext = new WorkflowContext() {
       @Override
       public Logger getLogger() {
@@ -121,6 +117,11 @@ public class DefaultWorkflowContextTest {
       }
 
       @Override
+      public Task<Void> createTimer(ZonedDateTime zonedDateTime) {
+        return null;
+      }
+
+      @Override
       public <V> V getInput(Class<V> targetType) {
         return null;
       }
@@ -134,7 +135,14 @@ public class DefaultWorkflowContextTest {
       @Override
       public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
       }
+
+      @Override
+      public void setCustomStatus(Object status) {
+
+      }
     };
+    context = new DefaultWorkflowContext(mockInnerContext);
+    contextWithClass = new DefaultWorkflowContext(mockInnerContext, testWorkflowContext.getClass());
   }
 
   @Test
@@ -265,8 +273,10 @@ public class DefaultWorkflowContextTest {
   }
 
   @Test
-  public void createTimerWithZonedDateTimeThrowsTest() {
-    assertThrows(UnsupportedOperationException.class, () -> context.createTimer(ZonedDateTime.now()));
+  public void createTimerWithZonedDateTimeTest() {
+    ZonedDateTime now = ZonedDateTime.now();
+    context.createTimer(now);
+    verify(mockInnerContext, times(1)).createTimer(now);
   }
 
   @Test
@@ -278,7 +288,7 @@ public class DefaultWorkflowContextTest {
   }
 
   @Test
-  public void callChildWorkflowWithOptions() {
+  public void callChildWorkflowWithRetryPolicy() {
     String expectedName = "TestActivity";
     String expectedInput = "TestInput";
     String expectedInstanceId = "TestInstanceId";
@@ -304,6 +314,91 @@ public class DefaultWorkflowContextTest {
 
     assertEquals(retryPolicy.getMaxNumberOfAttempts(), taskOptions.getRetryPolicy().getMaxNumberOfAttempts());
     assertEquals(retryPolicy.getFirstRetryInterval(), taskOptions.getRetryPolicy().getFirstRetryInterval());
+    assertEquals(Duration.ZERO, taskOptions.getRetryPolicy().getRetryTimeout());
+    assertNull(taskOptions.getRetryHandler());
+  }
+
+  @Test
+  public void callChildWorkflowWithRetryHandler() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+
+    WorkflowTaskRetryHandler retryHandler = spy(new WorkflowTaskRetryHandler() {
+      @Override
+      public boolean handle(WorkflowTaskRetryContext retryContext) {
+        return true;
+      }
+    });
+
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(retryHandler);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callSubOrchestrator(
+                    eq(expectedName),
+                    eq(expectedInput),
+                    eq(expectedInstanceId),
+                    captor.capture(),
+                    eq(String.class)
+            );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    RetryHandler durableRetryHandler = taskOptions.getRetryHandler();
+    RetryContext retryContext = mock(RetryContext.class, invocationOnMock -> null);
+
+    durableRetryHandler.handle(retryContext);
+
+    verify(retryHandler, times(1)).handle(any());
+    assertNull(taskOptions.getRetryPolicy());
+  }
+
+  @Test
+  public void callChildWorkflowWithRetryPolicyAndHandler() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(1)
+            .setFirstRetryInterval(Duration.ofSeconds(10))
+            .build();
+
+    WorkflowTaskRetryHandler retryHandler = spy(new WorkflowTaskRetryHandler() {
+      @Override
+      public boolean handle(WorkflowTaskRetryContext retryContext) {
+        return true;
+      }
+    });
+
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(retryPolicy, retryHandler);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callSubOrchestrator(
+                    eq(expectedName),
+                    eq(expectedInput),
+                    eq(expectedInstanceId),
+                    captor.capture(),
+                    eq(String.class)
+            );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    RetryHandler durableRetryHandler = taskOptions.getRetryHandler();
+    RetryContext retryContext = mock(RetryContext.class, invocationOnMock -> null);
+
+    durableRetryHandler.handle(retryContext);
+
+    verify(retryHandler, times(1)).handle(any());
+    assertEquals(retryPolicy.getMaxNumberOfAttempts(), taskOptions.getRetryPolicy().getMaxNumberOfAttempts());
+    assertEquals(retryPolicy.getFirstRetryInterval(), taskOptions.getRetryPolicy().getFirstRetryInterval());
+    assertEquals(Duration.ZERO, taskOptions.getRetryPolicy().getRetryTimeout());
   }
 
   @Test
@@ -313,6 +408,15 @@ public class DefaultWorkflowContextTest {
 
     context.callChildWorkflow(expectedName, expectedInput, String.class);
     verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, null, null, String.class);
+  }
+
+  @Test
+  public void setCustomStatusWorkflow() {
+    String customStatus = "CustomStatus";
+
+    context.setCustomStatus(customStatus);
+    verify(mockInnerContext, times(1)).setCustomStatus(customStatus);
+
   }
 
   @Test
@@ -326,5 +430,53 @@ public class DefaultWorkflowContextTest {
     RuntimeException runtimeException = assertThrows(RuntimeException.class, testWorkflowContext::newUuid);
     String expectedMessage = "No implementation found.";
     assertEquals(expectedMessage, runtimeException.getMessage());
+  }
+
+  @Test
+  public void workflowRetryPolicyRetryTimeoutValueShouldHaveRightValueWhenBeingSet() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(1)
+            .setFirstRetryInterval(Duration.ofSeconds(10))
+            .setRetryTimeout(Duration.ofSeconds(10))
+            .build();
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(retryPolicy);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callSubOrchestrator(
+                    eq(expectedName),
+                    eq(expectedInput),
+                    eq(expectedInstanceId),
+                    captor.capture(),
+                    eq(String.class)
+            );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    assertEquals(Duration.ofSeconds(10), taskOptions.getRetryPolicy().getRetryTimeout());
+  }
+
+  @Test
+  public void workflowRetryPolicyRetryThrowIllegalArgumentWhenNullRetryTimeoutIsSet() {
+    assertThrows(IllegalArgumentException.class, () ->
+            WorkflowTaskRetryPolicy.newBuilder()
+                    .setMaxNumberOfAttempts(1)
+                    .setFirstRetryInterval(Duration.ofSeconds(10))
+                    .setRetryTimeout(null)
+                    .build());
+  }
+
+  @Test
+  public void workflowRetryPolicyRetryThrowIllegalArgumentWhenRetryTimeoutIsLessThanMaxRetryInterval() {
+    assertThrows(IllegalArgumentException.class, () -> WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(1)
+            .setFirstRetryInterval(Duration.ofSeconds(10))
+            .setRetryTimeout(Duration.ofSeconds(9))
+            .build());
   }
 }

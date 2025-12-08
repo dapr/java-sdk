@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.TaskActivity;
-import com.microsoft.durabletask.TaskActivityFactory;
+import io.dapr.durabletask.TaskActivity;
+import io.dapr.durabletask.TaskActivityFactory;
 import io.dapr.workflows.WorkflowActivity;
 
 import java.lang.reflect.Constructor;
@@ -30,17 +30,26 @@ public class WorkflowActivityClassWrapper<T extends WorkflowActivity> implements
   /**
    * Constructor for WorkflowActivityWrapper.
    *
+   * @param name  Name of the activity to wrap.
    * @param clazz Class of the activity to wrap.
    */
-  public WorkflowActivityClassWrapper(Class<T> clazz) {
-    this.name = clazz.getCanonicalName();
+  public WorkflowActivityClassWrapper(String name, Class<T> clazz) {
+    this.name = name;
     try {
       this.activityConstructor = clazz.getDeclaredConstructor();
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(
-          String.format("No constructor found for activity class '%s'.", this.name), e
-      );
+          String.format("No constructor found for activity class '%s'.", this.name), e);
     }
+  }
+
+  /**
+   * Constructor for WorkflowActivityWrapper.
+   *
+   * @param clazz Class of the activity to wrap.
+   */
+  public WorkflowActivityClassWrapper(Class<T> clazz) {
+    this(clazz.getCanonicalName(), clazz);
   }
 
   @Override
@@ -48,22 +57,20 @@ public class WorkflowActivityClassWrapper<T extends WorkflowActivity> implements
     return name;
   }
 
-
   @Override
   public TaskActivity create() {
     return ctx -> {
       Object result;
       T activity;
-      
+
       try {
         activity = this.activityConstructor.newInstance();
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(
-            String.format("Unable to instantiate instance of activity class '%s'", this.name), e
-        );
+            String.format("Unable to instantiate instance of activity class '%s'", this.name), e);
       }
 
-      result = activity.run(new DefaultWorkflowActivityContext(ctx));
+      result = activity.run(new DefaultWorkflowActivityContext(ctx, activity.getClass()));
       return result;
     };
   }
