@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,6 +34,8 @@ public class DaprWorkflowDashboardTest {
       dashboard.configure();
       assertNotNull(dashboard.getEnvMap().get("COMPONENT_FILE"));
       assertFalse(dashboard.getEnvMap().get("COMPONENT_FILE").isEmpty());
+      assertEquals(8080, dashboard.getPort());
+
     }
   }
 }
