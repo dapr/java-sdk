@@ -22,7 +22,7 @@ import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.ScheduleJobRequest;
-import io.dapr.it.testcontainers.DaprPreviewClientConfiguration;
+import io.dapr.it.testcontainers.DaprClientConfiguration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +50,7 @@ import static org.junit.Assert.assertEquals;
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     classes = {
-        DaprPreviewClientConfiguration.class,
+        DaprClientConfiguration.class,
         TestJobsApplication.class
     }
 )
