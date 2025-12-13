@@ -17,6 +17,7 @@
     <grpc.version>1.69.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
     <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.16.0-rc.5/dapr/proto</dapr.proto.baseurl>
+    <durabletask.proto.url>https://raw.githubusercontent.com/dapr/durabletask-protobuf/main/protos/orchestrator_service.proto</durabletask.proto.url>
     <dapr.sdk.version>1.17.0-SNAPSHOT</dapr.sdk.version>
     <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.8.1</maven-dependency-plugin.version>
@@ -41,12 +42,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <!--
-        manually declare durabletask-client's jackson dependencies for workflows sdk
-        which conflict with dapr-sdk's jackson dependencies
-        https://github.com/dapr/durabletask-java/blob/main/client/build.gradle#L16
-        -->
-    <jackson.version>2.16.1</jackson.version>
+    <jackson.version>2.16.2</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.fail>true</spotbugs.fail>
     <spotbugs.exclude.filter.file>${maven.multiModuleProjectDirectory}/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
@@ -80,7 +76,6 @@
     <junit-vintage-engine.version>5.7.0</junit-vintage-engine.version>
     <junit-platform-console.version>1.7.0</junit-platform-console.version>
     <reactor.version>3.5.12</reactor.version>
-    <durabletask-client.version>1.5.10</durabletask-client.version>
     <testcontainers-redis.version>2.2.2</testcontainers-redis.version>
     <slf4j.version>2.0.9</slf4j.version>
     <mockito.version>3.11.2</mockito.version>
@@ -361,6 +356,11 @@
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>${junit-bom.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-params</artifactId>
         <version>${junit-bom.version}</version>
       </dependency>
@@ -368,11 +368,6 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
         <version>${reactor.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr</groupId>
-        <artifactId>durabletask-client</artifactId>
-        <version>${durabletask-client.version}</version>
       </dependency>
       <dependency>
         <groupId>com.redis</groupId>
@@ -496,6 +491,10 @@
                 <goal>check</goal>
               </goals>
               <configuration>
+                <excludes>
+                  <exclude>io/dapr/durabletask/**/*</exclude>
+                  <exclude>io/dapr/springboot/examples/**/*</exclude>
+                </excludes>
                 <rules>
                   <rule>
                     <element>BUNDLE</element>
@@ -698,6 +697,7 @@
     <module>spring-boot-examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
+    <module>durabletask-client</module>
   </modules>
 
   <profiles>
@@ -706,6 +706,7 @@
       <modules>
         <module>sdk-tests</module>
         <module>spring-boot-examples</module>
+        <module>durabletask-client</module>
       </modules>
         <build>
             <plugins>
