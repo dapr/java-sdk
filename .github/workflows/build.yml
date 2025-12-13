@@ -46,10 +46,58 @@ jobs:
           name: report-dapr-java-sdk-actors-jdk${{ env.JDK_VER }}
           path: sdk-actors/target/jacoco-report/
 
+  build-durabletask:
+    name: "Durable Task build & tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: false
+    env:
+      JDK_VER: 17
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set up OpenJDK ${{ env.JDK_VER }}
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JDK_VER }}
+    - name: Checkout Durable Task Sidecar
+      uses: actions/checkout@v4
+      with:
+        repository: dapr/durabletask-go
+        path: durabletask-sidecar
+
+    # TODO: Move the sidecar into a central image repository
+    - name: Initialize Durable Task Sidecar
+      run: docker run -d --name durabletask-sidecar -p 4001:4001 --rm -i $(docker build -q ./durabletask-sidecar)
+
+    - name: Display Durable Task Sidecar Logs
+      run: nohup docker logs --since=0 durabletask-sidecar > durabletask-sidecar.log 2>&1 &
+
+      # wait for 10 seconds, so sidecar container can be fully up, this will avoid intermittent failing issues for integration tests causing by failed to connect to sidecar
+    - name: Wait for 10 seconds
+      run: sleep 10
+
+    - name: Integration Tests For Durable Tasks
+      run: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify || echo "TEST_FAILED=true" >> $GITHUB_ENV
+      continue-on-error: true
+
+    - name: Kill Durable Task Sidecar
+      run: docker kill durabletask-sidecar
+
+    - name: Upload Durable Task Sidecar Logs
+      uses: actions/upload-artifact@v4
+      with:
+        name: Durable Task Sidecar Logs
+        path: durabletask-sidecar.log
+
+    - name: Fail the job if tests failed
+      if: env.TEST_FAILED == 'true'
+      run: exit 1
+
   build:
     name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-display-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
@@ -151,7 +199,7 @@ jobs:
       run: ./mvnw clean install -B -q -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
-      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -Pintegration-tests dependency:copy-dependencies verify
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v5
@@ -165,9 +213,10 @@ jobs:
         name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/surefire-reports
 
+
   publish:
     runs-on: ubuntu-latest
-    needs: [ build, test ]
+    needs: [ build, test, build-durabletask ]
     timeout-minutes: 30
     env:
       JDK_VER: 17
