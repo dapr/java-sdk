@@ -121,6 +121,24 @@ class SubscriptionWaitStrategyTest {
     assertEquals("any subscription", any.getConditionDescription());
   }
 
+  @Test
+  @DisplayName("Should return false when metadata is null")
+  void shouldReturnFalseWhenMetadataIsNull() {
+    SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", "orders");
+
+    assertFalse(strategy.isConditionMet(null));
+  }
+
+  @Test
+  @DisplayName("Should handle null subscription in list without throwing NPE")
+  void shouldHandleNullSubscriptionInList() {
+    SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", "orders");
+    Metadata metadata = new Metadata();
+    metadata.setSubscriptions(Arrays.asList(null, createSubscription("pubsub", "orders")));
+
+    assertTrue(strategy.isConditionMet(metadata));
+  }
+
   private Metadata createMetadataWithSubscription(String pubsubName, String topic) {
     Metadata metadata = new Metadata();
     metadata.setSubscriptions(Collections.singletonList(createSubscription(pubsubName, topic)));

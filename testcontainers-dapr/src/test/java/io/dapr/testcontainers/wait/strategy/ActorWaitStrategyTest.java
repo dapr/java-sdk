@@ -111,6 +111,22 @@ class ActorWaitStrategyTest {
     assertTrue(strategy.isConditionMet(metadata));
   }
 
+  @Test
+  @DisplayName("Should return false when metadata is null")
+  void shouldReturnFalseWhenMetadataIsNull() {
+    ActorWaitStrategy strategy = new ActorWaitStrategy();
+
+    assertFalse(strategy.isConditionMet(null));
+  }
+
+  @Test
+  @DisplayName("Should return false when metadata is null and actor type is specified")
+  void shouldReturnFalseWhenMetadataIsNullAndActorTypeSpecified() {
+    ActorWaitStrategy strategy = new ActorWaitStrategy("MyActor");
+
+    assertFalse(strategy.isConditionMet(null));
+  }
+
   private Metadata createMetadataWithActor(String actorType) {
     Metadata metadata = new Metadata();
     metadata.setActors(Collections.singletonList(createActor(actorType)));
