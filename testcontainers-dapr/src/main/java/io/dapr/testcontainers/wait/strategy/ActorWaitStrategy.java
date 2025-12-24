@@ -49,7 +49,10 @@ public class ActorWaitStrategy extends DaprWaitStrategy {
   }
 
   private boolean matchesActorType(Actor actor) {
-    return actor != null && actorType.equals(actor.getType());
+    if (actor == null || actorType == null) {
+      return false;
+    }
+    return actorType.equals(actor.getType());
   }
 
   @Override
