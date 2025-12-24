@@ -20,6 +20,7 @@ import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.spring.DaprContainerFactory;
 import io.dapr.testcontainers.spring.DaprSidecarContainer;
 import io.dapr.testcontainers.spring.DaprSpringBootTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +41,7 @@ public class DaprActorsIT {
   private static final String ACTORS_MESSAGE_PATTERN = ".*Actor runtime started.*";
 
   @DaprSidecarContainer
-  private static final DaprContainer DAPR_CONTAINER = DaprContainer.createForSpringBootTest("actor-dapr-app")
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory.createForSpringBootTest("actor-dapr-app")
       .withComponent(new Component("kvstore", "state.in-memory", "v1",
           Map.of("actorStateStore", "true")))
       .withDaprLogLevel(DaprLogLevel.DEBUG)

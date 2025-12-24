@@ -30,7 +30,6 @@ import org.testcontainers.utility.DockerImageName;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -104,43 +103,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
    */
   public DaprContainer(String image) {
     this(DockerImageName.parse(image));
-  }
-
-  /**
-   * Creates a DaprContainer pre-configured for Spring Boot integration tests.
-   * This factory method handles the common setup required for bidirectional
-   * communication between Spring Boot and the Dapr sidecar:
-   * <ul>
-   *   <li>Allocates a free port for the Spring Boot application</li>
-   *   <li>Configures the app channel address for container-to-host communication</li>
-   * </ul>
-   *
-   * <p>Example usage:</p>
-   * <pre>{@code
-   * @Container
-   * private static final DaprContainer DAPR = DaprContainer.createForSpringBootTest("my-app")
-   *     .withComponent(new Component("statestore", "state.in-memory", "v1", Map.of()));
-   * }</pre>
-   *
-   * @param appName the Dapr application name
-   * @return a pre-configured DaprContainer for Spring Boot tests
-   */
-  public static DaprContainer createForSpringBootTest(String appName) {
-    int port = allocateFreePort();
-
-    return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
-        .withAppName(appName)
-        .withAppPort(port)
-        .withAppChannelAddress("host.testcontainers.internal");
-  }
-
-  private static int allocateFreePort() {
-    try (ServerSocket socket = new ServerSocket(0)) {
-      socket.setReuseAddress(true);
-      return socket.getLocalPort();
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to allocate free port", e);
-    }
   }
 
   public Configuration getConfiguration() {
