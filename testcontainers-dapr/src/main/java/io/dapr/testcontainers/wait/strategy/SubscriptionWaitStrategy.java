@@ -19,7 +19,7 @@ import io.dapr.testcontainers.wait.strategy.metadata.Subscription;
 /**
  * Wait strategy that waits for a specific subscription to be registered with Dapr.
  */
-public class SubscriptionWaitStrategy extends DaprWaitStrategy {
+public class SubscriptionWaitStrategy extends AbstractDaprWaitStrategy {
 
   private final String pubsubName;
   private final String topic;
@@ -37,11 +37,17 @@ public class SubscriptionWaitStrategy extends DaprWaitStrategy {
 
   @Override
   protected boolean isConditionMet(Metadata metadata) {
+    if (metadata == null) {
+      return false;
+    }
     return metadata.getSubscriptions().stream()
         .anyMatch(this::matchesSubscription);
   }
 
   private boolean matchesSubscription(Subscription subscription) {
+    if (subscription == null) {
+      return false;
+    }
     boolean pubsubMatches = pubsubName == null || pubsubName.equals(subscription.getPubsubname());
     boolean topicMatches = topic == null || topic.equals(subscription.getTopic());
     return pubsubMatches && topicMatches;

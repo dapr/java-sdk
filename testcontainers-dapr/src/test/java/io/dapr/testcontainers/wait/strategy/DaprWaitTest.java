@@ -32,7 +32,7 @@ class DaprWaitTest {
   @Test
   @DisplayName("forSubscription should create SubscriptionWaitStrategy")
   void forSubscriptionShouldCreateSubscriptionWaitStrategy() {
-    DaprWaitStrategy strategy = DaprWait.forSubscription("pubsub", "orders");
+    AbstractDaprWaitStrategy strategy = DaprWait.forSubscription("pubsub", "orders");
 
     assertInstanceOf(SubscriptionWaitStrategy.class, strategy);
   }
@@ -76,7 +76,7 @@ class DaprWaitTest {
   @Test
   @DisplayName("forCondition should create custom wait strategy with predicate")
   void forConditionShouldCreateCustomWaitStrategy() {
-    DaprWaitStrategy strategy = DaprWait.forCondition(
+    AbstractDaprWaitStrategy strategy = DaprWait.forCondition(
         metadata -> metadata.getComponents().size() >= 2,
         "at least 2 components"
     );
@@ -101,7 +101,7 @@ class DaprWaitTest {
   @Test
   @DisplayName("Strategy should support fluent configuration with poll interval and timeout")
   void strategyShouldSupportFluentConfiguration() {
-    DaprWaitStrategy strategy = DaprWait.forSubscription("pubsub", "orders")
+    AbstractDaprWaitStrategy strategy = DaprWait.forSubscription("pubsub", "orders")
         .withPollInterval(Duration.ofMillis(250));
     strategy.withStartupTimeout(Duration.ofSeconds(60));
 

@@ -19,7 +19,7 @@ import io.dapr.testcontainers.wait.strategy.metadata.Metadata;
 /**
  * Wait strategy that waits for actors to be registered with Dapr.
  */
-public class ActorWaitStrategy extends DaprWaitStrategy {
+public class ActorWaitStrategy extends AbstractDaprWaitStrategy {
 
   private final String actorType;
 
@@ -41,6 +41,9 @@ public class ActorWaitStrategy extends DaprWaitStrategy {
 
   @Override
   protected boolean isConditionMet(Metadata metadata) {
+    if (metadata == null) {
+      return false;
+    }
     if (actorType == null) {
       return !metadata.getActors().isEmpty();
     }

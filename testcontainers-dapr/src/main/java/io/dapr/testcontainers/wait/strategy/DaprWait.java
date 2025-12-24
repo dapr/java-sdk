@@ -93,7 +93,7 @@ public final class DaprWait {
    * @param description a human-readable description of the condition
    * @return a new custom wait strategy
    */
-  public static DaprWaitStrategy forCondition(Predicate<Metadata> predicate, String description) {
-    return DaprWaitStrategy.forCondition(predicate, description);
+  public static AbstractDaprWaitStrategy forCondition(Predicate<Metadata> predicate, String description) {
+    return AbstractDaprWaitStrategy.forCondition(predicate, description);
   }
 }
