@@ -51,32 +51,12 @@ public final class DaprWait {
   /**
    * Creates a wait strategy that waits for a subscription to be registered.
    *
-   * @param pubsubName the name of the pub/sub component
-   * @param topic the topic name to wait for
+   * @param pubsubName the name of the pub/sub component (can be null to match any)
+   * @param topic the topic name to wait for (can be null to match any)
    * @return a new subscription wait strategy
    */
   public static SubscriptionWaitStrategy forSubscription(String pubsubName, String topic) {
     return new SubscriptionWaitStrategy(pubsubName, topic);
-  }
-
-  /**
-   * Creates a wait strategy that waits for any subscription on a pub/sub component.
-   *
-   * @param pubsubName the name of the pub/sub component
-   * @return a new subscription wait strategy
-   */
-  public static SubscriptionWaitStrategy forPubSub(String pubsubName) {
-    return new SubscriptionWaitStrategy(pubsubName, null);
-  }
-
-  /**
-   * Creates a wait strategy that waits for a subscription on a specific topic.
-   *
-   * @param topic the topic name to wait for
-   * @return a new subscription wait strategy
-   */
-  public static SubscriptionWaitStrategy forTopic(String topic) {
-    return new SubscriptionWaitStrategy(null, topic);
   }
 
   /**

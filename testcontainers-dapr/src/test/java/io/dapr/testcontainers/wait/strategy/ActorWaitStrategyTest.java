@@ -101,6 +101,16 @@ class ActorWaitStrategyTest {
     assertEquals("actor type 'MyActor'", specificActor.getConditionDescription());
   }
 
+  @Test
+  @DisplayName("Should handle null actor in list without throwing NPE")
+  void shouldHandleNullActorInList() {
+    ActorWaitStrategy strategy = new ActorWaitStrategy("TargetActor");
+    Metadata metadata = new Metadata();
+    metadata.setActors(Arrays.asList(null, createActor("TargetActor")));
+
+    assertTrue(strategy.isConditionMet(metadata));
+  }
+
   private Metadata createMetadataWithActor(String actorType) {
     Metadata metadata = new Metadata();
     metadata.setActors(Collections.singletonList(createActor(actorType)));

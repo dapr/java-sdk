@@ -38,18 +38,18 @@ class DaprWaitTest {
   }
 
   @Test
-  @DisplayName("forPubSub should create SubscriptionWaitStrategy with null topic")
-  void forPubSubShouldCreateSubscriptionWaitStrategyWithNullTopic() {
-    SubscriptionWaitStrategy strategy = DaprWait.forPubSub("pubsub");
+  @DisplayName("forSubscription with null topic should match any topic")
+  void forSubscriptionWithNullTopicShouldMatchAnyTopic() {
+    SubscriptionWaitStrategy strategy = DaprWait.forSubscription("pubsub", null);
 
     assertNotNull(strategy);
     assertEquals("subscription for pubsub 'pubsub'", strategy.getConditionDescription());
   }
 
   @Test
-  @DisplayName("forTopic should create SubscriptionWaitStrategy with null pubsub")
-  void forTopicShouldCreateSubscriptionWaitStrategyWithNullPubsub() {
-    SubscriptionWaitStrategy strategy = DaprWait.forTopic("orders");
+  @DisplayName("forSubscription with null pubsub should match any pubsub")
+  void forSubscriptionWithNullPubsubShouldMatchAnyPubsub() {
+    SubscriptionWaitStrategy strategy = DaprWait.forSubscription(null, "orders");
 
     assertNotNull(strategy);
     assertEquals("subscription for topic 'orders'", strategy.getConditionDescription());
