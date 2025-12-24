@@ -15,20 +15,22 @@ package io.dapr.testcontainers.wait.strategy;
 
 import io.dapr.testcontainers.wait.strategy.metadata.Component;
 import io.dapr.testcontainers.wait.strategy.metadata.Metadata;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class DaprWaitTest {
 
   @Test
+  @DisplayName("forSubscription should create SubscriptionWaitStrategy")
   void forSubscriptionShouldCreateSubscriptionWaitStrategy() {
     DaprWaitStrategy strategy = DaprWait.forSubscription("pubsub", "orders");
 
@@ -36,6 +38,7 @@ class DaprWaitTest {
   }
 
   @Test
+  @DisplayName("forPubSub should create SubscriptionWaitStrategy with null topic")
   void forPubSubShouldCreateSubscriptionWaitStrategyWithNullTopic() {
     SubscriptionWaitStrategy strategy = DaprWait.forPubSub("pubsub");
 
@@ -44,6 +47,7 @@ class DaprWaitTest {
   }
 
   @Test
+  @DisplayName("forTopic should create SubscriptionWaitStrategy with null pubsub")
   void forTopicShouldCreateSubscriptionWaitStrategyWithNullPubsub() {
     SubscriptionWaitStrategy strategy = DaprWait.forTopic("orders");
 
@@ -52,6 +56,7 @@ class DaprWaitTest {
   }
 
   @Test
+  @DisplayName("forActors should create ActorWaitStrategy for any actor")
   void forActorsShouldCreateActorWaitStrategyForAnyActor() {
     ActorWaitStrategy strategy = DaprWait.forActors();
 
@@ -60,6 +65,7 @@ class DaprWaitTest {
   }
 
   @Test
+  @DisplayName("forActorType should create ActorWaitStrategy for specific type")
   void forActorTypeShouldCreateActorWaitStrategyForSpecificType() {
     ActorWaitStrategy strategy = DaprWait.forActorType("MyActor");
 
@@ -68,6 +74,7 @@ class DaprWaitTest {
   }
 
   @Test
+  @DisplayName("forCondition should create custom wait strategy with predicate")
   void forConditionShouldCreateCustomWaitStrategy() {
     DaprWaitStrategy strategy = DaprWait.forCondition(
         metadata -> metadata.getComponents().size() >= 2,
@@ -77,7 +84,6 @@ class DaprWaitTest {
     assertNotNull(strategy);
     assertEquals("at least 2 components", strategy.getConditionDescription());
 
-    // Test with metadata that has 2 components
     Metadata metadataWith2Components = new Metadata();
     Component comp1 = new Component();
     comp1.setName("comp1");
@@ -85,19 +91,16 @@ class DaprWaitTest {
     comp2.setName("comp2");
     metadataWith2Components.setComponents(Arrays.asList(comp1, comp2));
 
-    assertTrue(strategy.isConditionMet(metadataWith2Components));
-
-    // Test with metadata that has 1 component
     Metadata metadataWith1Component = new Metadata();
     metadataWith1Component.setComponents(Arrays.asList(comp1));
 
+    assertTrue(strategy.isConditionMet(metadataWith2Components));
     assertFalse(strategy.isConditionMet(metadataWith1Component));
   }
 
   @Test
+  @DisplayName("Strategy should support fluent configuration with poll interval and timeout")
   void strategyShouldSupportFluentConfiguration() {
-    // Note: withPollInterval must be called before withStartupTimeout
-    // because withStartupTimeout returns WaitStrategy (parent type)
     DaprWaitStrategy strategy = DaprWait.forSubscription("pubsub", "orders")
         .withPollInterval(Duration.ofMillis(250));
     strategy.withStartupTimeout(Duration.ofSeconds(60));

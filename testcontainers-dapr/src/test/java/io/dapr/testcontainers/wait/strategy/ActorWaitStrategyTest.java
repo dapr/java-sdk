@@ -15,65 +15,69 @@ package io.dapr.testcontainers.wait.strategy;
 
 import io.dapr.testcontainers.wait.strategy.metadata.Actor;
 import io.dapr.testcontainers.wait.strategy.metadata.Metadata;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ActorWaitStrategyTest {
 
   @Test
+  @DisplayName("Should match any actor when no specific type is specified")
   void shouldMatchAnyActorWhenNoTypeSpecified() {
     ActorWaitStrategy strategy = new ActorWaitStrategy();
-
     Metadata metadata = createMetadataWithActor("SomeActor");
 
     assertTrue(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should not match when no actors exist and no type is specified")
   void shouldNotMatchWhenNoActorsAndNoTypeSpecified() {
     ActorWaitStrategy strategy = new ActorWaitStrategy();
-
     Metadata metadata = new Metadata();
+
     metadata.setActors(Collections.emptyList());
 
     assertFalse(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should match when specific actor type exists")
   void shouldMatchSpecificActorType() {
     ActorWaitStrategy strategy = new ActorWaitStrategy("MyActor");
-
     Metadata metadata = createMetadataWithActor("MyActor");
 
     assertTrue(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should not match when actor type differs from expected")
   void shouldNotMatchWhenActorTypeDiffers() {
     ActorWaitStrategy strategy = new ActorWaitStrategy("MyActor");
-
     Metadata metadata = createMetadataWithActor("OtherActor");
 
     assertFalse(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should not match when no actors exist but specific type is expected")
   void shouldNotMatchWhenNoActorsAndTypeSpecified() {
     ActorWaitStrategy strategy = new ActorWaitStrategy("MyActor");
-
     Metadata metadata = new Metadata();
+
     metadata.setActors(Collections.emptyList());
 
     assertFalse(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should find matching actor among multiple registered actors")
   void shouldFindMatchAmongMultipleActors() {
     ActorWaitStrategy strategy = new ActorWaitStrategy("TargetActor");
 
@@ -88,6 +92,7 @@ class ActorWaitStrategyTest {
   }
 
   @Test
+  @DisplayName("Should provide correct human-readable condition description")
   void shouldProvideCorrectDescription() {
     ActorWaitStrategy anyActors = new ActorWaitStrategy();
     assertEquals("any registered actors", anyActors.getConditionDescription());

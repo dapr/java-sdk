@@ -15,48 +15,49 @@ package io.dapr.testcontainers.wait.strategy;
 
 import io.dapr.testcontainers.wait.strategy.metadata.Metadata;
 import io.dapr.testcontainers.wait.strategy.metadata.Subscription;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SubscriptionWaitStrategyTest {
 
   @Test
+  @DisplayName("Should match when pubsub and topic exactly match")
   void shouldMatchExactSubscription() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", "orders");
-
     Metadata metadata = createMetadataWithSubscription("pubsub", "orders");
 
     assertTrue(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should not match when pubsub name differs")
   void shouldNotMatchWhenPubsubDiffers() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", "orders");
-
     Metadata metadata = createMetadataWithSubscription("other-pubsub", "orders");
 
     assertFalse(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should not match when topic name differs")
   void shouldNotMatchWhenTopicDiffers() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", "orders");
-
     Metadata metadata = createMetadataWithSubscription("pubsub", "other-topic");
 
     assertFalse(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should not match when no subscriptions exist")
   void shouldNotMatchWhenNoSubscriptions() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", "orders");
-
     Metadata metadata = new Metadata();
     metadata.setSubscriptions(Collections.emptyList());
 
@@ -64,36 +65,36 @@ class SubscriptionWaitStrategyTest {
   }
 
   @Test
+  @DisplayName("Should match any topic when topic filter is null")
   void shouldMatchAnyTopicWhenTopicIsNull() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", null);
-
     Metadata metadata = createMetadataWithSubscription("pubsub", "any-topic");
 
     assertTrue(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should match any pubsub when pubsub filter is null")
   void shouldMatchAnyPubsubWhenPubsubIsNull() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy(null, "orders");
-
     Metadata metadata = createMetadataWithSubscription("any-pubsub", "orders");
 
     assertTrue(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should match any subscription when both filters are null")
   void shouldMatchAnySubscriptionWhenBothAreNull() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy(null, null);
-
     Metadata metadata = createMetadataWithSubscription("any-pubsub", "any-topic");
 
     assertTrue(strategy.isConditionMet(metadata));
   }
 
   @Test
+  @DisplayName("Should find matching subscription among multiple subscriptions")
   void shouldFindMatchAmongMultipleSubscriptions() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", "orders");
-
     Subscription sub1 = createSubscription("other-pubsub", "other-topic");
     Subscription sub2 = createSubscription("pubsub", "orders");
     Subscription sub3 = createSubscription("another-pubsub", "another-topic");
@@ -105,6 +106,7 @@ class SubscriptionWaitStrategyTest {
   }
 
   @Test
+  @DisplayName("Should provide correct human-readable condition description")
   void shouldProvideCorrectDescription() {
     SubscriptionWaitStrategy strategy = new SubscriptionWaitStrategy("pubsub", "orders");
     assertEquals("subscription for pubsub 'pubsub' and topic 'orders'", strategy.getConditionDescription());
