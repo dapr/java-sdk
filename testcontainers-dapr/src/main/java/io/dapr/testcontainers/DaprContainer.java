@@ -117,12 +117,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
    *
    * <p>Example usage:</p>
    * <pre>{@code
-   * @DaprSpringBootTest(classes = MyApp.class)
-   * class MyIT {
-   *     @DaprSidecarContainer
-   *     private static final DaprContainer DAPR = DaprContainer.createForSpringBootTest("my-app")
-   *         .withComponent(new Component("statestore", "state.in-memory", "v1", Map.of()));
-   * }
+   * @Container
+   * private static final DaprContainer DAPR = DaprContainer.createForSpringBootTest("my-app")
+   *     .withComponent(new Component("statestore", "state.in-memory", "v1", Map.of()));
    * }</pre>
    *
    * @param appName the Dapr application name
