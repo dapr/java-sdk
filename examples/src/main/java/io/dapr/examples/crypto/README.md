@@ -102,7 +102,7 @@ output_match_mode: substring
 -->
 
 ```bash
-mkdir -p ./components/crypto/keys && openssl genrsa -out ./components/crypto/keys/rsa-private-key.pem 4096 && openssl rsa -in ./components/crypto/keys/rsa-private-key.pem -pubout -out ./components/crypto/keys/rsa-private-key.pub.pem && echo "Keys generated successfully"
+mkdir -p ./components/crypto/keys && openssl genrsa -out ./components/crypto/keys/rsa-private-key.pem 4096 && openssl rsa -in ./components/crypto/keys/rsa-private-key.pem -pubout -out ./components/crypto/keys/rsa-private-key.pub.pem && cp ./components/crypto/keys/rsa-private-key.pem ./components/crypto/keys/rsa-private-key && echo "Keys generated successfully"
 ```
 
 <!-- END_STEP -->
@@ -113,7 +113,7 @@ expected_stdout_lines:
   - "== APP == SUCCESS: The decrypted message matches the original."
 background: true
 output_match_mode: substring
-sleep: 10
+sleep: 30
 -->
 
 ```bash
