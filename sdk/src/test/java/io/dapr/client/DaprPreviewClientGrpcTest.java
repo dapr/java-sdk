@@ -35,6 +35,7 @@ import io.dapr.client.domain.ConversationResultAlpha2;
 import io.dapr.client.domain.ConversationResultChoices;
 import io.dapr.client.domain.ConversationToolCalls;
 import io.dapr.client.domain.ConversationTools;
+import io.dapr.client.domain.DecryptRequestAlpha1;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeveloperMessage;
 import io.dapr.client.domain.GetJobRequest;
@@ -45,6 +46,7 @@ import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DropFailurePolicy;
+import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.JobSchedule;
@@ -70,11 +72,13 @@ import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -99,6 +103,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1925,5 +1930,664 @@ public class DaprPreviewClientGrpcTest {
 
   private static StatusRuntimeException newStatusRuntimeException(String status, String message) {
     return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(status)).withDescription(message));
+  }
+
+  // ==================== Encrypt Tests ====================
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when request is null")
+  public void encryptNullRequestTest() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(null).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when component name is null")
+  public void encryptNullComponentNameTest() {
+    Flux<byte[]> plainTextStream = Flux.just("test data".getBytes(StandardCharsets.UTF_8));
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        null,
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    );
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when component name is empty")
+  public void encryptEmptyComponentNameTest() {
+    Flux<byte[]> plainTextStream = Flux.just("test data".getBytes(StandardCharsets.UTF_8));
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    );
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when component name is whitespace only")
+  public void encryptWhitespaceComponentNameTest() {
+    Flux<byte[]> plainTextStream = Flux.just("test data".getBytes(StandardCharsets.UTF_8));
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "   ",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    );
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when key name is null")
+  public void encryptNullKeyNameTest() {
+    Flux<byte[]> plainTextStream = Flux.just("test data".getBytes(StandardCharsets.UTF_8));
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        null,
+        "RSA-OAEP-256"
+    );
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when key name is empty")
+  public void encryptEmptyKeyNameTest() {
+    Flux<byte[]> plainTextStream = Flux.just("test data".getBytes(StandardCharsets.UTF_8));
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "",
+        "RSA-OAEP-256"
+    );
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when key wrap algorithm is null")
+  public void encryptNullKeyWrapAlgorithmTest() {
+    Flux<byte[]> plainTextStream = Flux.just("test data".getBytes(StandardCharsets.UTF_8));
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        null
+    );
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when key wrap algorithm is empty")
+  public void encryptEmptyKeyWrapAlgorithmTest() {
+    Flux<byte[]> plainTextStream = Flux.just("test data".getBytes(StandardCharsets.UTF_8));
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        ""
+    );
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should throw IllegalArgumentException when plaintext stream is null")
+  public void encryptNullPlaintextStreamTest() {
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        null,
+        "mykey",
+        "RSA-OAEP-256"
+    );
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.encrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("encrypt should successfully encrypt data with required fields")
+  public void encryptSuccessTest() {
+    byte[] plaintext = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+    byte[] encryptedData = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.EncryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.EncryptResponse>) invocation.getArguments()[0];
+
+      // Simulate returning encrypted data
+      DaprProtos.EncryptResponse response = DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(encryptedData))
+              .setSeq(0)
+              .build())
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).encryptAlpha1(any());
+
+    Flux<byte[]> plainTextStream = Flux.just(plaintext);
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    );
+
+    List<byte[]> results = previewClient.encrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+    assertArrayEquals(encryptedData, results.get(0));
+  }
+
+  @Test
+  @DisplayName("encrypt should handle multiple response chunks")
+  public void encryptMultipleChunksResponseTest() {
+    byte[] plaintext = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+    byte[] chunk1 = "chunk1".getBytes(StandardCharsets.UTF_8);
+    byte[] chunk2 = "chunk2".getBytes(StandardCharsets.UTF_8);
+    byte[] chunk3 = "chunk3".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.EncryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.EncryptResponse>) invocation.getArguments()[0];
+
+      // Simulate returning multiple chunks
+      responseObserver.onNext(DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(chunk1))
+              .setSeq(0)
+              .build())
+          .build());
+      responseObserver.onNext(DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(chunk2))
+              .setSeq(1)
+              .build())
+          .build());
+      responseObserver.onNext(DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(chunk3))
+              .setSeq(2)
+              .build())
+          .build());
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).encryptAlpha1(any());
+
+    Flux<byte[]> plainTextStream = Flux.just(plaintext);
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    );
+
+    List<byte[]> results = previewClient.encrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(3, results.size());
+    assertArrayEquals(chunk1, results.get(0));
+    assertArrayEquals(chunk2, results.get(1));
+    assertArrayEquals(chunk3, results.get(2));
+  }
+
+  @Test
+  @DisplayName("encrypt should handle optional data encryption cipher")
+  public void encryptWithDataEncryptionCipherTest() {
+    byte[] plaintext = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+    byte[] encryptedData = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.EncryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.EncryptResponse>) invocation.getArguments()[0];
+
+      DaprProtos.EncryptResponse response = DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(encryptedData))
+              .setSeq(0)
+              .build())
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).encryptAlpha1(any());
+
+    Flux<byte[]> plainTextStream = Flux.just(plaintext);
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    ).setDataEncryptionCipher("aes-gcm");
+
+    List<byte[]> results = previewClient.encrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+  }
+
+  @Test
+  @DisplayName("encrypt should handle omit decryption key name option")
+  public void encryptWithOmitDecryptionKeyNameTest() {
+    byte[] plaintext = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+    byte[] encryptedData = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.EncryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.EncryptResponse>) invocation.getArguments()[0];
+
+      DaprProtos.EncryptResponse response = DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(encryptedData))
+              .setSeq(0)
+              .build())
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).encryptAlpha1(any());
+
+    Flux<byte[]> plainTextStream = Flux.just(plaintext);
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    ).setOmitDecryptionKeyName(true);
+
+    List<byte[]> results = previewClient.encrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+  }
+
+  @Test
+  @DisplayName("encrypt should handle decryption key name option")
+  public void encryptWithDecryptionKeyNameTest() {
+    byte[] plaintext = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+    byte[] encryptedData = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.EncryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.EncryptResponse>) invocation.getArguments()[0];
+
+      DaprProtos.EncryptResponse response = DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(encryptedData))
+              .setSeq(0)
+              .build())
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).encryptAlpha1(any());
+
+    Flux<byte[]> plainTextStream = Flux.just(plaintext);
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    ).setDecryptionKeyName("different-key");
+
+    List<byte[]> results = previewClient.encrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+  }
+
+  @Test
+  @DisplayName("encrypt should handle all optional fields")
+  public void encryptWithAllOptionalFieldsTest() {
+    byte[] plaintext = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+    byte[] encryptedData = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.EncryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.EncryptResponse>) invocation.getArguments()[0];
+
+      DaprProtos.EncryptResponse response = DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(encryptedData))
+              .setSeq(0)
+              .build())
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).encryptAlpha1(any());
+
+    Flux<byte[]> plainTextStream = Flux.just(plaintext);
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    )
+    .setDataEncryptionCipher("chacha20-poly1305")
+    .setOmitDecryptionKeyName(true)
+    .setDecryptionKeyName("decrypt-key");
+
+    List<byte[]> results = previewClient.encrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+  }
+
+  @Test
+  @DisplayName("encrypt should filter empty data from response")
+  public void encryptFilterEmptyDataTest() {
+    byte[] plaintext = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+    byte[] validData = "valid-data".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.EncryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.EncryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.EncryptResponse>) invocation.getArguments()[0];
+
+      // Send empty data - should be filtered
+      responseObserver.onNext(DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.EMPTY)
+              .setSeq(0)
+              .build())
+          .build());
+      
+      // Send valid data
+      responseObserver.onNext(DaprProtos.EncryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(validData))
+              .setSeq(1)
+              .build())
+          .build());
+      
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).encryptAlpha1(any());
+
+    Flux<byte[]> plainTextStream = Flux.just(plaintext);
+    EncryptRequestAlpha1 request = new EncryptRequestAlpha1(
+        "mycomponent",
+        plainTextStream,
+        "mykey",
+        "RSA-OAEP-256"
+    );
+
+    List<byte[]> results = previewClient.encrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+    assertArrayEquals(validData, results.get(0));
+  }
+
+  // ==================== Decrypt Tests ====================
+
+  @Test
+  @DisplayName("decrypt should throw IllegalArgumentException when request is null")
+  public void decryptNullRequestTest() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.decrypt(null).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("decrypt should throw IllegalArgumentException when component name is null")
+  public void decryptNullComponentNameTest() {
+    Flux<byte[]> cipherTextStream = Flux.just("encrypted data".getBytes(StandardCharsets.UTF_8));
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1(null, cipherTextStream);
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.decrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("decrypt should throw IllegalArgumentException when component name is empty")
+  public void decryptEmptyComponentNameTest() {
+    Flux<byte[]> cipherTextStream = Flux.just("encrypted data".getBytes(StandardCharsets.UTF_8));
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1("", cipherTextStream);
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.decrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("decrypt should throw IllegalArgumentException when component name is whitespace only")
+  public void decryptWhitespaceComponentNameTest() {
+    Flux<byte[]> cipherTextStream = Flux.just("encrypted data".getBytes(StandardCharsets.UTF_8));
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1("   ", cipherTextStream);
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.decrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("decrypt should throw IllegalArgumentException when ciphertext stream is null")
+  public void decryptNullCiphertextStreamTest() {
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1("mycomponent", null);
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      previewClient.decrypt(request).blockFirst();
+    });
+  }
+
+  @Test
+  @DisplayName("decrypt should successfully decrypt data with required fields")
+  public void decryptSuccessTest() {
+    byte[] ciphertext = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+    byte[] decryptedData = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.DecryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.DecryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.DecryptResponse>) invocation.getArguments()[0];
+
+      DaprProtos.DecryptResponse response = DaprProtos.DecryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(decryptedData))
+              .setSeq(0)
+              .build())
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).decryptAlpha1(any());
+
+    Flux<byte[]> cipherTextStream = Flux.just(ciphertext);
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1("mycomponent", cipherTextStream);
+
+    List<byte[]> results = previewClient.decrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+    assertArrayEquals(decryptedData, results.get(0));
+  }
+
+  @Test
+  @DisplayName("decrypt should handle multiple response chunks")
+  public void decryptMultipleChunksResponseTest() {
+    byte[] ciphertext = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+    byte[] chunk1 = "chunk1".getBytes(StandardCharsets.UTF_8);
+    byte[] chunk2 = "chunk2".getBytes(StandardCharsets.UTF_8);
+    byte[] chunk3 = "chunk3".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.DecryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.DecryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.DecryptResponse>) invocation.getArguments()[0];
+
+      responseObserver.onNext(DaprProtos.DecryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(chunk1))
+              .setSeq(0)
+              .build())
+          .build());
+      responseObserver.onNext(DaprProtos.DecryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(chunk2))
+              .setSeq(1)
+              .build())
+          .build());
+      responseObserver.onNext(DaprProtos.DecryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(chunk3))
+              .setSeq(2)
+              .build())
+          .build());
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).decryptAlpha1(any());
+
+    Flux<byte[]> cipherTextStream = Flux.just(ciphertext);
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1("mycomponent", cipherTextStream);
+
+    List<byte[]> results = previewClient.decrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(3, results.size());
+    assertArrayEquals(chunk1, results.get(0));
+    assertArrayEquals(chunk2, results.get(1));
+    assertArrayEquals(chunk3, results.get(2));
+  }
+
+  @Test
+  @DisplayName("decrypt should handle optional key name")
+  public void decryptWithKeyNameTest() {
+    byte[] ciphertext = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+    byte[] decryptedData = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.DecryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.DecryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.DecryptResponse>) invocation.getArguments()[0];
+
+      DaprProtos.DecryptResponse response = DaprProtos.DecryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(decryptedData))
+              .setSeq(0)
+              .build())
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).decryptAlpha1(any());
+
+    Flux<byte[]> cipherTextStream = Flux.just(ciphertext);
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1("mycomponent", cipherTextStream)
+        .setKeyName("mykey");
+
+    List<byte[]> results = previewClient.decrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+    assertArrayEquals(decryptedData, results.get(0));
+  }
+
+  @Test
+  @DisplayName("decrypt should filter empty data from response")
+  public void decryptFilterEmptyDataTest() {
+    byte[] ciphertext = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+    byte[] validData = "valid-data".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.DecryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.DecryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.DecryptResponse>) invocation.getArguments()[0];
+
+      // Send empty data - should be filtered
+      responseObserver.onNext(DaprProtos.DecryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.EMPTY)
+              .setSeq(0)
+              .build())
+          .build());
+      
+      // Send valid data
+      responseObserver.onNext(DaprProtos.DecryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(validData))
+              .setSeq(1)
+              .build())
+          .build());
+      
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).decryptAlpha1(any());
+
+    Flux<byte[]> cipherTextStream = Flux.just(ciphertext);
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1("mycomponent", cipherTextStream);
+
+    List<byte[]> results = previewClient.decrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
+    assertArrayEquals(validData, results.get(0));
+  }
+
+  @Test
+  @DisplayName("decrypt should handle key name with version")
+  public void decryptWithKeyNameVersionTest() {
+    byte[] ciphertext = "encrypted-data".getBytes(StandardCharsets.UTF_8);
+    byte[] decryptedData = "Hello, World!".getBytes(StandardCharsets.UTF_8);
+
+    doAnswer((Answer<StreamObserver<DaprProtos.DecryptRequest>>) invocation -> {
+      StreamObserver<DaprProtos.DecryptResponse> responseObserver =
+          (StreamObserver<DaprProtos.DecryptResponse>) invocation.getArguments()[0];
+
+      DaprProtos.DecryptResponse response = DaprProtos.DecryptResponse.newBuilder()
+          .setPayload(CommonProtos.StreamPayload.newBuilder()
+              .setData(ByteString.copyFrom(decryptedData))
+              .setSeq(0)
+              .build())
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+
+      return mock(StreamObserver.class);
+    }).when(daprStub).decryptAlpha1(any());
+
+    Flux<byte[]> cipherTextStream = Flux.just(ciphertext);
+    DecryptRequestAlpha1 request = new DecryptRequestAlpha1("mycomponent", cipherTextStream)
+        .setKeyName("mykey/v2");
+
+    List<byte[]> results = previewClient.decrypt(request).collectList().block();
+
+    assertNotNull(results);
+    assertEquals(1, results.size());
   }
 }

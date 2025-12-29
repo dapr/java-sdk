@@ -353,49 +353,49 @@ public class ProtobufValueHelperTest {
     functionSchema.put("type", "function");
     functionSchema.put("name", "get_horoscope");
     functionSchema.put("description", "Get today's horoscope for an astrological sign.");
-
+    
     Map<String, Object> parameters = new LinkedHashMap<>();
     parameters.put("type", "object");
-
+    
     Map<String, Object> properties = new LinkedHashMap<>();
     Map<String, Object> signProperty = new LinkedHashMap<>();
     signProperty.put("type", "string");
     signProperty.put("description", "An astrological sign like Taurus or Aquarius");
     properties.put("sign", signProperty);
-
+    
     parameters.put("properties", properties);
     parameters.put("required", Arrays.asList("sign"));
-
+    
     functionSchema.put("parameters", parameters);
-
+    
     Value result = ProtobufValueHelper.toProtobufValue(functionSchema);
-
+    
     assertNotNull(result);
     assertTrue(result.hasStructValue());
     Struct rootStruct = result.getStructValue();
-
+    
     // Verify root level fields
     assertEquals("function", rootStruct.getFieldsMap().get("type").getStringValue());
     assertEquals("get_horoscope", rootStruct.getFieldsMap().get("name").getStringValue());
-    assertEquals("Get today's horoscope for an astrological sign.",
+    assertEquals("Get today's horoscope for an astrological sign.", 
                 rootStruct.getFieldsMap().get("description").getStringValue());
-
+    
     // Verify parameters object
     assertTrue(rootStruct.getFieldsMap().get("parameters").hasStructValue());
     Struct parametersStruct = rootStruct.getFieldsMap().get("parameters").getStructValue();
     assertEquals("object", parametersStruct.getFieldsMap().get("type").getStringValue());
-
+    
     // Verify properties object
     assertTrue(parametersStruct.getFieldsMap().get("properties").hasStructValue());
     Struct propertiesStruct = parametersStruct.getFieldsMap().get("properties").getStructValue();
-
+    
     // Verify sign property
     assertTrue(propertiesStruct.getFieldsMap().get("sign").hasStructValue());
     Struct signStruct = propertiesStruct.getFieldsMap().get("sign").getStructValue();
     assertEquals("string", signStruct.getFieldsMap().get("type").getStringValue());
-    assertEquals("An astrological sign like Taurus or Aquarius",
+    assertEquals("An astrological sign like Taurus or Aquarius", 
                 signStruct.getFieldsMap().get("description").getStringValue());
-
+    
     // Verify required array
     assertTrue(parametersStruct.getFieldsMap().get("required").hasListValue());
     ListValue requiredList = parametersStruct.getFieldsMap().get("required").getListValue();
