@@ -9,4 +9,4 @@ spec:
     # Path to the directory containing keys (PEM files)
     # This path is relative to the resources-path directory
     - name: path
-      value: "C:/Users/svegiraju/IdeaProjects/java-sdk/examples/components/crypto/keys/"
+      value: "./components/crypto/keys/"
