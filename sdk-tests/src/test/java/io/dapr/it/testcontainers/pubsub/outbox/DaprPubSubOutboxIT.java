@@ -67,6 +67,11 @@ public class DaprPubSubOutboxIT {
   private static final String TOPIC_PRODUCT_CREATED = "product.created";
   private static final String STATE_STORE_NAME = "kvstore";
 
+  static {
+    // Must be called before container starts to expose host ports to the container
+    org.testcontainers.Testcontainers.exposeHostPorts(PORT);
+  }
+
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withAppName(PUBSUB_APP_ID)
@@ -96,7 +101,8 @@ public class DaprPubSubOutboxIT {
 
   @BeforeEach
   public void setUp() {
-    org.testcontainers.Testcontainers.exposeHostPorts(PORT);
+    // Clear any events from previous test runs
+    ProductWebhookController.EVENT_LIST.clear();
   }
 
 
