@@ -293,38 +293,6 @@ public interface DaprPreviewClient extends AutoCloseable {
    */
   <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
 
-  /**
-   * Schedules a job using the provided job request details.
-   *
-   * @param scheduleJobRequest The request containing the details of the job to schedule.
-   *                         Must include a name and optional schedule, data, and other related properties.
-   * @return A {@link Mono} that completes when the job scheduling operation is successful or raises an error.
-   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
-   */
-  public Mono<Void> scheduleJob(ScheduleJobRequest scheduleJobRequest);
-
-  /**
-   * Retrieves details of a specific job.
-   *
-   * @param getJobRequest The request containing the job name for which the details are to be fetched.
-   *      The name property is mandatory.
-   * @return A {@link Mono} that emits the {@link GetJobResponse} containing job details or raises an
-   *      error if the job is not found.
-   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
-   */
-
-  public Mono<GetJobResponse> getJob(GetJobRequest getJobRequest);
-
-  /**
-   * Deletes a job based on the given request.
-   *
-   * @param deleteJobRequest The request containing the job name to be deleted.
-   *                        The name property is mandatory.
-   * @return A {@link Mono} that completes when the job is successfully deleted or raises an error.
-   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
-   */
-  public Mono<Void> deleteJob(DeleteJobRequest deleteJobRequest);
-
   /*
    * Converse with an LLM.
    *

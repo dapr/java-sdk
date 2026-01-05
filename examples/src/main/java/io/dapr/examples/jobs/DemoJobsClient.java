@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.jobs;
 
+import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.GetJobRequest;
@@ -35,7 +36,7 @@ public class DemoJobsClient {
         Properties.GRPC_PORT, "51439"
     );
 
-    try (DaprPreviewClient client = new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient()) {
+    try (DaprClient client = new DaprClientBuilder().withPropertyOverrides(overrides).build()) {
 
       // Schedule a job.
       System.out.println("**** Scheduling a Job with name dapr-jobs-1 *****");
