@@ -26,6 +26,7 @@ import org.yaml.snakeyaml.Yaml;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +70,9 @@ class ConfigurationYamlConverterTest {
     Configuration configuration = dapr.getConfiguration();
     assertNotNull(configuration);
 
+    assertEquals(httpPipeline, configuration.getHttpPipeline());
+    assertEquals(appHttpPipeline, configuration.getAppHttpPipeline());
+
     String configurationYaml = converter.convert(configuration);
     String expectedConfigurationYaml =
           "apiVersion: dapr.io/v1alpha1\n"
@@ -91,6 +95,33 @@ class ConfigurationYamlConverterTest {
         + "    handlers:\n"
         + "    - name: alias\n"
         + "      type: middleware.http.routeralias\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationToYamlNoPipelines() {
+    
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withConfiguration(new Configuration("my-config", null, null, null))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    assertNull(configuration.getHttpPipeline());
+    assertNull(configuration.getAppHttpPipeline());
+
+    String configurationYaml = converter.convert(configuration);
+
+    String expectedConfigurationYaml =
+        "apiVersion: dapr.io/v1alpha1\n"
+            + "kind: Configuration\n"
+            + "metadata:\n"
+            + "  name: my-config\n"
+            + "spec: {}\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
