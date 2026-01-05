@@ -11,8 +11,9 @@
 limitations under the License.
 */
 
-package io.dapr.testcontainers.spring;
+package io.dapr.testcontainers.internal.spring;
 
+import io.dapr.testcontainers.internal.DaprSidecarContainer;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;

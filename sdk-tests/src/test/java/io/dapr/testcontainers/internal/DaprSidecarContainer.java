@@ -11,8 +11,9 @@
 limitations under the License.
 */
 
-package io.dapr.testcontainers.spring;
+package io.dapr.testcontainers.internal;
 
+import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
 import org.testcontainers.junit.jupiter.Container;
 
 import java.lang.annotation.ElementType;

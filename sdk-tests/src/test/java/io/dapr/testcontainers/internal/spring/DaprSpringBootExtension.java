@@ -11,9 +11,10 @@
 limitations under the License.
 */
 
-package io.dapr.testcontainers.spring;
+package io.dapr.testcontainers.internal.spring;
 
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.internal.DaprSidecarContainer;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.support.AnnotationSupport;

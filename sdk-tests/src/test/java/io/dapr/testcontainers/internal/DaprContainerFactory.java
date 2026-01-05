@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.testcontainers.spring;
+package io.dapr.testcontainers.internal;
 
 import io.dapr.testcontainers.DaprContainer;
 
