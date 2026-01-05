@@ -51,7 +51,7 @@ public class WorkflowDashboardContainer extends GenericContainer<WorkflowDashboa
   }
 
   /**
-   * Creates a new Dapr schedulers container.
+   * Creates a new workflow dashboard container.
    * @param image Docker image name.
    */
   public WorkflowDashboardContainer(String image) {
