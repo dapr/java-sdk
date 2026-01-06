@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -55,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class WorkflowsCrossAppCallActivityIT {
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final DockerImageName JAVA_WORKER_IMAGE = DockerImageName.parse("eclipse-temurin:17-jdk");
   
   @Container
   private final static DaprPlacementContainer sharedPlacementContainer = new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)
@@ -113,7 +115,7 @@ public class WorkflowsCrossAppCallActivityIT {
 
   // TestContainers for each app
   @Container
-  private static GenericContainer<?> crossappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private static GenericContainer<?> crossappWorker = new GenericContainer<>(JAVA_WORKER_IMAGE)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -127,7 +129,7 @@ public class WorkflowsCrossAppCallActivityIT {
       .withLogConsumer(outputFrame -> System.out.println("CrossAppWorker: " + outputFrame.getUtf8String()));
 
   @Container
-  private final static GenericContainer<?> app2Worker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private final static GenericContainer<?> app2Worker = new GenericContainer<>(JAVA_WORKER_IMAGE)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -141,7 +143,7 @@ public class WorkflowsCrossAppCallActivityIT {
       .withLogConsumer(outputFrame -> System.out.println("App2Worker: " + outputFrame.getUtf8String()));
 
   @Container
-  private final static GenericContainer<?> app3Worker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private final static GenericContainer<?> app3Worker = new GenericContainer<>(JAVA_WORKER_IMAGE)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
