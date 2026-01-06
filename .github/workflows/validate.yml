@@ -49,9 +49,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ env.JDK_VER }}
-      - name: Install Stable Docker
-        id: setup_docker
-        uses: docker/setup-docker-action@v4   
       - name: Check Docker version
         run: docker version   
       - name: Set up Dapr CLI
@@ -109,114 +106,75 @@ jobs:
         run: sleep 30 && docker logs dapr_scheduler && nc -vz localhost 50006
       - name: Install jars
         run: ./mvnw clean install -DskipTests -q
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate workflows example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/workflows/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate Spring Boot examples
         working-directory: ./spring-boot-examples
         run: |
           mm.py README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate Spring Boot Workflow examples
         working-directory: ./spring-boot-examples/workflows
         run: |
           mm.py README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate Jobs example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/jobs/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate conversation ai example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/conversation/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate invoke http example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/invoke/http/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate invoke grpc example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/invoke/grpc/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate tracing example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/tracing/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate expection handling example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/exception/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate state example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/state/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate pubsub example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate bindings HTTP example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/bindings/http/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate secrets example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/secrets/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate unit testing example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/unittesting/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate Configuration API example
         working-directory: ./examples
         run: |
             mm.py ./src/main/java/io/dapr/examples/configuration/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}    
       - name: Validate actors example
         working-directory: ./examples
         run: |
             mm.py ./src/main/java/io/dapr/examples/actors/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}    
       - name: Validate query state HTTP example
         working-directory: ./examples
         run: |
             mm.py ./src/main/java/io/dapr/examples/querystate/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}    
       - name: Validate streaming subscription example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
-
