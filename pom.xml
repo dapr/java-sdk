@@ -14,7 +14,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <grpc.version>1.69.0</grpc.version>
+    <grpc.version>1.78.0</grpc.version>
     <protobuf.version>4.33.2</protobuf.version>
     <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.16.0-rc.5/dapr/proto</dapr.proto.baseurl>
     <durabletask.proto.url>https://raw.githubusercontent.com/dapr/durabletask-protobuf/main/protos/orchestrator_service.proto</durabletask.proto.url>
