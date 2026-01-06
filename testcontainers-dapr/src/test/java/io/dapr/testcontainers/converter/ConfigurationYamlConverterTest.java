@@ -16,6 +16,7 @@ package io.dapr.testcontainers.converter;
 import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.HttpPipeline;
 import io.dapr.testcontainers.ListEntry;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
@@ -25,6 +26,7 @@ import org.yaml.snakeyaml.Yaml;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,19 +50,28 @@ class ConfigurationYamlConverterTest {
     );
 
     
-    List<ListEntry> handlers = new ArrayList<>();
-    handlers.add(new ListEntry("alias", "middleware.http.routeralias"));
+    List<ListEntry> appHttpHandlers = new ArrayList<>();
+    appHttpHandlers.add(new ListEntry("alias", "middleware.http.routeralias"));
 
-    AppHttpPipeline appHttpPipeline = new AppHttpPipeline(handlers);
+    AppHttpPipeline appHttpPipeline = new AppHttpPipeline(appHttpHandlers);
+
+    List<ListEntry> httpHandlers = new ArrayList<>();
+
+    //Notice that this needs to be different objects, if not Snake YAML will add a reference to the object
+    HttpPipeline httpPipeline = new HttpPipeline(httpHandlers);
+    httpHandlers.add(new ListEntry("alias", "middleware.http.routeralias"));
 
     DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("dapr-app")
         .withAppPort(8081)
-        .withConfiguration(new Configuration("my-config", tracing, appHttpPipeline))
+        .withConfiguration(new Configuration("my-config", tracing, appHttpPipeline, httpPipeline))
         .withAppChannelAddress("host.testcontainers.internal");
 
     Configuration configuration = dapr.getConfiguration();
     assertNotNull(configuration);
+
+    assertEquals(httpPipeline, configuration.getHttpPipeline());
+    assertEquals(appHttpPipeline, configuration.getAppHttpPipeline());
 
     String configurationYaml = converter.convert(configuration);
     String expectedConfigurationYaml =
@@ -76,10 +87,41 @@ class ConfigurationYamlConverterTest {
         + "      endpointAddress: localhost:4317\n"
         + "      isSecure: false\n"
         + "      protocol: grpc\n"
+        + "  httpPipeline:\n"
+        + "    handlers:\n"
+        + "    - name: alias\n"
+        + "      type: middleware.http.routeralias\n"
         + "  appHttpPipeline:\n"
         + "    handlers:\n"
         + "    - name: alias\n"
         + "      type: middleware.http.routeralias\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationToYamlNoPipelines() {
+    
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withConfiguration(new Configuration("my-config", null, null, null))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    assertNull(configuration.getHttpPipeline());
+    assertNull(configuration.getAppHttpPipeline());
+
+    String configurationYaml = converter.convert(configuration);
+
+    String expectedConfigurationYaml =
+        "apiVersion: dapr.io/v1alpha1\n"
+            + "kind: Configuration\n"
+            + "metadata:\n"
+            + "  name: my-config\n"
+            + "spec: {}\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
