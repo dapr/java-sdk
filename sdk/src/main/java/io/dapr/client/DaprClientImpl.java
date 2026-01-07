@@ -465,11 +465,21 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public <T> Subscription subscribeToEvents(
-      String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type) {
+          String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type) {
+    return subscribeToEvents(pubsubName, topic, listener, null, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Subscription subscribeToEvents(
+      String pubsubName, String topic, SubscriptionListener<T> listener, String deadLetterTopic, TypeRef<T> type) {
     DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
         DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
             .setPubsubName(pubsubName)
+                .setDeadLetterTopic(deadLetterTopic)
             .build();
     DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
         DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
@@ -483,10 +493,20 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
+    return subscribeToEvents(pubsubName, topic, (String) null, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<CloudEvent<T>> subscribeToEvents(
+          String pubsubName, String topic, String deadLetterTopic, TypeRef<T> type) {
     DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
         DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
             .setPubsubName(pubsubName)
+                .setDeadLetterTopic(deadLetterTopic)
             .build();
     DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
         DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
