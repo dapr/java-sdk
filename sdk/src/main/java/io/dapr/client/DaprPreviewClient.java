@@ -284,6 +284,21 @@ public interface DaprPreviewClient extends AutoCloseable {
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
 
   /**
+   * Subscribe to pubsub via streaming.
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param listener Callback methods to process events.
+   * @param deadLetterTopic Topic to send dead letter messages to.
+   * @param type Type for object deserialization.
+   * @param <T> Type of object deserialization.
+   * @return An active subscription.
+   * @deprecated Use {@link #subscribeToEvents(String, String, TypeRef)} instead for a more reactive approach.
+   */
+  @Deprecated
+  <T> Subscription subscribeToEvents(
+          String pubsubName, String topic, SubscriptionListener<T> listener, String deadLetterTopic, TypeRef<T> type);
+
+  /**
    * Subscribe to pubsub events via streaming using Project Reactor Flux.
    * @param pubsubName Name of the pubsub component.
    * @param topic Name of the topic to subscribe to.
@@ -292,6 +307,17 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param <T> Type of the event payload.
    */
   <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux.
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param deadLetterTopic Topic to send dead letter messages to.
+   * @param type Type for object deserialization.
+   * @return A Flux of CloudEvents containing deserialized event payloads and metadata.
+   * @param <T> Type of the event payload.
+   */
+  <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, String deadLetterTopic, TypeRef<T> type);
 
   /*
    * Converse with an LLM.
