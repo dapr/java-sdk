@@ -54,4 +54,17 @@ public class DaprWorkflowDashboardTest {
     }
     assertNotNull(expectedException);
   }
+
+  @Test
+  public void dashboardWithImageStringTest() {
+    Component stateStoreComponent = new Component("kvstore",
+        "state.in-memory", "v1", Collections.singletonMap("actorStateStore", "true"));
+      WorkflowDashboardContainer dashboard =
+          new WorkflowDashboardContainer(DaprContainerConstants.DAPR_WORKFLOWS_DASHBOARD)
+              .withStateStoreComponent(stateStoreComponent);
+      dashboard.configure();
+
+      assertEquals(WorkflowDashboardContainer.DEFAULT_IMAGE_NAME, dashboard.getDefaultImageName());
+
+  }
 }
