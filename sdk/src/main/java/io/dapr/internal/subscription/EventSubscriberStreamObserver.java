@@ -179,6 +179,7 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
 
     try {
       // Try to send RETRY acknowledgment
+      // TODO: push the event to the dead letter topic in case of processing errors
       requestStream.onNext(buildRetryAck(eventId));
     } catch (Exception ackException) {
       // Failed to send ack - this is critical
