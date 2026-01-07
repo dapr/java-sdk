@@ -38,6 +38,20 @@ public class DaprWorkflowDashboardTest {
       assertEquals(WorkflowDashboardContainer.DEFAULT_IMAGE_NAME, dashboard.getDefaultImageName());
       assertEquals(8080, dashboard.getExposedPorts().get(0));
       assertEquals(stateStoreComponent, dashboard.getStateStoreComponent());
+      assertEquals("/app/components/kvstore.yaml", dashboard.getEnvMap().get("COMPONENT_FILE"));
     }
+  }
+
+  @Test
+  public void dashboardNoStateStoreTest() {
+    Exception expectedException = null;
+    try{
+      WorkflowDashboardContainer dashboard =
+          new WorkflowDashboardContainer(WorkflowDashboardContainer.DEFAULT_IMAGE_NAME);
+      dashboard.configure();
+    } catch(IllegalStateException ex){
+      expectedException = ex;
+    }
+    assertNotNull(expectedException);
   }
 }
