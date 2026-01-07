@@ -31,7 +31,7 @@ public class WorkflowDashboardContainer extends GenericContainer<WorkflowDashboa
   private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
   private static final YamlConverter<Component> COMPONENT_CONVERTER = new ComponentYamlConverter(YAML_MAPPER);
   public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName
-      .parse("ghcr.io/diagridio/diagrid-dashboard:0.0.1");
+      .parse(DaprContainerConstants.DAPR_WORKFLOWS_DASHBOARD);
   private int dashboardPort = 8080;
   private Component stateStoreComponent;
 
