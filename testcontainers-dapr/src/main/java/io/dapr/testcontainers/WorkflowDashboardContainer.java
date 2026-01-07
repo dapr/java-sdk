@@ -50,6 +50,10 @@ public class WorkflowDashboardContainer extends GenericContainer<WorkflowDashboa
     return this;
   }
 
+  public Component getStateStoreComponent() {
+    return stateStoreComponent;
+  }
+
   /**
    * Creates a new workflow dashboard container.
    * @param image Docker image name.

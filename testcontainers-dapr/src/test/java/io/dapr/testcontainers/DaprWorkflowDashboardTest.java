@@ -30,12 +30,14 @@ public class DaprWorkflowDashboardTest {
         "state.in-memory", "v1", Collections.singletonMap("actorStateStore", "true"));
     try (WorkflowDashboardContainer dashboard =
         new WorkflowDashboardContainer(WorkflowDashboardContainer.DEFAULT_IMAGE_NAME)
-            .withStateStoreComponent(stateStoreComponent)) {
+            .withStateStoreComponent(stateStoreComponent).withPort(8080)) {
       dashboard.configure();
       assertNotNull(dashboard.getEnvMap().get("COMPONENT_FILE"));
       assertFalse(dashboard.getEnvMap().get("COMPONENT_FILE").isEmpty());
       assertEquals(8080, dashboard.getPort());
-
+      assertEquals(WorkflowDashboardContainer.DEFAULT_IMAGE_NAME, dashboard.getDefaultImageName());
+      assertEquals(8080, dashboard.getExposedPorts().get(0));
+      assertEquals(stateStoreComponent, dashboard.getStateStoreComponent());
     }
   }
 }
