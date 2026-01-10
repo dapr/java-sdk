@@ -124,4 +124,48 @@ public class PubSubStreamIT extends BaseIT {
       }
     }
   }
+
+  @Test
+  public void testPubSubRawData() throws Exception {
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName() + "-rawdata",
+        60000));
+
+    var runId = UUID.randomUUID().toString();
+    try (DaprClient client = daprRun.newDaprClient();
+         DaprPreviewClient previewClient = daprRun.newDaprPreviewClient()) {
+
+      // Publish messages
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("Raw message #%d for run %s", i, runId);
+        client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
+        System.out.println(
+            String.format("Published raw message: '%s' to topic '%s'", message, TOPIC_NAME));
+      }
+
+      System.out.println("Starting raw data subscription for " + TOPIC_NAME);
+
+      Set<String> messages = Collections.synchronizedSet(new HashSet<>());
+
+      // Use new subscribeToEventsData - receives String directly, not CloudEvent<String>
+      var disposable = previewClient.subscribeToEventsData(PUBSUB_NAME, TOPIC_NAME, TypeRef.STRING)
+          .doOnNext(rawMessage -> {
+            // rawMessage is String directly
+            if (rawMessage.contains(runId)) {
+              messages.add(rawMessage);
+              System.out.println("Received raw message: " + rawMessage);
+            }
+          })
+          .subscribe();
+
+      callWithRetry(() -> {
+        var messageCount = messages.size();
+        System.out.println(
+            String.format("Got %d raw messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME));
+        assertEquals(NUM_MESSAGES, messages.size());
+      }, 60000);
+
+      disposable.dispose();
+    }
+  }
 }

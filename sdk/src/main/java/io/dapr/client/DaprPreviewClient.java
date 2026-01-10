@@ -293,6 +293,18 @@ public interface DaprPreviewClient extends AutoCloseable {
    */
   <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
 
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux.
+   * Returns only the deserialized event data without CloudEvent metadata wrapper.
+   *
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param type Type for object deserialization.
+   * @return A Flux of deserialized event payloads (no CloudEvent wrapper).
+   * @param <T> Type of the event payload.
+   */
+  <T> Flux<T> subscribeToEventsData(String pubsubName, String topic, TypeRef<T> type);
+
   /*
    * Converse with an LLM.
    *

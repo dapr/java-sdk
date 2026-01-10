@@ -514,6 +514,15 @@ public class DaprClientImpl extends AbstractDaprClient {
     }, FluxSink.OverflowStrategy.BUFFER);
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToEventsData(String pubsubName, String topic, TypeRef<T> type) {
+    return subscribeToEvents(pubsubName, topic, type)
+        .map(CloudEvent::getData);
+  }
+
   @Nonnull
   private <T> Subscription<T> buildSubscription(
       SubscriptionListener<T> listener,
