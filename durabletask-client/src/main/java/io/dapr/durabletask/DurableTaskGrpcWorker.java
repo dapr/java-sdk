@@ -24,10 +24,14 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.commons.lang3.StringUtils;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -88,7 +92,11 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
     this.dataConverter = builder.dataConverter != null ? builder.dataConverter : new JacksonDataConverter();
     this.maximumTimerInterval = builder.maximumTimerInterval != null ? builder.maximumTimerInterval
         : DEFAULT_MAXIMUM_TIMER_INTERVAL;
-    this.workerPool = builder.executorService != null ? builder.executorService : Executors.newCachedThreadPool();
+
+    ExecutorService rawExecutor = builder.executorService != null
+        ? builder.executorService : Executors.newCachedThreadPool();
+    this.workerPool = Context.taskWrapping(rawExecutor);
+
     this.isExecutorServiceManaged = builder.executorService == null;
   }
 
@@ -218,10 +226,16 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
             });
           } else if (requestType == OrchestratorService.WorkItem.RequestCase.ACTIVITYREQUEST) {
             OrchestratorService.ActivityRequest activityRequest = workItem.getActivityRequest();
-            logger.log(Level.FINEST,
-                String.format("Processing activity request: %s for instance: %s}",
+
+
+            logger.log(Level.INFO,
+                String.format("Processing activity request: %s for instance: %s, gRPC thread context: %s",
                     activityRequest.getName(),
-                    activityRequest.getOrchestrationInstance().getInstanceId()));
+                    activityRequest.getOrchestrationInstance().getInstanceId(),
+                    Context.current()));
+
+            // Extract trace context from the ActivityRequest and set it as current
+            Context traceContext = extractTraceContext(activityRequest);
 
             // TODO: Error handling
             this.workerPool.submit(() -> {
@@ -232,7 +246,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
                     activityRequest.getName(),
                     activityRequest.getInput().getValue(),
                     activityRequest.getTaskExecutionId(),
-                    activityRequest.getTaskId());
+                    activityRequest.getTaskId(),
+                    activityRequest.getParentTraceContext().getTraceParent());
               } catch (Throwable e) {
                 failureDetails = TaskFailureDetails.newBuilder()
                     .setErrorType(e.getClass().getName())
@@ -341,5 +356,58 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
 
   private String getSidecarAddress() {
     return this.sidecarClient.getChannel().authority();
+  }
+
+  /**
+   * Extracts trace context from the ActivityRequest's ParentTraceContext field
+   * and creates an OpenTelemetry Context with the parent span set.
+   *
+   * @param activityRequest The activity request containing the parent trace context
+   * @return A Context with the parent span set, or the current context if no trace context is present
+   */
+  private Context extractTraceContext(OrchestratorService.ActivityRequest activityRequest) {
+    if (!activityRequest.hasParentTraceContext()) {
+      logger.log(Level.FINE, "No parent trace context in activity request");
+      return Context.current();
+    }
+
+    OrchestratorService.TraceContext traceContext = activityRequest.getParentTraceContext();
+    String traceParent = traceContext.getTraceParent();
+
+    if (traceParent.isEmpty()) {
+      logger.log(Level.FINE, "Empty traceparent in activity request");
+      return Context.current();
+    }
+
+    logger.log(Level.INFO,
+        String.format("Extracting trace context from ActivityRequest: traceparent=%s", traceParent));
+
+    // Use W3CTraceContextPropagator to extract the trace context
+    Map<String, String> carrier = new HashMap<>();
+    carrier.put("traceparent", traceParent);
+    if (traceContext.hasTraceState()) {
+      carrier.put("tracestate", traceContext.getTraceState().getValue());
+    }
+
+    TextMapGetter<Map<String, String>> getter = new TextMapGetter<Map<String, String>>() {
+      @Override
+      public Iterable<String> keys(Map<String, String> carrier) {
+        return carrier.keySet();
+      }
+
+      @Override
+      public String get(Map<String, String> carrier, String key) {
+        return carrier.get(key);
+      }
+    };
+
+
+    Context extractedContext = W3CTraceContextPropagator.getInstance()
+        .extract(Context.current(), carrier, getter);
+
+    logger.log(Level.INFO,
+        String.format("Extracted trace context: %s", extractedContext));
+
+    return extractedContext;
   }
 }
