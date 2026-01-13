@@ -17,12 +17,11 @@ import io.dapr.client.domain.CloudEvent;
 import io.dapr.exceptions.DaprException;
 import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprPubsubProtos;
 import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nonnull;
-
 import java.io.Closeable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,7 +37,8 @@ import java.util.function.Function;
 @Deprecated
 public class Subscription<T> implements Closeable {
 
-  private final BlockingQueue<DaprProtos.SubscribeTopicEventsRequestAlpha1> ackQueue = new LinkedBlockingQueue<>(50);
+  private final BlockingQueue<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> ackQueue =
+      new LinkedBlockingQueue<>(50);
 
   private final AtomicBoolean running = new AtomicBoolean(true);
 
@@ -49,10 +49,10 @@ public class Subscription<T> implements Closeable {
   private Thread receiver;
 
   Subscription(DaprGrpc.DaprStub asyncStub,
-               DaprProtos.SubscribeTopicEventsRequestAlpha1 request,
+               DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request,
                SubscriptionListener<T> listener,
-               Function<DaprProtos.SubscribeTopicEventsResponseAlpha1, CloudEvent<T>> cloudEventConverter) {
-    final AtomicReference<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>> streamRef =
+               Function<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1, CloudEvent<T>> cloudEventConverter) {
+    final AtomicReference<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>> streamRef =
         new AtomicReference<>();
 
     this.acker = new Thread(() -> {
@@ -91,7 +91,7 @@ public class Subscription<T> implements Closeable {
       while (running.get()) {
         var stream = asyncStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
           @Override
-          public void onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1 topicEventRequest) {
+          public void onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 topicEventRequest) {
             try {
               var stream = streamRef.get();
               if (stream == null) {
@@ -156,10 +156,10 @@ public class Subscription<T> implements Closeable {
   }
 
   @Nonnull
-  private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildAckRequest(
+  private static DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 buildAckRequest(
       String id, SubscriptionListener.Status status) {
-    DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1 eventProcessed =
-        DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1.newBuilder()
+    DaprPubsubProtos.SubscribeTopicEventsRequestProcessedAlpha1 eventProcessed =
+        DaprPubsubProtos.SubscribeTopicEventsRequestProcessedAlpha1.newBuilder()
             .setId(id)
             .setStatus(
                 DaprAppCallbackProtos.TopicEventResponse.newBuilder()
@@ -167,8 +167,8 @@ public class Subscription<T> implements Closeable {
                         status.name()))
                     .build())
             .build();
-    DaprProtos.SubscribeTopicEventsRequestAlpha1 ack =
-        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+    DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 ack =
+        DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
             .setEventProcessed(eventProcessed)
             .build();
     return ack;

@@ -15,24 +15,15 @@ package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
 import io.dapr.client.resiliency.ResiliencyOptions;
-import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
+import io.dapr.v1.DaprActorsProtos;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
-import io.grpc.ForwardingClientCall;
-import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
-import reactor.util.context.ContextView;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -89,8 +80,8 @@ class DaprClientImpl implements DaprClient {
    */
   @Override
   public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
-    DaprProtos.InvokeActorRequest req =
-        DaprProtos.InvokeActorRequest.newBuilder()
+    DaprActorsProtos.InvokeActorRequest req =
+        DaprActorsProtos.InvokeActorRequest.newBuilder()
             .setActorType(actorType)
             .setActorId(actorId)
             .setMethod(methodName)
@@ -98,7 +89,7 @@ class DaprClientImpl implements DaprClient {
             .setData(jsonPayload == null ? ByteString.EMPTY : ByteString.copyFrom(jsonPayload))
             .build();
     return Mono.deferContextual(
-        context -> this.<DaprProtos.InvokeActorResponse>createMono(
+        context -> this.<DaprActorsProtos.InvokeActorResponse>createMono(
             it -> this.grpcInterceptors.intercept(client, context).invokeActor(req, it)
         )
     ).map(r -> r.getData().toByteArray());
