@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
+import io.dapr.v1.DaprActorsProtos;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusException;
@@ -60,22 +60,22 @@ public class DaprGrpcClientTest {
       mock(DaprGrpc.DaprImplBase.class, delegatesTo(
           new DaprGrpc.DaprImplBase() {
             @Override
-            public void invokeActor(DaprProtos.InvokeActorRequest request,
-                StreamObserver<DaprProtos.InvokeActorResponse> responseObserver) {
+            public void invokeActor(DaprActorsProtos.InvokeActorRequest request,
+                                    StreamObserver<DaprActorsProtos.InvokeActorResponse> responseObserver) {
               assertEquals(ACTOR_TYPE, request.getActorType());
               assertEquals(METHOD_NAME, request.getMethod());
               switch (request.getActorId()) {
                 case ACTOR_ID_OK:
                   assertArrayEquals(REQUEST_PAYLOAD, request.getData().toByteArray());
                   responseObserver.onNext(
-                      DaprProtos.InvokeActorResponse.newBuilder().setData(ByteString.copyFrom(RESPONSE_PAYLOAD))
+                      DaprActorsProtos.InvokeActorResponse.newBuilder().setData(ByteString.copyFrom(RESPONSE_PAYLOAD))
                           .build());
                   responseObserver.onCompleted();
                   return;
                 case ACTOR_ID_NULL_INPUT:
                   assertArrayEquals(new byte[0], request.getData().toByteArray());
                   responseObserver.onNext(
-                      DaprProtos.InvokeActorResponse.newBuilder().setData(ByteString.copyFrom(RESPONSE_PAYLOAD))
+                      DaprActorsProtos.InvokeActorResponse.newBuilder().setData(ByteString.copyFrom(RESPONSE_PAYLOAD))
                           .build());
                   responseObserver.onCompleted();
                   return;
