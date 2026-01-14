@@ -29,7 +29,7 @@ import io.grpc.TlsChannelCredentials;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 
@@ -140,7 +140,8 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
     if (builder.tracer != null) {
       this.tracer = builder.tracer;
     } else {
-      this.tracer = OpenTelemetry.noop().getTracer("DurableTaskGrpcClient");
+      //this.tracer = OpenTelemetry.noop().getTracer("DurableTaskGrpcClient");
+      this.tracer = GlobalOpenTelemetry.getTracer("dapr-workflow");
     }
 
     this.sidecarClient = TaskHubSidecarServiceGrpc.newBlockingStub(sidecarGrpcChannel);

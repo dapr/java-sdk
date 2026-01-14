@@ -125,32 +125,24 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>io.github.ascopes</groupId>
+        <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
         <version>${protobuf-maven-plugin.version}</version>
         <configuration>
-          <protocVersion>${protobuf.version}</protocVersion>
-          <embedSourcesInClassOutputs>true</embedSourcesInClassOutputs>
-          <sourceDirectories>
-            <sourceDirectory>${protobuf.input.directory}</sourceDirectory>
-          </sourceDirectories>
-          <binaryMavenPlugins>
-            <binaryMavenPlugin>
-              <groupId>io.grpc</groupId>
-              <artifactId>protoc-gen-grpc-java</artifactId>
-              <version>${grpc.version}</version>
-            </binaryMavenPlugin>
-          </binaryMavenPlugins>
+          <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+          <pluginId>grpc-java</pluginId>
+          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+          <protoSourceRoot>${protobuf.input.directory}</protoSourceRoot>
         </configuration>
         <executions>
           <execution>
             <goals>
-              <goal>generate</goal>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
