@@ -46,16 +46,15 @@ import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
+import io.dapr.v1.DaprBindingsProtos;
+import io.dapr.v1.DaprConfigurationProtos;
 import io.dapr.v1.DaprGrpc;
+import io.dapr.v1.DaprJobsProtos;
+import io.dapr.v1.DaprMetadataProtos;
 import io.dapr.v1.DaprProtos;
-import io.dapr.v1.DaprProtos.ActiveActorsCount;
-import io.dapr.v1.DaprProtos.ActorRuntime;
-import io.dapr.v1.DaprProtos.AppConnectionHealthProperties;
-import io.dapr.v1.DaprProtos.AppConnectionProperties;
-import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
-import io.dapr.v1.DaprProtos.PubsubSubscription;
-import io.dapr.v1.DaprProtos.PubsubSubscriptionRules;
-import io.dapr.v1.DaprProtos.RegisteredComponents;
+import io.dapr.v1.DaprPubsubProtos;
+import io.dapr.v1.DaprSecretProtos;
+import io.dapr.v1.DaprStateProtos;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
@@ -142,11 +141,25 @@ public class DaprClientGrpcTest {
     verify(channel).close();
   }
 
+  public static StatusRuntimeException newStatusRuntimeException(String statusCode, String message) {
+    return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(statusCode)).withDescription(message));
+  }
+
+  public static StatusRuntimeException newStatusRuntimeException(String statusCode, String message, com.google.rpc.Status statusDetails) {
+    com.google.rpc.Status status = com.google.rpc.Status.newBuilder()
+        .setCode(Status.Code.valueOf(statusCode).value())
+        .setMessage(message)
+        .addAllDetails(statusDetails.getDetailsList())
+        .build();
+
+    return StatusProto.toStatusRuntimeException(status);
+  }
+
   @Test
   public void publishEventExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument");
-    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(any(DaprPubsubProtos.PublishEventRequest.class), any());
 
     assertThrowsDaprException(
             StatusRuntimeException.class,
@@ -161,7 +174,7 @@ public class DaprClientGrpcTest {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onError(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
       return null;
-    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(any(DaprPubsubProtos.PublishEventRequest.class), any());
 
     Mono<Void> result = client.publishEvent("pubsubname","topic", "object");
 
@@ -181,7 +194,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(any(DaprPubsubProtos.PublishEventRequest.class), any());
 
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     Mono<Void> result = client.publishEvent("pubsubname","topic", "{invalid-json");
@@ -191,34 +204,6 @@ public class DaprClientGrpcTest {
         "UNKNOWN",
         "UNKNOWN: ",
         () -> result.block());
-  }
-
-  @Test
-  public void publishEventTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
-
-    Mono<Void> result = client.publishEvent("pubsubname","topic", "object");
-    result.block();
-  }
-
-  @Test
-  public void publishEventNoHotMono() {
-    AtomicBoolean called = new AtomicBoolean(false);
-    doAnswer((Answer<Void>) invocation -> {
-      called.set(true);
-      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
-    client.publishEvent("pubsubname", "topic", "object");
-    // Do not call block() on the mono above, so nothing should happen.
-    assertFalse(called.get());
   }
 
   @Test
@@ -291,6 +276,34 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void publishEventTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(any(DaprPubsubProtos.PublishEventRequest.class), any());
+
+    Mono<Void> result = client.publishEvent("pubsubname", "topic", "object");
+    result.block();
+  }
+
+  @Test
+  public void publishEventNoHotMono() {
+    AtomicBoolean called = new AtomicBoolean(false);
+    doAnswer((Answer<Void>) invocation -> {
+      called.set(true);
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(any(DaprPubsubProtos.PublishEventRequest.class), any());
+    client.publishEvent("pubsubname", "topic", "object");
+    // Do not call block() on the mono above, so nothing should happen.
+    assertFalse(called.get());
+  }
+
+  @Test
   public void invokeBindingSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
     client = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, new DefaultObjectSerializer());
@@ -299,7 +312,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
 
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
@@ -315,7 +328,7 @@ public class DaprClientGrpcTest {
   public void invokeBindingExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
 
     Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request");
 
@@ -330,10 +343,10 @@ public class DaprClientGrpcTest {
   public void invokeBindingCallbackExceptionThrownTest() {
     RuntimeException ex = new RuntimeException("An Exception");
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprBindingsProtos.InvokeBindingResponse> observer = (StreamObserver<DaprBindingsProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
 
     Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request");
 
@@ -346,14 +359,14 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    DaprBindingsProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprBindingsProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprBindingsProtos.InvokeBindingResponse> observer = (StreamObserver<DaprBindingsProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
 
     Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request");
     result.block();
@@ -361,14 +374,14 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingVoidReturnTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    DaprBindingsProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprBindingsProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprBindingsProtos.InvokeBindingResponse> observer = (StreamObserver<DaprBindingsProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
 
     var request = new InvokeBindingRequest("BindingName", "MyOperation");
     request.setData("request");
@@ -378,14 +391,14 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingByteArrayTest() {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-        DaprProtos.InvokeBindingResponse.newBuilder().setData(ByteString.copyFrom("OK".getBytes()));
+    DaprBindingsProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprBindingsProtos.InvokeBindingResponse.newBuilder().setData(ByteString.copyFrom("OK".getBytes()));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprBindingsProtos.InvokeBindingResponse> observer = (StreamObserver<DaprBindingsProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
 
     Mono<byte[]> result = client.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
 
@@ -394,14 +407,14 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingObjectTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-      DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    DaprBindingsProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprBindingsProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprBindingsProtos.InvokeBindingResponse> observer = (StreamObserver<DaprBindingsProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
 
     MyObject event = new MyObject(1, "Event");
     Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", event);
@@ -411,54 +424,19 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingResponseObjectTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    DaprBindingsProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprBindingsProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprBindingsProtos.InvokeBindingResponse> observer = (StreamObserver<DaprBindingsProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
 
     MyObject event = new MyObject(1, "Event");
     Mono<String> result = client.invokeBinding("BindingName", "MyOperation", event, String.class);
 
     assertEquals("OK", result.block());
-  }
-
-  @Test
-  public void invokeBindingResponseObjectTypeRefTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-            DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
-      observer.onNext(responseBuilder.build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
-
-    MyObject event = new MyObject(1, "Event");
-    Mono<String> result = client.invokeBinding("BindingName", "MyOperation", event, TypeRef.get(String.class));
-
-    assertEquals("OK", result.block());
-  }
-
-  @Test
-  public void invokeBindingObjectNoHotMono() throws IOException {
-    AtomicBoolean called = new AtomicBoolean(false);
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-            DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
-    doAnswer((Answer<Void>) invocation -> {
-      called.set(true);
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
-      observer.onNext(responseBuilder.build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
-    MyObject event = new MyObject(1, "Event");
-    client.invokeBinding("BindingName", "MyOperation", event);
-    // Do not call block() on mono above, so nothing should happen.
-    assertFalse(called.get());
   }
 
   @Test
@@ -474,7 +452,7 @@ public class DaprClientGrpcTest {
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null key
-      client.getState(STATE_STORE_NAME, (String)null, String.class).block();
+      client.getState(STATE_STORE_NAME, (String) null, String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty key
@@ -483,10 +461,45 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void invokeBindingResponseObjectTypeRefTest() throws IOException {
+    DaprBindingsProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprBindingsProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprBindingsProtos.InvokeBindingResponse> observer = (StreamObserver<DaprBindingsProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
+
+    MyObject event = new MyObject(1, "Event");
+    Mono<String> result = client.invokeBinding("BindingName", "MyOperation", event, TypeRef.get(String.class));
+
+    assertEquals("OK", result.block());
+  }
+
+  @Test
+  public void invokeBindingObjectNoHotMono() throws IOException {
+    AtomicBoolean called = new AtomicBoolean(false);
+    DaprBindingsProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprBindingsProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    doAnswer((Answer<Void>) invocation -> {
+      called.set(true);
+      StreamObserver<DaprBindingsProtos.InvokeBindingResponse> observer = (StreamObserver<DaprBindingsProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).invokeBinding(any(DaprBindingsProtos.InvokeBindingRequest.class), any());
+    MyObject event = new MyObject(1, "Event");
+    client.invokeBinding("BindingName", "MyOperation", event);
+    // Do not call block() on mono above, so nothing should happen.
+    assertFalse(called.get());
+  }
+
+  @Test
   public void getStateExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprStateProtos.GetStateRequest.class), any());
 
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<State<String>> result = client.getState(STATE_STORE_NAME, key, String.class);
@@ -502,10 +515,10 @@ public class DaprClientGrpcTest {
   public void getStateCallbackExceptionThrownTest() {
     RuntimeException ex = new RuntimeException("An Exception");
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprStateProtos.GetStateRequest.class), any());
 
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<State<String>> result = client.getState(STATE_STORE_NAME, key, String.class);
@@ -523,13 +536,13 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String expectedValue = "Expected state";
     State<String> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), null);
-    DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
+    DaprStateProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprStateProtos.GetStateRequest.class), any());
 
     State<String> keyRequest = buildStateKey(null, key, etag, null);
     Mono<State<String>> result = client.getState(STATE_STORE_NAME, keyRequest, String.class);
@@ -545,14 +558,14 @@ public class DaprClientGrpcTest {
     String etag = "ETag1";
     String key = "key1";
     String expectedValue = "Expected state";
-    DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
+    DaprStateProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
     doAnswer((Answer<Void>) invocation -> {
       called.set(true);
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprStateProtos.GetStateRequest.class), any());
 
     State<String> keyRequest = buildStateKey(null, key, etag, null);
     client.getState(STATE_STORE_NAME, keyRequest, String.class);
@@ -567,76 +580,23 @@ public class DaprClientGrpcTest {
     MyObject expectedValue = new MyObject(1, "The Value");
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
-    DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
+    DaprStateProtos.GetStateResponse responseEnvelope = DaprStateProtos.GetStateResponse.newBuilder()
         .setData(serialize(expectedValue))
         .setEtag(etag)
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprStateProtos.GetStateRequest.class), any());
 
     Mono<State<MyObject>> result = client.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
     State<MyObject> res = result.block();
 
     assertNotNull(res);
     assertEquals(expectedState, res);
-  }
-
-  @Test
-  public void getStateObjectValueWithMetadataTest() throws IOException {
-    String etag = "ETag1";
-    String key = "key1";
-    MyObject expectedValue = new MyObject(1, "The Value");
-    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    Map<String, String> metadata = new HashMap<>();
-    metadata.put("key_1", "val_1");
-    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
-    DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
-        .setData(serialize(expectedValue))
-        .setEtag(etag)
-        .build();
-    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, key)
-        .setMetadata(metadata)
-        .setStateOptions(options);
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
-      observer.onNext(responseEnvelope);
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
-
-    Mono<State<MyObject>> result = client.getState(request, TypeRef.get(MyObject.class));
-    State<MyObject> res = result.block();
-    assertNotNull(res);
-    assertEquals(expectedState, res);
-  }
-
-  @Test
-  public void getStateObjectValueWithOptionsNoConcurrencyTest() throws IOException {
-    String etag = "ETag1";
-    String key = "key1";
-    MyObject expectedValue = new MyObject(1, "The Value");
-    StateOptions options = new StateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
-    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
-    DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
-        .setData(serialize(expectedValue))
-        .setEtag(etag)
-        .build();
-    State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
-      observer.onNext(responseEnvelope);
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
-
-    Mono<State<MyObject>> result = client.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
-
-    assertEquals(expectedState, result.block());
   }
 
   @Test
@@ -667,28 +627,81 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void getStateObjectValueWithMetadataTest() throws IOException {
+    String etag = "ETag1";
+    String key = "key1";
+    MyObject expectedValue = new MyObject(1, "The Value");
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("key_1", "val_1");
+    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
+    DaprStateProtos.GetStateResponse responseEnvelope = DaprStateProtos.GetStateResponse.newBuilder()
+        .setData(serialize(expectedValue))
+        .setEtag(etag)
+        .build();
+    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, key)
+        .setMetadata(metadata)
+        .setStateOptions(options);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getState(any(DaprStateProtos.GetStateRequest.class), any());
+
+    Mono<State<MyObject>> result = client.getState(request, TypeRef.get(MyObject.class));
+    State<MyObject> res = result.block();
+    assertNotNull(res);
+    assertEquals(expectedState, res);
+  }
+
+  @Test
+  public void getStateObjectValueWithOptionsNoConcurrencyTest() throws IOException {
+    String etag = "ETag1";
+    String key = "key1";
+    MyObject expectedValue = new MyObject(1, "The Value");
+    StateOptions options = new StateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
+    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
+    DaprStateProtos.GetStateResponse responseEnvelope = DaprStateProtos.GetStateResponse.newBuilder()
+        .setData(serialize(expectedValue))
+        .setEtag(etag)
+        .build();
+    State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getState(any(DaprStateProtos.GetStateRequest.class), any());
+
+    Mono<State<MyObject>> result = client.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
+
+    assertEquals(expectedState, result.block());
+  }
+
+  @Test
   public void getStatesString() throws IOException {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("meta1", "value1");
     metadata.put("meta2", "value2");
-    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
+    DaprStateProtos.GetBulkStateResponse responseEnvelope = DaprStateProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
             .setData(serialize("hello world"))
             .setKey("100")
             .putAllMetadata(metadata)
             .setEtag("1")
             .build())
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
             .setKey("200")
             .setError("not found")
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetBulkStateResponse> observer = (StreamObserver<DaprStateProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprStateProtos.GetBulkStateRequest.class), any());
 
     List<State<String>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
 
@@ -708,24 +721,24 @@ public class DaprClientGrpcTest {
   public void getStatesInteger() throws IOException {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("meta1", "value1");
-    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
+    DaprStateProtos.GetBulkStateResponse responseEnvelope = DaprStateProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
             .setData(serialize(1234))
             .setKey("100")
             .putAllMetadata(metadata)
             .setEtag("1")
             .build())
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
             .setKey("200")
             .setError("not found")
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetBulkStateResponse> observer = (StreamObserver<DaprStateProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprStateProtos.GetBulkStateRequest.class), any());
     List<State<Integer>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
 
     assertEquals(2, result.size());
@@ -744,24 +757,24 @@ public class DaprClientGrpcTest {
   public void getStatesBoolean() throws IOException {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("meta1", "value1");
-    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
+    DaprStateProtos.GetBulkStateResponse responseEnvelope = DaprStateProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
             .setData(serialize(true))
             .setKey("100")
             .putAllMetadata(metadata)
             .setEtag("1")
             .build())
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
             .setKey("200")
             .setError("not found")
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetBulkStateResponse> observer = (StreamObserver<DaprStateProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprStateProtos.GetBulkStateRequest.class), any());
 
     List<State<Boolean>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
 
@@ -780,24 +793,24 @@ public class DaprClientGrpcTest {
   @Test
   public void getStatesByteArray() throws IOException {
     Map<String, String> metadata = new HashMap<>();
-    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
+    DaprStateProtos.GetBulkStateResponse responseEnvelope = DaprStateProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
             .setData(serialize(new byte[]{1, 2, 3}))
             .setKey("100")
             .putAllMetadata(metadata)
             .setEtag("1")
             .build())
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
             .setKey("200")
             .setError("not found")
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetBulkStateResponse> observer = (StreamObserver<DaprStateProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprStateProtos.GetBulkStateRequest.class), any());
 
     List<State<byte[]>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), byte[].class).block();
 
@@ -811,57 +824,6 @@ public class DaprClientGrpcTest {
     assertNull(result.stream().skip(1).findFirst().get().getValue());
     assertNull(result.stream().skip(1).findFirst().get().getEtag());
     assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
-  }
-
-  @Test
-  public void getStatesObject() throws IOException {
-    MyObject object = new MyObject(1, "Event");
-    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
-            .setData(serialize(object))
-            .setKey("100")
-            .setEtag("1")
-            .build())
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
-            .setKey("200")
-            .setError("not found")
-            .build())
-        .build();
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
-      observer.onNext(responseEnvelope);
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
-
-    List<State<MyObject>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
-
-    assertEquals(2, result.size());
-    assertEquals("100", result.stream().findFirst().get().getKey());
-    assertEquals(object, result.stream().findFirst().get().getValue());
-    assertEquals(0, result.stream().findFirst().get().getMetadata().size());
-    assertEquals("1", result.stream().findFirst().get().getEtag());
-    assertNull(result.stream().findFirst().get().getError());
-    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
-    assertNull(result.stream().skip(1).findFirst().get().getValue());
-    assertNull(result.stream().skip(1).findFirst().get().getEtag());
-    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
-  }
-
-  @Test
-  public void deleteStateExceptionThrowTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
-
-    State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<Void> result = client.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
   }
 
   @Test
@@ -886,13 +848,64 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void getStatesObject() throws IOException {
+    MyObject object = new MyObject(1, "Event");
+    DaprStateProtos.GetBulkStateResponse responseEnvelope = DaprStateProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
+            .setData(serialize(object))
+            .setKey("100")
+            .setEtag("1")
+            .build())
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
+            .setKey("200")
+            .setError("not found")
+            .build())
+        .build();
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprStateProtos.GetBulkStateResponse> observer = (StreamObserver<DaprStateProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getBulkState(any(DaprStateProtos.GetBulkStateRequest.class), any());
+
+    List<State<MyObject>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
+
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals(object, result.stream().findFirst().get().getValue());
+    assertEquals(0, result.stream().findFirst().get().getMetadata().size());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void deleteStateExceptionThrowTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(daprStub).deleteState(any(DaprStateProtos.DeleteStateRequest.class), any());
+
+    State<String> key = buildStateKey(null, "Key1", "ETag1", null);
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
+  }
+
+  @Test
   public void deleteStateCallbackExcpetionThrownTest() {
     RuntimeException ex = new RuntimeException("An Exception");
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprStateProtos.DeleteStateRequest.class), any());
 
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<Void> result = client.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
@@ -913,7 +926,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprStateProtos.DeleteStateRequest.class), any());
 
     State<String> stateKey = buildStateKey(null, key, etag, null);
     Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -931,7 +944,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprStateProtos.DeleteStateRequest.class), any());
 
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -951,7 +964,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprStateProtos.DeleteStateRequest.class), any());
 
     DeleteStateRequest request = new DeleteStateRequest(STATE_STORE_NAME, key);
     request.setEtag(etag)
@@ -973,49 +986,13 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprStateProtos.DeleteStateRequest.class), any());
 
     State<String> stateKey = buildStateKey(null, key, etag, options);
     client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
             stateKey.getOptions());
     // Do not call result.block(), so nothing should happen.
     assertFalse(called.get());
-  }
-
-  @Test
-  public void deleteStateNoConsistencyTest() {
-    String etag = "ETag1";
-    String key = "key1";
-    StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
-
-    State<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
-        stateKey.getOptions());
-    result.block();
-  }
-
-  @Test
-  public void deleteStateNoConcurrencyTest() {
-    String etag = "ETag1";
-    String key = "key1";
-    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
-
-    State<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
-        stateKey.getOptions());
-    result.block();
   }
 
   @Test
@@ -1035,6 +1012,42 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void deleteStateNoConsistencyTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).deleteState(any(DaprStateProtos.DeleteStateRequest.class), any());
+
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
+        stateKey.getOptions());
+    result.block();
+  }
+
+  @Test
+  public void deleteStateNoConcurrencyTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).deleteState(any(DaprStateProtos.DeleteStateRequest.class), any());
+
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
+        stateKey.getOptions());
+    result.block();
+  }
+
+  @Test
   public void executeTransactionSerializerExceptionTest() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
     client = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, mockSerializer);
@@ -1047,7 +1060,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprStateProtos.ExecuteStateTransactionRequest.class), any());
 
 
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
@@ -1077,7 +1090,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprStateProtos.ExecuteStateTransactionRequest.class), any());
 
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -1106,7 +1119,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprStateProtos.ExecuteStateTransactionRequest.class), any());
 
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -1121,6 +1134,18 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void saveStatesIllegalArgumentExceptionTest() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      // empty state store name
+      client.saveBulkState("", Collections.emptyList()).block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
+      // empty state store name
+      client.saveBulkState(null, Collections.emptyList()).block();
+    });
+  }
+
+  @Test
   public void executeTransactionExceptionThrownTest() {
     String etag = "ETag1";
     String key = "key1";
@@ -1128,7 +1153,7 @@ public class DaprClientGrpcTest {
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprStateProtos.ExecuteStateTransactionRequest.class), any());
 
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
@@ -1154,7 +1179,7 @@ public class DaprClientGrpcTest {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprStateProtos.ExecuteStateTransactionRequest.class), any());
 
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
@@ -1170,24 +1195,12 @@ public class DaprClientGrpcTest {
   }
 
   @Test
-  public void saveStatesIllegalArgumentExceptionTest() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      // empty state store name
-      client.saveBulkState("", Collections.emptyList()).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      // empty state store name
-      client.saveBulkState(null, Collections.emptyList()).block();
-    });
-  }
-
-  @Test
   public void saveBulkStateTestNullEtag() {
     List<State<?>> states = new ArrayList<State<?>>();
     states.add(new State<String>("null_etag_key", "null_etag_value", null, (StateOptions)null));
     states.add(new State<String>("empty_etag_key", "empty_etag_value", "", (StateOptions)null));
 
-    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    ArgumentCaptor<DaprStateProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprStateProtos.SaveStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1211,7 +1224,7 @@ public class DaprClientGrpcTest {
     String value = "State value";
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, null);
 
@@ -1232,7 +1245,7 @@ public class DaprClientGrpcTest {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, null);
 
@@ -1253,7 +1266,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
 
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, null);
@@ -1267,7 +1280,7 @@ public class DaprClientGrpcTest {
     String value = "State value";
     Map<String, String> metadata = new HashMap<>();
     metadata.put("custom", "customValue");
-    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    ArgumentCaptor<DaprStateProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprStateProtos.SaveStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1287,7 +1300,7 @@ public class DaprClientGrpcTest {
     String etag = "ETag1";
     String value = "State value";
     Map<String, String> metadata = new HashMap<>();
-    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    ArgumentCaptor<DaprStateProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprStateProtos.SaveStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1305,7 +1318,7 @@ public class DaprClientGrpcTest {
   public void saveStateWithMetaEmptyTest() {
     String key = "key1";
     String etag = "ETag1";
-    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    ArgumentCaptor<DaprStateProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprStateProtos.SaveStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1328,7 +1341,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -1340,7 +1353,7 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = null;
     String value = "State value";
-    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    ArgumentCaptor<DaprStateProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprStateProtos.SaveStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1367,7 +1380,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     client.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -1385,11 +1398,19 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
     result.block();
+  }
+
+  private <T> State<T> buildStateKey(T value, String key, String etag, StateOptions options) {
+    return new State<>(key, value, etag, options);
+  }
+
+  private <T> State<T> buildStateKey(T value, String key, String etag, Map<String, String> metadata, StateOptions options) {
+    return new State<>(key, value, etag, metadata, options);
   }
 
   @Test
@@ -1402,7 +1423,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -1419,19 +1440,11 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
     result.block();
-  }
-
-  private <T> State<T> buildStateKey(T value, String key, String etag, StateOptions options) {
-    return new State<>(key, value, etag, options);
-  }
-
-  private <T> State<T> buildStateKey(T value, String key, String etag, Map<String, String> metadata, StateOptions options) {
-    return new State<>(key, value, etag, metadata, options);
   }
 
   /**
@@ -1463,18 +1476,18 @@ public class DaprClientGrpcTest {
     String expectedValue2 = "Expected state 2";
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
     State<String> expectedState2 = buildStateKey(expectedValue2, key2, etag, new HashMap<>(), null);
-    Map<String, DaprProtos.GetStateResponse> futuresMap = new HashMap<>();
+    Map<String, DaprStateProtos.GetStateResponse> futuresMap = new HashMap<>();
     futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(futuresMap.get(key1));
       observer.onCompleted();
       return null;
     }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(futuresMap.get(key2));
       observer.onCompleted();
       return null;
@@ -1492,7 +1505,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(io.dapr.v1.DaprStateProtos.DeleteStateRequest.class), any());
 
     Mono<Void> resultDelete = client.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(),
         keyRequest2.getOptions());
@@ -1503,7 +1516,7 @@ public class DaprClientGrpcTest {
   public void deleteStateNullEtag() {
     String key = "key1";
     String etag = null;
-    ArgumentCaptor<DaprProtos.DeleteStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.DeleteStateRequest.class);
+    ArgumentCaptor<DaprStateProtos.DeleteStateRequest> argument = ArgumentCaptor.forClass(DaprStateProtos.DeleteStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1524,13 +1537,13 @@ public class DaprClientGrpcTest {
     String key1 = "key1";
     String expectedValue1 = "Expected state 1";
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
-    Map<String, DaprProtos.GetStateResponse> futuresMap = new HashMap<>();
-    DaprProtos.GetStateResponse envelope = DaprProtos.GetStateResponse.newBuilder()
+    Map<String, DaprStateProtos.GetStateResponse> futuresMap = new HashMap<>();
+    DaprStateProtos.GetStateResponse envelope = DaprStateProtos.GetStateResponse.newBuilder()
             .setData(serialize(expectedValue1))
             .build();
     futuresMap.put(key1, envelope);
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetStateResponse> observer = (StreamObserver<DaprStateProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(futuresMap.get(key1));
       observer.onCompleted();
       return null;
@@ -1543,23 +1556,23 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getBulkStateNullEtag() throws Exception {
-    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
-            .addItems(DaprProtos.BulkStateItem.newBuilder()
+    DaprStateProtos.GetBulkStateResponse responseEnvelope = DaprStateProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
                     .setData(serialize("hello world"))
                     .setKey("100")
                     .build())
-            .addItems(DaprProtos.BulkStateItem.newBuilder()
+        .addItems(DaprStateProtos.BulkStateItem.newBuilder()
                     .setKey("200")
                     .setEtag("")
                     .setError("not found")
                     .build())
             .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprStateProtos.GetBulkStateResponse> observer = (StreamObserver<DaprStateProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprStateProtos.GetBulkStateRequest.class), any());
 
     List<State<String>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
 
@@ -1578,61 +1591,24 @@ public class DaprClientGrpcTest {
   public void getSecrets() {
     String expectedKey = "attributeKey";
     String expectedValue = "Expected secret value";
-    DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse(expectedKey, expectedValue);
+    DaprSecretProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse(expectedKey, expectedValue);
 
     doAnswer((Answer<Void>) invocation -> {
-      DaprProtos.GetSecretRequest req = invocation.getArgument(0);
+      DaprSecretProtos.GetSecretRequest req = invocation.getArgument(0);
       assertEquals("key", req.getKey());
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals(0, req.getMetadataCount());
 
-      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprSecretProtos.GetSecretResponse> observer = (StreamObserver<DaprSecretProtos.GetSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
+    }).when(daprStub).getSecret(any(DaprSecretProtos.GetSecretRequest.class), any());
 
     Map<String, String> result = client.getSecret(SECRET_STORE_NAME, "key").block();
 
     assertEquals(1, result.size());
     assertEquals(expectedValue, result.get(expectedKey));
-  }
-
-  @Test
-  public void getSecretsEmptyResponse() {
-    DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse();
-
-    doAnswer((Answer<Void>) invocation -> {
-      DaprProtos.GetSecretRequest req = invocation.getArgument(0);
-      assertEquals("key", req.getKey());
-      assertEquals(SECRET_STORE_NAME, req.getStoreName());
-      assertEquals(0, req.getMetadataCount());
-
-      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
-      observer.onNext(responseEnvelope);
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
-
-    Map<String, String> result = client.getSecret(SECRET_STORE_NAME, "key").block();
-
-    assertTrue(result.isEmpty());
-  }
-
-  @Test
-  public void getSecretsException() {
-    doAnswer((Answer<Void>) invocation -> {
-      DaprProtos.GetSecretRequest req = invocation.getArgument(0);
-      assertEquals("key", req.getKey());
-      assertEquals(SECRET_STORE_NAME, req.getStoreName());
-      assertEquals(0, req.getMetadataCount());
-
-      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
-      observer.onError(new RuntimeException());
-      return null;
-    }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
-
-    assertThrowsDaprException(ExecutionException.class, () -> client.getSecret(SECRET_STORE_NAME, "key").block());
   }
 
   @Test
@@ -1656,21 +1632,58 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void getSecretsEmptyResponse() {
+    DaprSecretProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse();
+
+    doAnswer((Answer<Void>) invocation -> {
+      DaprSecretProtos.GetSecretRequest req = invocation.getArgument(0);
+      assertEquals("key", req.getKey());
+      assertEquals(SECRET_STORE_NAME, req.getStoreName());
+      assertEquals(0, req.getMetadataCount());
+
+      StreamObserver<DaprSecretProtos.GetSecretResponse> observer = (StreamObserver<DaprSecretProtos.GetSecretResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getSecret(any(DaprSecretProtos.GetSecretRequest.class), any());
+
+    Map<String, String> result = client.getSecret(SECRET_STORE_NAME, "key").block();
+
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  public void getSecretsException() {
+    doAnswer((Answer<Void>) invocation -> {
+      DaprSecretProtos.GetSecretRequest req = invocation.getArgument(0);
+      assertEquals("key", req.getKey());
+      assertEquals(SECRET_STORE_NAME, req.getStoreName());
+      assertEquals(0, req.getMetadataCount());
+
+      StreamObserver<DaprSecretProtos.GetSecretResponse> observer = (StreamObserver<DaprSecretProtos.GetSecretResponse>) invocation.getArguments()[1];
+      observer.onError(new RuntimeException());
+      return null;
+    }).when(daprStub).getSecret(any(DaprSecretProtos.GetSecretRequest.class), any());
+
+    assertThrowsDaprException(ExecutionException.class, () -> client.getSecret(SECRET_STORE_NAME, "key").block());
+  }
+
+  @Test
   public void getSecretsWithMetadata() {
     String expectedKey = "attributeKey";
     String expectedValue = "Expected secret value";
-    DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse(expectedKey, expectedValue);
+    DaprSecretProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse(expectedKey, expectedValue);
     doAnswer((Answer<Void>) invocation -> {
-      DaprProtos.GetSecretRequest req = invocation.getArgument(0);
+      DaprSecretProtos.GetSecretRequest req = invocation.getArgument(0);
       assertEquals("key", req.getKey());
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals("metavalue", req.getMetadataMap().get("metakey"));
 
-      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprSecretProtos.GetSecretResponse> observer = (StreamObserver<DaprSecretProtos.GetSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
+    }).when(daprStub).getSecret(any(DaprSecretProtos.GetSecretRequest.class), any());
 
     Map<String, String> result = client.getSecret(
       SECRET_STORE_NAME,
@@ -1682,8 +1695,15 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void getConfigurationTestErrorScenario() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.getConfiguration("", "key").block();
+    });
+  }
+
+  @Test
   public void getBulkSecrets() {
-    DaprProtos.GetBulkSecretResponse responseEnvelope = buildGetBulkSecretResponse(
+    DaprSecretProtos.GetBulkSecretResponse responseEnvelope = buildGetBulkSecretResponse(
         new HashMap<String, Map<String, String>>() {{
           put("one", Collections.singletonMap("mysecretkey", "mysecretvalue"));
           put("two", new HashMap<String, String>() {{
@@ -1693,16 +1713,16 @@ public class DaprClientGrpcTest {
         }});
 
     doAnswer((Answer<Void>) invocation -> {
-      DaprProtos.GetBulkSecretRequest req = invocation.getArgument(0);
+      DaprSecretProtos.GetBulkSecretRequest req = invocation.getArgument(0);
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals(0, req.getMetadataCount());
 
-      StreamObserver<DaprProtos.GetBulkSecretResponse> observer =
-          (StreamObserver<DaprProtos.GetBulkSecretResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprSecretProtos.GetBulkSecretResponse> observer =
+          (StreamObserver<DaprSecretProtos.GetBulkSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getBulkSecret(any(DaprProtos.GetBulkSecretRequest.class), any());
+    }).when(daprStub).getBulkSecret(any(DaprSecretProtos.GetBulkSecretRequest.class), any());
 
     Map<String, Map<String, String>> secrets = client.getBulkSecret(SECRET_STORE_NAME).block();
 
@@ -1716,7 +1736,7 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getBulkSecretsWithMetadata() {
-    DaprProtos.GetBulkSecretResponse responseEnvelope = buildGetBulkSecretResponse(
+    DaprSecretProtos.GetBulkSecretResponse responseEnvelope = buildGetBulkSecretResponse(
         new HashMap<String, Map<String, String>>() {{
           put("one", Collections.singletonMap("mysecretkey", "mysecretvalue"));
           put("two", new HashMap<String, String>() {{
@@ -1726,17 +1746,17 @@ public class DaprClientGrpcTest {
         }});
 
     doAnswer((Answer<Void>) invocation -> {
-      DaprProtos.GetBulkSecretRequest req = invocation.getArgument(0);
+      DaprSecretProtos.GetBulkSecretRequest req = invocation.getArgument(0);
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals(1, req.getMetadataCount());
       assertEquals("metavalue", req.getMetadataOrThrow("metakey"));
 
-      StreamObserver<DaprProtos.GetBulkSecretResponse> observer =
-          (StreamObserver<DaprProtos.GetBulkSecretResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprSecretProtos.GetBulkSecretResponse> observer =
+          (StreamObserver<DaprSecretProtos.GetBulkSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getBulkSecret(any(DaprProtos.GetBulkSecretRequest.class), any());
+    }).when(daprStub).getBulkSecret(any(DaprSecretProtos.GetBulkSecretRequest.class), any());
 
     Map<String, Map<String, String>> secrets = client.getBulkSecret(
         SECRET_STORE_NAME, Collections.singletonMap("metakey", "metavalue")).block();
@@ -1750,21 +1770,14 @@ public class DaprClientGrpcTest {
   }
 
   @Test
-  public void getConfigurationTestErrorScenario() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      client.getConfiguration("", "key").block();
-    });
-  }
-
-  @Test
   public void getSingleConfigurationTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.GetConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(getSingleMockResponse());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+    }).when(daprStub).getConfiguration(any(DaprConfigurationProtos.GetConfigurationRequest.class), any());
 
     ConfigurationItem ci = client.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
     assertEquals("configvalue1", ci.getValue());
@@ -1774,12 +1787,12 @@ public class DaprClientGrpcTest {
   @Test
   public void getSingleConfigurationWithMetadataTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.GetConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(getSingleMockResponse());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+    }).when(daprStub).getConfiguration(any(DaprConfigurationProtos.GetConfigurationRequest.class), any());
 
     Map<String, String> reqMetadata = new HashMap<>();
     reqMetadata.put("meta1", "value1");
@@ -1791,12 +1804,12 @@ public class DaprClientGrpcTest {
   @Test
   public void getMultipleConfigurationTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.GetConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(getMultipleMockResponse());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+    }).when(daprStub).getConfiguration(any(DaprConfigurationProtos.GetConfigurationRequest.class), any());
 
     Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
     assertEquals(2, cis.size());
@@ -1811,12 +1824,12 @@ public class DaprClientGrpcTest {
   @Test
   public void getMultipleConfigurationWithMetadataTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.GetConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(getMultipleMockResponse());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+    }).when(daprStub).getConfiguration(any(DaprConfigurationProtos.GetConfigurationRequest.class), any());
 
     Map<String, String> reqMetadata = new HashMap<>();
     reqMetadata.put("meta1", "value1");
@@ -1837,18 +1850,18 @@ public class DaprClientGrpcTest {
         .setVersion("1")
         .putAllMetadata(metadata)
         .build());
-    DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
+    DaprConfigurationProtos.SubscribeConfigurationResponse responseEnvelope = DaprConfigurationProtos.SubscribeConfigurationResponse.newBuilder()
         .putAllItems(configs)
         .setId("subscription_id")
         .build();
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+    }).when(daprStub).subscribeConfiguration(any(DaprConfigurationProtos.SubscribeConfigurationRequest.class), any());
 
     Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
     assertTrue(itr.hasNext());
@@ -1868,18 +1881,18 @@ public class DaprClientGrpcTest {
         .setVersion("1")
         .putAllMetadata(metadata)
         .build());
-    DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
+    DaprConfigurationProtos.SubscribeConfigurationResponse responseEnvelope = DaprConfigurationProtos.SubscribeConfigurationResponse.newBuilder()
         .putAllItems(configs)
         .setId("subscription_id")
         .build();
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+    }).when(daprStub).subscribeConfiguration(any(DaprConfigurationProtos.SubscribeConfigurationRequest.class), any());
 
     Map<String, String> reqMetadata = new HashMap<>();
     List<String> keys = Arrays.asList("configkey1");
@@ -1895,12 +1908,12 @@ public class DaprClientGrpcTest {
   @Test
   public void subscribeConfigurationWithErrorTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onError(new RuntimeException());
       observer.onCompleted();
       return null;
-    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+    }).when(daprStub).subscribeConfiguration(any(DaprConfigurationProtos.SubscribeConfigurationRequest.class), any());
 
     assertThrowsDaprException(ExecutionException.class, () -> {
       client.subscribeConfiguration(CONFIG_STORE_NAME, "key").blockFirst();
@@ -1913,18 +1926,18 @@ public class DaprClientGrpcTest {
 
   @Test
   public void unsubscribeConfigurationTest() {
-    DaprProtos.UnsubscribeConfigurationResponse responseEnvelope = DaprProtos.UnsubscribeConfigurationResponse.newBuilder()
+    DaprConfigurationProtos.UnsubscribeConfigurationResponse responseEnvelope = DaprConfigurationProtos.UnsubscribeConfigurationResponse.newBuilder()
         .setOk(true)
         .setMessage("unsubscribed_message")
         .build();
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.UnsubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).unsubscribeConfiguration(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
+    }).when(daprStub).unsubscribeConfiguration(any(DaprConfigurationProtos.UnsubscribeConfigurationRequest.class), any());
 
     UnsubscribeConfigurationResponse
         response = client.unsubscribeConfiguration("subscription_id", CONFIG_STORE_NAME).block();
@@ -1935,12 +1948,12 @@ public class DaprClientGrpcTest {
   @Test
   public void unsubscribeConfigurationTestWithError() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
-          (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprConfigurationProtos.UnsubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprConfigurationProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onError(new RuntimeException());
       observer.onCompleted();
       return null;
-    }).when(daprStub).unsubscribeConfiguration(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
+    }).when(daprStub).unsubscribeConfiguration(any(DaprConfigurationProtos.UnsubscribeConfigurationRequest.class), any());
 
     assertThrowsDaprException(ExecutionException.class, () -> {
       client.unsubscribeConfiguration("subscription_id", CONFIG_STORE_NAME).block();
@@ -1956,7 +1969,7 @@ public class DaprClientGrpcTest {
     });
   }
 
-  private DaprProtos.GetConfigurationResponse getSingleMockResponse() {
+  private DaprConfigurationProtos.GetConfigurationResponse getSingleMockResponse() {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("meta1", "value1");
     Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
@@ -1965,13 +1978,13 @@ public class DaprClientGrpcTest {
         .setVersion("1")
         .putAllMetadata(metadata)
         .build());
-    DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
+    DaprConfigurationProtos.GetConfigurationResponse responseEnvelope = DaprConfigurationProtos.GetConfigurationResponse.newBuilder()
         .putAllItems(configs)
         .build();
     return responseEnvelope;
   }
 
-  private DaprProtos.GetConfigurationResponse getMultipleMockResponse() {
+  private DaprConfigurationProtos.GetConfigurationResponse getMultipleMockResponse() {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("meta1", "value1");
     Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
@@ -1985,10 +1998,23 @@ public class DaprClientGrpcTest {
         .setVersion("1")
         .putAllMetadata(metadata)
         .build());
-    DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
+    DaprConfigurationProtos.GetConfigurationResponse responseEnvelope = DaprConfigurationProtos.GetConfigurationResponse.newBuilder()
         .putAllItems(configs)
         .build();
     return responseEnvelope;
+  }
+
+  @Test
+  public void shutdownTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.ShutdownRequest> observer = (StreamObserver<DaprProtos.ShutdownRequest>) invocation.getArguments()[1];
+      observer.onNext(DaprProtos.ShutdownRequest.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).shutdown(any(DaprProtos.ShutdownRequest.class), any());
+
+    Mono<Void> result = client.shutdown();
+    result.block();
   }
 
   /* If this test is failing, it means that a new value was added to StateOptions.Consistency
@@ -2004,7 +2030,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     for (StateOptions.Consistency consistency : StateOptions.Consistency.values()) {
       StateOptions options = buildStateOptions(consistency, StateOptions.Concurrency.FIRST_WRITE);
@@ -2026,7 +2052,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprStateProtos.SaveStateRequest.class), any());
 
     for (StateOptions.Concurrency concurrency : StateOptions.Concurrency.values()) {
       StateOptions options = buildStateOptions(StateOptions.Consistency.EVENTUAL, concurrency);
@@ -2035,48 +2061,20 @@ public class DaprClientGrpcTest {
     }
   }
 
-  @Test
-  public void shutdownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.ShutdownRequest> observer = (StreamObserver<DaprProtos.ShutdownRequest>) invocation.getArguments()[1];
-      observer.onNext(DaprProtos.ShutdownRequest.getDefaultInstance());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).shutdown(any(DaprProtos.ShutdownRequest.class), any());
-
-    Mono<Void> result = client.shutdown();
-    result.block();
-  }
-
-
-  private <T> DaprProtos.GetStateResponse buildFutureGetStateEnvelop(T value, String etag) throws IOException {
+  private <T> DaprStateProtos.GetStateResponse buildFutureGetStateEnvelop(T value, String etag) throws IOException {
     return buildGetStateResponse(value, etag);
   }
 
-  private <T> DaprProtos.GetStateResponse buildGetStateResponse(T value, String etag) throws IOException {
-    return DaprProtos.GetStateResponse.newBuilder()
+  private <T> DaprStateProtos.GetStateResponse buildGetStateResponse(T value, String etag) throws IOException {
+    return DaprStateProtos.GetStateResponse.newBuilder()
         .setData(serialize(value))
         .setEtag(etag)
         .build();
   }
 
-  private DaprProtos.GetSecretResponse buildGetSecretResponse(String key, String value) {
-    return DaprProtos.GetSecretResponse.newBuilder()
+  private DaprSecretProtos.GetSecretResponse buildGetSecretResponse(String key, String value) {
+    return DaprSecretProtos.GetSecretResponse.newBuilder()
         .putAllData(Collections.singletonMap(key, value))
-        .build();
-  }
-
-  private DaprProtos.GetSecretResponse buildGetSecretResponse() {
-    return DaprProtos.GetSecretResponse.newBuilder().build();
-  }
-
-  private DaprProtos.GetBulkSecretResponse buildGetBulkSecretResponse(Map<String, Map<String, String>> res) {
-    Map<String, DaprProtos.SecretResponse> map = res.entrySet().stream().collect(
-        Collectors.toMap(
-            e -> e.getKey(),
-            e -> DaprProtos.SecretResponse.newBuilder().putAllSecrets(e.getValue()).build()));
-    return DaprProtos.GetBulkSecretResponse.newBuilder()
-        .putAllData(map)
         .build();
   }
 
@@ -2146,88 +2144,60 @@ public class DaprClientGrpcTest {
     }
   }
 
-  private static class GetStateRequestKeyMatcher implements ArgumentMatcher<DaprProtos.GetStateRequest> {
-
-    private final String propValue;
-
-    GetStateRequestKeyMatcher(String propValue) {
-      this.propValue = propValue;
-    }
-
-    @Override
-    public boolean matches(DaprProtos.GetStateRequest argument) {
-      if (argument == null) {
-        return false;
-      }
-      if (propValue == null && argument.getKey() != null) {
-        return false;
-      }
-      if (propValue == null && argument.getKey() == null) {
-        return true;
-      }
-      return propValue.equals(argument.getKey());
-    }
-
-    @Override
-    public String toString() {
-      return "<Has property of certain value (propName: " + propValue + ") matcher>";
-    }
+  private DaprSecretProtos.GetSecretResponse buildGetSecretResponse() {
+    return DaprSecretProtos.GetSecretResponse.newBuilder().build();
   }
 
-  public static StatusRuntimeException newStatusRuntimeException(String statusCode, String message) {
-    return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(statusCode)).withDescription(message));
-  }
-
-  public static StatusRuntimeException newStatusRuntimeException(String statusCode, String message, com.google.rpc.Status statusDetails) {
-    com.google.rpc.Status status = com.google.rpc.Status.newBuilder()
-            .setCode(Status.Code.valueOf(statusCode).value())
-            .setMessage(message)
-            .addAllDetails(statusDetails.getDetailsList())
-            .build();
-
-    return StatusProto.toStatusRuntimeException(status);
+  private DaprSecretProtos.GetBulkSecretResponse buildGetBulkSecretResponse(Map<String, Map<String, String>> res) {
+    Map<String, DaprSecretProtos.SecretResponse> map = res.entrySet().stream().collect(
+        Collectors.toMap(
+            e -> e.getKey(),
+            e -> DaprSecretProtos.SecretResponse.newBuilder().putAllSecrets(e.getValue()).build()));
+    return DaprSecretProtos.GetBulkSecretResponse.newBuilder()
+        .putAllData(map)
+        .build();
   }
 
   @Test
   public void getMetadataTest() {
-    ActiveActorsCount activeActorsCount = DaprProtos.ActiveActorsCount.newBuilder()
+    DaprMetadataProtos.ActiveActorsCount activeActorsCount = DaprMetadataProtos.ActiveActorsCount.newBuilder()
         .setType("actor")
         .setCount(1)
         .build();
 
-    ActorRuntime actorRuntime = DaprProtos.ActorRuntime.newBuilder()
+    DaprMetadataProtos.ActorRuntime actorRuntime = DaprMetadataProtos.ActorRuntime.newBuilder()
         .addActiveActors(activeActorsCount)
         .build();
 
-    RegisteredComponents registeredComponents = DaprProtos.RegisteredComponents.newBuilder()
+    DaprMetadataProtos.RegisteredComponents registeredComponents = DaprMetadataProtos.RegisteredComponents.newBuilder()
         .setName("statestore")
         .setType("state.redis")
         .setVersion("v1")
         .build();
 
-    DaprProtos.MetadataHTTPEndpoint httpEndpoint = DaprProtos.MetadataHTTPEndpoint.newBuilder()
+    DaprMetadataProtos.MetadataHTTPEndpoint httpEndpoint = DaprMetadataProtos.MetadataHTTPEndpoint.newBuilder()
         .setName("httpEndpoint")
         .build();
 
-    PubsubSubscriptionRules pubsubSubscriptionRules = DaprProtos.PubsubSubscriptionRules.newBuilder()
-        .addRules(DaprProtos.PubsubSubscriptionRule.newBuilder().setPath("/events").build())
+    DaprMetadataProtos.PubsubSubscriptionRules pubsubSubscriptionRules = DaprMetadataProtos.PubsubSubscriptionRules.newBuilder()
+        .addRules(DaprMetadataProtos.PubsubSubscriptionRule.newBuilder().setPath("/events").build())
         .build();
 
-    PubsubSubscription pubsubSubscription = DaprProtos.PubsubSubscription.newBuilder()
+    DaprMetadataProtos.PubsubSubscription pubsubSubscription = DaprMetadataProtos.PubsubSubscription.newBuilder()
         .setDeadLetterTopic("")
         .setPubsubName("pubsub")
         .setTopic("topic")
         .setRules(pubsubSubscriptionRules)
         .build();
 
-    AppConnectionHealthProperties healthProperties = DaprProtos.AppConnectionHealthProperties.newBuilder()
+    DaprMetadataProtos.AppConnectionHealthProperties healthProperties = DaprMetadataProtos.AppConnectionHealthProperties.newBuilder()
         .setHealthCheckPath("/health")
         .setHealthProbeInterval("10s")
         .setHealthProbeTimeout("5s")
         .setHealthThreshold(1)
         .build();
 
-    AppConnectionProperties appConnectionProperties = DaprProtos.AppConnectionProperties.newBuilder()
+    DaprMetadataProtos.AppConnectionProperties appConnectionProperties = DaprMetadataProtos.AppConnectionProperties.newBuilder()
         .setPort(8080)
         .setProtocol("http")
         .setChannelAddress("localhost")
@@ -2235,7 +2205,7 @@ public class DaprClientGrpcTest {
         .setHealth(healthProperties)
         .build();
 
-    DaprProtos.GetMetadataResponse responseEnvelope = DaprProtos.GetMetadataResponse.newBuilder()
+    DaprMetadataProtos.GetMetadataResponse responseEnvelope = DaprMetadataProtos.GetMetadataResponse.newBuilder()
         .setId("app")
         .setRuntimeVersion("1.1x.x")
         .addAllEnabledFeatures(Collections.emptyList())
@@ -2248,12 +2218,12 @@ public class DaprClientGrpcTest {
         .build();
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetMetadataResponse> observer = (StreamObserver<DaprProtos.GetMetadataResponse>) invocation
+      StreamObserver<DaprMetadataProtos.GetMetadataResponse> observer = (StreamObserver<DaprMetadataProtos.GetMetadataResponse>) invocation
           .getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(daprStub).getMetadata(any(DaprProtos.GetMetadataRequest.class), any());
+    }).when(daprStub).getMetadata(any(DaprMetadataProtos.GetMetadataRequest.class), any());
 
     Mono<DaprMetadata> result = client.getMetadata();
     DaprMetadata metadata = result.block();
@@ -2330,18 +2300,18 @@ public class DaprClientGrpcTest {
         .setDueTime(Instant.now().plus(10, ChronoUnit.MINUTES));
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     assertDoesNotThrow(() -> client.scheduleJob(expectedScheduleJobRequest).block());
 
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
-    DaprProtos.ScheduleJobRequest actualScheduleJobReq = captor.getValue();
+    DaprJobsProtos.ScheduleJobRequest actualScheduleJobReq = captor.getValue();
 
     assertEquals("testJob", actualScheduleJobReq.getJob().getName());
     assertEquals("testData",
@@ -2358,21 +2328,21 @@ public class DaprClientGrpcTest {
         .withZone(ZoneOffset.UTC);
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest =
         new ScheduleJobRequest("testJob", Instant.now().plus(10, ChronoUnit.MINUTES));
     assertDoesNotThrow(() -> client.scheduleJob(expectedScheduleJobRequest).block());
 
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
-    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
-    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
     assertFalse(job.hasData());
     assertFalse(job.hasSchedule());
@@ -2388,26 +2358,54 @@ public class DaprClientGrpcTest {
         .withZone(ZoneOffset.UTC);
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"));
     assertDoesNotThrow(() -> client.scheduleJob(expectedScheduleJobRequest).block());
 
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
-    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
-    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
+    assertEquals("testJob", job.getName());
+    assertFalse(job.hasData());
+    assertEquals("* * * * * *", job.getSchedule());
+    assertEquals(0, job.getRepeats());
+    assertFalse(job.hasTtl());
+  }
+
+  @Test
+  public void scheduleJobShouldHavePolicyWhenPolicyIsSet() {
+    doAnswer(invocation -> {
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted(); // Simulate successful response
+      return null;
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+
+    ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
+        JobSchedule.fromString("* * * * * *"))
+        .setFailurePolicy(new DropFailurePolicy());
+
+    client.scheduleJob(expectedScheduleJobRequest).block();
+
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
+
+    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
     assertFalse(job.hasData());
     assertEquals( "* * * * * *", job.getSchedule());
     assertEquals(0, job.getRepeats());
     assertFalse(job.hasTtl());
+    Assertions.assertTrue(job.hasFailurePolicy());
   }
 
   @Test
@@ -2438,40 +2436,12 @@ public class DaprClientGrpcTest {
   }
 
   @Test
-  public void scheduleJobShouldHavePolicyWhenPolicyIsSet() {
-    doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
-      observer.onCompleted(); // Simulate successful response
-      return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
-
-    ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
-        JobSchedule.fromString("* * * * * *"))
-        .setFailurePolicy(new DropFailurePolicy());
-
-    client.scheduleJob(expectedScheduleJobRequest).block();
-
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
-
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
-    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
-    DaprProtos.Job job = actualScheduleJobRequest.getJob();
-    assertEquals("testJob", job.getName());
-    assertFalse(job.hasData());
-    assertEquals( "* * * * * *", job.getSchedule());
-    assertEquals(0, job.getRepeats());
-    assertFalse(job.hasTtl());
-    Assertions.assertTrue(job.hasFailurePolicy());
-  }
-
-  @Test
   public void scheduleJobShouldHaveConstantPolicyWithMaxRetriesWhenConstantPolicyIsSetWithMaxRetries() {
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
@@ -2479,12 +2449,12 @@ public class DaprClientGrpcTest {
 
     client.scheduleJob(expectedScheduleJobRequest).block();
 
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
-    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
-    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
     assertFalse(job.hasData());
     assertEquals( "* * * * * *", job.getSchedule());
@@ -2497,10 +2467,10 @@ public class DaprClientGrpcTest {
   @Test
   public void scheduleJobShouldHaveConstantPolicyWithIntervalWhenConstantPolicyIsSetWithInterval() {
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
@@ -2508,12 +2478,12 @@ public class DaprClientGrpcTest {
 
     client.scheduleJob(expectedScheduleJobRequest).block();
 
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
-    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
-    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
     assertFalse(job.hasData());
     assertEquals( "* * * * * *", job.getSchedule());
@@ -2527,10 +2497,10 @@ public class DaprClientGrpcTest {
   @Test
   public void scheduleJobShouldHaveBothRetiresAndIntervalWhenConstantPolicyIsSetWithRetriesAndInterval() {
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
@@ -2539,12 +2509,12 @@ public class DaprClientGrpcTest {
 
     client.scheduleJob(expectedScheduleJobRequest).block();
 
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
-    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
-    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
     assertFalse(job.hasData());
     assertEquals( "* * * * * *", job.getSchedule());
@@ -2561,7 +2531,7 @@ public class DaprClientGrpcTest {
     AtomicInteger callCount = new AtomicInteger(0);
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       if (callCount.incrementAndGet() == 1) {
         // First call succeeds
         observer.onCompleted();
@@ -2570,18 +2540,18 @@ public class DaprClientGrpcTest {
         observer.onError(newStatusRuntimeException("ALREADY_EXISTS", "Job with name 'testJob' already exists"));
       }
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     // First call should succeed
     ScheduleJobRequest firstRequest = new ScheduleJobRequest("testJob", Instant.now());
     assertDoesNotThrow(() -> client.scheduleJob(firstRequest).block());
 
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
-    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
-    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
     assertFalse(job.hasData());
     assertEquals(0, job.getRepeats());
@@ -2600,10 +2570,10 @@ public class DaprClientGrpcTest {
   @Test
   public void scheduleJobShouldSucceedWhenNameAlreadyExistsWithOverwrite() {
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response for both calls
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     // First call should succeed
     ScheduleJobRequest firstRequest = new ScheduleJobRequest("testJob", Instant.now());
@@ -2615,17 +2585,17 @@ public class DaprClientGrpcTest {
     assertDoesNotThrow(() -> client.scheduleJob(secondRequest).block());
 
     // Verify that both calls were made successfully
-    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
     verify(daprStub, times(2)).scheduleJobAlpha1(captor.capture(), any());
 
     // Verify the first call doesn't have overwrite set
-    DaprProtos.ScheduleJobRequest firstActualRequest = captor.getAllValues().get(0);
+    DaprJobsProtos.ScheduleJobRequest firstActualRequest = captor.getAllValues().get(0);
     assertFalse(firstActualRequest.getOverwrite());
     assertEquals("testJob", firstActualRequest.getJob().getName());
 
     // Verify the second call has overwrite set to true
-    DaprProtos.ScheduleJobRequest secondActualRequest = captor.getAllValues().get(1);
+    DaprJobsProtos.ScheduleJobRequest secondActualRequest = captor.getAllValues().get(1);
     Assert.assertTrue(secondActualRequest.getOverwrite());
     assertEquals("testJob", secondActualRequest.getJob().getName());
   }
@@ -2637,7 +2607,7 @@ public class DaprClientGrpcTest {
 
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
-    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+    DaprJobsProtos.Job job = DaprJobsProtos.Job.newBuilder()
         .setName("testJob")
         .setTtl(OffsetDateTime.now().format(iso8601Formatter))
         .setData(Any.newBuilder().setValue(ByteString.copyFrom("testData".getBytes())).build())
@@ -2647,13 +2617,13 @@ public class DaprClientGrpcTest {
         .build();
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
-      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+      StreamObserver<DaprJobsProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprJobsProtos.GetJobResponse.newBuilder()
           .setJob(job)
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2671,19 +2641,19 @@ public class DaprClientGrpcTest {
   public void getJobShouldReturnResponseWithScheduleSetWhenResponseHasSchedule() {
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
-    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+    DaprJobsProtos.Job job = DaprJobsProtos.Job.newBuilder()
         .setName("testJob")
         .setSchedule("0 0 0 1 1 *")
         .build();
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
-      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+      StreamObserver<DaprJobsProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprJobsProtos.GetJobResponse.newBuilder()
           .setJob(job)
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2702,19 +2672,19 @@ public class DaprClientGrpcTest {
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     String datetime = OffsetDateTime.now().toString();
-    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+    DaprJobsProtos.Job job = DaprJobsProtos.Job.newBuilder()
         .setName("testJob")
         .setDueTime(datetime)
         .build();
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
-      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+      StreamObserver<DaprJobsProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprJobsProtos.GetJobResponse.newBuilder()
           .setJob(job)
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2733,7 +2703,7 @@ public class DaprClientGrpcTest {
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     String datetime = OffsetDateTime.now().toString();
-    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+    DaprJobsProtos.Job job = DaprJobsProtos.Job.newBuilder()
         .setName("testJob")
         .setDueTime(datetime)
         .setFailurePolicy(CommonProtos.JobFailurePolicy.newBuilder()
@@ -2741,13 +2711,13 @@ public class DaprClientGrpcTest {
         .build();
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
-      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+      StreamObserver<DaprJobsProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprJobsProtos.GetJobResponse.newBuilder()
           .setJob(job)
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2768,7 +2738,7 @@ public class DaprClientGrpcTest {
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     String datetime = OffsetDateTime.now().toString();
-    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+    DaprJobsProtos.Job job = DaprJobsProtos.Job.newBuilder()
         .setName("testJob")
         .setDueTime(datetime)
         .setFailurePolicy(CommonProtos.JobFailurePolicy.newBuilder()
@@ -2776,13 +2746,13 @@ public class DaprClientGrpcTest {
         .build();
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
-      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+      StreamObserver<DaprJobsProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprJobsProtos.GetJobResponse.newBuilder()
           .setJob(job)
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2804,7 +2774,7 @@ public class DaprClientGrpcTest {
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     String datetime = OffsetDateTime.now().toString();
-    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+    DaprJobsProtos.Job job = DaprJobsProtos.Job.newBuilder()
         .setName("testJob")
         .setDueTime(datetime)
         .setFailurePolicy(CommonProtos.JobFailurePolicy.newBuilder()
@@ -2813,13 +2783,13 @@ public class DaprClientGrpcTest {
         .build();
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
-      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+      StreamObserver<DaprJobsProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprJobsProtos.GetJobResponse.newBuilder()
           .setJob(job)
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2841,7 +2811,7 @@ public class DaprClientGrpcTest {
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     String datetime = OffsetDateTime.now().toString();
-    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+    DaprJobsProtos.Job job = DaprJobsProtos.Job.newBuilder()
         .setName("testJob")
         .setDueTime(datetime)
         .setFailurePolicy(CommonProtos.JobFailurePolicy.newBuilder()
@@ -2851,13 +2821,13 @@ public class DaprClientGrpcTest {
         .build();
 
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
-      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+      StreamObserver<DaprJobsProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprJobsProtos.GetJobResponse.newBuilder()
           .setJob(job)
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2873,6 +2843,21 @@ public class DaprClientGrpcTest {
     Assert.assertTrue(job.getFailurePolicy().hasConstant());
     assertEquals(10, job.getFailurePolicy().getConstant().getMaxRetries());
     assertEquals(5, job.getFailurePolicy().getConstant().getInterval().getNanos());
+  }
+
+  @Test
+  public void deleteJobShouldSucceedWhenValidRequest() {
+    DeleteJobRequest deleteJobRequest = new DeleteJobRequest("testJob");
+
+    doAnswer(invocation -> {
+      StreamObserver<DaprJobsProtos.DeleteJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted(); // Simulate successful response
+      return null;
+    }).when(daprStub).deleteJobAlpha1(any(DaprJobsProtos.DeleteJobRequest.class), any());
+
+    Mono<Void> resultMono = client.deleteJob(deleteJobRequest);
+
+    assertDoesNotThrow(() -> resultMono.block());
   }
 
 
@@ -2905,18 +2890,18 @@ public class DaprClientGrpcTest {
   }
 
   @Test
-  public void deleteJobShouldSucceedWhenValidRequest() {
-    DeleteJobRequest deleteJobRequest = new DeleteJobRequest("testJob");
+  public void getMetadataExceptionTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(daprStub).getMetadata(any(DaprMetadataProtos.GetMetadataRequest.class), any());
 
-    doAnswer(invocation -> {
-      StreamObserver<DaprProtos.DeleteJobResponse> observer = invocation.getArgument(1);
-      observer.onCompleted(); // Simulate successful response
-      return null;
-    }).when(daprStub).deleteJobAlpha1(any(DaprProtos.DeleteJobRequest.class), any());
+    Mono<DaprMetadata> result = client.getMetadata();
 
-    Mono<Void> resultMono = client.deleteJob(deleteJobRequest);
-
-    assertDoesNotThrow(() -> resultMono.block());
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
   @Test
@@ -2945,18 +2930,31 @@ public class DaprClientGrpcTest {
     assertEquals("Name in the request cannot be null or empty", exception.getMessage());
   }
 
-  @Test
-  public void getMetadataExceptionTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).getMetadata(any(DaprProtos.GetMetadataRequest.class), any());
+  private static class GetStateRequestKeyMatcher implements ArgumentMatcher<DaprStateProtos.GetStateRequest> {
 
-    Mono<DaprMetadata> result = client.getMetadata();
+    private final String propValue;
 
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
+    GetStateRequestKeyMatcher(String propValue) {
+      this.propValue = propValue;
+    }
+
+    @Override
+    public boolean matches(DaprStateProtos.GetStateRequest argument) {
+      if (argument == null) {
+        return false;
+      }
+      if (propValue == null && argument.getKey() != null) {
+        return false;
+      }
+      if (propValue == null && argument.getKey() == null) {
+        return true;
+      }
+      return propValue.equals(argument.getKey());
+    }
+
+    @Override
+    public String toString() {
+      return "<Has property of certain value (propName: " + propValue + ") matcher>";
+    }
   }
 }

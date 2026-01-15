@@ -20,7 +20,7 @@ import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.v1.CommonProtos.StateItem;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprGrpc.DaprBlockingStub;
-import io.dapr.v1.DaprProtos.SaveStateRequest;
+import io.dapr.v1.DaprStateProtos.SaveStateRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 

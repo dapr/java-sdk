@@ -60,19 +60,6 @@
         <version>${download-maven-plugin.version}</version>
         <executions>
           <execution>
-            <id>getDaprProto</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>wget</goal>
-            </goals>
-            <configuration>
-              <skipCache>true</skipCache>
-              <url>${dapr.proto.baseurl}/runtime/v1/dapr.proto</url>
-              <outputFileName>dapr.proto</outputFileName>
-              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>getCommonProto</id>
             <phase>initialize</phase>
             <goals>
@@ -86,7 +73,33 @@
             </configuration>
           </execution>
           <execution>
-            <id>getDaprClientProto</id>
+            <id>getActorsProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/actors.proto</url>
+              <outputFileName>actors.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getAiProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/ai.proto</url>
+              <outputFileName>ai.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getAppcallbackProto</id>
             <phase>initialize</phase>
             <goals>
               <goal>wget</goal>
@@ -98,8 +111,166 @@
               <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>getBindingProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/binding.proto</url>
+              <outputFileName>binding.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getConfigurationProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/configuration.proto</url>
+              <outputFileName>configuration.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getCryptoProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/crypto.proto</url>
+              <outputFileName>crypto.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getDaprProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/dapr.proto</url>
+              <outputFileName>dapr.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getInvokeProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/invoke.proto</url>
+              <outputFileName>invoke.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getJobsProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/jobs.proto</url>
+              <outputFileName>jobs.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getLockProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/lock.proto</url>
+              <outputFileName>lock.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getMetadataProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/metadata.proto</url>
+              <outputFileName>metadata.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getPubsubProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/pubsub.proto</url>
+              <outputFileName>pubsub.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getSecretProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/secret.proto</url>
+              <outputFileName>secret.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getStateProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/state.proto</url>
+              <outputFileName>state.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getWorkflowProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/workflow.proto</url>
+              <outputFileName>workflow.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
+
+
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
@@ -116,6 +287,13 @@
               <goal>compile</goal>
               <goal>compile-custom</goal>
             </goals>
+            <configuration>
+              <includes>
+                <include>dapr/proto/common/v1/common.proto</include>
+                <include>dapr/proto/runtime/v1/*.proto</include>
+              </includes>
+            </configuration>
+
           </execution>
         </executions>
       </plugin>
