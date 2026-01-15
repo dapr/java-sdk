@@ -16,7 +16,6 @@ package io.dapr.durabletask;
 import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
-import io.dapr.durabletask.implementation.protobuf.OrchestratorService.TraceContext;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
 import io.grpc.Channel;
 import io.grpc.ChannelCredentials;
@@ -30,7 +29,6 @@ import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 
 import javax.annotation.Nullable;
@@ -46,7 +44,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
@@ -204,26 +201,10 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
 
     AtomicReference<OrchestratorService.CreateInstanceResponse> response = new AtomicReference<>();
 
-    this.observe("dapr.workflow.grpc.startInstance", (TraceContext context) -> {
-      builder.setParentTraceContext(context);
-      OrchestratorService.CreateInstanceRequest request = builder.build();
-      response.set(this.sidecarClient.startInstance(request));
-    });
+    OrchestratorService.CreateInstanceRequest request = builder.build();
+    response.set(this.sidecarClient.startInstance(request));
 
     return response.get().getInstanceId();
-  }
-
-  private void observe(String spanName, Consumer<TraceContext> fn) {
-    Span span = tracer.spanBuilder(spanName).startSpan();
-    try {
-      TraceContext.Builder traceContextBuilder = TraceContext.newBuilder();
-      traceContextBuilder.setTraceParent(span.getSpanContext().getTraceId());
-      var context = traceContextBuilder.build();
-
-      fn.accept(context);
-    } finally {
-      span.end();
-    }
   }
 
   @Override
@@ -239,10 +220,8 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setInput(StringValue.of(serializedPayload));
     }
 
-    this.observe("dapr.workflow.grpc.raiseEvent", (TraceContext context) -> {
-      OrchestratorService.RaiseEventRequest request = builder.build();
-      this.sidecarClient.raiseEvent(request);
-    });
+    OrchestratorService.RaiseEventRequest request = builder.build();
+    this.sidecarClient.raiseEvent(request);
 
   }
 
