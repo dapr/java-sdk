@@ -285,25 +285,36 @@ public interface DaprPreviewClient extends AutoCloseable {
 
   /**
    * Subscribe to pubsub events via streaming using Project Reactor Flux.
-   * @param pubsubName Name of the pubsub component.
-   * @param topic Name of the topic to subscribe to.
-   * @param type Type for object deserialization.
-   * @return A Flux of CloudEvents containing deserialized event payloads and metadata.
-   * @param <T> Type of the event payload.
-   */
-  <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
-
-  /**
-   * Subscribe to pubsub events via streaming using Project Reactor Flux.
-   * Returns only the deserialized event data without CloudEvent metadata wrapper.
+   *
+   * <p>The type parameter determines what is deserialized from the event data:
+   * <ul>
+   *   <li>Use {@code TypeRef.STRING} or similar for raw payload data</li>
+   *   <li>Use {@code new TypeRef<CloudEvent<String>>(){}} to receive CloudEvent with metadata</li>
+   * </ul>
    *
    * @param pubsubName Name of the pubsub component.
    * @param topic Name of the topic to subscribe to.
    * @param type Type for object deserialization.
-   * @return A Flux of deserialized event payloads (no CloudEvent wrapper).
+   * @return A Flux of deserialized event payloads.
    * @param <T> Type of the event payload.
    */
-  <T> Flux<T> subscribeToEventsData(String pubsubName, String topic, TypeRef<T> type);
+  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux with metadata support.
+   *
+   * <p>If metadata is null or empty, this method delegates to {@link #subscribeToEvents(String, String, TypeRef)}.
+   * Use metadata {@code {"rawPayload": "true"}} for raw payload subscriptions where Dapr
+   * delivers messages without CloudEvent wrapping.
+   *
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param type Type for object deserialization.
+   * @param metadata Subscription metadata (e.g., {"rawPayload": "true"}).
+   * @return A Flux of deserialized event payloads.
+   * @param <T> Type of the event payload.
+   */
+  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata);
 
   /*
    * Converse with an LLM.

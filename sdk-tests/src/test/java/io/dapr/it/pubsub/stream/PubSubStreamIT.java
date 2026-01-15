@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -126,9 +127,9 @@ public class PubSubStreamIT extends BaseIT {
   }
 
   @Test
-  public void testPubSubRawData() throws Exception {
+  public void testPubSubFlux() throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
-        this.getClass().getSimpleName() + "-rawdata",
+        this.getClass().getSimpleName() + "-flux",
         60000));
 
     var runId = UUID.randomUUID().toString();
@@ -137,18 +138,18 @@ public class PubSubStreamIT extends BaseIT {
 
       // Publish messages
       for (int i = 0; i < NUM_MESSAGES; i++) {
-        String message = String.format("Raw message #%d for run %s", i, runId);
+        String message = String.format("Flux message #%d for run %s", i, runId);
         client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
         System.out.println(
-            String.format("Published raw message: '%s' to topic '%s'", message, TOPIC_NAME));
+            String.format("Published flux message: '%s' to topic '%s'", message, TOPIC_NAME));
       }
 
-      System.out.println("Starting raw data subscription for " + TOPIC_NAME);
+      System.out.println("Starting Flux subscription for " + TOPIC_NAME);
 
       Set<String> messages = Collections.synchronizedSet(new HashSet<>());
 
-      // Use new subscribeToEventsData - receives String directly, not CloudEvent<String>
-      var disposable = previewClient.subscribeToEventsData(PUBSUB_NAME, TOPIC_NAME, TypeRef.STRING)
+      // subscribeToEvents now returns Flux<T> directly (raw data)
+      var disposable = previewClient.subscribeToEvents(PUBSUB_NAME, TOPIC_NAME, TypeRef.STRING)
           .doOnNext(rawMessage -> {
             // rawMessage is String directly
             if (rawMessage.contains(runId)) {
@@ -161,7 +162,96 @@ public class PubSubStreamIT extends BaseIT {
       callWithRetry(() -> {
         var messageCount = messages.size();
         System.out.println(
-            String.format("Got %d raw messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME));
+            String.format("Got %d flux messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME));
+        assertEquals(NUM_MESSAGES, messages.size());
+      }, 60000);
+
+      disposable.dispose();
+    }
+  }
+
+  @Test
+  public void testPubSubCloudEvent() throws Exception {
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName() + "-cloudevent",
+        60000));
+
+    var runId = UUID.randomUUID().toString();
+    try (DaprClient client = daprRun.newDaprClient();
+         DaprPreviewClient previewClient = daprRun.newDaprPreviewClient()) {
+
+      // Publish messages
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("CloudEvent message #%d for run %s", i, runId);
+        client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
+        System.out.println(
+            String.format("Published CloudEvent message: '%s' to topic '%s'", message, TOPIC_NAME));
+      }
+
+      System.out.println("Starting CloudEvent subscription for " + TOPIC_NAME);
+
+      Set<String> messageIds = Collections.synchronizedSet(new HashSet<>());
+
+      // Use TypeRef<CloudEvent<String>> to receive full CloudEvent with metadata
+      var disposable = previewClient.subscribeToEvents(PUBSUB_NAME, TOPIC_NAME, new TypeRef<CloudEvent<String>>(){})
+          .doOnNext(cloudEvent -> {
+            if (cloudEvent.getData() != null && cloudEvent.getData().contains(runId)) {
+              messageIds.add(cloudEvent.getId());
+              System.out.println("Received CloudEvent with ID: " + cloudEvent.getId()
+                  + ", topic: " + cloudEvent.getTopic()
+                  + ", data: " + cloudEvent.getData());
+            }
+          })
+          .subscribe();
+
+      callWithRetry(() -> {
+        var messageCount = messageIds.size();
+        System.out.println(
+            String.format("Got %d CloudEvent messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME));
+        assertEquals(NUM_MESSAGES, messageIds.size());
+      }, 60000);
+
+      disposable.dispose();
+    }
+  }
+
+  @Test
+  public void testPubSubRawPayload() throws Exception {
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName() + "-rawpayload",
+        60000));
+
+    var runId = UUID.randomUUID().toString();
+    try (DaprClient client = daprRun.newDaprClient();
+         DaprPreviewClient previewClient = daprRun.newDaprPreviewClient()) {
+
+      // Publish messages with rawPayload metadata
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("RawPayload message #%d for run %s", i, runId);
+        client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message, Map.of("rawPayload", "true")).block();
+        System.out.println(
+            String.format("Published raw payload message: '%s' to topic '%s'", message, TOPIC_NAME));
+      }
+
+      System.out.println("Starting raw payload subscription for " + TOPIC_NAME);
+
+      Set<String> messages = Collections.synchronizedSet(new HashSet<>());
+      Map<String, String> metadata = Map.of("rawPayload", "true");
+
+      // Use subscribeToEvents with rawPayload metadata
+      var disposable = previewClient.subscribeToEvents(PUBSUB_NAME, TOPIC_NAME, TypeRef.STRING, metadata)
+          .doOnNext(rawMessage -> {
+            if (rawMessage.contains(runId)) {
+              messages.add(rawMessage);
+              System.out.println("Received raw payload message: " + rawMessage);
+            }
+          })
+          .subscribe();
+
+      callWithRetry(() -> {
+        var messageCount = messages.size();
+        System.out.println(
+            String.format("Got %d raw payload messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME));
         assertEquals(NUM_MESSAGES, messages.size());
       }, 60000);
 

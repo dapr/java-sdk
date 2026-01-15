@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.internal.subscription;
 
-import io.dapr.client.domain.CloudEvent;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -40,7 +39,7 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
   private static final Logger logger = LoggerFactory.getLogger(EventSubscriberStreamObserver.class);
 
   private final DaprGrpc.DaprStub stub;
-  private final FluxSink<CloudEvent<T>> sink;
+  private final FluxSink<T> sink;
   private final TypeRef<T> type;
   private final DaprObjectSerializer objectSerializer;
 
@@ -50,13 +49,13 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
    * Creates a new EventSubscriberStreamObserver.
    *
    * @param stub              The gRPC stub for making Dapr service calls
-   * @param sink              The FluxSink to emit CloudEvents to
+   * @param sink              The FluxSink to emit deserialized event data to
    * @param type              The TypeRef for deserializing event payloads
    * @param objectSerializer  The serializer to use for deserialization
    */
   public EventSubscriberStreamObserver(
       DaprGrpc.DaprStub stub,
-      FluxSink<CloudEvent<T>> sink,
+      FluxSink<T> sink,
       TypeRef<T> type,
       DaprObjectSerializer objectSerializer) {
     this.stub = stub;
@@ -91,8 +90,7 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
 
     try {
       T data = deserializeEventData(message);
-      CloudEvent<T> cloudEvent = buildCloudEvent(message, data);
-      emitEventAndAcknowledge(cloudEvent, eventId);
+      emitDataAndAcknowledge(data, eventId);
     } catch (IOException e) {
       // Deserialization failure - send DROP ack
       handleDeserializationError(eventId, e);
@@ -142,22 +140,11 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
     return objectSerializer.deserialize(message.getData().toByteArray(), type);
   }
 
-  private CloudEvent<T> buildCloudEvent(DaprAppCallbackProtos.TopicEventRequest message, T data) {
-    CloudEvent<T> cloudEvent = new CloudEvent<>();
-
-    cloudEvent.setId(message.getId());
-    cloudEvent.setType(message.getType());
-    cloudEvent.setSpecversion(message.getSpecVersion());
-    cloudEvent.setDatacontenttype(message.getDataContentType());
-    cloudEvent.setTopic(message.getTopic());
-    cloudEvent.setPubsubName(message.getPubsubName());
-    cloudEvent.setData(data);
-
-    return cloudEvent;
-  }
-
-  private void emitEventAndAcknowledge(CloudEvent<T> cloudEvent, String eventId) {
-    sink.next(cloudEvent);
+  private void emitDataAndAcknowledge(T data, String eventId) {
+    // Only emit if data is not null (Reactor doesn't allow null values in Flux)
+    if (data != null) {
+      sink.next(data);
+    }
 
     // Send SUCCESS acknowledgment
     requestStream.onNext(buildSuccessAck(eventId));
