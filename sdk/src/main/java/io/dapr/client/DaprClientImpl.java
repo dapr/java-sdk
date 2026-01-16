@@ -480,15 +480,27 @@ public class DaprClientImpl extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
-    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
+    return subscribeToEvents(pubsubName, topic, type, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
+    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.Builder initialRequestBuilder =
         DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
-            .setPubsubName(pubsubName)
-            .build();
+            .setPubsubName(pubsubName);
+
+    if (metadata != null && !metadata.isEmpty()) {
+      initialRequestBuilder.putAllMetadata(metadata);
+    }
+
     DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
         DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
-            .setInitialRequest(initialRequest)
+            .setInitialRequest(initialRequestBuilder.build())
             .build();
 
     return Flux.create(sink -> {

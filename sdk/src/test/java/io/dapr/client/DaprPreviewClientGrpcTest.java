@@ -96,6 +96,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertTrue;
@@ -646,12 +647,13 @@ public class DaprPreviewClientGrpcTest {
 
     final AtomicInteger eventCount = new AtomicInteger(0);
     final Semaphore gotAll = new Semaphore(0);
+
+    // subscribeToEvents now returns Flux<T> directly (raw data)
     var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING)
-            .doOnNext(cloudEvent -> {
-              assertEquals(data, cloudEvent.getData());
-              assertEquals(pubsubName, cloudEvent.getPubsubName());
-              assertEquals(topicName, cloudEvent.getTopic());
-              assertNotNull(cloudEvent.getId());
+            .doOnNext(rawData -> {
+              // rawData is String directly, not CloudEvent
+              assertEquals(data, rawData);
+              assertTrue(rawData instanceof String);
 
               int count = eventCount.incrementAndGet();
 
@@ -665,6 +667,97 @@ public class DaprPreviewClientGrpcTest {
     disposable.dispose();
 
     assertEquals(numEvents, eventCount.get());
+  }
+
+  @Test
+  public void subscribeEventsWithMetadataTest() throws Exception {
+    var numEvents = 10;
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var data = "my message";
+    var started = new Semaphore(0);
+    var capturedMetadata = new AtomicReference<java.util.Map<String, String>>();
+
+    doAnswer((Answer<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1> observer =
+              (StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      var emitterThread = new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+
+        observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+
+        for (int i = 0; i < numEvents; i++) {
+          DaprProtos.SubscribeTopicEventsResponseAlpha1 response =
+              DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+                  .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                      .setId(Integer.toString(i))
+                      .setPubsubName(pubsubName)
+                      .setTopic(topicName)
+                      .setData(ByteString.copyFromUtf8("\"" + data + "\""))
+                      .setDataContentType("application/json")
+                      .build())
+                  .build();
+          observer.onNext(response);
+        }
+
+        observer.onCompleted();
+      });
+
+      emitterThread.start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprProtos.SubscribeTopicEventsRequestAlpha1 request) {
+          // Capture metadata from initial request
+          if (request.hasInitialRequest()) {
+            capturedMetadata.set(request.getInitialRequest().getMetadataMap());
+          }
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+          // No-op
+        }
+
+        @Override
+        public void onCompleted() {
+          // No-op
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    final AtomicInteger eventCount = new AtomicInteger(0);
+    final Semaphore gotAll = new Semaphore(0);
+    Map<String, String> metadata = Map.of("rawPayload", "true");
+
+    // Use subscribeToEvents with rawPayload metadata
+    var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING, metadata)
+            .doOnNext(rawData -> {
+              assertEquals(data, rawData);
+              assertTrue(rawData instanceof String);
+
+              int count = eventCount.incrementAndGet();
+
+              if (count >= numEvents) {
+                gotAll.release();
+              }
+            })
+            .subscribe();
+
+    gotAll.acquire();
+    disposable.dispose();
+
+    assertEquals(numEvents, eventCount.get());
+
+    // Verify metadata was passed to gRPC request
+    assertNotNull(capturedMetadata.get());
+    assertEquals("true", capturedMetadata.get().get("rawPayload"));
   }
 
   @Test
