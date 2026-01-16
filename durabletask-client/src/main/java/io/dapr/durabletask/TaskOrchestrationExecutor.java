@@ -103,7 +103,7 @@ public final class TaskOrchestrationExecutor {
     } catch (Exception e) {
       // The orchestrator threw an unhandled exception - fail it
       // TODO: What's the right way to log this?
-      logger.warning("The orchestrator failed with an unhandled exception: " + e.toString());
+      logger.warning("The orchestrator failed with an unhandled exception: " + e);
       context.fail(new FailureDetails(e));
     }
 

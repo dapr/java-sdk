@@ -20,7 +20,6 @@ import io.dapr.durabletask.TaskFailedException;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -383,7 +382,7 @@ public interface WorkflowContext {
    * @return a new {@link Task} that completes when the child-workflow completes or fails
    */
   default Task<Void> callChildWorkflow(String name, Object input) {
-    return this.callChildWorkflow(name, input, null);
+    return this.callChildWorkflow(name, input, Void.class);
   }
 
   /**
