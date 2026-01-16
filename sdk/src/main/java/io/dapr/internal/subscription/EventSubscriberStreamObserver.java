@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
 /**
  * StreamObserver implementation for subscribing to Dapr pub/sub events.
@@ -40,7 +42,7 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
   private static final Logger logger = LoggerFactory.getLogger(EventSubscriberStreamObserver.class);
 
   private final DaprGrpc.DaprStub stub;
-  private final FluxSink<CloudEvent<T>> sink;
+  private final FluxSink<T> sink;
   private final TypeRef<T> type;
   private final DaprObjectSerializer objectSerializer;
 
@@ -50,13 +52,13 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
    * Creates a new EventSubscriberStreamObserver.
    *
    * @param stub              The gRPC stub for making Dapr service calls
-   * @param sink              The FluxSink to emit CloudEvents to
+   * @param sink              The FluxSink to emit deserialized event data to
    * @param type              The TypeRef for deserializing event payloads
    * @param objectSerializer  The serializer to use for deserialization
    */
   public EventSubscriberStreamObserver(
       DaprGrpc.DaprStub stub,
-      FluxSink<CloudEvent<T>> sink,
+      FluxSink<T> sink,
       TypeRef<T> type,
       DaprObjectSerializer objectSerializer) {
     this.stub = stub;
@@ -91,8 +93,7 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
 
     try {
       T data = deserializeEventData(message);
-      CloudEvent<T> cloudEvent = buildCloudEvent(message, data);
-      emitEventAndAcknowledge(cloudEvent, eventId);
+      emitDataAndAcknowledge(data, eventId);
     } catch (IOException e) {
       // Deserialization failure - send DROP ack
       handleDeserializationError(eventId, e);
@@ -139,25 +140,71 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
       return null;
     }
 
+    // Check if the user requested CloudEvent<T> - we need to construct it from protobuf fields
+    if (isCloudEventType(type)) {
+      return buildCloudEventFromMessage(message);
+    }
+
     return objectSerializer.deserialize(message.getData().toByteArray(), type);
   }
 
-  private CloudEvent<T> buildCloudEvent(DaprAppCallbackProtos.TopicEventRequest message, T data) {
-    CloudEvent<T> cloudEvent = new CloudEvent<>();
+  private boolean isCloudEventType(TypeRef<T> typeRef) {
+    Type t = typeRef.getType();
 
+    if (t instanceof ParameterizedType) {
+      ParameterizedType pt = (ParameterizedType) t;
+      return pt.getRawType() == CloudEvent.class;
+    }
+
+    return t == CloudEvent.class;
+  }
+
+  @SuppressWarnings("unchecked")
+  private T buildCloudEventFromMessage(DaprAppCallbackProtos.TopicEventRequest message) throws IOException {
+    // Extract inner type from CloudEvent<T>
+    TypeRef<?> innerType = extractInnerType(type);
+
+    // Deserialize the data field into the inner type
+    Object data;
+    if (innerType != null) {
+      data = objectSerializer.deserialize(message.getData().toByteArray(), innerType);
+    } else {
+      data = message.getData().toStringUtf8();
+    }
+
+    // Build CloudEvent from protobuf fields
+    CloudEvent<Object> cloudEvent = new CloudEvent<>();
     cloudEvent.setId(message.getId());
+    cloudEvent.setSource(message.getSource());
     cloudEvent.setType(message.getType());
     cloudEvent.setSpecversion(message.getSpecVersion());
     cloudEvent.setDatacontenttype(message.getDataContentType());
+    cloudEvent.setData(data);
     cloudEvent.setTopic(message.getTopic());
     cloudEvent.setPubsubName(message.getPubsubName());
-    cloudEvent.setData(data);
 
-    return cloudEvent;
+    return (T) cloudEvent;
   }
 
-  private void emitEventAndAcknowledge(CloudEvent<T> cloudEvent, String eventId) {
-    sink.next(cloudEvent);
+  private TypeRef<?> extractInnerType(TypeRef<T> cloudEventType) {
+    Type t = cloudEventType.getType();
+
+    if (t instanceof ParameterizedType) {
+      ParameterizedType pt = (ParameterizedType) t;
+      Type[] typeArgs = pt.getActualTypeArguments();
+      if (typeArgs.length > 0) {
+        return TypeRef.get(typeArgs[0]);
+      }
+    }
+
+    return null; // Raw CloudEvent without type parameter
+  }
+
+  private void emitDataAndAcknowledge(T data, String eventId) {
+    // Only emit if data is not null (Reactor doesn't allow null values in Flux)
+    if (data != null) {
+      sink.next(data);
+    }
 
     // Send SUCCESS acknowledgment
     requestStream.onNext(buildSuccessAck(eventId));
