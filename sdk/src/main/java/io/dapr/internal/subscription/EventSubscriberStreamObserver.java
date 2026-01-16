@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.internal.subscription;
 
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -25,6 +26,8 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
 /**
  * StreamObserver implementation for subscribing to Dapr pub/sub events.
@@ -137,7 +140,64 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
       return null;
     }
 
+    // Check if the user requested CloudEvent<T> - we need to construct it from protobuf fields
+    if (isCloudEventType(type)) {
+      return buildCloudEventFromMessage(message);
+    }
+
     return objectSerializer.deserialize(message.getData().toByteArray(), type);
+  }
+
+  private boolean isCloudEventType(TypeRef<T> typeRef) {
+    Type t = typeRef.getType();
+
+    if (t instanceof ParameterizedType) {
+      ParameterizedType pt = (ParameterizedType) t;
+      return pt.getRawType() == CloudEvent.class;
+    }
+
+    return t == CloudEvent.class;
+  }
+
+  @SuppressWarnings("unchecked")
+  private T buildCloudEventFromMessage(DaprAppCallbackProtos.TopicEventRequest message) throws IOException {
+    // Extract inner type from CloudEvent<T>
+    TypeRef<?> innerType = extractInnerType(type);
+
+    // Deserialize the data field into the inner type
+    Object data;
+    if (innerType != null) {
+      data = objectSerializer.deserialize(message.getData().toByteArray(), innerType);
+    } else {
+      data = message.getData().toStringUtf8();
+    }
+
+    // Build CloudEvent from protobuf fields
+    CloudEvent<Object> cloudEvent = new CloudEvent<>();
+    cloudEvent.setId(message.getId());
+    cloudEvent.setSource(message.getSource());
+    cloudEvent.setType(message.getType());
+    cloudEvent.setSpecversion(message.getSpecVersion());
+    cloudEvent.setDatacontenttype(message.getDataContentType());
+    cloudEvent.setData(data);
+    cloudEvent.setTopic(message.getTopic());
+    cloudEvent.setPubsubName(message.getPubsubName());
+
+    return (T) cloudEvent;
+  }
+
+  private TypeRef<?> extractInnerType(TypeRef<T> cloudEventType) {
+    Type t = cloudEventType.getType();
+
+    if (t instanceof ParameterizedType) {
+      ParameterizedType pt = (ParameterizedType) t;
+      Type[] typeArgs = pt.getActualTypeArguments();
+      if (typeArgs.length > 0) {
+        return TypeRef.get(typeArgs[0]);
+      }
+    }
+
+    return null; // Raw CloudEvent without type parameter
   }
 
   private void emitDataAndAcknowledge(T data, String eventId) {

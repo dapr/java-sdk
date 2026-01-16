@@ -14,6 +14,7 @@
 package io.dapr.internal.subscription;
 
 import com.google.protobuf.ByteString;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -446,6 +447,98 @@ class EventSubscriberStreamObserverTest {
         .assertNext(data -> assertEquals("Hello", data))  // Event is emitted before ack
         .expectError(DaprException.class)  // Then error when sending ack
         .verify();
+  }
+
+  @Test
+  @DisplayName("Should construct CloudEvent from TopicEventRequest when TypeRef<CloudEvent<T>> is used")
+  void testCloudEventTypeConstruction() {
+    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+      EventSubscriberStreamObserver<CloudEvent<String>> observer = new EventSubscriberStreamObserver<>(
+          mockStub,
+          sink,
+          new TypeRef<CloudEvent<String>>() {},
+          objectSerializer
+      );
+
+      observer.start(buildInitialRequest());
+
+      // Build response with all CloudEvent fields
+      DaprProtos.SubscribeTopicEventsResponseAlpha1 response = DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+          .setEventMessage(
+              DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                  .setId("event-123")
+                  .setSource("test-source")
+                  .setType("test.event.type")
+                  .setSpecVersion("1.0")
+                  .setDataContentType("application/json")
+                  .setPubsubName(PUBSUB_NAME)
+                  .setTopic(TOPIC_NAME)
+                  .setData(ByteString.copyFromUtf8("\"Hello World\""))
+                  .build()
+          )
+          .build();
+
+      observer.onNext(response);
+      observer.onCompleted();
+    });
+
+    StepVerifier.create(flux)
+        .assertNext(cloudEvent -> {
+          assertEquals("event-123", cloudEvent.getId());
+          assertEquals("test-source", cloudEvent.getSource());
+          assertEquals("test.event.type", cloudEvent.getType());
+          assertEquals("1.0", cloudEvent.getSpecversion());
+          assertEquals(TOPIC_NAME, cloudEvent.getTopic());
+          assertEquals(PUBSUB_NAME, cloudEvent.getPubsubName());
+          assertEquals("Hello World", cloudEvent.getData());
+        })
+        .verifyComplete();
+
+    // Verify SUCCESS ack was sent
+    verify(mockRequestStream, times(2)).onNext(any());
+  }
+
+  @Test
+  @DisplayName("Should handle raw CloudEvent type without generic parameter")
+  void testRawCloudEventType() {
+    Flux<CloudEvent> flux = Flux.create(sink -> {
+      EventSubscriberStreamObserver<CloudEvent> observer = new EventSubscriberStreamObserver<>(
+          mockStub,
+          sink,
+          TypeRef.get(CloudEvent.class),
+          objectSerializer
+      );
+
+      observer.start(buildInitialRequest());
+
+      DaprProtos.SubscribeTopicEventsResponseAlpha1 response = DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+          .setEventMessage(
+              DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                  .setId("event-456")
+                  .setSource("raw-source")
+                  .setType("raw.event.type")
+                  .setSpecVersion("1.0")
+                  .setPubsubName(PUBSUB_NAME)
+                  .setTopic(TOPIC_NAME)
+                  .setData(ByteString.copyFromUtf8("raw data content"))
+                  .build()
+          )
+          .build();
+
+      observer.onNext(response);
+      observer.onCompleted();
+    });
+
+    StepVerifier.create(flux)
+        .assertNext(cloudEvent -> {
+          assertEquals("event-456", cloudEvent.getId());
+          assertEquals("raw-source", cloudEvent.getSource());
+          assertEquals("raw.event.type", cloudEvent.getType());
+          assertEquals(TOPIC_NAME, cloudEvent.getTopic());
+          // Raw CloudEvent has data as string
+          assertEquals("raw data content", cloudEvent.getData());
+        })
+        .verifyComplete();
   }
 
   private DaprProtos.SubscribeTopicEventsRequestAlpha1 buildInitialRequest() {
