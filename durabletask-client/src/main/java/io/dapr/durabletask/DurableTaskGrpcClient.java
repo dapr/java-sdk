@@ -28,6 +28,8 @@ import io.grpc.TlsChannelCredentials;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Tracer;
 
 import javax.annotation.Nullable;
 import java.io.FileInputStream;
@@ -41,6 +43,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 /**
@@ -57,6 +60,7 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
   private final DataConverter dataConverter;
   private final ManagedChannel managedSidecarChannel;
   private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient;
+  private final Tracer tracer;
 
   DurableTaskGrpcClient(DurableTaskGrpcClientBuilder builder) {
     this.dataConverter = builder.dataConverter != null ? builder.dataConverter : new JacksonDataConverter();
@@ -130,6 +134,13 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       sidecarGrpcChannel = this.managedSidecarChannel;
     }
 
+    if (builder.tracer != null) {
+      this.tracer = builder.tracer;
+    } else {
+      //this.tracer = OpenTelemetry.noop().getTracer("DurableTaskGrpcClient");
+      this.tracer = GlobalOpenTelemetry.getTracer("dapr-workflow");
+    }
+
     this.sidecarClient = TaskHubSidecarServiceGrpc.newBlockingStub(sidecarGrpcChannel);
   }
 
@@ -188,9 +199,12 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setScheduledStartTimestamp(ts);
     }
 
+    AtomicReference<OrchestratorService.CreateInstanceResponse> response = new AtomicReference<>();
+
     OrchestratorService.CreateInstanceRequest request = builder.build();
-    OrchestratorService.CreateInstanceResponse response = this.sidecarClient.startInstance(request);
-    return response.getInstanceId();
+    response.set(this.sidecarClient.startInstance(request));
+
+    return response.get().getInstanceId();
   }
 
   @Override
@@ -208,6 +222,7 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
 
     OrchestratorService.RaiseEventRequest request = builder.build();
     this.sidecarClient.raiseEvent(request);
+
   }
 
   @Override

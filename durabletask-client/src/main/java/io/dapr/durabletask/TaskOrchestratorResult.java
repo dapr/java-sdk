@@ -18,12 +18,18 @@ import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import java.util.Collection;
 import java.util.Collections;
 
-final class TaskOrchestratorResult {
+public final class TaskOrchestratorResult {
 
   private final Collection<OrchestratorService.OrchestratorAction> actions;
 
   private final String customStatus;
 
+  /**
+   * Creates a new TaskOrchestratorResult.
+   *
+   * @param actions      the collection of orchestrator actions
+   * @param customStatus the custom status of the orchestrator
+   */
   public TaskOrchestratorResult(Collection<OrchestratorService.OrchestratorAction> actions, String customStatus) {
     this.actions = Collections.unmodifiableCollection(actions);
     ;
