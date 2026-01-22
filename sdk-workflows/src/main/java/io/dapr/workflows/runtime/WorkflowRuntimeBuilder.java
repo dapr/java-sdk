@@ -16,13 +16,14 @@ package io.dapr.workflows.runtime;
 import io.dapr.config.Properties;
 import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.durabletask.TaskActivityFactory;
-import io.dapr.durabletask.TaskOrchestrationFactory;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,11 +116,45 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(Class<T> clazz) {
-    this.builder.addOrchestration(new WorkflowClassWrapper<>(clazz));
-    this.workflowSet.add(clazz.getCanonicalName());
-    this.workflows.add(clazz.getSimpleName());
+    return this.registerWorkflow(clazz.getCanonicalName(), clazz, null, null);
+  }
 
-    this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
+  /**
+   * Registers a Workflow object.
+   *
+   * @param <T>   any Workflow type
+   * @param name  the name of the workflow to register
+   * @param clazz the class being registered
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(String name, Class<T> clazz) {
+    return this.registerWorkflow(name, clazz, null, null);
+  }
+
+  /**
+   * Registers a Workflow object.
+   *
+   * @param <T>             any Workflow type
+   * @param name            the name of the workflow to register
+   * @param clazz           the class being registered
+   * @param versionName     the version name of the workflow
+   * @param isLatestVersion whether the workflow is the latest version
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(String name,
+                                                                      Class<T> clazz,
+                                                                      String versionName,
+                                                                      Boolean isLatestVersion) {
+    this.builder.addOrchestration(new WorkflowClassWrapper<>(name, clazz, versionName, isLatestVersion));
+    this.workflowSet.add(name);
+    this.workflows.add(name);
+
+    if (StringUtils.isEmpty(versionName)) {
+      this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
+    } else {
+      this.logger.info("Registered Workflow Version: {} {} - isLatest  {}",
+          clazz.getSimpleName(), versionName, isLatestVersion);
+    }
 
     return this;
   }
@@ -133,12 +168,34 @@ public class WorkflowRuntimeBuilder {
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(T instance) {
     Class<T> clazz = (Class<T>) instance.getClass();
+    this.registerWorkflow(clazz.getCanonicalName(), instance, null, null);
+    return this;
+  }
 
-    this.builder.addOrchestration(new WorkflowInstanceWrapper<>(instance));
-    this.workflowSet.add(clazz.getCanonicalName());
-    this.workflows.add(clazz.getSimpleName());
+  /**
+   * Registers a Workflow object.
+   *
+   * @param <T>             any Workflow type
+   * @param name            the name of the workflow to register
+   * @param instance        the workflow instance being registered
+   * @param versionName     the version name of the workflow
+   * @param isLatestVersion whether the workflow is the latest version
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(String name,
+                                                                      T instance,
+                                                                      String versionName,
+                                                                      Boolean isLatestVersion) {
+    this.builder.addOrchestration(new WorkflowInstanceWrapper<>(name, instance, versionName, isLatestVersion));
+    this.workflowSet.add(name);
+    this.workflows.add(name);
 
-    this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
+    if (StringUtils.isEmpty(versionName)) {
+      this.logger.info("Registered Workflow {}: {}", name, instance.getClass());
+    } else {
+      this.logger.info("Registered Workflow Version {}: {} {} - isLatest {}",
+          name, instance.getClass().getSimpleName(), versionName, isLatestVersion);
+    }
 
     return this;
   }

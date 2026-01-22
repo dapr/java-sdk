@@ -34,7 +34,6 @@ public interface TaskActivityContext {
    */
   <T> T getInput(Class<T> targetType);
 
-
   /**
    * Gets the execution id of the current task activity.
    *
