@@ -14,6 +14,7 @@ io.dapr.internal.grpc
 io.dapr.internal.grpc.interceptors
 io.dapr.internal.opencensus
 io.dapr.internal.resiliency
+io.dapr.internal.subscription
 io.dapr.serializer
 io.dapr.spring.boot.autoconfigure.client
 io.dapr.spring.boot.autoconfigure.pubsub
