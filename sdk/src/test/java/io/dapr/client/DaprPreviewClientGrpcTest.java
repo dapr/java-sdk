@@ -640,8 +640,8 @@ public class DaprPreviewClientGrpcTest {
     final AtomicInteger eventCount = new AtomicInteger(0);
     final Semaphore gotAll = new Semaphore(0);
 
-    // subscribeToEvents now returns Flux<T> directly (raw data)
-    var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING)
+    // subscribeToTopic returns Flux<T> directly (raw data)
+    var disposable = previewClient.subscribeToTopic(pubsubName, topicName, TypeRef.STRING)
             .doOnNext(rawData -> {
               // rawData is String directly, not CloudEvent
               assertEquals(data, rawData);
@@ -728,8 +728,8 @@ public class DaprPreviewClientGrpcTest {
     final Semaphore gotAll = new Semaphore(0);
     Map<String, String> metadata = Map.of("rawPayload", "true");
 
-    // Use subscribeToEvents with rawPayload metadata
-    var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING, metadata)
+    // Use subscribeToTopic with rawPayload metadata
+    var disposable = previewClient.subscribeToTopic(pubsubName, topicName, TypeRef.STRING, metadata)
             .doOnNext(rawData -> {
               assertEquals(data, rawData);
               assertTrue(rawData instanceof String);

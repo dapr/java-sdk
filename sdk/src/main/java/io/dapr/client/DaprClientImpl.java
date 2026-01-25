@@ -488,8 +488,8 @@ public class DaprClientImpl extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
-    return subscribeToEvents(pubsubName, topic, type, null);
+  public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type) {
+    return subscribeToTopic(pubsubName, topic, type, null);
   }
 
   /**
@@ -497,8 +497,8 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
-    DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.Builder initialRequestBuilder =
-        DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.Builder initialRequestBuilder =
+        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
             .setPubsubName(pubsubName);
 

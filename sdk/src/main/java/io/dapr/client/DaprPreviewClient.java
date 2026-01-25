@@ -272,7 +272,7 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param type Type for object deserialization.
    * @param <T> Type of object deserialization.
    * @return An active subscription.
-   * @deprecated Use {@link #subscribeToEvents(String, String, TypeRef)} instead for a more reactive approach.
+   * @deprecated Use {@link #subscribeToTopic(String, String, TypeRef)} instead for a more reactive approach.
    */
   @Deprecated
   <T> Subscription subscribeToEvents(
@@ -293,12 +293,12 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return A Flux of deserialized event payloads.
    * @param <T> Type of the event payload.
    */
-  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
+  <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type);
 
   /**
    * Subscribe to pubsub events via streaming using Project Reactor Flux with metadata support.
    *
-   * <p>If metadata is null or empty, this method delegates to {@link #subscribeToEvents(String, String, TypeRef)}.
+   * <p>If metadata is null or empty, this method delegates to {@link #subscribeToTopic(String, String, TypeRef)}.
    * Use metadata {@code {"rawPayload": "true"}} for raw payload subscriptions where Dapr
    * delivers messages without CloudEvent wrapping.
    *
@@ -309,7 +309,7 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return A Flux of deserialized event payloads.
    * @param <T> Type of the event payload.
    */
-  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata);
+  <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata);
 
   /*
    * Converse with an LLM.
