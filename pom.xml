@@ -57,7 +57,7 @@
     <springframework.version>6.2.7</springframework.version>
     <!-- Do NOT UPGRADE springframework.version without checking springboot.version alignment -->
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
-    <assertj.version>3.27.3</assertj.version>
+    <assertj.version>3.27.7</assertj.version>
     <opentelemetry.version>1.41.0</opentelemetry.version>
     <wiremock.version>3.9.1</wiremock.version>
     <jakarta.annotation.version>2.1.1</jakarta.annotation.version>
