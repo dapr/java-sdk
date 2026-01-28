@@ -13,9 +13,10 @@ limitations under the License.
 
 package io.dapr.springboot.examples.wfp;
 
+
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
-import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.WorkflowDashboardContainer;
 import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -26,9 +27,12 @@ import org.springframework.core.env.Environment;
 import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
@@ -45,25 +49,58 @@ import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_T
 @TestConfiguration(proxyBeanMethods = false)
 public class DaprTestContainersConfig {
 
+  Map<String, String> postgreSQLDetails = new HashMap<>();
+
+  {{
+    postgreSQLDetails.put("host", "postgresql");
+    postgreSQLDetails.put("user", "postgres");
+    postgreSQLDetails.put("password", "postgres");
+    postgreSQLDetails.put("database", "dapr");
+    postgreSQLDetails.put("port", "5432");
+    postgreSQLDetails.put("actorStateStore", String.valueOf(true));
+
+  }}
+
+  private Component stateStoreComponent = new Component("kvstore",
+      "state.postgresql", "v2", postgreSQLDetails);
+
   @Bean
   @ServiceConnection
-  public DaprContainer daprContainer(Network network) {
+  public DaprContainer daprContainer(Network network, PostgreSQLContainer postgreSQLContainer) {
 
     return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("workflow-patterns-app")
-            .withComponent(new Component("kvstore", "state.in-memory", "v1", Collections.singletonMap("actorStateStore", String.valueOf(true))))
+            .withComponent(stateStoreComponent)
             .withAppPort(8080)
             .withNetwork(network)
             .withAppHealthCheckPath("/actuator/health")
-            .withAppChannelAddress("host.testcontainers.internal");
+            .withAppChannelAddress("host.testcontainers.internal")
+        .dependsOn(postgreSQLContainer);
   }
 
+  @Bean
+  public PostgreSQLContainer postgreSQLContainer(Network network) {
+    return new PostgreSQLContainer(DockerImageName.parse("postgres"))
+        .withNetworkAliases("postgresql")
+        .withDatabaseName("dapr")
+        .withUsername("postgres")
+        .withPassword("postgres")
+        .withNetwork(network);
+  }
 
   @Bean
   MicrocksContainersEnsemble microcksEnsemble(Network network) {
     return new MicrocksContainersEnsemble(network, "quay.io/microcks/microcks-uber:1.11.2")
             .withAccessToHost(true)   // We need this to access our webapp while it runs
             .withMainArtifacts("third-parties/remote-http-service.yaml");
+  }
+
+  @Bean
+  public WorkflowDashboardContainer workflowDashboard(Network network) {
+    return new WorkflowDashboardContainer(WorkflowDashboardContainer.getDefaultImageName())
+            .withNetwork(network)
+            .withStateStoreComponent(stateStoreComponent)
+            .withExposedPorts(8080);
   }
 
   @Bean
