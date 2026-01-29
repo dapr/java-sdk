@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Wrapper for Durable Task Framework {@link TaskActivityContext}.
  */
-class DefaultWorkflowActivityContext implements WorkflowActivityContext {
+public class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   private final TaskActivityContext innerContext;
   private final Logger logger;
 
@@ -50,6 +50,7 @@ class DefaultWorkflowActivityContext implements WorkflowActivityContext {
    * Constructor for WorkflowActivityContext.
    *
    * @param context TaskActivityContext
+   * @param logger org.slf4j.Logger instance
    * @throws IllegalArgumentException if context is null
    */
   public DefaultWorkflowActivityContext(TaskActivityContext context, Logger logger) throws IllegalArgumentException {
