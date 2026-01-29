@@ -16,6 +16,7 @@ package io.dapr.workflows.runtime;
 import io.dapr.durabletask.DurableTaskGrpcWorker;
 import io.grpc.ManagedChannel;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -70,6 +71,14 @@ public class WorkflowRuntime implements AutoCloseable {
   public void close() {
     this.shutDownWorkerPool();
     this.closeSideCarChannel();
+  }
+
+  /**
+   * Immediately shuts down all resources associated with this instance.
+   */
+  public void closeNow() {
+    this.executorService.shutdownNow();
+    this.managedChannel.shutdownNow();
   }
 
   private void closeSideCarChannel() {
