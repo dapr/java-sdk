@@ -32,7 +32,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
     <!-- WARNING: don't change this property unless you also update .github/scripts/update_sdk_version.sh -->
-    <dapr.spring.version>1.17.0-SNAPSHOT</dapr.spring.version>
+    <dapr.spring.version>1.17.0-rc-1</dapr.spring.version>
   </properties>
 
   <dependencyManagement>
