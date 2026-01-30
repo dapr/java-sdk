@@ -18,7 +18,7 @@ import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprInvokeProtos;
 import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
@@ -118,7 +118,7 @@ null,
   public void setup(String traceparent, String tracestate, boolean expectGrpcTraceBin) throws IOException {
     DaprGrpc.DaprImplBase daprImplBase = new DaprGrpc.DaprImplBase() {
 
-      public void invokeService(io.dapr.v1.DaprProtos.InvokeServiceRequest request,
+      public void invokeService(DaprInvokeProtos.InvokeServiceRequest request,
           io.grpc.stub.StreamObserver<io.dapr.v1.CommonProtos.InvokeResponse> responseObserver) {
         responseObserver.onNext(CommonProtos.InvokeResponse.getDefaultInstance());
         responseObserver.onCompleted();
@@ -154,7 +154,7 @@ null,
   public void setup() throws IOException {
     DaprGrpc.DaprImplBase daprImplBase = new DaprGrpc.DaprImplBase() {
 
-      public void invokeService(io.dapr.v1.DaprProtos.InvokeServiceRequest request,
+      public void invokeService(DaprInvokeProtos.InvokeServiceRequest request,
                                 io.grpc.stub.StreamObserver<io.dapr.v1.CommonProtos.InvokeResponse> responseObserver) {
         responseObserver.onNext(CommonProtos.InvokeResponse.getDefaultInstance());
         responseObserver.onCompleted();
@@ -233,8 +233,8 @@ null,
   }
 
   private Mono<Void> invoke() {
-    DaprProtos.InvokeServiceRequest req =
-        DaprProtos.InvokeServiceRequest.newBuilder()
+    DaprInvokeProtos.InvokeServiceRequest req =
+        DaprInvokeProtos.InvokeServiceRequest.newBuilder()
             .build();
     return Mono.deferContextual(
         context -> this.<CommonProtos.InvokeResponse>createMono(
