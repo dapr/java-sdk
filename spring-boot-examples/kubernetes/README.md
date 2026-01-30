@@ -30,7 +30,7 @@ Once you have the cluster up and running you can install Dapr:
 helm repo add dapr https://dapr.github.io/helm-charts/
 helm repo update
 helm upgrade --install dapr dapr/dapr \
---version=1.16.0-rc.5 \
+--version=1.17.0-rc.2 \
 --namespace dapr-system \
 --create-namespace \
 --wait
