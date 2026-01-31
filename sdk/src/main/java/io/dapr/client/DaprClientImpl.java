@@ -487,6 +487,24 @@ public class DaprClientImpl extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  @Deprecated
+  @Override
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
+    return subscribeToTopic(pubsubName, topic, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Deprecated
+  @Override
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
+    return subscribeToTopic(pubsubName, topic, type, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type) {
     return subscribeToTopic(pubsubName, topic, type, null);

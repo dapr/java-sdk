@@ -281,6 +281,33 @@ public interface DaprPreviewClient extends AutoCloseable {
   /**
    * Subscribe to pubsub events via streaming using Project Reactor Flux.
    *
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param type Type for object deserialization.
+   * @param <T> Type of the event payload.
+   * @return A Flux of deserialized event payloads.
+   * @deprecated Use {@link #subscribeToTopic(String, String, TypeRef)} instead.
+   */
+  @Deprecated
+  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux with metadata support.
+   *
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param type Type for object deserialization.
+   * @param metadata Subscription metadata (e.g., {"rawPayload": "true"}).
+   * @param <T> Type of the event payload.
+   * @return A Flux of deserialized event payloads.
+   * @deprecated Use {@link #subscribeToTopic(String, String, TypeRef, Map)} instead.
+   */
+  @Deprecated
+  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux.
+   *
    * <p>The type parameter determines what is deserialized from the event data:
    * <ul>
    *   <li>Use {@code TypeRef.STRING} or similar for raw payload data</li>
