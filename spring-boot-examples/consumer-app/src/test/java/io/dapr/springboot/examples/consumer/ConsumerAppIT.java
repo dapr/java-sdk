@@ -17,8 +17,8 @@ import io.dapr.client.DaprClient;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.testcontainers.DaprContainer;
-import io.dapr.testcontainers.wait.strategy.DaprWait;
 import io.restassured.RestAssured;
+import org.testcontainers.containers.wait.strategy.Wait;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,11 +56,13 @@ class ConsumerAppIT {
     org.testcontainers.Testcontainers.exposeHostPorts(8081);
   }
 
+  private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
+
   @BeforeEach
   void setUp() {
     RestAssured.baseURI = "http://localhost:" + 8081;
 
-    DaprWait.forSubscription("pubsub", "topic").waitUntilReady(daprContainer);
+    Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(daprContainer);
   }
 
 
