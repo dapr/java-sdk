@@ -18,13 +18,13 @@ import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.testcontainers.DaprContainer;
 import io.restassured.RestAssured;
-import org.testcontainers.containers.wait.strategy.Wait;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -38,6 +38,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
         ConsumerAppTestConfiguration.class, DaprAutoConfiguration.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class ConsumerAppIT {
+
+  private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
 
   @Autowired
   private DaprMessagingTemplate<Order> messagingTemplate;
@@ -56,12 +58,9 @@ class ConsumerAppIT {
     org.testcontainers.Testcontainers.exposeHostPorts(8081);
   }
 
-  private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
-
   @BeforeEach
   void setUp() {
     RestAssured.baseURI = "http://localhost:" + 8081;
-
     Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(daprContainer);
   }
 
