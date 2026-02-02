@@ -31,8 +31,6 @@
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
-    <!-- WARNING: don't change this property unless you also update .github/scripts/update_sdk_version.sh -->
-    <dapr.spring.version>1.17.0-SNAPSHOT</dapr.spring.version>
   </properties>
 
   <dependencyManagement>
@@ -40,27 +38,27 @@
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-data</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-messaging</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-workflows</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-autoconfigure</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-tests</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
