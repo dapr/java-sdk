@@ -44,7 +44,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.logging.Logger;
 
-final class TaskOrchestrationExecutor {
+public final class TaskOrchestrationExecutor {
 
   private static final String EMPTY_STRING = "";
   private final HashMap<String, TaskOrchestrationFactory> orchestrationFactories;
@@ -53,6 +53,15 @@ final class TaskOrchestrationExecutor {
   private final Duration maximumTimerInterval;
   private final String appId;
 
+  /**
+   * Creates a new TaskOrchestrationExecutor.
+   *
+   * @param orchestrationFactories map of orchestration names to their factories
+   * @param dataConverter          converter for serializing/deserializing data
+   * @param maximumTimerInterval   maximum duration for timer intervals
+   * @param logger                 logger for orchestration execution
+   * @param appId                  application ID for cross-app routing
+   */
   public TaskOrchestrationExecutor(
       HashMap<String, TaskOrchestrationFactory> orchestrationFactories,
       DataConverter dataConverter,
@@ -66,6 +75,13 @@ final class TaskOrchestrationExecutor {
     this.appId = appId; // extracted from router
   }
 
+  /**
+   * Executes the orchestration with the given past and new events.
+   *
+   * @param pastEvents list of past history events
+   * @param newEvents  list of new history events
+   * @return the result of the orchestrator execution
+   */
   public TaskOrchestratorResult execute(List<OrchestratorService.HistoryEvent> pastEvents,
                                         List<OrchestratorService.HistoryEvent> newEvents) {
     ContextImplTask context = new ContextImplTask(pastEvents, newEvents);
@@ -87,7 +103,7 @@ final class TaskOrchestrationExecutor {
     } catch (Exception e) {
       // The orchestrator threw an unhandled exception - fail it
       // TODO: What's the right way to log this?
-      logger.warning("The orchestrator failed with an unhandled exception: " + e.toString());
+      logger.warning("The orchestrator failed with an unhandled exception: " + e);
       context.fail(new FailureDetails(e));
     }
 

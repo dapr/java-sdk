@@ -5,7 +5,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -21,6 +23,7 @@ class DefaultWorkflowActivityContextTest {
     when(mockInnerContext.getName()).thenReturn("TestActivity");
     when(mockInnerContext.getInput(any())).thenReturn("TestInput");
     when(mockInnerContext.getTaskExecutionId()).thenReturn("TestExecutionId");
+    when(mockInnerContext.getTraceParent()).thenReturn("00244654132154564654");
 
     assertNotNull(context.getLogger());
     assertEquals("TestActivity", context.getName());
@@ -29,6 +32,7 @@ class DefaultWorkflowActivityContextTest {
 
     assertEquals("TestInput", input);
     assertEquals("TestExecutionId", context.getTaskExecutionId());
+    assertEquals("00244654132154564654", context.getTraceParent());
   }
 
   @Test
