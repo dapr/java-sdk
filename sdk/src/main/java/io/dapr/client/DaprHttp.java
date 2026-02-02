@@ -85,7 +85,8 @@ public class DaprHttp implements AutoCloseable {
     HEAD,
     CONNECT,
     OPTIONS,
-    TRACE
+    TRACE,
+    PATCH
   }
 
   public static class Response {
