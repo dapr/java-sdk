@@ -23,11 +23,11 @@ import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.internal.DaprContainerFactory;
 import io.dapr.testcontainers.internal.DaprSidecarContainer;
 import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
+import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.util.Map;
 import java.util.UUID;
@@ -37,8 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @DaprSpringBootTest(classes = {TestActorsApplication.class, TestDaprActorsConfiguration.class})
 @Tag("testcontainers")
 public class DaprActorsIT {
-
-  private static final String ACTORS_MESSAGE_PATTERN = ".*Actor runtime started.*";
 
   @DaprSidecarContainer
   private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory.createForSpringBootTest("actor-dapr-app")
@@ -57,9 +55,7 @@ public class DaprActorsIT {
   public void setUp() {
     org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
     daprActorRuntime.registerActor(TestActorImpl.class);
-
-    // Wait for actor runtime to start.
-    Wait.forLogMessage(ACTORS_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
+    DaprWait.forActors().waitUntilReady(DAPR_CONTAINER);
   }
 
   @Test
