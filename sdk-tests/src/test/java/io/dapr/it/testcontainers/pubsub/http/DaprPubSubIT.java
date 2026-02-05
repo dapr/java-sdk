@@ -153,7 +153,7 @@ public class DaprPubSubIT {
   @Test
   @DisplayName("Should receive INVALID_ARGUMENT using bulk publish when the specified Pub/Sub name does not exist")
   public void shouldReceiveInvalidArgumentWithBulkPublish() throws Exception {
-    try (DaprPreviewClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).buildPreviewClient()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       assertThrowsDaprException(
           "INVALID_ARGUMENT",
           "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
