@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
@@ -154,7 +153,7 @@ public class DaprPubSubIT {
   @Test
   @DisplayName("Should receive INVALID_ARGUMENT using bulk publish when the specified Pub/Sub name does not exist")
   public void shouldReceiveInvalidArgumentWithBulkPublish() throws Exception {
-    try (DaprPreviewClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).buildPreviewClient()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       assertThrowsDaprException(
           "INVALID_ARGUMENT",
           "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
@@ -167,19 +166,18 @@ public class DaprPubSubIT {
   public void shouldPublishSomePayloadTypesWithNoError() throws Exception {
 
     try (
-        DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
-        DaprPreviewClient previewClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).withObjectSerializer(
+        DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).withObjectSerializer(
                 createJacksonObjectSerializer())
-            .buildPreviewClient()
+            .build()
     ) {
 
-      publishBulkStringsAsserting(previewClient);
+      publishBulkStringsAsserting(client);
 
-      publishMyObjectAsserting(previewClient);
+      publishMyObjectAsserting(client);
 
-      publishByteAsserting(previewClient);
+      publishByteAsserting(client);
 
-      publishCloudEventAsserting(previewClient);
+      publishCloudEventAsserting(client);
 
       Thread.sleep(10000);
 
@@ -409,10 +407,10 @@ public class DaprPubSubIT {
     }
   }
 
-  private void publishMyObjectAsserting(DaprPreviewClient previewClient) {
+  private void publishMyObjectAsserting(DaprClient client) {
     PubSubIT.MyObject object = new PubSubIT.MyObject();
     object.setId("123");
-    BulkPublishResponse<PubSubIT.MyObject> response = previewClient.publishEvents(
+    BulkPublishResponse<PubSubIT.MyObject> response = client.publishEvents(
         PUBSUB_NAME,
         TOPIC_BULK,
         "application/json",
@@ -424,20 +422,20 @@ public class DaprPubSubIT {
     });
   }
 
-  private void publishBulkStringsAsserting(DaprPreviewClient previewClient) {
+  private void publishBulkStringsAsserting(DaprClient client) {
     List<String> messages = new ArrayList<>();
     for (int i = 0; i < NUM_MESSAGES; i++) {
       messages.add(String.format("This is message #%d on topic %s", i, TOPIC_BULK));
     }
-    BulkPublishResponse<String> response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "", messages).block();
+    BulkPublishResponse<String> response = client.publishEvents(PUBSUB_NAME, TOPIC_BULK, "", messages).block();
     SoftAssertions.assertSoftly(softly -> {
       softly.assertThat(response).isNotNull();
       softly.assertThat(response.getFailedEntries().size()).isZero();
     });
   }
 
-  private void publishByteAsserting(DaprPreviewClient previewClient) {
-    BulkPublishResponse<byte[]> response = previewClient.publishEvents(
+  private void publishByteAsserting(DaprClient client) {
+    BulkPublishResponse<byte[]> response = client.publishEvents(
         PUBSUB_NAME,
         TOPIC_BULK,
         "",
@@ -449,7 +447,7 @@ public class DaprPubSubIT {
     });
   }
 
-  private void publishCloudEventAsserting(DaprPreviewClient previewClient) {
+  private void publishCloudEventAsserting(DaprClient client) {
     CloudEvent<String> cloudEvent = new CloudEvent<>();
     cloudEvent.setId("1234");
     cloudEvent.setData("message from cloudevent");
@@ -465,7 +463,7 @@ public class DaprPubSubIT {
             new BulkPublishEntry<>("1", cloudEvent, "application/cloudevents+json", null)
         )
     );
-    BulkPublishResponse<CloudEvent<String>> response = previewClient.publishEvents(req).block();
+    BulkPublishResponse<CloudEvent<String>> response = client.publishEvents(req).block();
     SoftAssertions.assertSoftly(softly -> {
       softly.assertThat(response).isNotNull();
       softly.assertThat(response.getFailedEntries().size()).isZero();
