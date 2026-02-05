@@ -298,7 +298,7 @@ public class BulkPublisher {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       client.waitForSidecar(10000);
       try (Scope scope = span.makeCurrent()) {
-        System.out.println("Using client...");
+        System.out.println("Using Dapr client...");
         List<String> messages = new ArrayList<>();
         System.out.println("Constructing the list of messages to publish");
         for (int i = 0; i < NUM_MESSAGES; i++) {
@@ -412,7 +412,7 @@ Once running, the BulkPublisher should print the output as follows:
 ```txt
 ✅  You're up and running! Both Dapr and your app logs will appear here.
 
-== APP == Using client...
+== APP == Using Dapr client...
 == APP == Constructing the list of messages to publish
 == APP == Going to publish message : This is message #0
 == APP == Going to publish message : This is message #1
