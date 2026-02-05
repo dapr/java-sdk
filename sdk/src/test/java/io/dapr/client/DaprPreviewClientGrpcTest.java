@@ -17,6 +17,8 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 import io.dapr.client.domain.AssistantMessage;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
@@ -43,6 +45,7 @@ import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SystemMessage;
+import io.dapr.client.domain.TestData;
 import io.dapr.client.domain.ToolMessage;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UserMessage;
@@ -75,6 +78,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1061,6 +1065,9 @@ public class DaprPreviewClientGrpcTest {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("max_tokens", "1000");
 
+    var responseFormat = new HashMap<String, Object>();
+    responseFormat.put("temperature", 0.7);
+    responseFormat.put("data", new TestData("Peter", 40));
     ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
     request.setContextId("test-context");
     request.setTemperature(0.7);
@@ -1069,11 +1076,31 @@ public class DaprPreviewClientGrpcTest {
     request.setToolChoice("auto");
     request.setMetadata(metadata);
     request.setParameters(parameters);
+    request.setPromptCacheRetention(Duration.ofDays(1));
+    request.setResponseFormat(responseFormat);
 
     // Mock response with tool calls
     DaprAiProtos.ConversationResponseAlpha2 grpcResponse = DaprAiProtos.ConversationResponseAlpha2.newBuilder()
         .setContextId("test-context")
         .addOutputs(DaprAiProtos.ConversationResultAlpha2.newBuilder()
+            .setModel("gpt-3.5-turbo")
+            .setUsage(DaprAiProtos.ConversationResultAlpha2CompletionUsage.newBuilder()
+                .setPromptTokens(100)
+                .setCompletionTokens(100)
+                .setTotalTokens(200)
+                .setCompletionTokensDetails(DaprAiProtos.ConversationResultAlpha2CompletionUsageCompletionTokensDetails
+                    .newBuilder()
+                    .setAudioTokens(10)
+                    .setReasoningTokens(11)
+                    .setAcceptedPredictionTokens(222)
+                    .setRejectedPredictionTokens(321)
+                    .build())
+                .setPromptTokensDetails(DaprAiProtos.ConversationResultAlpha2CompletionUsagePromptTokensDetails
+                    .newBuilder()
+                    .setAudioTokens(654)
+                    .setCachedTokens(1112)
+                    .build())
+                .build())
             .addChoices(DaprAiProtos.ConversationResultChoices.newBuilder()
                 .setFinishReason("tool_calls")
                 .setIndex(0)
@@ -1108,6 +1135,17 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("tool_calls", choice.getFinishReason());
     assertEquals("I'll help you get the weather information.", choice.getMessage().getContent());
     assertEquals(1, choice.getMessage().getToolCalls().size());
+    assertEquals("gpt-3.5-turbo", response.getOutputs().get(0).getModel());
+    assertEquals(100, response.getOutputs().get(0).getUsage().getCompletionTokens());
+    assertEquals(100, response.getOutputs().get(0).getUsage().getPromptTokens());
+    assertEquals(200, response.getOutputs().get(0).getUsage().getTotalTokens());
+    assertEquals(10, response.getOutputs().get(0).getUsage().getCompletionTokenDetails().getAudioTokens());
+    assertEquals(11, response.getOutputs().get(0).getUsage().getCompletionTokenDetails().getReasoningTokens());
+    assertEquals(222, response.getOutputs().get(0).getUsage().getCompletionTokenDetails().getAcceptedPredictionTokens());
+    assertEquals(321, response.getOutputs().get(0).getUsage().getCompletionTokenDetails().getRejectedPredictionTokens());
+    assertEquals(654, response.getOutputs().get(0).getUsage().getPromptTokenDetails().getAudioTokens());
+    assertEquals(1112, response.getOutputs().get(0).getUsage().getPromptTokenDetails().getCachedTokens());
+
 
     ConversationToolCalls toolCall = choice.getMessage().getToolCalls().get(0);
     assertEquals("call_123", toolCall.getId());
@@ -1128,6 +1166,13 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("value1", capturedRequest.getMetadataMap().get("key1"));
     assertEquals(1, capturedRequest.getToolsCount());
     assertEquals("get_weather", capturedRequest.getTools(0).getFunction().getName());
+    assertEquals(Struct.newBuilder()
+            .putFields("temperature", Value.newBuilder().setNumberValue(0.7).build())
+            .putFields("data", Value.newBuilder().setStringValue("TestData{name='Peter', age=40}").build())
+            .build(),
+        capturedRequest.getResponseFormat());
+    assertEquals(Duration.ofDays(1).getSeconds(), capturedRequest.getPromptCacheRetention().getSeconds());
+    assertEquals(0, capturedRequest.getPromptCacheRetention().getNanos());
   }
 
   @Test

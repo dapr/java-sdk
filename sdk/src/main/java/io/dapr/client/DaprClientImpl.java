@@ -42,7 +42,10 @@ import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.ConversationResponseAlpha2;
 import io.dapr.client.domain.ConversationResultAlpha2;
 import io.dapr.client.domain.ConversationResultChoices;
+import io.dapr.client.domain.ConversationResultCompletionUsage;
+import io.dapr.client.domain.ConversationResultCompletionUsageDetails;
 import io.dapr.client.domain.ConversationResultMessage;
+import io.dapr.client.domain.ConversationResultPromptUsageDetails;
 import io.dapr.client.domain.ConversationToolCalls;
 import io.dapr.client.domain.ConversationToolCallsOfFunction;
 import io.dapr.client.domain.ConversationTools;
@@ -1793,6 +1796,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprAiProtos.ConversationResponseAlpha2 conversationResponse = conversationResponseMono.block();
 
       assert conversationResponse != null;
+
       List<ConversationResultAlpha2> results = buildConversationResults(conversationResponse.getOutputsList());
       return Mono.just(new ConversationResponseAlpha2(conversationResponse.getContextId(), results));
     } catch (Exception ex) {
@@ -1856,6 +1860,33 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       builder.addInputs(inputBuilder.build());
+    }
+
+    if (request.getResponseFormat() != null) {
+      Map<String, Value> responseParams = request.getResponseFormat()
+          .entrySet().stream()
+          .collect(Collectors.toMap(
+              Map.Entry::getKey,
+              e -> {
+                try {
+                  return ProtobufValueHelper.toProtobufValue(e.getValue());
+                } catch (IOException ex) {
+                  throw new RuntimeException(ex);
+                }
+              }
+          ));
+
+      builder.setResponseFormat(Struct.newBuilder().putAllFields(responseParams).build());
+    }
+
+    if (request.getPromptCacheRetention() != null) {
+      Duration javaDuration = request.getPromptCacheRetention();
+      builder.setPromptCacheRetention(
+          com.google.protobuf.Duration.newBuilder()
+              .setSeconds(javaDuration.getSeconds())
+              .setNanos(javaDuration.getNano())
+              .build()
+      );
     }
     
     return builder.build();
@@ -1974,12 +2005,36 @@ public class DaprClientImpl extends AbstractDaprClient {
       for (DaprAiProtos.ConversationResultChoices protoChoice : protoResult.getChoicesList()) {
         ConversationResultMessage message = buildConversationResultMessage(protoChoice);
         choices.add(new ConversationResultChoices(protoChoice.getFinishReason(), protoChoice.getIndex(), message));
-      }  
+      }
 
-      results.add(new ConversationResultAlpha2(choices));
+      results.add(new ConversationResultAlpha2(
+          choices,
+          protoResult.getModel(),
+          getConversationResultCompletionUsage(protoResult))
+      );
     }
     
     return results;
+  }
+
+  private static ConversationResultCompletionUsage getConversationResultCompletionUsage(
+      DaprAiProtos.ConversationResultAlpha2 protoResult) {
+    var usage = new ConversationResultCompletionUsage(
+        protoResult.getUsage().getCompletionTokens(),
+        protoResult.getUsage().getPromptTokens(),
+        protoResult.getUsage().getTotalTokens());
+
+    usage.setCompletionTokenDetails(new ConversationResultCompletionUsageDetails(
+        protoResult.getUsage().getCompletionTokensDetails().getAcceptedPredictionTokens(),
+        protoResult.getUsage().getCompletionTokensDetails().getAudioTokens(),
+        protoResult.getUsage().getCompletionTokensDetails().getReasoningTokens(),
+        protoResult.getUsage().getCompletionTokensDetails().getRejectedPredictionTokens()));
+
+    usage.setPromptTokenDetails(new ConversationResultPromptUsageDetails(
+        protoResult.getUsage().getPromptTokensDetails().getAudioTokens(),
+        protoResult.getUsage().getPromptTokensDetails().getCachedTokens()
+    ));
+    return usage;
   }
 
   private ConversationResultMessage buildConversationResultMessage(DaprAiProtos.ConversationResultChoices protoChoice) {

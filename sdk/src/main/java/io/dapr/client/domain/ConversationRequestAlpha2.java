@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,8 @@ public class ConversationRequestAlpha2 {
   private String toolChoice;
   private Map<String, Object> parameters;
   private Map<String, String> metadata;
+  private Map<String, Object> responseFormat;
+  private Duration promptCacheRetention;
 
   /**
    * Constructs a ConversationRequestAlpha2 with a component name and conversation inputs.
@@ -204,6 +207,24 @@ public class ConversationRequestAlpha2 {
    */
   public ConversationRequestAlpha2 setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
+    return this;
+  }
+
+  public Map<String, Object> getResponseFormat() {
+    return responseFormat;
+  }
+
+  public ConversationRequestAlpha2 setResponseFormat(Map<String, Object> responseFormat) {
+    this.responseFormat = responseFormat;
+    return this;
+  }
+
+  public Duration getPromptCacheRetention() {
+    return promptCacheRetention;
+  }
+
+  public ConversationRequestAlpha2 setPromptCacheRetention(Duration promptCacheRetention) {
+    this.promptCacheRetention = promptCacheRetention;
     return this;
   }
 }
