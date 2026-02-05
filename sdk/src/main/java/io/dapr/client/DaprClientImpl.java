@@ -1863,20 +1863,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
 
     if (request.getResponseFormat() != null) {
-      Map<String, Value> responseParams = request.getResponseFormat()
-          .entrySet().stream()
-          .collect(Collectors.toMap(
-              Map.Entry::getKey,
-              e -> {
-                try {
-                  return ProtobufValueHelper.toProtobufValue(e.getValue());
-                } catch (IOException ex) {
-                  throw new RuntimeException(ex);
-                }
-              }
-          ));
-
-      builder.setResponseFormat(Struct.newBuilder().putAllFields(responseParams).build());
+      builder.setResponseFormat(request.getResponseFormat());
     }
 
     if (request.getPromptCacheRetention() != null) {

@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.google.protobuf.Struct;
+import io.dapr.utils.ProtobufUtils;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +35,7 @@ public class ConversationRequestAlpha2 {
   private String toolChoice;
   private Map<String, Object> parameters;
   private Map<String, String> metadata;
-  private Map<String, Object> responseFormat;
+  private Struct responseFormat;
   private Duration promptCacheRetention;
 
   /**
@@ -210,19 +213,52 @@ public class ConversationRequestAlpha2 {
     return this;
   }
 
-  public Map<String, Object> getResponseFormat() {
+  /**
+   * Gets the response format in JSON-Schema format.
+   *
+   * @return the response format
+   */
+  public Struct getResponseFormat() {
     return responseFormat;
   }
 
-  public ConversationRequestAlpha2 setResponseFormat(Map<String, Object> responseFormat) {
+  /**
+   * Sets the response format in JSON-Schema format.
+   * Structured output described using a JSON Schema object.
+   * Use this when you want typed structured output.
+   * Supported by Deepseek, Google AI, Hugging Face, OpenAI, and Anthropic components
+   *
+   * @param responseFormat the response format to set
+   * @return the current instance of {@link ConversationRequestAlpha2}
+   */
+  public ConversationRequestAlpha2 setResponseFormat(Struct responseFormat) {
     this.responseFormat = responseFormat;
     return this;
   }
 
+  public ConversationRequestAlpha2 setResponseFormat(String responseFormat) {
+    this.responseFormat = ProtobufUtils.jsonToStruct(responseFormat);
+    return this;
+  }
+
+  /**
+   * retention duration for the prompt cache.
+   *
+   * @return the prompt cache retention duration
+   */
   public Duration getPromptCacheRetention() {
     return promptCacheRetention;
   }
 
+  /**
+   * Retention duration for the prompt cache.
+   * When set, enables extended prompt caching so cached prefixes stay active longer.
+   * With OpenAI, supports up to 24 hours.
+   * See [OpenAI prompt caching](https://platform.openai.com/docs/guides/prompt-caching#prompt-cache-retention).
+   *
+   * @param promptCacheRetention the prompt cache retention duration
+   * @return the current instance of {@link ConversationRequestAlpha2}
+   */
   public ConversationRequestAlpha2 setPromptCacheRetention(Duration promptCacheRetention) {
     this.promptCacheRetention = promptCacheRetention;
     return this;

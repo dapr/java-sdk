@@ -45,7 +45,6 @@ import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SystemMessage;
-import io.dapr.client.domain.TestData;
 import io.dapr.client.domain.ToolMessage;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UserMessage;
@@ -1065,9 +1064,9 @@ public class DaprPreviewClientGrpcTest {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("max_tokens", "1000");
 
-    var responseFormat = new HashMap<String, Object>();
-    responseFormat.put("temperature", 0.7);
-    responseFormat.put("data", new TestData("Peter", 40));
+    Struct responseFormat = Struct.newBuilder().putFields("type",
+        Value.newBuilder().setStringValue("text").build()).build();
+
     ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
     request.setContextId("test-context");
     request.setTemperature(0.7);
@@ -1166,10 +1165,8 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("value1", capturedRequest.getMetadataMap().get("key1"));
     assertEquals(1, capturedRequest.getToolsCount());
     assertEquals("get_weather", capturedRequest.getTools(0).getFunction().getName());
-    assertEquals(Struct.newBuilder()
-            .putFields("temperature", Value.newBuilder().setNumberValue(0.7).build())
-            .putFields("data", Value.newBuilder().setStringValue("TestData{name='Peter', age=40}").build())
-            .build(),
+    assertEquals(Struct.newBuilder().putFields("type",
+            Value.newBuilder().setStringValue("text").build()).build(),
         capturedRequest.getResponseFormat());
     assertEquals(Duration.ofDays(1).getSeconds(), capturedRequest.getPromptCacheRetention().getSeconds());
     assertEquals(0, capturedRequest.getPromptCacheRetention().getNanos());
