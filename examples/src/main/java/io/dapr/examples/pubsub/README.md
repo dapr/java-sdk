@@ -713,11 +713,11 @@ background: true
 sleep: 15
 -->
 ```bash
-// stop http subscriber if you have started one.
+# stop http subscriber if you have started one.
 dapr stop --app-id subscriber
 
 
-// start a grpc subscriber
+# start a grpc subscriber
 dapr run --resources-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.grpc.Subscriber -p 3000
 ```
 <!-- END_STEP -->
