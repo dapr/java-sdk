@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.pubsub.grpc;
 
-import io.dapr.v1.AppCallbackAlphaGrpc;
+import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkRequestEntry;
 import io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkResponse;
 import io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkResponseEntry;
@@ -22,10 +22,10 @@ import io.dapr.v1.DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseSta
 /**
  * Class that encapsulates all client-side logic for Grpc.
  */
-public class BulkSubscriberGrpcService extends AppCallbackAlphaGrpc.AppCallbackAlphaImplBase {
+public class BulkSubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
 
   @Override
-  public void onBulkTopicEventAlpha1(io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkRequest request,
+  public void onBulkTopicEvent(io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkRequest request,
           io.grpc.stub.StreamObserver<io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkResponse> responseObserver) {
     try {
       TopicEventBulkResponse.Builder responseBuilder = TopicEventBulkResponse.newBuilder();

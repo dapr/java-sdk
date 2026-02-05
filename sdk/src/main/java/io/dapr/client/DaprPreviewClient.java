@@ -170,7 +170,9 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param request {@link BulkPublishRequest} object.
    * @return A Mono of {@link BulkPublishResponse} object.
    * @param <T> The type of events to publish in the call.
+   * @deprecated This method is now stable. Use {@link DaprClient#publishEvents(BulkPublishRequest)} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request);
 
   /**
@@ -184,7 +186,9 @@ public interface DaprPreviewClient extends AutoCloseable {
    *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
    *     generated based on the order of events in the {@link List}.
    * @param <T> The type of the events to publish in the call.
+   * @deprecated This method is now stable. Use {@link DaprClient#publishEvents(String, String, String, List)} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                  List<T> events);
 
@@ -199,7 +203,9 @@ public interface DaprPreviewClient extends AutoCloseable {
    *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
    *     generated based on the order of events in the {@link List}.
    * @param <T> The type of the events to publish in the call.
+   * @deprecated This method is now stable. Use {@link DaprClient#publishEvents(String, String, String, Object[])} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                  T... events);
 
@@ -215,7 +221,9 @@ public interface DaprPreviewClient extends AutoCloseable {
    *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
    *     generated based on the order of events in the {@link List}.
    * @param <T> The type of the events to publish in the call.
+   * @deprecated This method is now stable. Use {@link DaprClient#publishEvents(String, String, String, Map, List)} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                  Map<String,String> requestMetadata, List<T> events);
 
@@ -231,7 +239,9 @@ public interface DaprPreviewClient extends AutoCloseable {
    *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
    *     generated based on the order of events in the {@link List}.
    * @param <T> The type of the events to publish in the call.
+   * @deprecated This method is now stable. Use {@link DaprClient#publishEvents(String, String, String, Map, Object[])} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                  Map<String,String> requestMetadata, T... events);
 
