@@ -226,7 +226,7 @@ public final class OrchestrationMetadata {
   private <T> T readPayloadAs(Class<T> type, String payload) {
     if (!this.requestedInputsAndOutputs) {
       throw new IllegalStateException("This method can only be used when instance metadata is fetched with the option "
-         + "to include input and output data.");
+          + "to include input and output data.");
     }
 
     // Note that the Java gRPC implementation converts null protobuf strings into empty Java strings
