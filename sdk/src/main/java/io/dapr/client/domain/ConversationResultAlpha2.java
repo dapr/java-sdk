@@ -21,14 +21,22 @@ import java.util.List;
 public class ConversationResultAlpha2 {
 
   private final List<ConversationResultChoices> choices;
+  private final String model;
+  private final ConversationResultCompletionUsage usage;
 
   /**
    * Constructor.
    *
    * @param choices the list of conversation result choices.
+   * @param model the model used for the conversation.
+   * @param usage the usage of the model.
    */
-  public ConversationResultAlpha2(List<ConversationResultChoices> choices) {
+  public ConversationResultAlpha2(List<ConversationResultChoices> choices,
+                                  String model,
+                                  ConversationResultCompletionUsage usage) {
     this.choices = List.copyOf(choices);
+    this.model = model;
+    this.usage = usage;
   }
 
   /**
@@ -38,5 +46,23 @@ public class ConversationResultAlpha2 {
    */
   public List<ConversationResultChoices> getChoices() {
     return choices;
+  }
+
+  /**
+   * Gets the model used for the conversation.
+   *
+   * @return the model used for the conversation.
+   */
+  public String getModel() {
+    return model;
+  }
+
+  /**
+   * Gets the usage of the model.
+   *
+   * @return the usage of the model.
+   */
+  public ConversationResultCompletionUsage getUsage() {
+    return usage;
   }
 }
