@@ -68,7 +68,12 @@ public enum OrchestrationRuntimeStatus {
   /**
    * The orchestration is in a suspended state.
    */
-  SUSPENDED;
+  SUSPENDED,
+
+  /**
+   * The orchestration is in a stalled state.
+   */
+  STALLED;
 
   static OrchestrationRuntimeStatus fromProtobuf(OrchestratorService.OrchestrationStatus status) {
     switch (status) {
@@ -88,6 +93,8 @@ public enum OrchestrationRuntimeStatus {
         return PENDING;
       case ORCHESTRATION_STATUS_SUSPENDED:
         return SUSPENDED;
+      case ORCHESTRATION_STATUS_STALLED:
+        return STALLED;
       default:
         throw new IllegalArgumentException(String.format("Unknown status value: %s", status));
     }

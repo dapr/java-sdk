@@ -11,7 +11,9 @@
 limitations under the License.
 */
 
-package io.dapr.durabletask;
+package io.dapr.durabletask.orchestration;
+
+import io.dapr.durabletask.TaskOrchestration;
 
 /**
  * Factory interface for producing {@link TaskOrchestration} implementations.
@@ -30,4 +32,8 @@ public interface TaskOrchestrationFactory {
    * @return the created orchestration instance
    */
   TaskOrchestration create();
+
+  String getVersionName();
+
+  Boolean isLatestVersion();
 }

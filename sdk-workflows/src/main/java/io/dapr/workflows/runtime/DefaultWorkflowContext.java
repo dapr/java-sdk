@@ -319,4 +319,8 @@ public class DefaultWorkflowContext implements WorkflowContext {
   public void setCustomStatus(Object status) {
     innerContext.setCustomStatus(status);
   }
+
+  public boolean isPatched(String patchName) {
+    return this.innerContext.isPatched(patchName);
+  }
 }
