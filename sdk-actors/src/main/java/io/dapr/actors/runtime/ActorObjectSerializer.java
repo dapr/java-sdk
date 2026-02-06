@@ -17,6 +17,9 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.client.ObjectSerializer;
+import io.dapr.client.domain.ConstantFailurePolicy;
+import io.dapr.client.domain.DropFailurePolicy;
+import io.dapr.client.domain.FailurePolicy;
 import io.dapr.utils.DurationUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -104,6 +107,27 @@ public class ActorObjectSerializer extends ObjectSerializer {
       generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(reminder.getPeriod()));
       if (reminder.getData() != null) {
         generator.writeBinaryField("data", reminder.getData());
+      }
+      if (reminder.getFailurePolicy() != null) {
+        generator.writeFieldName("failurePolicy");
+        generator.writeStartObject();
+
+        // Add type information for polymorphic deserialization
+        if (reminder.getFailurePolicy() instanceof DropFailurePolicy) {
+          generator.writeStringField("failurePolicyType", "DROP");
+        } else if (reminder.getFailurePolicy() instanceof ConstantFailurePolicy) {
+          generator.writeStringField("failurePolicyType", "CONSTANT");
+          ConstantFailurePolicy constantPolicy = (ConstantFailurePolicy) reminder.getFailurePolicy();
+          if (constantPolicy.getMaxRetries() != null) {
+            generator.writeNumberField("maxRetries", constantPolicy.getMaxRetries());
+          }
+          if (constantPolicy.getDurationBetweenRetries() != null) {
+            generator.writeStringField("interval",
+                DurationUtils.convertDurationToDaprFormat(constantPolicy.getDurationBetweenRetries()));
+          }
+        }
+
+        generator.writeEndObject();
       }
       generator.writeEndObject();
       generator.close();
@@ -243,7 +267,28 @@ public class ActorObjectSerializer extends ObjectSerializer {
     Duration period = extractDurationOrNull(node, "period");
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
-    return new ActorReminderParams(data, dueTime, period);
+    // Handle failure policy if present
+    JsonNode failurePolicyNode = node.get("failurePolicy");
+    FailurePolicy failurePolicy = null;
+    if (failurePolicyNode != null) {
+      // Try to determine the type based on the JSON structure
+      if (failurePolicyNode.has("failurePolicyType")) {
+        String policyType = failurePolicyNode.get("failurePolicyType").asText();
+        if ("DROP".equals(policyType)) {
+          failurePolicy = new DropFailurePolicy();
+        } else if ("CONSTANT".equals(policyType)) {
+          if (failurePolicyNode.has("maxRetries")) {
+            failurePolicy = new ConstantFailurePolicy(failurePolicyNode.get("maxRetries").asInt());
+          }
+          if (failurePolicyNode.has("interval")) {
+            failurePolicy = new ConstantFailurePolicy(DurationUtils
+                .convertDurationFromDaprFormat(failurePolicyNode.get("interval").asText()));
+          }
+        }
+      }
+    }
+
+    return new ActorReminderParams(data, dueTime, period, failurePolicy);
   }
 
   /**
