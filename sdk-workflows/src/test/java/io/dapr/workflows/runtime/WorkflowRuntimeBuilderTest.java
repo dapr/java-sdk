@@ -12,6 +12,10 @@ limitations under the License.
 */
 package io.dapr.workflows.runtime;
 
+import io.dapr.durabletask.TaskActivity;
+import io.dapr.durabletask.TaskActivityFactory;
+import io.dapr.durabletask.TaskOrchestration;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
@@ -48,9 +52,22 @@ public class WorkflowRuntimeBuilderTest {
   }
 
   @Test
+  public void registerValidVersionWorkflowClass() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("TestWorkflow", TestWorkflow.class,"testWorkflowV1", false));
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("TestWorkflow", TestWorkflow.class,"testWorkflowV2", true));
+  }
+
+  @Test
   public void registerValidWorkflowInstance() {
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow(new TestWorkflow()));
   }
+
+  @Test
+  public void registerValidVersionWorkflowInstance() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("testWorkflowV1", new TestWorkflow(),"testWorkflowV1", false));
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("testWorkflowV2",new TestWorkflow(),"testWorkflowV2", true));
+  }
+
 
   @Test
   public void registerValidWorkflowActivityClass() {
@@ -62,12 +79,79 @@ public class WorkflowRuntimeBuilderTest {
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(new TestActivity()));
   }
 
+
+
+  @Test
+  public void registerValidTaskActivityFactory() {
+    class A implements WorkflowActivity{
+
+      @Override
+      public Object run(WorkflowActivityContext ctx) {
+        return "a";
+      }
+    }
+
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerTaskActivityFactory(A.class.getName(),
+        new TaskActivityFactory() {
+          @Override
+          public String getName() {
+            return A.class.getName();
+          }
+
+          @Override
+          public TaskActivity create() {
+            A a = new A();
+            return ctx -> a.run(new DefaultWorkflowActivityContext(ctx, a.getClass()));
+          }
+        }));
+  }
+
+  @Test
+  public void registerValidWorkflowOrchestrator() {
+    class W implements Workflow{
+
+      @Override
+      public WorkflowStub create() {
+        return ctx -> {
+          ctx.complete("w");
+        };
+      }
+    }
+
+    assertDoesNotThrow(() -> {
+      new WorkflowRuntimeBuilder().registerTaskOrchestrationFactory(W.class.getName(), new TaskOrchestrationFactory() {
+        @Override
+        public String getName() {
+          return W.class.getName();
+        }
+
+        @Override
+        public TaskOrchestration create() {
+          W w = new W();
+          return ctx -> w.run(new DefaultWorkflowContext(ctx, w.getClass()));
+        }
+
+        @Override
+        public String getVersionName() {
+          return "";
+        }
+
+        @Override
+        public Boolean isLatestVersion() {
+          return null;
+        }
+      });
+    });
+
+  }
+
   @Test
   public void buildTest() {
     assertDoesNotThrow(() -> {
       try {
         WorkflowRuntime runtime = new WorkflowRuntimeBuilder().build();
         System.out.println("WorkflowRuntime created");
+        runtime.close();
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -82,16 +166,18 @@ public class WorkflowRuntimeBuilderTest {
 
     Logger testLogger = mock(Logger.class);
 
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder(testLogger).registerWorkflow(TestWorkflow.class));
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder(testLogger).registerActivity(TestActivity.class));
+var runtimeBuilder =    new WorkflowRuntimeBuilder(testLogger);
+    assertDoesNotThrow(() -> runtimeBuilder.registerWorkflow(TestWorkflow.class));
+    assertDoesNotThrow(() -> runtimeBuilder.registerActivity(TestActivity.class));
 
-    WorkflowRuntimeBuilder workflowRuntimeBuilder = new WorkflowRuntimeBuilder();
+    var runtime = runtimeBuilder.build();
 
-    WorkflowRuntime runtime = workflowRuntimeBuilder.build();
     verify(testLogger, times(1))
         .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
 
     verify(testLogger, times(1))
         .info(eq("Registered Activity: {}"), eq("TestActivity"));
+
+    runtime.close();
   }
 }

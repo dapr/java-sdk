@@ -19,6 +19,7 @@ import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -30,7 +31,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -54,10 +54,10 @@ public class DaprSpringMessagingIT {
 
   private static final Logger logger = LoggerFactory.getLogger(DaprSpringMessagingIT.class);
 
+  private static final String PUBSUB_NAME = "pubsub";
   private static final String TOPIC = "mockTopic";
   private static final Network DAPR_NETWORK = Network.newNetwork();
   private static final int APP_PORT = 8080;
-  private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
 
   @Container
   @ServiceConnection
@@ -84,8 +84,7 @@ public class DaprSpringMessagingIT {
 
   @BeforeEach
   public void beforeEach() {
-    // Ensure the subscriptions are registered
-    Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
+    DaprWait.forSubscription(PUBSUB_NAME, TOPIC).waitUntilReady(DAPR_CONTAINER);
   }
 
   @Test

@@ -14,18 +14,23 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.TaskOrchestration;
-import io.dapr.durabletask.TaskOrchestrationFactory;
 import io.dapr.workflows.Workflow;
 
 /**
  * Wrapper for Durable Task Framework orchestration factory.
  */
-class WorkflowInstanceWrapper<T extends Workflow> implements TaskOrchestrationFactory {
+class WorkflowInstanceWrapper<T extends Workflow> extends WorkflowVersionWrapper {
   private final T workflow;
   private final String name;
 
   public WorkflowInstanceWrapper(T instance) {
     this.name = instance.getClass().getCanonicalName();
+    this.workflow = instance;
+  }
+
+  public WorkflowInstanceWrapper(String name, T instance, String versionName, Boolean isLatestVersion) {
+    super(versionName, isLatestVersion);
+    this.name = name;
     this.workflow = instance;
   }
 

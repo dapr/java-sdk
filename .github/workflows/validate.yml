@@ -37,9 +37,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.15.0
-      DAPR_RUNTIME_VER: 1.16.0-rc.5
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.15.0/install/install.sh
+      DAPR_CLI_VER: 1.16.5
+      DAPR_RUNTIME_VER: 1.17.0-rc.2
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.16.5/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
     steps:
@@ -113,6 +113,10 @@ jobs:
         run: sleep 30 && docker logs dapr_scheduler && nc -vz localhost 50006
       - name: Install jars
         run: ./mvnw clean install -DskipTests -q
+      - name: Validate crypto example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/crypto/README.md
       - name: Validate workflows example
         working-directory: ./examples
         run: |
@@ -185,4 +189,6 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
+
+
 
