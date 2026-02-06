@@ -22,7 +22,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 public class DaprClientPropertiesTest {
 
-
   private final ApplicationContextRunner runner = new ApplicationContextRunner()
       .withUserConfiguration(EnableDaprClientProperties.class);
 
@@ -61,6 +60,21 @@ public class DaprClientPropertiesTest {
       softAssertions.assertThat(properties.getHttpPort()).isEqualTo(3500);
       softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(50001);
       softAssertions.assertThat(properties.getApiToken()).isEqualTo("ABC");
+    });
+  }
+
+  @Test
+  @DisplayName("Should create DaprClientProperties default values correctly")
+  public void shouldSetDaprClientDefaultPropertiesCorrectly() {
+
+    DaprClientProperties properties = new DaprClientProperties();
+
+    SoftAssertions.assertSoftly(softAssertions -> {
+      softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost:50001");
+      softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost:3500");
+      softAssertions.assertThat(properties.getHttpPort()).isEqualTo(3500);
+      softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+      softAssertions.assertThat(properties.getApiToken()).isNull();
     });
   }
 
