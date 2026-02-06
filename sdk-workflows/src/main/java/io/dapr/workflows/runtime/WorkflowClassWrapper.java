@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.TaskOrchestration;
-import io.dapr.durabletask.TaskOrchestrationFactory;
 import io.dapr.workflows.Workflow;
 
 import java.lang.reflect.Constructor;
@@ -23,12 +22,26 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * Wrapper for Durable Task Framework orchestration factory.
  */
-class WorkflowClassWrapper<T extends Workflow> implements TaskOrchestrationFactory {
+class WorkflowClassWrapper<T extends Workflow> extends WorkflowVersionWrapper {
   private final Constructor<T> workflowConstructor;
   private final String name;
 
   public WorkflowClassWrapper(Class<T> clazz) {
+    super();
     this.name = clazz.getCanonicalName();
+
+    try {
+      this.workflowConstructor = clazz.getDeclaredConstructor();
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(
+          String.format("No constructor found for workflow class '%s'.", this.name), e
+      );
+    }
+  }
+
+  public WorkflowClassWrapper(String name, Class<T> clazz, String versionName, Boolean isLatestVersion) {
+    super(versionName, isLatestVersion);
+    this.name = name;
 
     try {
       this.workflowConstructor = clazz.getDeclaredConstructor();
