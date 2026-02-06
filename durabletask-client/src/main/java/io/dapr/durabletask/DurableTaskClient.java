@@ -145,7 +145,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * Waits for an orchestration to start running and returns an {@link OrchestrationMetadata} object that contains
    * metadata about the started instance.
    *
-   * <p> A "started" orchestration instance is any instance not in the <code>Pending</code> state. </p>
+   * <p>A "started" orchestration instance is any instance not in the <code>Pending</code> state. </p>
    *
    * <p>If an orchestration instance is already running when this method is called, the method will return immediately.
    *</p>

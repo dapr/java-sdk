@@ -17,11 +17,13 @@ import com.google.protobuf.StringValue;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService.TaskFailureDetails;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -42,7 +44,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private static final Logger logger = Logger.getLogger(DurableTaskGrpcWorker.class.getPackage().getName());
   private static final Duration DEFAULT_MAXIMUM_TIMER_INTERVAL = Duration.ofDays(3);
 
-  private final HashMap<String, TaskOrchestrationFactory> orchestrationFactories = new HashMap<>();
+  private final TaskOrchestrationFactories orchestrationFactories;
+
   private final HashMap<String, TaskActivityFactory> activityFactories = new HashMap<>();
 
   private final ManagedChannel managedSidecarChannel;
@@ -57,7 +60,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private Thread workerThread;
 
   DurableTaskGrpcWorker(DurableTaskGrpcWorkerBuilder builder) {
-    this.orchestrationFactories.putAll(builder.orchestrationFactories);
+    this.orchestrationFactories = builder.orchestrationFactories;
     this.activityFactories.putAll(builder.activityFactories);
     this.appId = builder.appId;
 
@@ -115,7 +118,9 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
    *
    */
   public void close() {
-    this.workerThread.interrupt();
+    if (this.workerThread != null) {
+      this.workerThread.interrupt();
+    }
     this.isNormalShutdown = true;
     this.shutDownWorkerPool();
     this.closeSideCarChannel();
@@ -161,6 +166,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
           OrchestratorService.WorkItem.RequestCase requestType = workItem.getRequestCase();
           if (requestType == OrchestratorService.WorkItem.RequestCase.ORCHESTRATORREQUEST) {
             OrchestratorService.OrchestratorRequest orchestratorRequest = workItem.getOrchestratorRequest();
+
             logger.log(Level.FINEST,
                 String.format("Processing orchestrator request for instance: {0}",
                     orchestratorRequest.getInstanceId()));
@@ -171,11 +177,22 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
                   orchestratorRequest.getPastEventsList(),
                   orchestratorRequest.getNewEventsList());
 
+              var versionBuilder = OrchestratorService.OrchestrationVersion.newBuilder();
+
+              if (StringUtils.isNotEmpty(taskOrchestratorResult.getVersion())) {
+                versionBuilder.setName(taskOrchestratorResult.getVersion());
+              }
+
+              if (taskOrchestratorResult.getPatches() != null) {
+                versionBuilder.addAllPatches(taskOrchestratorResult.getPatches());
+              }
+
               OrchestratorService.OrchestratorResponse response = OrchestratorService.OrchestratorResponse.newBuilder()
                   .setInstanceId(orchestratorRequest.getInstanceId())
                   .addAllActions(taskOrchestratorResult.getActions())
                   .setCustomStatus(StringValue.of(taskOrchestratorResult.getCustomStatus()))
                   .setCompletionToken(workItem.getCompletionToken())
+                  .setVersion(versionBuilder)
                   .build();
 
               try {

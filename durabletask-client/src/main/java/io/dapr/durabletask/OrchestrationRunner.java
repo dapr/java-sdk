@@ -16,10 +16,11 @@ package io.dapr.durabletask;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 
 import java.time.Duration;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.logging.Logger;
 
 /**
@@ -134,8 +135,8 @@ public final class OrchestrationRunner {
     }
 
     // Register the passed orchestration as the default ("*") orchestration
-    HashMap<String, TaskOrchestrationFactory> orchestrationFactories = new HashMap<>();
-    orchestrationFactories.put("*", new TaskOrchestrationFactory() {
+    TaskOrchestrationFactories orchestrationFactories = new TaskOrchestrationFactories();
+    orchestrationFactories.addOrchestration(new TaskOrchestrationFactory() {
       @Override
       public String getName() {
         return "*";
@@ -144,6 +145,16 @@ public final class OrchestrationRunner {
       @Override
       public TaskOrchestration create() {
         return orchestration;
+      }
+
+      @Override
+      public String getVersionName() {
+        return "";
+      }
+
+      @Override
+      public Boolean isLatestVersion() {
+        return false;
       }
     });
 
