@@ -58,7 +58,6 @@ import io.dapr.client.domain.DropFailurePolicy;
 import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.FailurePolicy;
-import io.dapr.client.domain.FailurePolicyType;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
@@ -100,6 +99,7 @@ import io.dapr.internal.subscription.EventSubscriberStreamObserver;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
+import io.dapr.utils.FailurePolicyUtils;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprAiProtos;
@@ -1422,9 +1422,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       if (scheduleJobRequest.getFailurePolicy() != null) {
-        jobBuilder.setFailurePolicy(getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
+        jobBuilder.setFailurePolicy(FailurePolicyUtils.getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
       }
-
 
       Mono<DaprJobsProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
@@ -1502,32 +1501,6 @@ public class DaprClientImpl extends AbstractDaprClient {
     return new ConstantFailurePolicy(
         Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
             ChronoUnit.NANOS));
-  }
-
-  private CommonProtos.JobFailurePolicy getJobFailurePolicy(FailurePolicy failurePolicy) {
-    CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
-
-    if (failurePolicy.getFailurePolicyType() == FailurePolicyType.DROP) {
-      jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
-      return jobFailurePolicyBuilder.build();
-    }
-
-    CommonProtos.JobFailurePolicyConstant.Builder constantPolicyBuilder =
-        CommonProtos.JobFailurePolicyConstant.newBuilder();
-    ConstantFailurePolicy jobConstantFailurePolicy = (ConstantFailurePolicy)failurePolicy;
-
-    if (jobConstantFailurePolicy.getMaxRetries() != null) {
-      constantPolicyBuilder.setMaxRetries(jobConstantFailurePolicy.getMaxRetries());
-    }
-
-    if (jobConstantFailurePolicy.getDurationBetweenRetries() != null) {
-      constantPolicyBuilder.setInterval(com.google.protobuf.Duration.newBuilder()
-          .setNanos(jobConstantFailurePolicy.getDurationBetweenRetries().getNano()).build());
-    }
-
-    jobFailurePolicyBuilder.setConstant(constantPolicyBuilder.build());
-
-    return jobFailurePolicyBuilder.build();
   }
 
   /**
