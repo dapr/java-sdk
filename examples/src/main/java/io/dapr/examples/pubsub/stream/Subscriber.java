@@ -47,8 +47,8 @@ public class Subscriber {
     try (var client = new DaprClientBuilder().buildPreviewClient()) {
       System.out.println("Subscribing to topic: " + topicName);
 
-      // Subscribe to events - receives raw String data directly
-      client.subscribeToEvents(PUBSUB_NAME, topicName, TypeRef.STRING)
+      // Subscribe to topic - receives raw String data directly
+      client.subscribeToTopic(PUBSUB_NAME, topicName, TypeRef.STRING)
           .doOnNext(message -> {
             System.out.println("Subscriber got: " + message);
           })
