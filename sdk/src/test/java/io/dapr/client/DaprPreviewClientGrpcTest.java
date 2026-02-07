@@ -752,6 +752,179 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("true", capturedMetadata.get().get("rawPayload"));
   }
 
+  @SuppressWarnings("deprecation")
+  @Test
+  public void deprecatedSubscribeToEventsFluxTest() throws Exception {
+    var numEvents = 10;
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var data = "my message";
+    var started = new Semaphore(0);
+
+    doAnswer((Answer<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> observer =
+          (StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      var emitterThread = new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+
+        observer.onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+
+        for (int i = 0; i < numEvents; i++) {
+          DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response =
+              DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+                  .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                      .setId(Integer.toString(i))
+                      .setPubsubName(pubsubName)
+                      .setTopic(topicName)
+                      .setData(ByteString.copyFromUtf8("\"" + data + "\""))
+                      .setDataContentType("application/json")
+                      .build())
+                  .build();
+          observer.onNext(response);
+        }
+
+        observer.onCompleted();
+      });
+
+      emitterThread.start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 subscribeTopicEventsRequestAlpha1) {
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+          // No-op
+        }
+
+        @Override
+        public void onCompleted() {
+          // No-op
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    final AtomicInteger eventCount = new AtomicInteger(0);
+    final Semaphore gotAll = new Semaphore(0);
+
+    // Test deprecated subscribeToEvents method (delegates to subscribeToTopic)
+    var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING)
+            .doOnNext(rawData -> {
+              assertEquals(data, rawData);
+              assertTrue(rawData instanceof String);
+
+              int count = eventCount.incrementAndGet();
+
+              if (count >= numEvents) {
+                gotAll.release();
+              }
+            })
+            .subscribe();
+
+    gotAll.acquire();
+    disposable.dispose();
+
+    assertEquals(numEvents, eventCount.get());
+  }
+
+  @SuppressWarnings("deprecation")
+  @Test
+  public void deprecatedSubscribeToEventsWithMetadataTest() throws Exception {
+    var numEvents = 10;
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var data = "my message";
+    var started = new Semaphore(0);
+    var capturedMetadata = new AtomicReference<java.util.Map<String, String>>();
+
+    doAnswer((Answer<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> observer =
+          (StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      var emitterThread = new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+
+        observer.onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+
+        for (int i = 0; i < numEvents; i++) {
+          DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response =
+              DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+                  .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                      .setId(Integer.toString(i))
+                      .setPubsubName(pubsubName)
+                      .setTopic(topicName)
+                      .setData(ByteString.copyFromUtf8("\"" + data + "\""))
+                      .setDataContentType("application/json")
+                      .build())
+                  .build();
+          observer.onNext(response);
+        }
+
+        observer.onCompleted();
+      });
+
+      emitterThread.start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request) {
+          if (request.hasInitialRequest()) {
+            capturedMetadata.set(request.getInitialRequest().getMetadataMap());
+          }
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+          // No-op
+        }
+
+        @Override
+        public void onCompleted() {
+          // No-op
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    final AtomicInteger eventCount = new AtomicInteger(0);
+    final Semaphore gotAll = new Semaphore(0);
+    Map<String, String> metadata = Map.of("rawPayload", "true");
+
+    // Test deprecated subscribeToEvents method with metadata (delegates to subscribeToTopic)
+    var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING, metadata)
+            .doOnNext(rawData -> {
+              assertEquals(data, rawData);
+              assertTrue(rawData instanceof String);
+
+              int count = eventCount.incrementAndGet();
+
+              if (count >= numEvents) {
+                gotAll.release();
+              }
+            })
+            .subscribe();
+
+    gotAll.acquire();
+    disposable.dispose();
+
+    assertEquals(numEvents, eventCount.get());
+
+    // Verify metadata was passed to gRPC request
+    assertNotNull(capturedMetadata.get());
+    assertEquals("true", capturedMetadata.get().get("rawPayload"));
+  }
+
   @Test
   public void converseShouldThrowIllegalArgumentExceptionWhenComponentNameIsNull() throws Exception {
     List<ConversationInput> inputs = new ArrayList<>();
