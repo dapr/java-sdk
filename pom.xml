@@ -248,6 +248,11 @@
         <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-starter-test</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>testcontainers-dapr</artifactId>
         <version>${dapr.sdk.version}</version>
@@ -711,6 +716,7 @@
       <id>integration-tests</id>
       <modules>
         <module>sdk-tests</module>
+        <module>spring-boot-4-sdk-tests</module>
         <module>spring-boot-examples</module>
         <module>durabletask-client</module>
       </modules>
