@@ -239,6 +239,11 @@
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-starter</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-starter-test</artifactId>
         <version>${dapr.sdk.version}</version>
       </dependency>
@@ -695,6 +700,7 @@
     <module>dapr-spring</module>
     <module>examples</module>
     <module>spring-boot-examples</module>
+    <module>spring-boot-4-examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
     <module>durabletask-client</module>
