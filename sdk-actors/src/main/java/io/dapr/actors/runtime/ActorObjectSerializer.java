@@ -16,9 +16,8 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.dapr.client.ObjectSerializer;
-import io.dapr.client.domain.ConstantFailurePolicy;
-import io.dapr.client.domain.DropFailurePolicy;
 import io.dapr.client.domain.FailurePolicy;
 import io.dapr.utils.DurationUtils;
 
@@ -35,6 +34,11 @@ public class ActorObjectSerializer extends ObjectSerializer {
    * Shared Json Factory as per Jackson's documentation.
    */
   private static final JsonFactory JSON_FACTORY = new JsonFactory();
+
+  static {
+    // Configure OBJECT_MAPPER to handle Java 8 time types
+    OBJECT_MAPPER.registerModule(new JavaTimeModule());
+  }
 
   /**
    * {@inheritDoc}
@@ -102,33 +106,20 @@ public class ActorObjectSerializer extends ObjectSerializer {
   private byte[] serialize(ActorReminderParams reminder) throws IOException {
     try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
+      generator.setCodec(OBJECT_MAPPER);
       generator.writeStartObject();
       generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(reminder.getDueTime()));
       generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(reminder.getPeriod()));
       if (reminder.getData() != null) {
         generator.writeBinaryField("data", reminder.getData());
       }
+
+      // serialize failure policy
       if (reminder.getFailurePolicy() != null) {
-        generator.writeFieldName("failurePolicy");
-        generator.writeStartObject();
-
-        // Add type information for polymorphic deserialization
-        if (reminder.getFailurePolicy() instanceof DropFailurePolicy) {
-          generator.writeStringField("failurePolicyType", "DROP");
-        } else if (reminder.getFailurePolicy() instanceof ConstantFailurePolicy) {
-          generator.writeStringField("failurePolicyType", "CONSTANT");
-          ConstantFailurePolicy constantPolicy = (ConstantFailurePolicy) reminder.getFailurePolicy();
-          if (constantPolicy.getMaxRetries() != null) {
-            generator.writeNumberField("maxRetries", constantPolicy.getMaxRetries());
-          }
-          if (constantPolicy.getDurationBetweenRetries() != null) {
-            generator.writeStringField("interval",
-                DurationUtils.convertDurationToDaprFormat(constantPolicy.getDurationBetweenRetries()));
-          }
-        }
-
-        generator.writeEndObject();
+        generator.writeObjectField("failurePolicy", reminder.getFailurePolicy());
       }
+
+
       generator.writeEndObject();
       generator.close();
       writer.flush();
@@ -271,22 +262,9 @@ public class ActorObjectSerializer extends ObjectSerializer {
     JsonNode failurePolicyNode = node.get("failurePolicy");
     FailurePolicy failurePolicy = null;
     if (failurePolicyNode != null) {
-      // Try to determine the type based on the JSON structure
-      if (failurePolicyNode.has("failurePolicyType")) {
-        String policyType = failurePolicyNode.get("failurePolicyType").asText();
-        if ("DROP".equals(policyType)) {
-          failurePolicy = new DropFailurePolicy();
-        } else if ("CONSTANT".equals(policyType)) {
-          if (failurePolicyNode.has("maxRetries")) {
-            failurePolicy = new ConstantFailurePolicy(failurePolicyNode.get("maxRetries").asInt());
-          }
-          if (failurePolicyNode.has("interval")) {
-            failurePolicy = new ConstantFailurePolicy(DurationUtils
-                .convertDurationFromDaprFormat(failurePolicyNode.get("interval").asText()));
-          }
-        }
-      }
+      failurePolicy = OBJECT_MAPPER.treeToValue(failurePolicyNode, FailurePolicy.class);
     }
+
 
     return new ActorReminderParams(data, dueTime, period, failurePolicy);
   }
