@@ -653,10 +653,12 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
   ///...
 }
 ```
-The `BulkSubscriberGrpcService.java` file is responsible for implementing the processing of bulk message subscriptions. When Dapr's sidecar successfully subscribes to bulk messages, it will call `onBulkTopicEvent` and pass them as a request parameter. You can refer to the example on how to handle bulk messages and respond correctly over gPRC.
+
+The `SubscriberGrpcService.java` now handles both regular and bulk message subscriptions since bulk pubsub is now stable. When Dapr's sidecar successfully subscribes to messages, it will call either `onTopicEvent` for regular messages or `onBulkTopicEvent` for bulk messages. Below is an example of the bulk handler:
 
 ```java
-public class BulkSubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
+public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
+  // ... onTopicEvent method shown above ...
 
   @Override
   public void onBulkTopicEvent(io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkRequest request,
@@ -667,6 +669,7 @@ public class BulkSubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBa
       if (request.getEntriesCount() == 0) {
         responseObserver.onNext(responseBuilder.build());
         responseObserver.onCompleted();
+        return;
       }
 
       System.out.println("Bulk Subscriber received " + request.getEntriesCount() + " messages.");

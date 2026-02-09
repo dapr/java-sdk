@@ -16,6 +16,10 @@ package io.dapr.examples.pubsub.grpc;
 import com.google.protobuf.Empty;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.DaprAppCallbackProtos;
+import io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkRequestEntry;
+import io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkResponse;
+import io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkResponseEntry;
+import io.dapr.v1.DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
@@ -96,6 +100,45 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
       DaprAppCallbackProtos.TopicEventResponse response = DaprAppCallbackProtos.TopicEventResponse.newBuilder()
           .setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.SUCCESS)
           .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+    } catch (Throwable e) {
+      responseObserver.onError(e);
+    }
+  }
+
+  @Override
+  public void onBulkTopicEvent(DaprAppCallbackProtos.TopicEventBulkRequest request,
+      StreamObserver<TopicEventBulkResponse> responseObserver) {
+    try {
+      TopicEventBulkResponse.Builder responseBuilder = TopicEventBulkResponse.newBuilder();
+      
+      if (request.getEntriesCount() == 0) {
+        responseObserver.onNext(responseBuilder.build());
+        responseObserver.onCompleted();
+        return;
+      }
+
+      System.out.println("Bulk Subscriber received " + request.getEntriesCount() + " messages.");
+
+      for (TopicEventBulkRequestEntry entry : request.getEntriesList()) {
+        try {
+          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
+          System.out.printf("Bulk Subscriber got: %s\n", entry.getCloudEvent().getData().toStringUtf8());
+          TopicEventBulkResponseEntry.Builder responseEntryBuilder = TopicEventBulkResponseEntry
+              .newBuilder()
+              .setEntryId(entry.getEntryId())
+              .setStatusValue(TopicEventResponseStatus.SUCCESS_VALUE);
+          responseBuilder.addStatuses(responseEntryBuilder);
+        } catch (Throwable e) {
+          TopicEventBulkResponseEntry.Builder responseEntryBuilder = TopicEventBulkResponseEntry
+              .newBuilder()
+              .setEntryId(entry.getEntryId())
+              .setStatusValue(TopicEventResponseStatus.RETRY_VALUE);
+          responseBuilder.addStatuses(responseEntryBuilder);
+        }
+      }
+      TopicEventBulkResponse response = responseBuilder.build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (Throwable e) {
