@@ -162,4 +162,3 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
         .build());
   }
 }
-
