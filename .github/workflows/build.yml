@@ -104,7 +104,7 @@ jobs:
       matrix:
         java: [ 17 ]
         spring-boot-version: [  3.5.4 ]
-        spring-boot-display-version: [ 3.5.x ]
+        spring-boot-display-version: 3.5.x
         experimental: [ false ]
         include:
           - java: 17
@@ -197,12 +197,12 @@ jobs:
         /home/runner/.local/bin/toxiproxy-server --version
     - name: Clean up and install sdk
       run: ./mvnw clean install -B -q -DskipTests
-    - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
+    - name: Integration tests using spring boot 3.x version ${{ matrix.spring-boot-version }}
       id: integration_tests
       if: ${{ matrix.spring-boot-display-version == '3.5.x' }}
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
-    - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
-      id: integration_tests
+    - name: Integration tests using spring boot 4.x version ${{ matrix.spring-boot-version }}
+      id: integration_sb4_tests
       if: ${{ matrix.spring-boot-display-version == '4.0.x' }}
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-sb4-tests dependency:copy-dependencies verify
     - name: Upload failsafe test report for sdk-tests on failure
@@ -211,12 +211,24 @@ jobs:
       with:
         name: failsafe-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/failsafe-reports
+    - name: Upload failsafe test report for sb4 sdk-tests on failure
+      if: ${{ failure() && steps.integration_sb4_tests.conclusion == 'failure' }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: failsafe-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
+        path: spring-boot-4-sdk-tests/target/failsafe-reports
     - name: Upload surefire test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v6
       with:
         name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/surefire-reports
+    - name: Upload surefire test report for sdk-tests on failure
+      if: ${{ failure() && steps.integration_sb4_tests.conclusion == 'failure' }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
+        path: spring-boot-4-sdk-tests/target/surefire-reports
 
 
   publish:
