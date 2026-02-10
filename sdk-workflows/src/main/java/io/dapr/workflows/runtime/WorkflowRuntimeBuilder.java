@@ -167,8 +167,20 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(T instance) {
-    Class<T> clazz = (Class<T>) instance.getClass();
-    this.registerWorkflow(clazz.getCanonicalName(), instance, null, null);
+    var name = instance.getClass().getCanonicalName();
+
+    if (StringUtils.isEmpty(instance.getName())) {
+      this.registerWorkflow(name, instance, null, null);
+      return this;
+    }
+
+    if (StringUtils.isEmpty(instance.getVersion())) {
+      this.registerWorkflow(instance.getName(), instance, null, null);
+      return this;
+    }
+
+
+    this.registerWorkflow(instance.getName(), instance, instance.getVersion(), instance.isLatestVersion());
     return this;
   }
 
@@ -237,6 +249,9 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(T instance) {
+    if (StringUtils.isNotBlank(instance.getName())) {
+      return this.registerActivity(instance.getName(), instance);
+    }
     return this.registerActivity(instance.getClass().getCanonicalName(), instance);
   }
 

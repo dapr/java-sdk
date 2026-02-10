@@ -20,6 +20,7 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
@@ -28,7 +29,9 @@ import java.io.PrintStream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class WorkflowRuntimeBuilderTest {
   public static class TestWorkflow implements Workflow {
@@ -39,6 +42,16 @@ public class WorkflowRuntimeBuilderTest {
     }
   }
 
+  @Test
+  public void registerValidWorkflowInstances() {
+    var b = new WorkflowRuntimeBuilder();
+    assertDoesNotThrow(() -> b.registerWorkflow(new TestWorkflowWithName()));
+    assertDoesNotThrow(() -> b.registerWorkflow(new TestWorkflowWithNameAndVersion()));
+    assertDoesNotThrow(() -> b.registerWorkflow(new TestWorkflowWithNameAndVersionIsLatest()));
+    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow(new TestWorkflowWithNameAndVersion()));
+    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow(new TestWorkflowWithNameAndVersionIsLatest()));
+  }
+
   public static class TestActivity implements WorkflowActivity {
     @Override
     public Object run(WorkflowActivityContext ctx) {
@@ -47,43 +60,25 @@ public class WorkflowRuntimeBuilderTest {
   }
 
   @Test
+  public void registerValidVersionWorkflowClass() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("TestWorkflow", TestWorkflow.class, "testWorkflowV1", false));
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("TestWorkflow", TestWorkflow.class, "testWorkflowV2", true));
+  }
+
+  @Test
+  public void registerValidVersionWorkflowInstance() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("testWorkflowV1", new TestWorkflow(), "testWorkflowV1", false));
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("testWorkflowV2", new TestWorkflow(), "testWorkflowV2", true));
+  }
+
+  @Test
   public void registerValidWorkflowClass() {
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow(TestWorkflow.class));
   }
 
   @Test
-  public void registerValidVersionWorkflowClass() {
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("TestWorkflow", TestWorkflow.class,"testWorkflowV1", false));
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("TestWorkflow", TestWorkflow.class,"testWorkflowV2", true));
-  }
-
-  @Test
-  public void registerValidWorkflowInstance() {
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow(new TestWorkflow()));
-  }
-
-  @Test
-  public void registerValidVersionWorkflowInstance() {
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("testWorkflowV1", new TestWorkflow(),"testWorkflowV1", false));
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow("testWorkflowV2",new TestWorkflow(),"testWorkflowV2", true));
-  }
-
-
-  @Test
-  public void registerValidWorkflowActivityClass() {
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(TestActivity.class));
-  }
-
-  @Test
-  public void registerValidWorkflowActivityInstance() {
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(new TestActivity()));
-  }
-
-
-
-  @Test
   public void registerValidTaskActivityFactory() {
-    class A implements WorkflowActivity{
+    class A implements WorkflowActivity {
 
       @Override
       public Object run(WorkflowActivityContext ctx) {
@@ -107,8 +102,13 @@ public class WorkflowRuntimeBuilderTest {
   }
 
   @Test
+  public void registerValidWorkflowInstance() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow(new TestWorkflow()));
+  }
+
+  @Test
   public void registerValidWorkflowOrchestrator() {
-    class W implements Workflow{
+    class W implements Workflow {
 
       @Override
       public WorkflowStub create() {
@@ -145,6 +145,40 @@ public class WorkflowRuntimeBuilderTest {
 
   }
 
+
+  @Test
+  public void registerValidWorkflowActivityClass() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(TestActivity.class));
+  }
+
+  @Test
+  public void registerValidWorkflowActivityInstance() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(new TestActivity()));
+  }
+
+  @Test
+  public void loggingOutputTest() {
+    // Set the output stream for log capturing
+    ByteArrayOutputStream outStreamCapture = new ByteArrayOutputStream();
+    System.setOut(new PrintStream(outStreamCapture));
+
+    Logger testLogger = mock(Logger.class);
+
+    var runtimeBuilder = new WorkflowRuntimeBuilder(testLogger);
+    assertDoesNotThrow(() -> runtimeBuilder.registerWorkflow(TestWorkflow.class));
+    assertDoesNotThrow(() -> runtimeBuilder.registerActivity(TestActivity.class));
+
+    var runtime = runtimeBuilder.build();
+
+    verify(testLogger, times(1))
+        .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
+
+    verify(testLogger, times(1))
+        .info(eq("Registered Activity: {}"), eq("TestActivity"));
+
+    runtime.close();
+  }
+
   @Test
   public void buildTest() {
     assertDoesNotThrow(() -> {
@@ -158,26 +192,57 @@ public class WorkflowRuntimeBuilderTest {
     });
   }
 
-  @Test
-  public void loggingOutputTest() {
-    // Set the output stream for log capturing
-    ByteArrayOutputStream outStreamCapture = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(outStreamCapture));
+  public static class TestWorkflowWithName implements Workflow {
+    @Override
+    public WorkflowStub create() {
+      return ctx -> {
+      };
+    }
 
-    Logger testLogger = mock(Logger.class);
+    @Override
+    public String getName() {
+      return "TestWorkflowWithName";
+    }
+  }
 
-var runtimeBuilder =    new WorkflowRuntimeBuilder(testLogger);
-    assertDoesNotThrow(() -> runtimeBuilder.registerWorkflow(TestWorkflow.class));
-    assertDoesNotThrow(() -> runtimeBuilder.registerActivity(TestActivity.class));
+  public static class TestWorkflowWithNameAndVersion implements Workflow {
+    @Override
+    public WorkflowStub create() {
+      return ctx -> {
+      };
+    }
 
-    var runtime = runtimeBuilder.build();
+    @Override
+    public String getName() {
+      return "TestWorkflowWithNameAndVersion";
+    }
 
-    verify(testLogger, times(1))
-        .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
+    @Override
+    public String getVersion() {
+      return "TestWorkflowWithNameAndVersion";
+    }
+  }
 
-    verify(testLogger, times(1))
-        .info(eq("Registered Activity: {}"), eq("TestActivity"));
+  public static class TestWorkflowWithNameAndVersionIsLatest implements Workflow {
+    @Override
+    public WorkflowStub create() {
+      return ctx -> {
+      };
+    }
 
-    runtime.close();
+    @Override
+    public String getName() {
+      return "TestWorkflowWithNameAndVersion";
+    }
+
+    @Override
+    public String getVersion() {
+      return "1";
+    }
+
+    @Override
+    public Boolean isLatestVersion() {
+      return true;
+    }
   }
 }

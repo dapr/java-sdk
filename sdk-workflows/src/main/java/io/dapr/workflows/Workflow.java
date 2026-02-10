@@ -36,4 +36,16 @@ public interface Workflow {
 
     stub.run(ctx);
   }
+
+  default String getName() {
+    return null;
+  }
+
+  default String getVersion() {
+    return null;
+  }
+
+  default Boolean isLatestVersion() {
+    return false;
+  }
 }
