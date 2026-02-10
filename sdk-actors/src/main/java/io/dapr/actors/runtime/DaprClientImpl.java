@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static io.dapr.utils.FailurePolicyUtils.getJobFailurePolicy;
+
 /**
  * A DaprClient over HTTP for Actor's runtime.
  */
@@ -145,15 +147,21 @@ class DaprClientImpl implements DaprClient {
       String actorId,
       String reminderName,
       ActorReminderParams reminderParams) {
-    DaprActorsProtos.RegisterActorReminderRequest req =
+
+    var builder =
         DaprActorsProtos.RegisterActorReminderRequest.newBuilder()
                     .setActorType(actorType)
                     .setActorId(actorId)
                     .setName(reminderName)
                     .setData(ByteString.copyFrom(reminderParams.getData()))
                     .setDueTime(DurationUtils.convertDurationToDaprFormat(reminderParams.getDueTime()))
-                    .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()))
-                    .build();
+            .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()));
+
+    if (reminderParams.getFailurePolicy() != null) {
+      builder.setFailurePolicy(getJobFailurePolicy(reminderParams.getFailurePolicy()));
+    }
+
+    DaprActorsProtos.RegisterActorReminderRequest req = builder.build();
     return Mono.<Empty>create(it -> client.registerActorReminder(req, createStreamObserver(it))).then().then();
   }
 
