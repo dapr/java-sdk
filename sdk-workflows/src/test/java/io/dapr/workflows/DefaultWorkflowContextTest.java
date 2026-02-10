@@ -36,6 +36,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -413,6 +414,33 @@ public class DefaultWorkflowContextTest {
 
     context.callChildWorkflow(expectedName, expectedInput, String.class);
     verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, null, null, String.class);
+  }
+
+  @Test
+  public void callChildWorkflowWithAppId() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+    String expectedAppId = "remote-app";
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(expectedAppId);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+        .callSubOrchestrator(
+            eq(expectedName),
+            eq(expectedInput),
+            eq(expectedInstanceId),
+            captor.capture(),
+            eq(String.class)
+        );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    assertEquals(expectedAppId, taskOptions.getAppID());
+    assertNull(taskOptions.getRetryPolicy());
+    assertNull(taskOptions.getRetryHandler());
   }
 
   @Test
