@@ -18,6 +18,8 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
+import io.dapr.workflows.annotations.ActivityDefinition;
+import io.dapr.workflows.annotations.WorkflowDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Component;
 public class RegisterComponents {
 
   @Component
+  @WorkflowDefinition(name = "PatchVersionWorkflow")
   public static class PatchVersionWorkflowV1 implements Workflow {
 
     @Override
@@ -40,14 +43,10 @@ public class RegisterComponents {
         ctx.complete(result);
       };
     }
-
-    @Override
-    public String getName() {
-      return "PatchVersionWorkflow";
-    }
   }
 
   @Component
+  @ActivityDefinition(name = Activity1.name)
   public static class Activity1 implements WorkflowActivity {
     public static final String name = "Activity1";
     private final Logger logger = LoggerFactory.getLogger(Activity1.class);
@@ -56,25 +55,16 @@ public class RegisterComponents {
       logger.info(name + " started");
       return name;
     }
-
-    @Override
-    public String getName() {
-      return name;
-    }
   }
 
   @Component
+  @ActivityDefinition(name = Activity2.name)
   public static class Activity2 implements WorkflowActivity {
     public static final String name = "Activity2";
     private final Logger logger = LoggerFactory.getLogger(Activity2.class);
     @Override
     public Object run(WorkflowActivityContext ctx) {
       logger.info(name + " started");
-      return name;
-    }
-
-    @Override
-    public String getName() {
       return name;
     }
   }

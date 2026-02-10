@@ -45,11 +45,15 @@ public class WorkflowRuntimeBuilderTest {
   @Test
   public void registerValidWorkflowInstances() {
     var b = new WorkflowRuntimeBuilder();
-    assertDoesNotThrow(() -> b.registerWorkflow(new TestWorkflowWithName()));
-    assertDoesNotThrow(() -> b.registerWorkflow(new TestWorkflowWithNameAndVersion()));
-    assertDoesNotThrow(() -> b.registerWorkflow(new TestWorkflowWithNameAndVersionIsLatest()));
-    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow(new TestWorkflowWithNameAndVersion()));
-    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow(new TestWorkflowWithNameAndVersionIsLatest()));
+
+    assertDoesNotThrow(() -> b.registerWorkflow("TestWorkflow", new TestWorkflow(), null, null));
+    assertDoesNotThrow(() -> b.registerWorkflow("NameWithClass", TestWorkflow.class));
+//    assertDoesNotThrow(() -> b.registerWorkflow(new TestWorkflowWithNameAndVersionIsLatest()));
+
+    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow("", new TestWorkflow(), null, null));
+    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow("", TestWorkflow.class, null, null));
+    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerActivity("", new TestActivity()));
+    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerActivity("", TestActivity.class));
   }
 
   public static class TestActivity implements WorkflowActivity {
@@ -190,59 +194,5 @@ public class WorkflowRuntimeBuilderTest {
         throw new RuntimeException(e);
       }
     });
-  }
-
-  public static class TestWorkflowWithName implements Workflow {
-    @Override
-    public WorkflowStub create() {
-      return ctx -> {
-      };
-    }
-
-    @Override
-    public String getName() {
-      return "TestWorkflowWithName";
-    }
-  }
-
-  public static class TestWorkflowWithNameAndVersion implements Workflow {
-    @Override
-    public WorkflowStub create() {
-      return ctx -> {
-      };
-    }
-
-    @Override
-    public String getName() {
-      return "TestWorkflowWithNameAndVersion";
-    }
-
-    @Override
-    public String getVersion() {
-      return "TestWorkflowWithNameAndVersion";
-    }
-  }
-
-  public static class TestWorkflowWithNameAndVersionIsLatest implements Workflow {
-    @Override
-    public WorkflowStub create() {
-      return ctx -> {
-      };
-    }
-
-    @Override
-    public String getName() {
-      return "TestWorkflowWithNameAndVersion";
-    }
-
-    @Override
-    public String getVersion() {
-      return "1";
-    }
-
-    @Override
-    public Boolean isLatestVersion() {
-      return true;
-    }
   }
 }

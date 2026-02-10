@@ -19,6 +19,8 @@ import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
+import io.dapr.workflows.annotations.ActivityDefinition;
+import io.dapr.workflows.annotations.WorkflowDefinition;
 import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Component;
 public class RegisterV1Components  {
 
   @Component
+  @WorkflowDefinition(name = "FullVersionWorkflow", version = "V1", isLatest = true)
   public static class FullVersionWorkflow implements Workflow {
 
     @Override
@@ -42,24 +45,10 @@ public class RegisterV1Components  {
         ctx.complete(result);
       };
     }
-
-    @Override
-    public String getName() {
-      return "FullVersionWorkflow";
-    }
-
-    @Override
-    public String getVersion() {
-      return "V1";
-    }
-
-    @Override
-    public Boolean isLatestVersion() {
-      return true;
-    }
   }
 
   @Component
+  @ActivityDefinition(name = Activity1.name)
   public static class Activity1 implements WorkflowActivity {
     private final Logger logger = LoggerFactory.getLogger(Activity1.class);
     public static final String name = "Activity1";
@@ -68,14 +57,10 @@ public class RegisterV1Components  {
       logger.info(name + " started");
       return name;
     }
-
-    @Override
-    public String getName() {
-      return name;
-    }
   }
 
   @Component
+  @ActivityDefinition(name = Activity2.name)
   public static class Activity2 implements WorkflowActivity {
     private final Logger logger = LoggerFactory.getLogger(Activity2.class);
     public static final String name = "Activity2";
@@ -84,11 +69,5 @@ public class RegisterV1Components  {
       logger.info(name + " started");
       return name;
     }
-
-    @Override
-    public String getName() {
-      return name;
-    }
   }
-
 }

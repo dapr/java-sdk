@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Dapr Authors
+ * Copyright 2026 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,29 +11,13 @@
 limitations under the License.
 */
 
-package io.dapr.workflows;
+package io.dapr.workflows.annotations;
 
-/**
- * Common interface for workflow implementations.
- */
-public interface Workflow {
+public @interface ActivityDefinition {
   /**
-   * Executes the workflow logic.
+   * Name of the activity.
    *
-   * @return A WorkflowStub.
+   * @return the name of the activity.
    */
-  WorkflowStub create();
-
-  /**
-   * Executes the workflow logic.
-   *
-   * @param ctx provides access to methods for scheduling durable tasks and
-   *            getting information about the current
-   *            workflow instance.
-   */
-  default void run(WorkflowContext ctx) {
-    WorkflowStub stub = this.create();
-
-    stub.run(ctx);
-  }
+  String name() default "";
 }

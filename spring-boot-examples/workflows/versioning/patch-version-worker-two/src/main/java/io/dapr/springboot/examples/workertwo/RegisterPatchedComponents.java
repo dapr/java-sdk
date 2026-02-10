@@ -18,6 +18,8 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
+import io.dapr.workflows.annotations.ActivityDefinition;
+import io.dapr.workflows.annotations.WorkflowDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Component;
 public class RegisterPatchedComponents {
 
   @Component
+  @WorkflowDefinition(name = "PatchVersionWorkflow")
   public static class PatchVersionWorkflowV2 implements Workflow {
     @Override
     public WorkflowStub create() {
@@ -45,14 +48,10 @@ public class RegisterPatchedComponents {
         ctx.complete(result);
       };
     }
-
-    @Override
-    public String getName() {
-      return "PatchVersionWorkflow";
-    }
   }
 
   @Component
+  @ActivityDefinition(name = Activity1.name)
   public static class Activity1 implements WorkflowActivity {
     public static final String name = "Activity1";
     private final Logger logger = LoggerFactory.getLogger(Activity1.class);
@@ -62,14 +61,10 @@ public class RegisterPatchedComponents {
       logger.info(name + " started");
       return name;
     }
-
-    @Override
-    public String getName() {
-      return name;
-    }
   }
 
   @Component
+  @ActivityDefinition(name = Activity2.name)
   public static class Activity2 implements WorkflowActivity {
     public static final String name = "Activity2";
     private final Logger logger = LoggerFactory.getLogger(Activity2.class);
@@ -79,14 +74,10 @@ public class RegisterPatchedComponents {
       logger.info(name + " started");
       return name;
     }
-
-    @Override
-    public String getName() {
-      return name;
-    }
   }
 
   @Component
+  @ActivityDefinition(name = Activity3.name)
   public static class Activity3 implements WorkflowActivity {
     public static final String name = "Activity3";
     private final Logger logger = LoggerFactory.getLogger(Activity3.class);
@@ -96,14 +87,10 @@ public class RegisterPatchedComponents {
       logger.info(name + " started");
       return name;
     }
-
-    @Override
-    public String getName() {
-      return name;
-    }
   }
 
   @Component
+  @ActivityDefinition(name = Activity4.name)
   public static class Activity4 implements WorkflowActivity {
     public static final String name = "Activity4";
     private final Logger logger = LoggerFactory.getLogger(Activity4.class);
@@ -111,11 +98,6 @@ public class RegisterPatchedComponents {
     @Override
     public Object run(WorkflowActivityContext ctx) {
       logger.info(name + " started");
-      return name;
-    }
-
-    @Override
-    public String getName() {
       return name;
     }
   }

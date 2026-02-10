@@ -42,8 +42,4 @@ public interface WorkflowActivity {
    * @return any serializable value to be returned to the calling orchestrator.
    */
   Object run(WorkflowActivityContext ctx);
-
-  default String getName() {
-    return null;
-  }
 }
