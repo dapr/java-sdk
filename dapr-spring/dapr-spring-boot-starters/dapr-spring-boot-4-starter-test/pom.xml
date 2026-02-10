@@ -4,10 +4,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.dapr.spring</groupId>
-        <artifactId>dapr-spring-parent</artifactId>
-        <version>1.17.0-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-parent</artifactId>
+      <version>1.18.0-SNAPSHOT</version>
+      <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>dapr-spring-boot-4-starter-test</artifactId>
