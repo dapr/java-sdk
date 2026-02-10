@@ -104,12 +104,12 @@ jobs:
       matrix:
         java: [ 17 ]
         spring-boot-version: [  3.5.4 ]
-        spring-boot-display-version: 3.5.x
+        spring-boot-display-version: [ 3.5.x ]
         experimental: [ false ]
         include:
           - java: 17
-            spring-boot-version: 4.0.2
-            spring-boot-display-version: 4.0.x
+            spring-boot-version: [ 4.0.2 ]
+            spring-boot-display-version: [ 4.0.x ]
             experimental: false
     env:
       GOVER: "1.20"
