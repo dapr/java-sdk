@@ -716,7 +716,6 @@
       <id>integration-tests</id>
       <modules>
         <module>sdk-tests</module>
-        <module>spring-boot-4-sdk-tests</module>
         <module>spring-boot-examples</module>
         <module>durabletask-client</module>
       </modules>
@@ -732,6 +731,24 @@
             </plugins>
         </build>
 
+    </profile>
+    <profile>
+      <id>integration-sb4-tests</id>
+      <modules>
+        <module>spring-boot-4-sdk-tests</module>
+        <module>spring-boot-4-examples</module>
+      </modules>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 
