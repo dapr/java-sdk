@@ -13,9 +13,17 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 /**
- * Set a failure policy for the job.
+ * Set a failure policy for the job or reminder.
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = DropFailurePolicy.class, name = "DROP"),
+    @JsonSubTypes.Type(value = ConstantFailurePolicy.class, name = "CONSTANT")
+})
 public interface FailurePolicy {
   FailurePolicyType getFailurePolicyType();
 }
