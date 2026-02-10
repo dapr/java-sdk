@@ -16,11 +16,12 @@ package io.dapr.durabletask;
 import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -85,8 +86,8 @@ class SubOrchestrationCrossAppTest {
    */
   private TaskOrchestrationExecutor createExecutor(String orchestratorName, TaskOrchestration orchestration,
       String appId) {
-    HashMap<String, TaskOrchestrationFactory> factories = new HashMap<>();
-    factories.put(orchestratorName, new TaskOrchestrationFactory() {
+    TaskOrchestrationFactories factories = new TaskOrchestrationFactories();
+    factories.addOrchestration(new TaskOrchestrationFactory() {
       @Override
       public String getName() {
         return orchestratorName;
@@ -95,6 +96,16 @@ class SubOrchestrationCrossAppTest {
       @Override
       public TaskOrchestration create() {
         return orchestration;
+      }
+
+      @Override
+      public String getVersionName() {
+        return null;
+      }
+
+      @Override
+      public Boolean isLatestVersion() {
+        return false;
       }
     });
     return new TaskOrchestrationExecutor(factories, new JacksonDataConverter(), MAX_TIMER_INTERVAL, logger, appId);
