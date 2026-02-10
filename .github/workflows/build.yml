@@ -109,7 +109,7 @@ jobs:
         include:
           - java: 17
             spring-boot-version: [ 4.0.2 ]
-            spring-boot-display-version: [ 4.0.x ]
+            spring-boot-display-version: 4.0.x
             experimental: false
     env:
       GOVER: "1.20"
