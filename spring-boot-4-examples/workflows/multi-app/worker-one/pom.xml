@@ -16,11 +16,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>worker-one</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
@@ -39,7 +34,7 @@
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
-      <artifactId>dapr-spring-boot-starter-test</artifactId>
+      <artifactId>dapr-spring-boot-4-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
