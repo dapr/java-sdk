@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.consumer;
 
-import io.dapr.springboot.examples.consumer.ConsumerApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

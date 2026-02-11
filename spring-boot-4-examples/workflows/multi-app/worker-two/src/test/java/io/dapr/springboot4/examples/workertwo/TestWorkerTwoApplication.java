@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.workertwo;
 
-import io.dapr.springboot.examples.workertwo.WorkerTwoApplication;
+import io.dapr.springboot4.examples.workertwo.WorkerTwoApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

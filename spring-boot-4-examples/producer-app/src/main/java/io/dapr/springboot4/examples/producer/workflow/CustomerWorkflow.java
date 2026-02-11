@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.producer.workflow;
 
-import io.dapr.springboot.examples.producer.Customer;
+import io.dapr.springboot4.examples.producer.Customer;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import org.springframework.stereotype.Component;

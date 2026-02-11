@@ -17,7 +17,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.spring.data.repository.config.EnableDaprRepositories;
+import io.dapr.spring6.data.repository.config.EnableDaprRepositories;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

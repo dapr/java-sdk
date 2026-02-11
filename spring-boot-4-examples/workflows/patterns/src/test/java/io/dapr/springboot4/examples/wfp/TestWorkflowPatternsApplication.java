@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.wfp;
 
-import io.dapr.springboot.examples.wfp.WorkflowPatternsApplication;
+import io.dapr.springboot4.examples.wfp.WorkflowPatternsApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

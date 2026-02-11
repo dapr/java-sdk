@@ -499,6 +499,7 @@
                 <excludes>
                   <exclude>io/dapr/durabletask/**/*</exclude>
                   <exclude>io/dapr/springboot/examples/**/*</exclude>
+                  <exclude>io/dapr/springboot4/examples/**/*</exclude>
                 </excludes>
                 <rules>
                   <rule>

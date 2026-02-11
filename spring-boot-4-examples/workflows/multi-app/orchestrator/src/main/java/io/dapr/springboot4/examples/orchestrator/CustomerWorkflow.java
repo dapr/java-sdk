@@ -33,14 +33,14 @@ public class CustomerWorkflow implements Workflow {
       customer.setWorkflowId(instanceId);
       ctx.getLogger().info("Let's register the customer: {}", customer.getCustomerName());
 
-      customer = ctx.callActivity("io.dapr.springboot.examples.workerone.RegisterCustomerActivity", customer,
+      customer = ctx.callActivity("io.dapr.springboot4.examples.workerone.RegisterCustomerActivity", customer,
                 new WorkflowTaskOptions("worker-one"), Customer.class).await();
 
       ctx.getLogger().info("Let's wait for the customer: {} to request a follow up.", customer.getCustomerName());
       ctx.waitForExternalEvent("CustomerReachOut", Duration.ofMinutes(5), Customer.class).await();
 
       ctx.getLogger().info("Let's book a follow up for the customer: {}", customer.getCustomerName());
-      customer = ctx.callActivity("io.dapr.springboot.examples.workertwo.CustomerFollowupActivity",
+      customer = ctx.callActivity("io.dapr.springboot4.examples.workertwo.CustomerFollowupActivity",
                customer, new WorkflowTaskOptions("worker-two"), Customer.class).await();
 
       ctx.getLogger().info("Congratulations the customer: {} is happy!", customer.getCustomerName());

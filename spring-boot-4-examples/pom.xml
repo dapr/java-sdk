@@ -35,6 +35,22 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webmvc</artifactId>
+        <version>${springboot4.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webmvc-test</artifactId>
+        <version>${springboot4.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-restclient</artifactId>
+        <version>${springboot4.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <build>

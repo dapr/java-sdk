@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.producer;
 
-import io.dapr.springboot.examples.producer.ProducerApplication;
+import io.dapr.springboot4.examples.producer.ProducerApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

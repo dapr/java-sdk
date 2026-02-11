@@ -14,11 +14,11 @@ limitations under the License.
 package io.dapr.springboot4.examples.wfp;
 
 import io.dapr.springboot.DaprAutoConfiguration;
-import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
-import io.dapr.springboot.examples.wfp.externalevent.Decision;
-import io.dapr.springboot.examples.wfp.fanoutin.Result;
-import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
-import io.dapr.springboot.examples.wfp.timer.TimerLogService;
+import io.dapr.springboot4.examples.wfp.continueasnew.CleanUpLog;
+import io.dapr.springboot4.examples.wfp.externalevent.Decision;
+import io.dapr.springboot4.examples.wfp.fanoutin.Result;
+import io.dapr.springboot4.examples.wfp.remoteendpoint.Payload;
+import io.dapr.springboot4.examples.wfp.timer.TimerLogService;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
 import org.junit.jupiter.api.BeforeEach;

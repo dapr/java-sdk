@@ -16,8 +16,6 @@ package io.dapr.springboot4.examples.consumer;
 import io.dapr.client.DaprClient;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.springboot.DaprAutoConfiguration;
-import io.dapr.springboot.examples.consumer.Order;
-import io.dapr.springboot.examples.consumer.SubscriberRestController;
 import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

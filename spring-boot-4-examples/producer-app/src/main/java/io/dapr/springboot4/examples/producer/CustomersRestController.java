@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.springboot4.examples.producer;
 
 import io.dapr.spring.workflows.config.EnableDaprWorkflows;
-import io.dapr.springboot.examples.producer.workflow.CustomerWorkflow;
+import io.dapr.springboot4.examples.producer.workflow.CustomerWorkflow;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

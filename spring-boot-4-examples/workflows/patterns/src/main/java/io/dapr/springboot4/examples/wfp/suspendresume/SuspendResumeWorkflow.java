@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.wfp.suspendresume;
 
-import io.dapr.springboot.examples.wfp.externalevent.Decision;
+import io.dapr.springboot4.examples.wfp.externalevent.Decision;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import org.springframework.stereotype.Component;

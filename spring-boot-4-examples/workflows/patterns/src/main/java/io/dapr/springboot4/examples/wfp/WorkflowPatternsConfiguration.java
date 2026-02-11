@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.springboot4.examples.wfp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import io.dapr.springboot4.examples.wfp.continueasnew.CleanUpLog;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;

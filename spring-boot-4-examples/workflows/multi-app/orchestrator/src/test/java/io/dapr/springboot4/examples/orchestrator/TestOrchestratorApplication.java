@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.orchestrator;
 
-import io.dapr.springboot.examples.orchestrator.OrchestratorApplication;
+import io.dapr.springboot4.examples.orchestrator.OrchestratorApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

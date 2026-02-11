@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.orchestrator;
 
-import io.dapr.springboot.examples.orchestrator.Customer;
-import io.dapr.springboot.examples.orchestrator.CustomersRestController;
+import io.dapr.springboot4.examples.orchestrator.Customer;
+import io.dapr.springboot4.examples.orchestrator.CustomersRestController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

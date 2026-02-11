@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot4.examples.workerone;
 
-import io.dapr.springboot.examples.workerone.WorkerOneApplication;
+import io.dapr.springboot4.examples.workerone.WorkerOneApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
