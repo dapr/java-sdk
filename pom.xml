@@ -699,8 +699,6 @@
     <module>sdk-springboot</module>
     <module>dapr-spring</module>
     <module>examples</module>
-    <module>spring-boot-examples</module>
-    <module>spring-boot-4-examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
     <module>durabletask-client</module>
@@ -730,8 +728,8 @@
     <profile>
       <id>integration-sb4-tests</id>
       <modules>
-        <module>spring-boot-4-sdk-tests</module>
         <module>spring-boot-4-examples</module>
+        <module>spring-boot-4-sdk-tests</module>
       </modules>
       <build>
         <plugins>
