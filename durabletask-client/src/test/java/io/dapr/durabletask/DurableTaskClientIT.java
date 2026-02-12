@@ -268,13 +268,13 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(4, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[3];
+      long[] millisElapsed = new long[3];
       for (int i = 0; i < timestamps.length() - 1; i++) {
-        secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+        millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
       }
-      assertEquals(secondsElapsed[0], 3);
-      assertEquals(secondsElapsed[1], 3);
-      assertEquals(secondsElapsed[2], 1);
+      assertEquals(3000, millisElapsed[0], 50);
+      assertEquals(3000, millisElapsed[1], 50);
+      assertEquals(1000, millisElapsed[2], 50);
     }
   }
 
