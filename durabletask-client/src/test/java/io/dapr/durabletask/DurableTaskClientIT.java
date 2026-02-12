@@ -12,13 +12,13 @@ limitations under the License.
 */
 package io.dapr.durabletask;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -42,11 +42,13 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * These integration tests are designed to exercise the core, high-level features of
@@ -59,6 +61,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @Tag("integration")
 public class DurableTaskClientIT extends IntegrationTestBase {
   static final Duration defaultTimeout = Duration.ofSeconds(100);
+  private static final Logger log = LoggerFactory.getLogger(DurableTaskClientIT.class);
   // All tests that create a server should save it to this variable for proper shutdown
   private DurableTaskGrpcWorker server;
 
@@ -192,10 +195,10 @@ public class DurableTaskClientIT extends IntegrationTestBase {
                   ctx.waitForExternalEvent("HELLO", delay).await();
                 } catch (TaskCanceledException tce) {
                   if (!ctx.getIsReplaying()) {
-                    timestamps.set(counter.get(), LocalDateTime.now());
+                    var t = LocalDateTime.now();
+                    timestamps.set(counter.get(), t);
                     counter.incrementAndGet();
                   }
-
                 }
               }
             })
@@ -218,18 +221,20 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(4, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[timestamps.length()];
+      long[] millisElapsed = new long[timestamps.length()];
       for (int i = 0; i < timestamps.length() - 1; i++) {
         if (timestamps.get(i + 1) != null && timestamps.get(i) != null) {
-          secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+          millisElapsed[i] =
+              java.time.Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
         } else {
-          secondsElapsed[i] = -1;
+          millisElapsed[i] = -1;
         }
       }
-      assertEquals(2, secondsElapsed[0]);
-      assertEquals(2, secondsElapsed[1]);
-      assertEquals(2, secondsElapsed[2]);
-      assertEquals(0, secondsElapsed[3]);
+
+      assertEquals(2000, millisElapsed[0], 20);
+      assertEquals(2000, millisElapsed[1], 20);
+      assertEquals(2000, millisElapsed[2], 20);
+      assertEquals(0, millisElapsed[3]);
 
 
     }
