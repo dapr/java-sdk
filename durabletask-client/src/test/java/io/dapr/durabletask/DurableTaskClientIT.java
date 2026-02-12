@@ -17,8 +17,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -61,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("integration")
 public class DurableTaskClientIT extends IntegrationTestBase {
   static final Duration defaultTimeout = Duration.ofSeconds(100);
-  private static final Logger log = LoggerFactory.getLogger(DurableTaskClientIT.class);
   // All tests that create a server should save it to this variable for proper shutdown
   private DurableTaskGrpcWorker server;
 
@@ -195,8 +192,7 @@ public class DurableTaskClientIT extends IntegrationTestBase {
                   ctx.waitForExternalEvent("HELLO", delay).await();
                 } catch (TaskCanceledException tce) {
                   if (!ctx.getIsReplaying()) {
-                    var t = LocalDateTime.now();
-                    timestamps.set(counter.get(), t);
+                    timestamps.set(counter.get(), LocalDateTime.now());
                     counter.incrementAndGet();
                   }
                 }
