@@ -117,9 +117,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.16.5
-      DAPR_RUNTIME_VER: 1.17.0-rc.2
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.16.5/install/install.sh
+      DAPR_CLI_VER: 1.17.0-rc.2
+      DAPR_RUNTIME_VER: 1.17.0-rc.6
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.17.0-rc.2/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
