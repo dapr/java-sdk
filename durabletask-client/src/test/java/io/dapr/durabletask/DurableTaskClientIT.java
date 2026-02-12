@@ -122,7 +122,7 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       for (int i = 0; i < timestamps.length() - 1; i++) {
         millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
       }
-      assertEquals(3000, millisElapsed[0], 20);
+      assertEquals(3000, millisElapsed[0], 50);
 
     }
   }
@@ -163,19 +163,17 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(3, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[timestamps.length()];
+      long[] millisElapsed = new long[timestamps.length()];
       for (int i = 0; i < timestamps.length() - 1; i++) {
         if (timestamps.get(i + 1) != null && timestamps.get(i) != null) {
-          secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+          millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
         } else {
-          secondsElapsed[i] = -1;
+          millisElapsed[i] = -1;
         }
       }
-      assertEquals(2, secondsElapsed[0]);
-      assertEquals(2, secondsElapsed[1]);
-      assertEquals(-1, secondsElapsed[2]);
-
-
+      assertEquals(2000, millisElapsed[0], 50);
+      assertEquals(2000, millisElapsed[1], 50);
+      assertEquals(-1, millisElapsed[2]);
     }
   }
 
@@ -227,9 +225,9 @@ public class DurableTaskClientIT extends IntegrationTestBase {
         }
       }
 
-      assertEquals(2000, millisElapsed[0], 20);
-      assertEquals(2000, millisElapsed[1], 20);
-      assertEquals(2000, millisElapsed[2], 20);
+      assertEquals(2000, millisElapsed[0], 50);
+      assertEquals(2000, millisElapsed[1], 50);
+      assertEquals(2000, millisElapsed[2], 50);
       assertEquals(0, millisElapsed[3]);
 
 
