@@ -5,12 +5,12 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.dapr</groupId>
-    <artifactId>spring-boot-examples</artifactId>
-    <version>1.17.0-SNAPSHOT</version>
+    <artifactId>workflows</artifactId>
+    <version>1.18.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>workflows</artifactId>
+  <artifactId>versioning</artifactId>
   <packaging>pom</packaging>
 
   <properties>
@@ -18,9 +18,11 @@
   </properties>
 
   <modules>
-    <module>patterns</module>
-    <module>multi-app</module>
-    <module>versioning</module>
+    <module>version-orchestrator</module>
+    <module>full-version-worker-one</module>
+    <module>full-version-worker-two</module>
+    <module>patch-version-worker-one</module>
+    <module>patch-version-worker-two</module>
   </modules>
 
   <build>
