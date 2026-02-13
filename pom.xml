@@ -51,7 +51,7 @@
     <surefire.version>3.2.2</surefire.version>
     <junit-bom.version>5.11.4</junit-bom.version>
     <snakeyaml.version>2.0</snakeyaml.version>
-    <testcontainers.version>1.21.3</testcontainers.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
     <!-- Do NOT UPGRADE spring.version without checking springboot.version alignment -->
     <springboot.version>3.4.9</springboot.version>
     <springframework.version>6.2.7</springframework.version>
