@@ -663,8 +663,20 @@
           <failOnError>true</failOnError>
           <goal>site</goal>
           <notimestamp>true</notimestamp>
-          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*:io.dapr.spring6.*
+          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*
           </excludePackageNames>
+          <additionalDependencies>
+            <additionalDependency>
+              <groupId>org.springframework.data</groupId>
+              <artifactId>spring-data-commons</artifactId>
+              <version>3.4.9</version>
+            </additionalDependency>
+            <additionalDependency>
+              <groupId>org.springframework.data</groupId>
+              <artifactId>spring-data-keyvalue</artifactId>
+              <version>3.4.9</version>
+            </additionalDependency>
+          </additionalDependencies>
         </configuration>
       </plugin>
     </plugins>
