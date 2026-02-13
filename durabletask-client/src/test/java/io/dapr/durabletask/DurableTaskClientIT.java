@@ -12,13 +12,11 @@ limitations under the License.
 */
 package io.dapr.durabletask;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -42,11 +40,13 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * These integration tests are designed to exercise the core, high-level features of
@@ -118,11 +118,11 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(2, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[1];
+      long[] millisElapsed = new long[1];
       for (int i = 0; i < timestamps.length() - 1; i++) {
-        secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+        millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
       }
-      assertEquals(3, secondsElapsed[0]);
+      assertEquals(3000, millisElapsed[0], 50);
 
     }
   }
@@ -163,19 +163,17 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(3, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[timestamps.length()];
+      long[] millisElapsed = new long[timestamps.length()];
       for (int i = 0; i < timestamps.length() - 1; i++) {
         if (timestamps.get(i + 1) != null && timestamps.get(i) != null) {
-          secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+          millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
         } else {
-          secondsElapsed[i] = -1;
+          millisElapsed[i] = -1;
         }
       }
-      assertEquals(2, secondsElapsed[0]);
-      assertEquals(2, secondsElapsed[1]);
-      assertEquals(-1, secondsElapsed[2]);
-
-
+      assertEquals(2000, millisElapsed[0], 50);
+      assertEquals(2000, millisElapsed[1], 50);
+      assertEquals(-1, millisElapsed[2]);
     }
   }
 
@@ -195,7 +193,6 @@ public class DurableTaskClientIT extends IntegrationTestBase {
                     timestamps.set(counter.get(), LocalDateTime.now());
                     counter.incrementAndGet();
                   }
-
                 }
               }
             })
@@ -218,18 +215,20 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(4, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[timestamps.length()];
+      long[] millisElapsed = new long[timestamps.length()];
       for (int i = 0; i < timestamps.length() - 1; i++) {
         if (timestamps.get(i + 1) != null && timestamps.get(i) != null) {
-          secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+          millisElapsed[i] =
+              java.time.Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
         } else {
-          secondsElapsed[i] = -1;
+          millisElapsed[i] = -1;
         }
       }
-      assertEquals(2, secondsElapsed[0]);
-      assertEquals(2, secondsElapsed[1]);
-      assertEquals(2, secondsElapsed[2]);
-      assertEquals(0, secondsElapsed[3]);
+
+      assertEquals(2000, millisElapsed[0], 50);
+      assertEquals(2000, millisElapsed[1], 50);
+      assertEquals(2000, millisElapsed[2], 50);
+      assertEquals(0, millisElapsed[3]);
 
 
     }
@@ -269,13 +268,13 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(4, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[3];
+      long[] millisElapsed = new long[3];
       for (int i = 0; i < timestamps.length() - 1; i++) {
-        secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+        millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
       }
-      assertEquals(secondsElapsed[0], 3);
-      assertEquals(secondsElapsed[1], 3);
-      assertEquals(secondsElapsed[2], 1);
+      assertEquals(3000, millisElapsed[0], 50);
+      assertEquals(3000, millisElapsed[1], 50);
+      assertEquals(1000, millisElapsed[2], 50);
     }
   }
 
