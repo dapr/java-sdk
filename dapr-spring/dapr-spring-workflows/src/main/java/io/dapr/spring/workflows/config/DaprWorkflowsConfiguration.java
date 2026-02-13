@@ -13,10 +13,10 @@ limitations under the License.
 
 package io.dapr.spring.workflows.config;
 
+import io.dapr.spring.workflows.config.annotations.ActivityMetadata;
+import io.dapr.spring.workflows.config.annotations.WorkflowMetadata;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
-import io.dapr.workflows.annotations.ActivityDefinition;
-import io.dapr.workflows.annotations.WorkflowDefinition;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ public class DaprWorkflowsConfiguration implements ApplicationContextAware {
       // Get the workflowDefinition annotation from the workflow class and validate it
       // If the annotation is not present, register the instance
       // If preset register with the workflowDefinition annotation values
-      WorkflowDefinition workflowDefinition = workflow.getClass().getAnnotation(WorkflowDefinition.class);
+      WorkflowMetadata workflowDefinition = workflow.getClass().getAnnotation(WorkflowMetadata.class);
 
       if (workflowDefinition == null) {
         // No annotation present, register the instance with default behavior
@@ -73,7 +73,7 @@ public class DaprWorkflowsConfiguration implements ApplicationContextAware {
 
     for (WorkflowActivity activity :  workflowActivitiesBeans.values()) {
       LOGGER.info("Dapr Workflow Activity: '{}' registered", activity.getClass().getName());
-      ActivityDefinition activityDefinition = activity.getClass().getAnnotation(ActivityDefinition.class);
+      ActivityMetadata activityDefinition = activity.getClass().getAnnotation(ActivityMetadata.class);
       if (activityDefinition == null) {
         workflowRuntimeBuilder.registerActivity(activity);
         continue;

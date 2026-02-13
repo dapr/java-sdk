@@ -11,32 +11,23 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.annotations;
+package io.dapr.spring.workflows.config.annotations;
 
-public @interface WorkflowDefinition {
+import org.springframework.stereotype.Component;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Component
+public @interface ActivityMetadata {
   /**
-   * Name of the workflow.
-   * Required when version is specified.
+   * Name of the activity.
    *
-   * @return the name of the workflow.
+   * @return the name of the activity.
    */
   String name() default "";
-
-
-  /**
-   * Version of the workflow.
-   * When specified, name must also be provided.
-   *
-   * @return the version of the workflow.
-   */
-
-  String version() default "";
-
-  /**
-   * Specifies if the version is the latest or not.
-   * When true, the version and name must be provided.
-   *
-   * @return true if the version is the latest
-   */
-  boolean isLatest() default false;
 }
