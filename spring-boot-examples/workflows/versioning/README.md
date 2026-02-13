@@ -27,7 +27,7 @@ This app is able to run version 1 and version 2 of the workflow depending on the
 To start the applications you need to run the following commands on separate terminals, starting from the `versioning` directory.
 To start the `version-orchestrator` app run:
 ```bash
-cd orchestrator/
+cd version-orchestrator/
 mvn -Dspring-boot.run.arguments="--reuse=true" clean spring-boot:test-run
 ```
 
@@ -42,7 +42,7 @@ mvn -Dspring-boot.run.arguments="--reuse=true" clean spring-boot:test-run
 You can create new workflow instances the endpoint.
 
 ```bash
-curl -X POST localhost:8080/version/v1/full
+curl -X POST localhost:8083/version/v1/full
 ```
 
 This request will return something similar to:
@@ -83,7 +83,7 @@ mvn -Dspring-boot.run.arguments="--reuse=true" clean spring-boot:test-run
 You can create new workflow instances the endpoint.
 
 ```bash
-curl -X POST localhost:8080/version/v2/full
+curl -X POST localhost:8083/version/v2/full
 ```
 
 This request will return something similar to:
@@ -93,13 +93,13 @@ This request will return something similar to:
 With this instanceId you can raise an event with the following command:
 
 ```bash
-curl -X POST localhost:8080/version/v2/full/followup/22222222-2222-2222-2222-222222222222
+curl -X POST localhost:8083/version/v2/full/followup/22222222-2222-2222-2222-222222222222
 ```
 
 Once the event is raised, the workflow will continue and the workflow app will be completed. You can check it with:
 
 ```bash
-curl -X POST localhost:8080/version/v2/full/status/22222222-2222-2222-2222-222222222222
+curl -X POST localhost:8083/version/v2/full/status/22222222-2222-2222-2222-222222222222
 ```
 
 The result will be:
@@ -110,11 +110,11 @@ The result will be:
 To start the applications you need to run the following commands on separate terminals, starting from the `versioning` directory.
 To start the `version-orchestrator` app run:
 ```bash
-cd orchestrator/
+cd version-orchestrator/
 mvn -Dspring-boot.run.arguments="--reuse=true" clean spring-boot:test-run
 ```
 
-The `version-orchestrator` application will run on port `8080`.
+The `version-orchestrator` application will run on port `8083`.
 
 On a separate terminal, to start the `full-version-worker-1` app run:
 ```bash
@@ -125,7 +125,7 @@ mvn -Dspring-boot.run.arguments="--reuse=true" clean spring-boot:test-run
 You can create new workflow instances the endpoint.
 
 ```bash
-curl -X POST localhost:8080/version/v1/full
+curl -X POST localhost:8083/version/v1/full
 ```
 
 This request will return something similar to:
@@ -142,7 +142,7 @@ Now you can create new workflow instances with:
 You can create new workflow instances the endpoint.
 
 ```bash
-curl -X POST localhost:8080/version/v2/full
+curl -X POST localhost:8083/version/v2/full
 ```
 This will return something similar to:
 
@@ -154,15 +154,15 @@ one created with version 1 and the other with version 2.
 If you complete both instances:
 
 ```bash
-curl -X POST localhost:8080/version/v2/full/followup/11111111-1111-1111-1111-111111111111
-curl -X POST localhost:8080/version/v2/full/followup/22222222-2222-2222-2222-222222222222
+curl -X POST localhost:8083/version/v2/full/followup/11111111-1111-1111-1111-111111111111
+curl -X POST localhost:8083/version/v2/full/followup/22222222-2222-2222-2222-222222222222
 ```
 
 And get the status of the workflow instances:
 
 ```bash
-curl -X POST localhost:8080/version/v2/full/status/11111111-1111-1111-1111-111111111111
-curl -X POST localhost:8080/version/v2/full/status/22222222-2222-2222-2222-222222222222
+curl -X POST localhost:8083/version/v2/full/status/11111111-1111-1111-1111-111111111111
+curl -X POST localhost:8083/version/v2/full/status/22222222-2222-2222-2222-222222222222
 ```
 
 The result will be:
@@ -201,9 +201,9 @@ cd patch-version-worker-one/ && mvn -Dspring-boot.run.arguments="--reuse=true" c
 then you create, trigger the event and check the status:
 
 ```bash
-curl -X POST localhost:8080/version/v1/patch
-curl -X POST localhost:8080/version/v1/patch/followup/11111111-1111-1111-1111-111111111111
-curl -X POST localhost:8080/version/v1/patch/status/11111111-1111-1111-1111-111111111111
+curl -X POST localhost:8083/version/v1/patch
+curl -X POST localhost:8083/version/v1/patch/followup/11111111-1111-1111-1111-111111111111
+curl -X POST localhost:8083/version/v1/patch/status/11111111-1111-1111-1111-111111111111
 ```
 
 This will return:
@@ -212,7 +212,7 @@ This will return:
 Now start a new workflow but do not complete it:
 
 ```bash
-curl -X POST localhost:8080/version/v1/patch
+curl -X POST localhost:8083/version/v1/patch
 ```
 Save the instanceId and complete the workflow in the next step. Lets assume the instanceId is `33333333-3333-3333-3333-333333333333`.
 
@@ -226,9 +226,9 @@ cd patch-version-worker-two/ && mvn -Dspring-boot.run.arguments="--reuse=true" c
 
 Now you can create new workflow instances with:
 ```bash
-curl -X POST localhost:8080/version/v2/patch
-curl -X POST localhost:8080/version/v2/patch/followup/22222222-2222-2222-2222-222222222222
-curl -X POST localhost:8080/version/v2/patch/status/22222222-2222-2222-2222-222222222222
+curl -X POST localhost:8083/version/v2/patch
+curl -X POST localhost:8083/version/v2/patch/followup/22222222-2222-2222-2222-222222222222
+curl -X POST localhost:8083/version/v2/patch/status/22222222-2222-2222-2222-222222222222
 ```
 
 This will return:

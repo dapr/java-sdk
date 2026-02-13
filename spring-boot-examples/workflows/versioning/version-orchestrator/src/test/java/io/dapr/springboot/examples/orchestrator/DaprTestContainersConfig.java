@@ -121,7 +121,7 @@ public class DaprTestContainersConfig {
         .withPlacementContainer(daprPlacementContainer)
         .withSchedulerContainer(daprSchedulerContainer)
         .withComponent(new Component("kvstore", "state.redis", "v1", getRedisProps()))
-        .withAppPort(8080)
+        .withAppPort(8083)
         .withAppHealthCheckPath("/actuator/health")
         .withAppChannelAddress("host.testcontainers.internal")
         .dependsOn(daprPlacementContainer)

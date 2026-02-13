@@ -25,7 +25,7 @@ public class TestOrchestratorApplication {
     SpringApplication.from(VersionOrchestratorApplication::main)
         .with(DaprTestContainersConfig.class)
         .run(args);
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    org.testcontainers.Testcontainers.exposeHostPorts(8083);
   }
 
 }
