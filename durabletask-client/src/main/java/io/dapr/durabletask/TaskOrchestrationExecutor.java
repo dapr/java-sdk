@@ -329,30 +329,27 @@ final class TaskOrchestrationExecutor {
       }
 
       // Add router information for cross-app routing
-      // Router always has a source app ID from EXECUTIONSTARTED event
-      OrchestratorService.TaskRouter.Builder routerBuilder = OrchestratorService.TaskRouter.newBuilder()
-          .setSourceAppID(this.appId);
-
-      // Add target app ID if specified in options
-      if (options != null && options.hasAppID()) {
-        String targetAppId = options.getAppID();
-        OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
-            .setSourceAppID(this.appId)
-            .setTargetAppID(targetAppId)
-            .build();
-        scheduleTaskBuilder.setRouter(router);
-        this.logger.fine(() -> String.format(
-            "cross app routing detected: source=%s, target=%s",
-            this.appId, targetAppId));
+      if (this.appId != null && !this.appId.isEmpty()) {
+        // Add target app ID if specified in options
+        if (options != null && options.hasAppID()) {
+          String targetAppId = options.getAppID();
+          OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+              .setSourceAppID(this.appId)
+              .setTargetAppID(targetAppId)
+              .build();
+          scheduleTaskBuilder.setRouter(router);
+          this.logger.fine(() -> String.format(
+              "cross app routing detected: source=%s, target=%s",
+              this.appId, targetAppId));
+        }
       }
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
-        OrchestratorService.ScheduleTaskAction scheduleTaskAction = scheduleTaskBuilder.build();
         OrchestratorService.OrchestratorAction.Builder actionBuilder = OrchestratorService.OrchestratorAction
             .newBuilder()
             .setId(id)
             .setScheduleTask(scheduleTaskBuilder);
-        if (options != null && options.hasAppID()) {
+        if (this.appId != null && !this.appId.isEmpty() && options != null && options.hasAppID()) {
           String targetAppId = options.getAppID();
           OrchestratorService.TaskRouter actionRouter = OrchestratorService.TaskRouter.newBuilder()
               .setSourceAppID(this.appId)
