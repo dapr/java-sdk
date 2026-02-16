@@ -57,7 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ContextConfiguration(classes = TestDaprSpringDataConfiguration.class)
 @Testcontainers
 @Tag("testcontainers")
-@Disabled("MySQL is broken in 1.17.0-rc.2, waiting for new dapr version")
 public class MySQLDaprKeyValueTemplateIT {
   private static final String STATE_STORE_DSN = "mysql:password@tcp(mysql:3306)/";
   private static final String BINDING_DSN = "mysql:password@tcp(mysql:3306)/dapr_db";

@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>spring-boot-examples</artifactId>
-    <version>1.17.0-rc-1</version>
+    <version>1.17.0-rc-2</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -20,6 +20,7 @@
   <modules>
     <module>patterns</module>
     <module>multi-app</module>
+    <module>versioning</module>
   </modules>
 
   <build>

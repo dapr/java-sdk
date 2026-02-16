@@ -70,6 +70,7 @@ public class WorkflowRuntime implements AutoCloseable {
   public void close() {
     this.shutDownWorkerPool();
     this.closeSideCarChannel();
+    this.worker.close();
   }
 
   private void closeSideCarChannel() {

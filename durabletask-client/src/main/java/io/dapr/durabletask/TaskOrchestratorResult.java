@@ -17,6 +17,7 @@ import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 final class TaskOrchestratorResult {
 
@@ -24,10 +25,16 @@ final class TaskOrchestratorResult {
 
   private final String customStatus;
 
-  public TaskOrchestratorResult(Collection<OrchestratorService.OrchestratorAction> actions, String customStatus) {
+  private final String version;
+
+  private final List<String> patches;
+
+  public TaskOrchestratorResult(Collection<OrchestratorService.OrchestratorAction> actions,
+                                String customStatus, String version, List<String> patches) {
     this.actions = Collections.unmodifiableCollection(actions);
-    ;
     this.customStatus = customStatus;
+    this.version = version;
+    this.patches = patches;
   }
 
   public Collection<OrchestratorService.OrchestratorAction> getActions() {
@@ -36,5 +43,13 @@ final class TaskOrchestratorResult {
 
   public String getCustomStatus() {
     return this.customStatus;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public List<String> getPatches() {
+    return patches;
   }
 }

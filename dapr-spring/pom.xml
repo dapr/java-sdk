@@ -7,7 +7,7 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.17.0-rc-1</version>
+    <version>1.17.0-rc-2</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -19,12 +19,15 @@
 
   <modules>
     <module>dapr-spring-data</module>
+    <module>dapr-spring-6-data</module>
     <module>dapr-spring-messaging</module>
     <module>dapr-spring-workflows</module>
     <module>dapr-spring-boot-autoconfigure</module>
     <module>dapr-spring-boot-tests</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter</module>
+    <module>dapr-spring-boot-starters/dapr-spring-boot-4-starter</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter-test</module>
+    <module>dapr-spring-boot-starters/dapr-spring-boot-4-starter-test</module>
   </modules>
 
   <properties>
@@ -38,6 +41,11 @@
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-data</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-6-data</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
