@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.spring.boot.autoconfigure.client;
+package io.dapr.spring.boot4.autoconfigure.client;
 
 import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.runtime.ActorRuntime;
@@ -35,7 +35,7 @@ import java.util.Map;
 @AutoConfiguration
 @ConditionalOnClass(DaprClient.class)
 @EnableConfigurationProperties(DaprClientProperties.class)
-public class DaprClientAutoConfiguration {
+public class DaprClientSB4AutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(DaprConnectionDetails.class)

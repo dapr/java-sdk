@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>io.dapr.spring</groupId>
     <artifactId>dapr-spring-parent</artifactId>
@@ -10,21 +10,20 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>dapr-spring-boot-autoconfigure</artifactId>
-  <name>dapr-spring-boot-autoconfigure</name>
-  <description>Dapr Spring Boot Autoconfigure</description>
+  <artifactId>dapr-spring-boot-4-autoconfigure</artifactId>
+  <name>dapr-spring-boot-4-autoconfigure</name>
+  <description>Dapr Spring Boot 4.x Autoconfigure</description>
   <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
       <groupId>io.dapr.spring</groupId>
-      <artifactId>dapr-spring-data</artifactId>
+      <artifactId>dapr-spring-6-data</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
@@ -46,6 +45,32 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.vaadin.external.google</groupId>
+          <artifactId>android-json</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>testcontainers-dapr</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
     </dependency>
@@ -55,15 +80,11 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
@@ -72,4 +93,5 @@
       </plugin>
     </plugins>
   </build>
+
 </project>
