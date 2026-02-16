@@ -56,8 +56,8 @@ public class Subscriber {
 
   public static void main(String[] args) throws Exception {
     try (var client = new DaprClientBuilder().buildPreviewClient()) {
-      // Subscribe to events - receives raw String data directly
-      client.subscribeToEvents(PUBSUB_NAME, topicName, TypeRef.STRING)
+      // Subscribe to topic - receives raw String data directly
+      client.subscribeToTopic(PUBSUB_NAME, topicName, TypeRef.STRING)
           .doOnNext(message -> {
             System.out.println("Subscriber got: " + message);
           })
@@ -79,8 +79,8 @@ public class SubscriberCloudEvent {
 
   public static void main(String[] args) throws Exception {
     try (var client = new DaprClientBuilder().buildPreviewClient()) {
-      // Subscribe to events - receives CloudEvent<String> with full metadata
-      client.subscribeToEvents(PUBSUB_NAME, topicName, new TypeRef<CloudEvent<String>>() {})
+      // Subscribe to topic - receives CloudEvent<String> with full metadata
+      client.subscribeToTopic(PUBSUB_NAME, topicName, new TypeRef<CloudEvent<String>>() {})
           .doOnNext(cloudEvent -> {
             System.out.println("Received CloudEvent:");
             System.out.println("  ID: " + cloudEvent.getId());
@@ -101,7 +101,7 @@ public class SubscriberCloudEvent {
 You can also pass metadata to the subscription, for example to enable raw payload mode:
 
 ```java
-client.subscribeToEvents(PUBSUB_NAME, topicName, TypeRef.STRING, Map.of("rawPayload", "true"))
+client.subscribeToTopic(PUBSUB_NAME, topicName, TypeRef.STRING, Map.of("rawPayload", "true"))
     .doOnNext(message -> {
       System.out.println("Subscriber got: " + message);
     })
