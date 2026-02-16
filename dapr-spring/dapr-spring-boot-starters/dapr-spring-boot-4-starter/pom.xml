@@ -48,6 +48,10 @@
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-4-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-6-data</artifactId>
     </dependency>
     <dependency>

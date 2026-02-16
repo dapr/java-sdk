@@ -15,7 +15,37 @@
   <description>Dapr Spring Boot 4.x Autoconfigure</description>
   <packaging>jar</packaging>
 
+  <properties>
+    <springboot4.version>4.0.2</springboot4.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot4.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson</artifactId>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-6-data</artifactId>

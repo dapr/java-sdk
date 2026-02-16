@@ -18,11 +18,13 @@ import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.config.Properties;
+import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.spring.boot.properties.client.ClientPropertiesDaprConnectionDetails;
 import io.dapr.spring.boot.properties.client.DaprClientProperties;
 import io.dapr.spring.boot.properties.client.DaprConnectionDetails;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -45,8 +47,16 @@ public class DaprClientSB4AutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  DaprClientBuilder daprClientBuilder(DaprConnectionDetails daprConnectionDetails) {
+  DaprClientBuilder daprClientBuilder(DaprConnectionDetails daprConnectionDetails,
+                                      ObjectProvider<DaprObjectSerializer> serializerProvider) {
     DaprClientBuilder builder = createDaprClientBuilder();
+
+    DaprObjectSerializer serializer = serializerProvider.getIfAvailable();
+    if (serializer != null) {
+      builder.withObjectSerializer(serializer);
+      builder.withStateSerializer(serializer);
+    }
+
     String httpEndpoint = daprConnectionDetails.getHttpEndpoint();
 
     if (httpEndpoint != null) {
