@@ -11,23 +11,15 @@
 limitations under the License.
 */
 
-package io.dapr.durabletask;
+package io.dapr.springboot4.examples.producer;
 
-/**
- * Factory interface for producing {@link TaskOrchestration} implementations.
- */
-public interface TaskOrchestrationFactory {
-  /**
-   * Gets the name of the orchestration this factory creates.
-   *
-   * @return the name of the orchestration
-   */
-  String getName();
+import org.springframework.data.repository.CrudRepository;
 
-  /**
-   * Creates a new instance of {@link TaskOrchestration}.
-   *
-   * @return the created orchestration instance
-   */
-  TaskOrchestration create();
+import java.util.List;
+
+public interface OrderRepository extends CrudRepository<Order, String> {
+
+  List<Order> findByItem(String item);
+
+  List<Order> findByAmount(Integer amount);
 }

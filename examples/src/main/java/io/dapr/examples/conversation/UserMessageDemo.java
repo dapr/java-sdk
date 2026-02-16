@@ -22,12 +22,9 @@ import io.dapr.client.domain.ConversationResponseAlpha2;
 import io.dapr.client.domain.ConversationResultAlpha2;
 import io.dapr.client.domain.ConversationResultChoices;
 import io.dapr.client.domain.UserMessage;
-import io.dapr.config.Properties;
-import io.dapr.config.Property;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Map;
 
 public class UserMessageDemo {
   /**
@@ -46,18 +43,43 @@ public class UserMessageDemo {
       // Create conversation input with the user message
       ConversationInputAlpha2 daprConversationInput = new ConversationInputAlpha2(List.of(userMessage));
 
+      // Define the JSON schema for the response format
+      String responseSchema = """
+          {
+            "type": "object",
+            "properties": {
+              "greeting": {
+                "type": "string",
+                "description": "A friendly greeting response"
+              },
+              "phone_number_detected": {
+                "type": "boolean",
+                "description": "Whether a phone number was detected in the input"
+              },
+              "detected_number": {
+                "type": "string",
+                "description": "The phone number that was detected, if any"
+              }
+            },
+            "required": ["greeting", "phone_number_detected"],
+            "additionalProperties": false
+          }
+          """;
+
       // Component name is the name provided in the metadata block of the conversation.yaml file.
       Mono<ConversationResponseAlpha2> responseMono = client.converseAlpha2(new ConversationRequestAlpha2("echo",
-              List.of(daprConversationInput))
-              .setContextId("contextId")
-              .setScrubPii(true)
-              .setTemperature(1.1d));
+          List.of(daprConversationInput))
+          .setContextId("contextId")
+          .setScrubPii(true)
+          .setTemperature(1.1d).setResponseFormat(responseSchema));
 
       ConversationResponseAlpha2 response = responseMono.block();
 
       // Extract and print the conversation result
       if (response != null && response.getOutputs() != null && !response.getOutputs().isEmpty()) {
         ConversationResultAlpha2 result = response.getOutputs().get(0);
+        UsageUtils.printUsage(result);
+
         if (result.getChoices() != null && !result.getChoices().isEmpty()) {
           ConversationResultChoices choice = result.getChoices().get(0);
           if (choice.getMessage() != null && choice.getMessage().getContent() != null) {

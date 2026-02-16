@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-parent</artifactId>
+      <version>1.17.0-rc-1</version>
+      <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>dapr-spring-boot-4-starter-test</artifactId>
+    <name>dapr-spring-boot-4-starter-test</name>
+    <description>Dapr Spring Boot Starter 4.x Tests (with Testcontainers Support)</description>
+    <packaging>jar</packaging>
+
+    <properties>
+      <springboot4.version>4.0.2</springboot4.version>
+      <!-- Override JUnit version to align with Spring Boot 4.0.2 -->
+      <junit-bom.version>6.0.2</junit-bom.version>
+    </properties>
+    <dependencyManagement>
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-dependencies</artifactId>
+          <version>${springboot4.version}</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
+      </dependencies>
+    </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dapr.spring</groupId>
+            <artifactId>dapr-spring-boot-tests</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dapr</groupId>
+            <artifactId>testcontainers-dapr</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+        </plugin>
+      </plugins>
+    </build>
+</project>

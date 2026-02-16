@@ -140,6 +140,11 @@ public class DefaultWorkflowContextTest {
       public void setCustomStatus(Object status) {
 
       }
+
+      @Override
+      public boolean isPatched(String patchName) {
+        return false;
+      }
     };
     context = new DefaultWorkflowContext(mockInnerContext);
     contextWithClass = new DefaultWorkflowContext(mockInnerContext, testWorkflowContext.getClass());
@@ -416,6 +421,13 @@ public class DefaultWorkflowContextTest {
 
     context.setCustomStatus(customStatus);
     verify(mockInnerContext, times(1)).setCustomStatus(customStatus);
+
+  }
+
+  @Test
+  public void testIsPatched() {
+    context.isPatched("patch");
+    verify(mockInnerContext, times(1)).isPatched("patch");
 
   }
 

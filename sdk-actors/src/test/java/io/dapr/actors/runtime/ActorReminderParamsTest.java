@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
+import io.dapr.client.domain.ConstantFailurePolicy;
+import io.dapr.client.domain.DropFailurePolicy;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -74,5 +76,70 @@ public class ActorReminderParamsTest {
     Assertions.assertArrayEquals(original.getData(), recreated.getData());
     Assertions.assertEquals(original.getDueTime(), recreated.getDueTime());
     Assertions.assertEquals(original.getPeriod(), recreated.getPeriod());
+  }
+
+  @Test
+  public void withDropFailurePolicy() {
+    ActorReminderParams original = new ActorReminderParams("maru".getBytes(),
+        Duration.ZERO.plusMinutes(2),
+        Duration.ZERO.plusMinutes(5),
+        new DropFailurePolicy());
+    ActorReminderParams recreated = null;
+    try {
+      byte[] serialized = SERIALIZER.serialize(original);
+      recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
+    } catch (Exception e) {
+      System.out.println("The error is: " + e);
+      Assertions.fail();
+    }
+
+    Assertions.assertArrayEquals(original.getData(), recreated.getData());
+    Assertions.assertEquals(original.getDueTime(), recreated.getDueTime());
+    Assertions.assertEquals(original.getPeriod(), recreated.getPeriod());
+    Assertions.assertEquals(original.getFailurePolicy().getFailurePolicyType(), recreated.getFailurePolicy().getFailurePolicyType());
+  }
+
+  @Test
+  public void withConstantRetryFailurePolicy() {
+    ActorReminderParams original = new ActorReminderParams("maru".getBytes(),
+        Duration.ZERO.plusMinutes(2),
+        Duration.ZERO.plusMinutes(5),
+        new ConstantFailurePolicy(4));
+    ActorReminderParams recreated = null;
+    try {
+      byte[] serialized = SERIALIZER.serialize(original);
+      recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
+    } catch (Exception e) {
+      System.out.println("The error is: " + e);
+      Assertions.fail();
+    }
+
+    Assertions.assertArrayEquals(original.getData(), recreated.getData());
+    Assertions.assertEquals(original.getDueTime(), recreated.getDueTime());
+    Assertions.assertEquals(original.getPeriod(), recreated.getPeriod());
+    Assertions.assertEquals(original.getFailurePolicy().getFailurePolicyType(), recreated.getFailurePolicy().getFailurePolicyType());
+    Assertions.assertEquals(((ConstantFailurePolicy) original.getFailurePolicy()).getMaxRetries(), ((ConstantFailurePolicy) recreated.getFailurePolicy()).getMaxRetries());
+  }
+
+  @Test
+  public void withConstantIntervalFailurePolicy() {
+    ActorReminderParams original = new ActorReminderParams("maru".getBytes(),
+        Duration.ZERO.plusMinutes(2),
+        Duration.ZERO.plusMinutes(5),
+        new ConstantFailurePolicy(Duration.ofSeconds(4)));
+    ActorReminderParams recreated = null;
+    try {
+      byte[] serialized = SERIALIZER.serialize(original);
+      recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
+    } catch (Exception e) {
+      System.out.println("The error is: " + e);
+      Assertions.fail();
+    }
+
+    Assertions.assertArrayEquals(original.getData(), recreated.getData());
+    Assertions.assertEquals(original.getDueTime(), recreated.getDueTime());
+    Assertions.assertEquals(original.getPeriod(), recreated.getPeriod());
+    Assertions.assertEquals(original.getFailurePolicy().getFailurePolicyType(), recreated.getFailurePolicy().getFailurePolicyType());
+    Assertions.assertEquals(((ConstantFailurePolicy) original.getFailurePolicy()).getDurationBetweenRetries(), ((ConstantFailurePolicy) recreated.getFailurePolicy()).getDurationBetweenRetries());
   }
 }
