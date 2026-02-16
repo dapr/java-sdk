@@ -1,0 +1,16 @@
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: resiliency-messagebus
+spec:
+  policies:
+    retries:
+      pubsubRetry:
+        policy: constant
+        duration: 5ms
+        maxRetries: -1
+  targets:
+    components:
+      messagebus:
+        inbound:
+          retry: pubsubRetry
