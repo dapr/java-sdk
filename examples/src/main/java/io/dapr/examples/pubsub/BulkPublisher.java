@@ -15,7 +15,6 @@ package io.dapr.examples.pubsub;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.examples.OpenTelemetryConfig;
@@ -59,13 +58,11 @@ public class BulkPublisher {
     Tracer tracer = openTelemetrySdk.getTracer(BulkPublisher.class.getCanonicalName());
     Span span = tracer.spanBuilder("Bulk Publisher's Main").setSpanKind(SpanKind.CLIENT).startSpan();
 
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
-      DaprClient c = (DaprClient) client;
-
-      c.waitForSidecar(10000);
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
+      client.waitForSidecar(10000);
 
       try (Scope scope = span.makeCurrent()) {
-        System.out.println("Using preview client...");
+        System.out.println("Using Dapr client...");
 
         List<String> messages = new ArrayList<>();
 
