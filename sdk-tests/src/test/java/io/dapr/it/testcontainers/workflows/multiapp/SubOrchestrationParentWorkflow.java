@@ -36,7 +36,7 @@ public class SubOrchestrationParentWorkflow implements Workflow {
 
       // Call SubOrchestrationChildWorkflow on app2
       String childResult = ctx.callChildWorkflow(
-          SubOrchestrationChildWorkflow.class.getName(), input,
+          SubOrchestrationChildWorkflow.class.getName(), input, null,
           new WorkflowTaskOptions("app2"), String.class
       ).await();
 
