@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class Jackson3ObjectSerializerTest {
 
@@ -175,6 +176,225 @@ class Jackson3ObjectSerializerTest {
     byte[] data = "{\"key\":\"value\"}".getBytes();
     Map<String, String> result = serializer.deserialize(data, new TypeRef<Map<String, String>>() {});
     assertThat(result).containsEntry("key", "value");
+  }
+
+  // --- Primitive default values for null data ---
+
+  @Test
+  @DisplayName("deserialize boolean primitive with empty data should return false")
+  void deserializeBooleanPrimitiveEmpty() throws IOException {
+    boolean result = serializer.deserialize(new byte[]{}, TypeRef.BOOLEAN);
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  @DisplayName("deserialize byte primitive with null data should return 0")
+  void deserializeBytePrimitiveNull() throws IOException {
+    byte result = serializer.deserialize(null, TypeRef.BYTE);
+    assertThat(result).isEqualTo((byte) 0);
+  }
+
+  @Test
+  @DisplayName("deserialize byte primitive with empty data should return 0")
+  void deserializeBytePrimitiveEmpty() throws IOException {
+    byte result = serializer.deserialize(new byte[]{}, TypeRef.BYTE);
+    assertThat(result).isEqualTo((byte) 0);
+  }
+
+  @Test
+  @DisplayName("deserialize short primitive with null data should return 0")
+  void deserializeShortPrimitiveNull() throws IOException {
+    short result = serializer.deserialize(null, TypeRef.SHORT);
+    assertThat(result).isEqualTo((short) 0);
+  }
+
+  @Test
+  @DisplayName("deserialize short primitive with empty data should return 0")
+  void deserializeShortPrimitiveEmpty() throws IOException {
+    short result = serializer.deserialize(new byte[]{}, TypeRef.SHORT);
+    assertThat(result).isEqualTo((short) 0);
+  }
+
+  @Test
+  @DisplayName("deserialize long primitive with null data should return 0")
+  void deserializeLongPrimitiveNull() throws IOException {
+    long result = serializer.deserialize(null, TypeRef.LONG);
+    assertThat(result).isEqualTo(0L);
+  }
+
+  @Test
+  @DisplayName("deserialize long primitive with empty data should return 0")
+  void deserializeLongPrimitiveEmpty() throws IOException {
+    long result = serializer.deserialize(new byte[]{}, TypeRef.LONG);
+    assertThat(result).isEqualTo(0L);
+  }
+
+  @Test
+  @DisplayName("deserialize float primitive with null data should return 0")
+  void deserializeFloatPrimitiveNull() throws IOException {
+    float result = serializer.deserialize(null, TypeRef.FLOAT);
+    assertThat(result).isEqualTo(0f);
+  }
+
+  @Test
+  @DisplayName("deserialize float primitive with empty data should return 0")
+  void deserializeFloatPrimitiveEmpty() throws IOException {
+    float result = serializer.deserialize(new byte[]{}, TypeRef.FLOAT);
+    assertThat(result).isEqualTo(0f);
+  }
+
+  @Test
+  @DisplayName("deserialize double primitive with null data should return 0")
+  void deserializeDoublePrimitiveNull() throws IOException {
+    double result = serializer.deserialize(null, TypeRef.DOUBLE);
+    assertThat(result).isEqualTo(0d);
+  }
+
+  @Test
+  @DisplayName("deserialize double primitive with empty data should return 0")
+  void deserializeDoublePrimitiveEmpty() throws IOException {
+    double result = serializer.deserialize(new byte[]{}, TypeRef.DOUBLE);
+    assertThat(result).isEqualTo(0d);
+  }
+
+  @Test
+  @DisplayName("deserialize char primitive with null data should return MIN_VALUE")
+  void deserializeCharPrimitiveNull() throws IOException {
+    char result = serializer.deserialize(null, TypeRef.CHAR);
+    assertThat(result).isEqualTo(Character.MIN_VALUE);
+  }
+
+  @Test
+  @DisplayName("deserialize char primitive with empty data should return MIN_VALUE")
+  void deserializeCharPrimitiveEmpty() throws IOException {
+    char result = serializer.deserialize(new byte[]{}, TypeRef.CHAR);
+    assertThat(result).isEqualTo(Character.MIN_VALUE);
+  }
+
+  // --- Primitive deserialization with actual data ---
+
+  @Test
+  @DisplayName("deserialize boolean primitive with actual data should parse correctly")
+  void deserializeBooleanPrimitiveWithData() throws IOException {
+    byte[] data = "true".getBytes();
+    boolean result = serializer.deserialize(data, TypeRef.BOOLEAN);
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  @DisplayName("deserialize long primitive with actual data should parse correctly")
+  void deserializeLongPrimitiveWithData() throws IOException {
+    byte[] data = "123456789".getBytes();
+    long result = serializer.deserialize(data, TypeRef.LONG);
+    assertThat(result).isEqualTo(123456789L);
+  }
+
+  @Test
+  @DisplayName("deserialize float primitive with actual data should parse correctly")
+  void deserializeFloatPrimitiveWithData() throws IOException {
+    byte[] data = "3.14".getBytes();
+    float result = serializer.deserialize(data, TypeRef.FLOAT);
+    assertThat(result).isEqualTo(3.14f);
+  }
+
+  @Test
+  @DisplayName("deserialize double primitive with actual data should parse correctly")
+  void deserializeDoublePrimitiveWithData() throws IOException {
+    byte[] data = "3.14159".getBytes();
+    double result = serializer.deserialize(data, TypeRef.DOUBLE);
+    assertThat(result).isEqualTo(3.14159d);
+  }
+
+  @Test
+  @DisplayName("deserialize short primitive with actual data should parse correctly")
+  void deserializeShortPrimitiveWithData() throws IOException {
+    byte[] data = "123".getBytes();
+    short result = serializer.deserialize(data, TypeRef.SHORT);
+    assertThat(result).isEqualTo((short) 123);
+  }
+
+  // --- Void primitive type ---
+
+  @Test
+  @DisplayName("deserialize void primitive type with null data should return null")
+  void deserializeVoidPrimitiveNull() throws IOException {
+    assertThat(serializer.deserialize(null, TypeRef.VOID)).isNull();
+  }
+
+  @Test
+  @DisplayName("deserialize void primitive type with empty data should return null")
+  void deserializeVoidPrimitiveEmpty() throws IOException {
+    assertThat(serializer.deserialize(new byte[]{}, TypeRef.VOID)).isNull();
+  }
+
+  // --- IOException wrapping ---
+
+  @Test
+  @DisplayName("serialize invalid object should throw IOException")
+  void serializeInvalidObjectThrowsIOException() {
+    Object unserializable = new Object() {
+      // Jackson cannot serialize this because of the self-reference
+      public Object getSelf() {
+        return this;
+      }
+    };
+    assertThatThrownBy(() -> serializer.serialize(unserializable))
+        .isInstanceOf(IOException.class);
+  }
+
+  @Test
+  @DisplayName("deserialize invalid JSON should throw IOException")
+  void deserializeInvalidJsonThrowsIOException() {
+    byte[] invalidJson = "{not valid json".getBytes();
+    assertThatThrownBy(() -> serializer.deserialize(invalidJson, TypeRef.get(TestData.class)))
+        .isInstanceOf(IOException.class);
+  }
+
+  @Test
+  @DisplayName("deserialize invalid JSON for primitive should throw IOException")
+  void deserializeInvalidJsonForPrimitiveThrowsIOException() {
+    byte[] invalidJson = "not_a_number".getBytes();
+    assertThatThrownBy(() -> serializer.deserialize(invalidJson, TypeRef.INT))
+        .isInstanceOf(IOException.class);
+  }
+
+  // --- Additional edge cases ---
+
+  @Test
+  @DisplayName("deserialize null data for byte[] type should return null")
+  void deserializeNullDataForByteArray() throws IOException {
+    byte[] result = serializer.deserialize(null, TypeRef.BYTE_ARRAY);
+    assertThat(result).isNull();
+  }
+
+  @Test
+  @DisplayName("serialize integer should return JSON bytes")
+  void serializeInteger() throws IOException {
+    byte[] result = serializer.serialize(42);
+    assertThat(new String(result)).isEqualTo("42");
+  }
+
+  @Test
+  @DisplayName("serialize boolean should return JSON bytes")
+  void serializeBoolean() throws IOException {
+    byte[] result = serializer.serialize(true);
+    assertThat(new String(result)).isEqualTo("true");
+  }
+
+  @Test
+  @DisplayName("serialize list should return JSON array bytes")
+  void serializeList() throws IOException {
+    byte[] result = serializer.serialize(List.of("a", "b", "c"));
+    assertThat(new String(result)).isEqualTo("[\"a\",\"b\",\"c\"]");
+  }
+
+  @Test
+  @DisplayName("round-trip serialize and deserialize list should preserve data")
+  void roundTripList() throws IOException {
+    List<String> original = List.of("x", "y", "z");
+    byte[] serialized = serializer.serialize(original);
+    List<String> deserialized = serializer.deserialize(serialized, new TypeRef<List<String>>() {});
+    assertThat(deserialized).containsExactlyElementsOf(original);
   }
 
   public static class TestData {
