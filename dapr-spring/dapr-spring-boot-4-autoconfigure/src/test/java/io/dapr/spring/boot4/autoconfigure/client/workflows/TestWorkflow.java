@@ -1,6 +1,5 @@
 package io.dapr.spring.boot4.autoconfigure.client.workflows;
 
-import io.dapr.spring.boot.autoconfigure.client.workflows.TestActivity;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import org.springframework.beans.factory.annotation.Autowired;
