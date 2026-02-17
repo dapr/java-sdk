@@ -34,7 +34,7 @@ timeout_seconds: 180
 
 <!-- END_STEP -->
 
-By running the `spring-boot:test-run` goal, the application is loaded using the [test configurations](src/test/java/io/dapr/springboot/examples/wfp/DaprTestContainersConfig.java) 
+By running the `spring-boot:test-run` goal, the application is loaded using the [test configurations](src/test/java/io/dapr/springboot4/examples/wfp/DaprTestContainersConfig.java) 
 configured using [Testcontainers](https://testcontainers.com) to boostrap the [Dapr](https://dapr.io) sidecar and control plane.
 
 Once the application is running you can trigger the different patterns by sending the following requests: 
@@ -509,4 +509,4 @@ i.d.s.e.w.s.PerformTaskActivity          : Completing activity...
 ## Testing workflow executions
 
 Workflow execution can be tested using Testcontainers and you can find all the tests for the patterns covered in this 
-application [here](test/java/io/dapr/springboot/examples/wfp/TestWorkflowPatternsApplication.java).
+application [here](src/test/java/io/dapr/springboot4/examples/wfp/TestWorkflowPatternsApplication.java).
