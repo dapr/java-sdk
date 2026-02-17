@@ -17,6 +17,8 @@
 
   <properties>
     <springboot4.version>4.0.2</springboot4.version>
+    <!-- Override JUnit version to align with Spring Boot 4.0.2 -->
+    <junit-bom.version>6.0.2</junit-bom.version>
   </properties>
 
   <dependencyManagement>

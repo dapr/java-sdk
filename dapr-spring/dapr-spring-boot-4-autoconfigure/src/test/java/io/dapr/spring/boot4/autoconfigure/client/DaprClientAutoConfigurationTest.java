@@ -16,6 +16,7 @@ package io.dapr.spring.boot4.autoconfigure.client;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.config.Properties;
+import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.spring.boot.properties.client.DaprConnectionDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -47,6 +49,9 @@ class DaprClientAutoConfigurationTest {
 
   private DaprClientSB4AutoConfiguration configuration;
 
+  @Mock
+  private ObjectProvider<DaprObjectSerializer> serializerProvider;
+
   @Test
   void daprClientBuilder() {
     contextRunner.run(context -> assertThat(context).hasSingleBean(DaprClientBuilder.class));
@@ -69,7 +74,7 @@ class DaprClientAutoConfigurationTest {
 
     when(connectionDetails.getHttpEndpoint()).thenReturn(httpEndpoint);
 
-    configuration.daprClientBuilder(connectionDetails, null);
+    configuration.daprClientBuilder(connectionDetails, serializerProvider);
 
     verify(builder).withPropertyOverride(Properties.HTTP_ENDPOINT, httpEndpoint);
   }
@@ -81,7 +86,7 @@ class DaprClientAutoConfigurationTest {
 
     when(connectionDetails.getGrpcEndpoint()).thenReturn(grpcEndpoint);
 
-    configuration.daprClientBuilder(connectionDetails, null);
+    configuration.daprClientBuilder(connectionDetails, serializerProvider);
 
     verify(builder).withPropertyOverride(Properties.GRPC_ENDPOINT, grpcEndpoint);
   }
@@ -93,7 +98,7 @@ class DaprClientAutoConfigurationTest {
 
     when(connectionDetails.getHttpPort()).thenReturn(httpPort);
 
-    configuration.daprClientBuilder(connectionDetails, null);
+    configuration.daprClientBuilder(connectionDetails, serializerProvider);
 
     verify(builder).withPropertyOverride(Properties.HTTP_PORT, String.valueOf(httpPort));
   }
@@ -105,7 +110,7 @@ class DaprClientAutoConfigurationTest {
 
     when(connectionDetails.getGrpcPort()).thenReturn(grpcPort);
 
-    configuration.daprClientBuilder(connectionDetails, null);
+    configuration.daprClientBuilder(connectionDetails, serializerProvider);
 
     verify(builder).withPropertyOverride(Properties.GRPC_PORT, String.valueOf(grpcPort));
   }
@@ -117,7 +122,7 @@ class DaprClientAutoConfigurationTest {
 
     when(connectionDetails.getApiToken()).thenReturn(apiToken);
 
-    configuration.daprClientBuilder(connectionDetails, null);
+    configuration.daprClientBuilder(connectionDetails, serializerProvider);
 
     verify(builder).withPropertyOverride(Properties.API_TOKEN, apiToken);
   }
