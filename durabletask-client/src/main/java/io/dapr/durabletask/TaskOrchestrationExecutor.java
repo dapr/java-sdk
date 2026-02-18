@@ -340,11 +340,10 @@ final class TaskOrchestrationExecutor {
       OrchestratorService.TaskRouter router = null;
       if (hasSourceAppId() && hasTargetAppId(options)) {
         String targetAppId = options.getAppID();
-        router = OrchestratorService.TaskRouter.newBuilder()
+        scheduleTaskBuilder.setRouter(OrchestratorService.TaskRouter.newBuilder()
             .setSourceAppID(this.appId)
             .setTargetAppID(targetAppId)
-            .build();
-        scheduleTaskBuilder.setRouter(router);
+            .build());
         this.logger.fine(() -> String.format(
             "cross app routing detected: source=%s, target=%s",
             this.appId, targetAppId));
@@ -359,8 +358,11 @@ final class TaskOrchestrationExecutor {
             .newBuilder()
             .setId(id)
             .setScheduleTask(scheduleTaskBuilder);
-        if (actionRouter != null) {
-          actionBuilder.setRouter(actionRouter);
+        if (hasSourceAppId() && hasTargetAppId(options)) {
+          actionBuilder.setRouter(OrchestratorService.TaskRouter.newBuilder()
+            .setSourceAppID(this.appId)
+            .setTargetAppID(options.getAppID())
+            .build());
         }
         this.pendingActions.put(id, actionBuilder.build());
 
