@@ -12,6 +12,9 @@
   </parent>
 
   <artifactId>dapr-spring-6-data</artifactId>
+  <name>dapr-spring-data-6</name>
+  <description>Dapr Spring Data 6</description>
+  <packaging>jar</packaging>
 
   <properties>
     <springboot4.version>4.0.2</springboot4.version>
