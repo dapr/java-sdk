@@ -194,6 +194,14 @@ final class TaskOrchestrationExecutor {
       this.appId = appId;
     }
 
+    private boolean hasSourceAppId() {
+      return this.appId != null && !this.appId.isEmpty();
+    }
+
+    private boolean hasTargetAppId(TaskOptions options) {
+      return options != null && options.hasAppID();
+    }
+
     @Override
     public Instant getCurrentInstant() {
       // TODO: Throw if instant is null
@@ -329,32 +337,29 @@ final class TaskOrchestrationExecutor {
       }
 
       // Add router information for cross-app routing
-      if (this.appId != null && !this.appId.isEmpty()) {
-        // Add target app ID if specified in options
-        if (options != null && options.hasAppID()) {
-          String targetAppId = options.getAppID();
-          OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
-              .setSourceAppID(this.appId)
-              .setTargetAppID(targetAppId)
-              .build();
-          scheduleTaskBuilder.setRouter(router);
-          this.logger.fine(() -> String.format(
-              "cross app routing detected: source=%s, target=%s",
-              this.appId, targetAppId));
-        }
+      OrchestratorService.TaskRouter router = null;
+      if (hasSourceAppId() && hasTargetAppId(options)) {
+        String targetAppId = options.getAppID();
+        router = OrchestratorService.TaskRouter.newBuilder()
+            .setSourceAppID(this.appId)
+            .setTargetAppID(targetAppId)
+            .build();
+        scheduleTaskBuilder.setRouter(router);
+        this.logger.fine(() -> String.format(
+            "cross app routing detected: source=%s, target=%s",
+            this.appId, targetAppId));
       }
+
+      // Capture for use inside lambda
+      final OrchestratorService.TaskRouter actionRouter = router;
+
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
         OrchestratorService.OrchestratorAction.Builder actionBuilder = OrchestratorService.OrchestratorAction
             .newBuilder()
             .setId(id)
             .setScheduleTask(scheduleTaskBuilder);
-        if (this.appId != null && !this.appId.isEmpty() && options != null && options.hasAppID()) {
-          String targetAppId = options.getAppID();
-          OrchestratorService.TaskRouter actionRouter = OrchestratorService.TaskRouter.newBuilder()
-              .setSourceAppID(this.appId)
-              .setTargetAppID(targetAppId)
-              .build();
+        if (actionRouter != null) {
           actionBuilder.setRouter(actionRouter);
         }
         this.pendingActions.put(id, actionBuilder.build());
@@ -497,12 +502,12 @@ final class TaskOrchestrationExecutor {
       createSubOrchestrationActionBuilder.setInstanceId(instanceId);
 
       // Add router information for cross-app routing of sub-orchestrations
-      if (this.appId != null && !this.appId.isEmpty()) {
+      if (hasSourceAppId()) {
         OrchestratorService.TaskRouter.Builder routerBuilder = OrchestratorService.TaskRouter.newBuilder()
             .setSourceAppID(this.appId);
 
         // Add target app ID if specified in options
-        if (options != null && options.hasAppID()) {
+        if (hasTargetAppId(options)) {
           routerBuilder.setTargetAppID(options.getAppID());
           this.logger.fine(() -> String.format(
               "cross app sub-orchestration routing detected: source=%s, target=%s",
@@ -520,10 +525,10 @@ final class TaskOrchestrationExecutor {
             .setCreateSubOrchestration(createSubOrchestrationActionBuilder);
 
         // Set router on the OrchestratorAction for cross-app routing
-        if (this.appId != null && !this.appId.isEmpty()) {
+        if (hasSourceAppId()) {
           OrchestratorService.TaskRouter.Builder actionRouterBuilder = OrchestratorService.TaskRouter.newBuilder()
               .setSourceAppID(this.appId);
-          if (options != null && options.hasAppID()) {
+          if (hasTargetAppId(options)) {
             actionRouterBuilder.setTargetAppID(options.getAppID());
           }
           actionBuilder.setRouter(actionRouterBuilder.build());
@@ -971,7 +976,7 @@ final class TaskOrchestrationExecutor {
           .setCompleteOrchestration(builder.build());
 
       // Add router to completion action for cross-app routing back to parent
-      if (this.appId != null && !this.appId.isEmpty()) {
+      if (hasSourceAppId()) {
         actionBuilder.setRouter(
             OrchestratorService.TaskRouter.newBuilder()
                 .setSourceAppID(this.appId)
