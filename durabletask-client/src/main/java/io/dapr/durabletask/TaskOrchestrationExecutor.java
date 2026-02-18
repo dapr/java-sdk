@@ -360,9 +360,9 @@ final class TaskOrchestrationExecutor {
             .setScheduleTask(scheduleTaskBuilder);
         if (hasSourceAppId() && hasTargetAppId(options)) {
           actionBuilder.setRouter(OrchestratorService.TaskRouter.newBuilder()
-            .setSourceAppID(this.appId)
-            .setTargetAppID(options.getAppID())
-            .build());
+              .setSourceAppID(this.appId)
+              .setTargetAppID(options.getAppID())
+              .build());
         }
         this.pendingActions.put(id, actionBuilder.build());
 
