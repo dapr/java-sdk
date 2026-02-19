@@ -116,6 +116,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeMethod(
       String appId,
       String methodName,
@@ -136,6 +137,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeMethod(
       String appId,
       String methodName,
@@ -150,6 +152,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeMethod(
       String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
     return this.invokeMethod(appId, methodName, null, httpExtension, metadata, type);
@@ -159,6 +162,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeMethod(
       String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
     return this.invokeMethod(appId, methodName, null, httpExtension, metadata, TypeRef.get(clazz));
@@ -168,6 +172,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                                   TypeRef<T> type) {
     return this.invokeMethod(appId, methodName, request, httpExtension, null, type);
@@ -177,6 +182,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                                   Class<T> clazz) {
     return this.invokeMethod(appId, methodName, request, httpExtension, null, TypeRef.get(clazz));
@@ -186,6 +192,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public Mono<Void> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension) {
     return this.invokeMethod(appId, methodName, request, httpExtension, null, TypeRef.BYTE_ARRAY).then();
   }
@@ -194,6 +201,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public Mono<Void> invokeMethod(
       String appId, String methodName, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
     return this.invokeMethod(appId, methodName, request, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
@@ -203,6 +211,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public Mono<Void> invokeMethod(
       String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata) {
     return this.invokeMethod(appId, methodName, null, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
@@ -212,6 +221,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public Mono<byte[]> invokeMethod(
       String appId, String methodName, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
     return this.invokeMethod(appId, methodName, request, httpExtension, metadata, TypeRef.BYTE_ARRAY);
@@ -221,6 +231,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public Mono<Void> invokeBinding(String bindingName, String operation, Object data) {
     return this.invokeBinding(bindingName, operation, data, null, TypeRef.BYTE_ARRAY).then();
   }
@@ -229,6 +240,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public Mono<byte[]> invokeBinding(String bindingName, String operation, byte[] data, Map<String, String> metadata) {
     return this.invokeBinding(bindingName, operation, data, metadata, TypeRef.BYTE_ARRAY);
   }
@@ -237,6 +249,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, TypeRef<T> type) {
     return this.invokeBinding(bindingName, operation, data, null, type);
   }
@@ -245,6 +258,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, Class<T> clazz) {
     return this.invokeBinding(bindingName, operation, data, null, TypeRef.get(clazz));
   }
@@ -253,6 +267,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeBinding(
       String bindingName, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
     InvokeBindingRequest request = new InvokeBindingRequest(bindingName, operation)
@@ -266,6 +281,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public <T> Mono<T> invokeBinding(
       String bindingName, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
     return this.invokeBinding(bindingName, operation, data, metadata, TypeRef.get(clazz));
@@ -275,6 +291,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public Mono<Void> invokeBinding(InvokeBindingRequest request) {
     return this.invokeBinding(request, TypeRef.VOID);
   }
