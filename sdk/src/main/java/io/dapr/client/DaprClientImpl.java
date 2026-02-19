@@ -677,7 +677,6 @@ public class DaprClientImpl extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  @Deprecated
   public <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
     try {
       final String name = request.getName();
