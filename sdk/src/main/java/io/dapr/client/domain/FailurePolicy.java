@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 /**
  * Set a failure policy for the job or reminder.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "failurePolicyType", include = JsonTypeInfo.As.EXISTING_PROPERTY)
 @JsonSubTypes({
     @JsonSubTypes.Type(value = DropFailurePolicy.class, name = "DROP"),
     @JsonSubTypes.Type(value = ConstantFailurePolicy.class, name = "CONSTANT")
