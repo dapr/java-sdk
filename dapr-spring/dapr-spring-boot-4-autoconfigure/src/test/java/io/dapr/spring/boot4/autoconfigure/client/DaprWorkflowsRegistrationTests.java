@@ -1,7 +1,7 @@
-package io.dapr.spring.boot.autoconfigure.client;
+package io.dapr.spring.boot4.autoconfigure.client;
 
-import io.dapr.spring.boot.autoconfigure.client.workflows.TestActivity;
-import io.dapr.spring.boot.autoconfigure.client.workflows.TestWorkflow;
+import io.dapr.spring.boot4.autoconfigure.client.workflows.TestActivity;
+import io.dapr.spring.boot4.autoconfigure.client.workflows.TestWorkflow;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import org.junit.jupiter.api.Assertions;
@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 
-@SpringBootTest(classes = {WorkflowTestApplication.class, DaprClientAutoConfiguration.class, TestActivity.class, TestWorkflow.class})
+@SpringBootTest(classes = {WorkflowTestApplication.class, DaprClientSB4AutoConfiguration.class, TestActivity.class, TestWorkflow.class})
 public class DaprWorkflowsRegistrationTests {
 
   @Autowired
