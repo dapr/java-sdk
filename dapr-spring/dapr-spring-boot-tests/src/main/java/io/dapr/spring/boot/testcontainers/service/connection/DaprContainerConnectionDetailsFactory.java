@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.spring.boot.testcontainers.service.connection;
 
-import io.dapr.spring.boot.autoconfigure.client.DaprConnectionDetails;
+import io.dapr.spring.boot.properties.client.DaprConnectionDetails;
 import io.dapr.testcontainers.DaprContainer;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
