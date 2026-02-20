@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.spring.boot.autoconfigure.statestore;
+package io.dapr.spring.boot.properties.statestore;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
