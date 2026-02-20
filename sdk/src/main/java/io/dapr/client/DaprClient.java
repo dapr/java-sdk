@@ -268,7 +268,10 @@ public interface DaprClient extends AutoCloseable {
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @return A Mono Plan of type Void.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   Mono<Void> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                           Map<String, String> metadata);
 
@@ -281,7 +284,10 @@ public interface DaprClient extends AutoCloseable {
    * @param httpExtension Additional fields that are needed if the receiving app is listening on
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @return A Mono Plan of type Void.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   Mono<Void> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension);
 
   /**
@@ -293,7 +299,10 @@ public interface DaprClient extends AutoCloseable {
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @return A Mono Plan of type Void.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   Mono<Void> invokeMethod(String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata);
 
   /**
@@ -306,7 +315,10 @@ public interface DaprClient extends AutoCloseable {
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @return A Mono Plan of type byte[].
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   Mono<byte[]> invokeMethod(String appId, String methodName, byte[] request, HttpExtension httpExtension,
                             Map<String, String> metadata);
 
@@ -317,7 +329,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type                 The Type needed as return for the call.
    * @param <T>                  The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type);
 
   /**
@@ -327,7 +342,10 @@ public interface DaprClient extends AutoCloseable {
    * @param operation The operation to be performed by the binding request processor.
    * @param data      The data to be processed, use byte[] to skip serialization.
    * @return an empty Mono.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for binding invocation instead.
    */
+  @Deprecated
   Mono<Void> invokeBinding(String bindingName, String operation, Object data);
 
   /**
@@ -338,7 +356,10 @@ public interface DaprClient extends AutoCloseable {
    * @param data      The data to be processed, skipping serialization.
    * @param metadata  The metadata map.
    * @return a Mono plan of type byte[].
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for binding invocation instead.
    */
+  @Deprecated
   Mono<byte[]> invokeBinding(String bindingName, String operation, byte[] data, Map<String, String> metadata);
 
   /**
@@ -350,7 +371,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type      The type being returned.
    * @param <T>       The type of the return
    * @return a Mono plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for binding invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, TypeRef<T> type);
 
   /**
@@ -362,7 +386,10 @@ public interface DaprClient extends AutoCloseable {
    * @param clazz     The type being returned.
    * @param <T>       The type of the return
    * @return a Mono plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for binding invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, Class<T> clazz);
 
   /**
@@ -375,7 +402,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type      The type being returned.
    * @param <T>       The type of the return
    * @return a Mono plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for binding invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, Map<String, String> metadata,
                             TypeRef<T> type);
 
@@ -389,7 +419,10 @@ public interface DaprClient extends AutoCloseable {
    * @param clazz     The type being returned.
    * @param <T>       The type of the return
    * @return a Mono plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for binding invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, Map<String, String> metadata,
                             Class<T> clazz);
 
@@ -398,7 +431,10 @@ public interface DaprClient extends AutoCloseable {
    *
    * @param request The binding invocation request.
    * @return a Mono with void.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for binding invocation instead.
    */
+  @Deprecated
   Mono<Void> invokeBinding(InvokeBindingRequest request);
 
   /**
@@ -408,7 +444,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type    The type being returned.
    * @param <T>     The type of the return
    * @return a Mono plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for binding invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type);
 
   /**
