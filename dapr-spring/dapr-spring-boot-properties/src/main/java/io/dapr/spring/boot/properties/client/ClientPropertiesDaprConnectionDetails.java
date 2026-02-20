@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.spring.boot.autoconfigure.client;
+package io.dapr.spring.boot.properties.client;
 
 public class ClientPropertiesDaprConnectionDetails implements DaprConnectionDetails {
 
