@@ -53,6 +53,16 @@ public class SubscriberController {
     return messagesByTopic.getOrDefault(topic, Collections.emptyList());
   }
 
+  @PostMapping(path = "/messages/clear")
+  public void clearMessages() {
+    messagesByTopic.clear();
+    messagesReceivedBulkPublishTopic.clear();
+    messagesReceivedTestingTopic.clear();
+    messagesReceivedTestingTopicV2.clear();
+    messagesReceivedTestingTopicV3.clear();
+    responsesReceivedTestingTopicBulkSub.clear();
+  }
+
   private static final List<CloudEvent> messagesReceivedBulkPublishTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
