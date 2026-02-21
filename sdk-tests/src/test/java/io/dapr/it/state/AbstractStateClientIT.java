@@ -27,7 +27,6 @@ import io.dapr.client.domain.query.Query;
 import io.dapr.client.domain.query.Sorting;
 import io.dapr.client.domain.query.filters.EqFilter;
 import io.dapr.exceptions.DaprException;
-import io.dapr.it.BaseIT;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
@@ -50,7 +49,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Common test cases for Dapr client (GRPC and HTTP).
  */
-public abstract class AbstractStateClientIT extends BaseIT {
+public abstract class AbstractStateClientIT {
+
+  protected static final String STATE_STORE_NAME = "statestore";
+  protected static final String QUERY_STATE_STORE = "mongo-statestore";
+
   private static final Logger logger = Logger.getLogger(AbstractStateClientIT.class.getName());
 
   @Test

@@ -1,19 +1,23 @@
 package io.dapr.it.tracing.grpc;
 
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
-import io.dapr.it.AppRun;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
 import io.dapr.it.tracing.Validation;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprProtocol;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 
@@ -21,44 +25,63 @@ import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry;
 import static io.dapr.it.tracing.OpenTelemetry.getReactorContext;
 
-public class TracingIT extends BaseIT {
+@Testcontainers
+@Tag("testcontainers")
+public class TracingIT {
 
-    /**
-     * Run of a Dapr application.
-     */
-    private DaprRun daprRun = null;
+  private static final String APP_ID = "tracingitgrpc-service";
 
-    @BeforeEach
-    public void setup() throws Exception {
-        daprRun = startDaprApp(
-          TracingIT.class.getSimpleName() + "grpc",
-          Service.SUCCESS_MESSAGE,
-          Service.class,
-          AppRun.AppProtocol.GRPC,  // appProtocol
-          60000);
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory
+      .createForSpringBootTest(APP_ID)
+      .withAppProtocol(DaprProtocol.GRPC);
 
-        daprRun.waitForAppHealth(10000);
+  private DaprClient daprClient;
+
+  @BeforeAll
+  public static void startGrpcApp() throws Exception {
+    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
+    Thread appThread = new Thread(() -> {
+      try {
+        Service.main(new String[] {String.valueOf(DAPR_CONTAINER.getAppPort())});
+      } catch (Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    });
+    appThread.setDaemon(true);
+    appThread.start();
+    Thread.sleep(1000);
+  }
+
+  @BeforeEach
+  public void setup() {
+    daprClient = new io.dapr.client.DaprClientBuilder()
+        .withPropertyOverride(io.dapr.config.Properties.HTTP_ENDPOINT, "http://localhost:" + DAPR_CONTAINER.getHttpPort())
+        .withPropertyOverride(io.dapr.config.Properties.GRPC_ENDPOINT, "http://localhost:" + DAPR_CONTAINER.getGrpcPort())
+        .build();
+    daprClient.waitForSidecar(10000).block();
+  }
+
+  @AfterEach
+  public void tearDown() throws Exception {
+    daprClient.close();
+  }
+
+  @Test
+  public void testInvoke() throws Exception {
+    OpenTelemetry openTelemetry = createOpenTelemetry("service over grpc");
+    Tracer tracer = openTelemetry.getTracer("grpc integration test tracer");
+    String spanName = UUID.randomUUID().toString();
+    Span span = tracer.spanBuilder(spanName).setSpanKind(SpanKind.CLIENT).startSpan();
+
+    try (Scope scope = span.makeCurrent()) {
+      SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
+      daprClient.invokeMethod(APP_ID, "sleepOverGRPC", req.toByteArray(), HttpExtension.POST)
+          .contextWrite(getReactorContext(openTelemetry))
+          .block();
     }
 
-    @Test
-    public void testInvoke() throws Exception {
-        OpenTelemetry openTelemetry = createOpenTelemetry("service over grpc");
-        Tracer tracer = openTelemetry.getTracer("grpc integration test tracer");
-        String spanName = UUID.randomUUID().toString();
-        Span span = tracer.spanBuilder(spanName).setSpanKind(SpanKind.CLIENT).startSpan();
-
-        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
-            client.waitForSidecar(10000).block();
-            try (Scope scope = span.makeCurrent()) {
-                SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
-                client.invokeMethod(daprRun.getAppName(), "sleepOverGRPC", req.toByteArray(), HttpExtension.POST)
-                    .contextWrite(getReactorContext(openTelemetry))
-                    .block();
-            }
-        }
-
-        span.end();
-
-        Validation.validate(spanName, "calllocal/tracingitgrpc-service/sleepovergrpc");
-    }
+    span.end();
+    Validation.validate(spanName, "calllocal/tracingitgrpc-service/sleepovergrpc");
+  }
 }

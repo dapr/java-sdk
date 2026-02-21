@@ -14,15 +14,29 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.BaseIT;
 import io.dapr.it.actors.services.springboot.DemoActor;
-import io.dapr.it.actors.services.springboot.DemoActorService;
+import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.it.actors.services.springboot.DaprApplication;
+import io.dapr.it.actors.services.springboot.DemoActorImpl;
+import io.dapr.it.testcontainers.actors.TestDaprActorsConfiguration;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
+import io.dapr.testcontainers.internal.DaprSidecarContainer;
+import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
+import io.dapr.testcontainers.wait.strategy.DaprWait;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.it.Retry.callWithRetry;
@@ -30,24 +44,40 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ActivationDeactivationIT extends BaseIT {
+@DaprSpringBootTest(classes = {DaprApplication.class, TestDaprActorsConfiguration.class})
+public class ActivationDeactivationIT {
 
-  private static Logger logger = LoggerFactory.getLogger(ActivationDeactivationIT.class);
+  private static final Logger logger = LoggerFactory.getLogger(ActivationDeactivationIT.class);
+
+  @DaprSidecarContainer
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory.createForSpringBootTest("activation-deactivation-it")
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()));
+
+  @Autowired
+  private ActorClient actorClient;
+
+  @Autowired
+  private ActorRuntime actorRuntime;
+
+  @BeforeEach
+  void setUp() {
+    DemoActorImpl.ACTIVE_ACTOR.clear();
+    actorRuntime.getConfig().setActorIdleTimeout(Duration.ofSeconds(5));
+    actorRuntime.getConfig().setActorScanInterval(Duration.ofSeconds(2));
+    actorRuntime.getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(10));
+    actorRuntime.getConfig().setDrainBalancedActors(true);
+    actorRuntime.registerActor(DemoActorImpl.class);
+    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
+    DaprWait.forActors().waitUntilReady(DAPR_CONTAINER);
+  }
 
   @Test
   public void activateInvokeDeactivate() throws Exception {
-    // The call below will fail if service cannot start successfully.
-    var run = startDaprApp(
-        ActivationDeactivationIT.class.getSimpleName(),
-        DemoActorService.SUCCESS_MESSAGE,
-        DemoActorService.class,
-        true,
-        60000);
-
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     logger.debug("Creating proxy builder");
-    ActorProxyBuilder<DemoActor> proxyBuilder
-        = new ActorProxyBuilder(DemoActor.class, deferClose(run.newActorClient()));
+    ActorProxyBuilder<DemoActor> proxyBuilder = new ActorProxyBuilder<>(DemoActor.class, actorClient);
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     logger.debug("Building proxy");

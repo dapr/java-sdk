@@ -22,6 +22,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
@@ -60,6 +61,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
@@ -132,8 +134,11 @@ public class DaprPubSubIT {
 
 
   @BeforeEach
-  public void setUp() {
+  public void setUp() throws Exception {
     org.testcontainers.Testcontainers.exposeHostPorts(PORT);
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      client.invokeMethod(PUBSUB_APP_ID, "messages/clear", null, HttpExtension.POST, Void.class).block();
+    }
   }
 
   @Test
@@ -587,6 +592,41 @@ public class DaprPubSubIT {
           actual.add(message.getData());
         }
         assertThat(values).containsAll(actual);
+      }, 2000);
+    }
+  }
+
+  @Test
+  @DisplayName("Should bulk subscribe successfully")
+  public void testPubSubBulkSubscribe() throws Exception {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d on topic %s", i, "topicBulkSub");
+        client.publishEvent(PUBSUB_NAME, "topicBulkSub", message).block();
+      }
+    }
+
+    Thread.sleep(5000);
+
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      callWithRetry(() -> {
+        List<?> messages = client.invokeMethod(
+            PUBSUB_APP_ID,
+            "messages/topicBulkSub",
+            null,
+            HttpExtension.GET,
+            List.class).block();
+
+        assertThat(messages).isNotNull().isNotEmpty();
+        List<String> allStatuses = messages.stream()
+            .flatMap(message -> ((List<?>) ((Map<?, ?>) message).get("statuses")).stream())
+            .map(statusEntry -> String.valueOf(((Map<?, ?>) statusEntry).get("status")))
+            .collect(Collectors.toList());
+
+        assertThat(allStatuses).hasSize(NUM_MESSAGES);
+        for (String status : allStatuses) {
+          assertThat(status).isEqualTo(BulkSubscribeAppResponseStatus.SUCCESS.name());
+        }
       }, 2000);
     }
   }

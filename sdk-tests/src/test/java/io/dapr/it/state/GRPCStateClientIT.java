@@ -14,30 +14,71 @@ limitations under the License.
 package io.dapr.it.state;
 
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
-import io.dapr.it.DaprRun;
+import io.dapr.it.testcontainers.DaprClientFactory;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Collections;
+import java.util.Map;
 
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
 /**
  * Test State GRPC DAPR capabilities using a DAPR instance with an empty service running
  */
+@Testcontainers
+@Tag("testcontainers")
 public class GRPCStateClientIT extends AbstractStateClientIT {
 
-  private static DaprRun daprRun;
+  private static final Network NETWORK = Network.newNetwork();
+
+  @Container
+  private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
+      .withNetwork(NETWORK)
+      .withNetworkAliases("redis");
+
+  @Container
+  private static final GenericContainer<?> MONGO = new GenericContainer<>("mongo:7")
+      .withNetwork(NETWORK)
+      .withNetworkAliases("mongo");
+
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+      .withNetwork(NETWORK)
+      .withAppName("grpcstateclientit")
+      .withComponent(new Component(
+          STATE_STORE_NAME,
+          "state.redis",
+          "v1",
+          Map.of(
+              "redisHost", "redis:6379",
+              "redisPassword", "",
+              "actorStateStore", "true")))
+      .withComponent(new Component(
+          QUERY_STATE_STORE,
+          "state.mongodb",
+          "v1",
+          Map.of(
+              "host", "mongo:27017",
+              "databaseName", "local",
+              "collectionName", "testCollection")));
 
   private static DaprClient daprClient;
 
   @BeforeAll
   public static void init() throws Exception {
-    daprRun = startDaprApp(GRPCStateClientIT.class.getSimpleName(), 5000);
-    daprClient = daprRun.newDaprClientBuilder().build();
+    daprClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
+    daprClient.waitForSidecar(10000).block();
   }
 
   @AfterAll
