@@ -14,44 +14,64 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.config.Properties;
 import io.dapr.it.actors.app.MyActor;
-import io.dapr.it.actors.app.MyActorService;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import io.dapr.it.actors.app.TestApplication;
+import io.dapr.it.testcontainers.actors.TestDaprActorsConfiguration;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
+import io.dapr.testcontainers.internal.DaprSidecarContainer;
+import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
+import io.dapr.testcontainers.wait.strategy.DaprWait;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprExceptionSubstring;
 
+@DaprSpringBootTest(classes = {
+    TestApplication.class,
+    TestDaprActorsConfiguration.class,
+    MyActorRuntimeRegistrationConfiguration.class
+})
+public class ActorExceptionIT {
 
-public class ActorExceptionIT extends BaseIT {
+  private static final Logger logger = LoggerFactory.getLogger(ActorExceptionIT.class);
 
-  private static Logger logger = LoggerFactory.getLogger(ActorExceptionIT.class);
+  @DaprSidecarContainer
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory.createForSpringBootTest("actor-exception-it")
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()));
 
-  private static DaprRun run;
+  @Autowired
+  private ActorClient actorClient;
 
-  @BeforeAll
-  public static void start() throws Exception {
-    // The call below will fail if service cannot start successfully.
-    run = startDaprApp(
-        ActorExceptionIT.class.getSimpleName(),
-        MyActorService.SUCCESS_MESSAGE,
-        MyActorService.class,
-        true,
-        60000);
+  @BeforeEach
+  public void setUp() {
+    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
+    DaprWait.forActors().waitUntilReady(DAPR_CONTAINER);
+  }
+
+  private ActorClient newActorClient(Map<String, String> metadata) {
+    return new ActorClient(new Properties(Map.of(
+        "dapr.http.endpoint", "http://127.0.0.1:" + DAPR_CONTAINER.getHttpPort(),
+        "dapr.grpc.endpoint", "127.0.0.1:" + DAPR_CONTAINER.getGrpcPort())), metadata, null);
   }
 
   @Test
   public void exceptionTest() throws Exception {
     ActorProxyBuilder<MyActor> proxyBuilder =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient()));
+        new ActorProxyBuilder<>("MyActorTest", MyActor.class, actorClient);
     MyActor proxy = proxyBuilder.build(new ActorId("1"));
 
     callWithRetry(() -> {
@@ -66,15 +86,17 @@ public class ActorExceptionIT extends BaseIT {
   public void exceptionDueToMetadataTest() throws Exception {
     // Setting this HTTP header via actor metadata will cause the Actor HTTP server to error.
     Map<String, String> metadata = Map.of("Content-Length", "9999");
-    ActorProxyBuilder<MyActor> proxyBuilderMetadataOverride =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient(metadata)));
+    try (ActorClient actorClientWithMetadata = newActorClient(metadata)) {
+      ActorProxyBuilder<MyActor> proxyBuilderMetadataOverride =
+          new ActorProxyBuilder<>("MyActorTest", MyActor.class, actorClientWithMetadata);
 
-    MyActor proxyWithMetadata = proxyBuilderMetadataOverride.build(new ActorId("2"));
-    callWithRetry(() -> {
-      assertThrowsDaprExceptionSubstring(
-          "INTERNAL",
-          "ContentLength=9999 with Body length 13",
-          () -> proxyWithMetadata.say("hello world"));
-    }, 10000);
+      MyActor proxyWithMetadata = proxyBuilderMetadataOverride.build(new ActorId("2"));
+      callWithRetry(() -> {
+        assertThrowsDaprExceptionSubstring(
+            "INTERNAL",
+            "ContentLength=9999 with Body length 13",
+            () -> proxyWithMetadata.say("hello world"));
+      }, 10000);
+    }
   }
 }
