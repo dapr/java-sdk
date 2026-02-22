@@ -44,8 +44,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,12 +72,12 @@ public class ActorTurnBasedConcurrencyIT {
 
   private static final String ACTOR_TYPE = "MyActorTest";
 
-  private static final String REMINDER_NAME = UUID.randomUUID().toString();
-
-  private static final String ACTOR_ID = "1";
-
   @Autowired
   private ActorClient actorClient;
+
+  private String reminderName;
+
+  private String actorId;
 
   @BeforeEach
   public void setUp() {
@@ -84,16 +86,22 @@ public class ActorTurnBasedConcurrencyIT {
   }
 
   @AfterEach
-  public void cleanUpTestCase() {
+  public void cleanUpTestCase() throws Exception {
+    if (actorId == null || reminderName == null) {
+      return;
+    }
+
     // Delete the reminder in case the test failed, otherwise it may interfere with future tests since it is persisted.
     var channel = buildManagedChannel();
     try {
-      System.out.println("Invoking during cleanup");
-      DaprClientHttpUtils.unregisterActorReminder(channel, ACTOR_TYPE, ACTOR_ID, REMINDER_NAME);
-    } catch (Exception e) {
-      e.printStackTrace();
+      String cleanupActorId = actorId;
+      String cleanupReminderName = reminderName;
+      callWithRetry(() -> DaprClientHttpUtils.unregisterActorReminder(
+          channel, ACTOR_TYPE, cleanupActorId, cleanupReminderName), 10000);
     } finally {
       channel.shutdown();
+      actorId = null;
+      reminderName = null;
     }
   }
 
@@ -108,14 +116,15 @@ public class ActorTurnBasedConcurrencyIT {
    */
   @Test
   public void invokeOneActorMethodReminderAndTimer() throws Exception {
-    System.out.println("Starting test 'actorTest1'");
-    String actorType="MyActorTest";
+    String actorType = ACTOR_TYPE;
+    actorId = UUID.randomUUID().toString();
+    reminderName = UUID.randomUUID().toString();
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
         new ActorProxyBuilder(actorType, ActorProxy.class, actorClient);
     logger.debug("Creating actorId");
-    ActorId actorId1 = new ActorId(ACTOR_ID);
+    ActorId actorId1 = new ActorId(actorId);
     logger.debug("Building proxy");
     ActorProxy proxy = proxyBuilder.build(actorId1);
 
@@ -131,22 +140,22 @@ public class ActorTurnBasedConcurrencyIT {
 
     // invoke a bunch of calls in parallel to validate turn-based concurrency
     logger.debug("Invoking an actor method 'say' in parallel");
-    List<String> sayMessages = new ArrayList<String>();
+    List<String> sayMessages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       sayMessages.add("hello" + i);
     }
 
-    sayMessages.parallelStream().forEach( i -> {
+    sayMessages.parallelStream().forEach(i -> {
       // the actor method called below should reverse the input
       String msg = "message" + i;
       String reversedString = new StringBuilder(msg).reverse().toString();
       String output = proxy.invokeMethod("say", "message" + i, String.class).block();
-      assertTrue(reversedString.equals(output));
+      assertEquals(reversedString, output);
       expectedSayMethodInvocations.incrementAndGet();
     });
 
-    logger.debug("Calling method to register reminder named " + REMINDER_NAME);
-    proxy.invokeMethod("startReminder", REMINDER_NAME).block();
+    logger.debug("Calling method to register reminder named {}", reminderName);
+    proxy.invokeMethod("startReminder", reminderName).block();
 
     logger.debug("Pausing 7 seconds to allow timer and reminders to fire");
     Thread.sleep(7000);
@@ -162,10 +171,11 @@ public class ActorTurnBasedConcurrencyIT {
     proxy.invokeMethod("stopTimer", "myTimer").block();
 
     logger.debug("Calling actor method 'stopReminder' to unregister reminder");
-    proxy.invokeMethod("stopReminder", REMINDER_NAME).block();
+    proxy.invokeMethod("stopReminder", reminderName).block();
+    reminderName = null;
 
     // make some more actor method calls and sleep a bit to see if the timer fires (it should not)
-    sayMessages.parallelStream().forEach( i -> {
+    sayMessages.parallelStream().forEach(i -> {
       proxy.invokeMethod("say", "message" + i, String.class).block();
       expectedSayMethodInvocations.incrementAndGet();
     });
@@ -207,7 +217,7 @@ public class ActorTurnBasedConcurrencyIT {
         flag = !flag;
       } else {
         String msg = "Error - Enter and Exit should alternate.  Incorrect entry: " + s.toString();
-        System.out.println(msg);
+        logger.error(msg);
         Assertions.fail(msg);
       }
     }
@@ -222,7 +232,8 @@ public class ActorTurnBasedConcurrencyIT {
    * @param methodNameThatShouldNotAppear The method which should not appear
    */
   void validateEventNotObserved(List<MethodEntryTracker> logs, String startingPointMethodName, String methodNameThatShouldNotAppear) {
-    System.out.println("Validating event " + methodNameThatShouldNotAppear + " does not appear after event " + startingPointMethodName);
+    logger.debug("Validating event {} does not appear after event {}",
+        methodNameThatShouldNotAppear, startingPointMethodName);
     int index = -1;
     for (int i = 0; i < logs.size(); i++) {
       if (logs.get(i).getMethodName().equals(startingPointMethodName)) {
@@ -239,10 +250,10 @@ public class ActorTurnBasedConcurrencyIT {
     for (MethodEntryTracker m : logsAfter) {
       if (m.getMethodName().equals(methodNameThatShouldNotAppear)) {
         String errorMessage = "Timer method " + methodNameThatShouldNotAppear + " should not have been called after " + startingPointMethodName + ".  Observed at " + m.toString();
-        System.out.println(errorMessage);
-        System.out.println("Dumping all logs");
-        for(MethodEntryTracker l : logs) {
-          System.out.println("    " + l.toString());
+        logger.error(errorMessage);
+        logger.error("Dumping all logs");
+        for (MethodEntryTracker l : logs) {
+          logger.error("    {}", l);
         }
 
         throw new RuntimeException(errorMessage);

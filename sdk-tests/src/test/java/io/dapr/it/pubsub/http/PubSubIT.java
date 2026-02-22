@@ -24,7 +24,7 @@ import java.util.Objects;
  * by inheriting from {@link DaprPubSubIT}. The nested payload types remain
  * here to avoid broad refactors in related test components.</p>
  */
-public class PubSubIT extends DaprPubSubIT {
+public abstract class PubSubIT extends DaprPubSubIT {
 
   public static class MyObject {
     private String id;

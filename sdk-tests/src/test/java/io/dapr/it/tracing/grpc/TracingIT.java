@@ -19,9 +19,12 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.UUID;
 
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
+import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry;
 import static io.dapr.it.tracing.OpenTelemetry.getReactorContext;
 
@@ -50,7 +53,7 @@ public class TracingIT {
     });
     appThread.setDaemon(true);
     appThread.start();
-    Thread.sleep(1000);
+    waitForGrpcAppPort();
   }
 
   @BeforeEach
@@ -83,5 +86,15 @@ public class TracingIT {
 
     span.end();
     Validation.validate(spanName, "calllocal/tracingitgrpc-service/sleepovergrpc");
+  }
+
+  private static void waitForGrpcAppPort() throws Exception {
+    callWithRetry(() -> {
+      try (Socket socket = new Socket()) {
+        socket.connect(new InetSocketAddress("127.0.0.1", DAPR_CONTAINER.getAppPort()), 500);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }, 30000);
   }
 }
