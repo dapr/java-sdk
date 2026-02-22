@@ -8,23 +8,17 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * limitations under the License.
+ */
 
 package io.dapr.it.pubsub.http;
 
-import io.dapr.it.testcontainers.pubsub.http.DaprPubSubIT;
-
 import java.util.Objects;
 
-/**
- * Backward-compatible test class for PubSub ITs.
- *
- * <p>This class now runs the Testcontainers-based pub/sub integration suite
- * by inheriting from {@link DaprPubSubIT}. The nested payload types remain
- * here to avoid broad refactors in related test components.</p>
- */
-public abstract class PubSubIT extends DaprPubSubIT {
+public final class PubSubPayloads {
+
+  private PubSubPayloads() {
+  }
 
   public static class MyObject {
     private String id;

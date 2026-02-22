@@ -6,8 +6,7 @@ import io.dapr.it.MethodInvokeServiceGrpc;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprProtocol;
 import io.dapr.testcontainers.internal.DaprContainerFactory;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.dapr.utils.NetworkUtils;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.AfterEach;
@@ -20,13 +19,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static io.dapr.it.MethodInvokeServiceProtos.DeleteMessageRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.PostMessageRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
-import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,7 +59,7 @@ public class MethodInvokeIT {
     });
     appThread.setDaemon(true);
     appThread.start();
-    waitForGrpcAppReady();
+    NetworkUtils.waitForSocket("127.0.0.1", DAPR_CONTAINER.getAppPort(), 60000);
   }
 
   @BeforeEach
@@ -137,25 +134,5 @@ public class MethodInvokeIT {
           .withPropertyOverride(io.dapr.config.Properties.HTTP_ENDPOINT, "http://localhost:" + daprContainer.getHttpPort())
           .withPropertyOverride(io.dapr.config.Properties.GRPC_ENDPOINT, "http://localhost:" + daprContainer.getGrpcPort());
     }
-  }
-
-  private static void waitForGrpcAppReady() throws Exception {
-    callWithRetry(() -> {
-      ManagedChannel channel = ManagedChannelBuilder
-          .forAddress("127.0.0.1", DAPR_CONTAINER.getAppPort())
-          .usePlaintext()
-          .build();
-      try {
-        MethodInvokeServiceGrpc.newBlockingStub(channel).getMessages(GetMessagesRequest.newBuilder().build());
-      } finally {
-        channel.shutdownNow();
-        try {
-          channel.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(e);
-        }
-      }
-    }, 60000);
   }
 }
