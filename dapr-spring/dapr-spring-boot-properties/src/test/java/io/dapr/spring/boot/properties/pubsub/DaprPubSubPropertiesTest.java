@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.spring.boot.autoconfigure.pubsub;
+package io.dapr.spring.boot.properties.pubsub;
 
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
