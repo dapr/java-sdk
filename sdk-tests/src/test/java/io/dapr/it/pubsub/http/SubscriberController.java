@@ -49,6 +49,16 @@ public class SubscriberController {
     return messagesByTopic.getOrDefault(topic, Collections.emptyList());
   }
 
+  @PostMapping(path = "/messages/clear")
+  public void clearMessages() {
+    messagesByTopic.clear();
+    messagesReceivedBulkPublishTopic.clear();
+    messagesReceivedTestingTopic.clear();
+    messagesReceivedTestingTopicV2.clear();
+    messagesReceivedTestingTopicV3.clear();
+    responsesReceivedTestingTopicBulkSub.clear();
+  }
+
   private static final List<CloudEvent> messagesReceivedBulkPublishTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
@@ -146,7 +156,7 @@ public class SubscriberController {
 
   @Topic(name = "typedtestingtopic", pubsubName = "messagebus")
   @PostMapping(path = "/route1b")
-  public Mono<Void> handleMessageTyped(@RequestBody(required = false) CloudEvent<PubSubIT.MyObject> envelope) {
+  public Mono<Void> handleMessageTyped(@RequestBody(required = false) CloudEvent<PubSubPayloads.MyObject> envelope) {
     return Mono.fromRunnable(() -> {
       try {
         String id = envelope.getData() == null ? "" : envelope.getData().getId();
@@ -204,7 +214,7 @@ public class SubscriberController {
 
   @Topic(name = "testinglongvalues", pubsubName = "messagebus")
   @PostMapping(path = "/testinglongvalues")
-  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConvertToLong> cloudEvent) {
+  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubPayloads.ConvertToLong> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
         Long message = cloudEvent.getData().getValue();
