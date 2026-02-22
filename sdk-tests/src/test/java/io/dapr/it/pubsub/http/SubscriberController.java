@@ -156,7 +156,7 @@ public class SubscriberController {
 
   @Topic(name = "typedtestingtopic", pubsubName = "messagebus")
   @PostMapping(path = "/route1b")
-  public Mono<Void> handleMessageTyped(@RequestBody(required = false) CloudEvent<PubSubIT.MyObject> envelope) {
+  public Mono<Void> handleMessageTyped(@RequestBody(required = false) CloudEvent<PubSubPayloads.MyObject> envelope) {
     return Mono.fromRunnable(() -> {
       try {
         String id = envelope.getData() == null ? "" : envelope.getData().getId();
@@ -214,7 +214,7 @@ public class SubscriberController {
 
   @Topic(name = "testinglongvalues", pubsubName = "messagebus")
   @PostMapping(path = "/testinglongvalues")
-  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConvertToLong> cloudEvent) {
+  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubPayloads.ConvertToLong> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
         Long message = cloudEvent.getData().getValue();
