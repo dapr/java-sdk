@@ -59,7 +59,7 @@ import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TA
 public class DaprPubSubOutboxIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(DaprPubSubOutboxIT.class);
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 

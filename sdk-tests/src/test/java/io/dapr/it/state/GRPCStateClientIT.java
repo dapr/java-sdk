@@ -40,7 +40,7 @@ import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TA
 @Tag("testcontainers")
 public class GRPCStateClientIT extends AbstractStateClientIT {
 
-  private static final Network NETWORK = Network.newNetwork();
+  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")

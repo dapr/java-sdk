@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("testcontainers")
 public class WorkflowsMultiAppCallActivityIT {
 
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
   
   @Container
   private final static DaprPlacementContainer sharedPlacementContainer = new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)

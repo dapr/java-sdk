@@ -69,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class SdkResiliencyIT {
 
   public static final int WIREMOCK_PORT = 8888;
-  private static final Network NETWORK = Network.newNetwork();
+  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
   private static final String STATE_STORE_NAME = "kvstore";
   private static final int INFINITE_RETRY = -1;
 

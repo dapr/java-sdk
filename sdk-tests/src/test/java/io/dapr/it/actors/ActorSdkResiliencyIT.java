@@ -76,7 +76,7 @@ public class ActorSdkResiliencyIT {
 
   private static final int MAX_RETRIES = -1;  // Infinity
 
-  private static final Network NETWORK = Network.newNetwork();
+  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   private static final int GRPC_PROXY_PORT = 8666;
   private static final int HTTP_PROXY_PORT = 8667;

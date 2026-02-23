@@ -81,7 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class DaprPubSubIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(DaprPubSubIT.class);
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port.*";

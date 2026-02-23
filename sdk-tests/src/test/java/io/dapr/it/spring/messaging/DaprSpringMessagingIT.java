@@ -56,7 +56,7 @@ public class DaprSpringMessagingIT {
 
   private static final String PUBSUB_NAME = "pubsub";
   private static final String TOPIC = "mockTopic";
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
   private static final int APP_PORT = 8080;
 
   @Container

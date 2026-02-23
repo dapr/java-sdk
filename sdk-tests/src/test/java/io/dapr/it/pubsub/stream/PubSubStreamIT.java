@@ -54,7 +54,7 @@ public class PubSubStreamIT {
   private static final String TOPIC_NAME_RAWPAYLOAD = "stream-topic-rawpayload";
   private static final String PUBSUB_NAME = "messagebus";
 
-  private static final Network NETWORK = Network.newNetwork();
+  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")

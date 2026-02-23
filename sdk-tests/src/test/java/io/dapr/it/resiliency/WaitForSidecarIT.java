@@ -44,7 +44,7 @@ public class WaitForSidecarIT {
   // Use a number large enough to make sure it will respect the entire timeout.
   private static final Duration LATENCY = Duration.ofSeconds(5);
 
-  private static final Network NETWORK = Network.newNetwork();
+  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
   private static final String APP_ID = "wait-for-sidecar-it";
 
   @Container

@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("testcontainers")
 public class PatchVersioningWorkflowsIT {
 
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   private static final WaitStrategy MYSQL_WAIT_STRATEGY = Wait
       .forLogMessage(".*port: 3306  MySQL Community Server \\(GPL\\).*", 1)

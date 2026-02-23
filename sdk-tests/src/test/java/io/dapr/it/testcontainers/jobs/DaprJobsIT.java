@@ -58,7 +58,7 @@ import static org.junit.Assert.assertEquals;
 @Tag("testcontainers")
 public class DaprJobsIT {
 
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 

@@ -55,7 +55,7 @@ public class DaprKeyValueRepositoryIT {
 
   private static final Map<String, String> BINDING_PROPERTIES = Map.of("connectionString", CONNECTION_STRING);
 
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   @Container
   private static final PostgreSQLContainer<?> POSTGRE_SQL_CONTAINER = new PostgreSQLContainer<>("postgres:16-alpine")

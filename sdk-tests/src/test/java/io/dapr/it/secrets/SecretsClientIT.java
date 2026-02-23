@@ -47,7 +47,7 @@ public class SecretsClientIT {
 
   private static final String KYE2 = UUID.randomUUID().toString();
 
-  private static final Network NETWORK = Network.newNetwork();
+  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")

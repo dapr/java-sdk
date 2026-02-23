@@ -38,7 +38,7 @@ public class HelloWorldClientIT {
 
   private static final String STATE_STORE_NAME = "statestore";
 
-  private static final Network NETWORK = Network.newNetwork();
+  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")

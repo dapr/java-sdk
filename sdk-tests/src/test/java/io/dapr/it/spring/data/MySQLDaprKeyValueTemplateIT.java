@@ -64,7 +64,7 @@ public class MySQLDaprKeyValueTemplateIT {
 
   private static final Map<String, String> BINDING_PROPERTIES = Map.of("url", BINDING_DSN);
 
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   private static final WaitStrategy MYSQL_WAIT_STRATEGY = Wait
       .forLogMessage(".*port: 3306  MySQL Community Server \\(GPL\\).*", 1)

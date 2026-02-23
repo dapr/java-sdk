@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("testcontainers")
 public class DaprConversationAlpha2IT {
 
-    private static final Network DAPR_NETWORK = Network.newNetwork();
+    private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
     private static final Random RANDOM = new Random();
     private static final int PORT = RANDOM.nextInt(1000) + 8000;
 

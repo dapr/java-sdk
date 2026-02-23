@@ -59,7 +59,7 @@ public class ActorReminderFailoverIT {
   private static final String CONTAINER_CLASSPATH = prepareContainerClasspath();
   private static final String FIRST_ACTOR_IDENTIFIER = "4111";
   private static final String SECOND_ACTOR_IDENTIFIER = "4222";
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
 
   @Container
   private static final DaprPlacementContainer SHARED_PLACEMENT_CONTAINER = new DaprPlacementContainer(
