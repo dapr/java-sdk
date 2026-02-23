@@ -25,4 +25,5 @@ public interface WorkflowActivityContext {
 
   <T> T getInput(Class<T> targetType);
 
+  String getTraceParent();
 }
