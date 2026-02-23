@@ -55,13 +55,14 @@ public class PubSubStreamIT {
   private static final String TOPIC_NAME_CLOUDEVENT = "stream-topic-cloudevent";
   private static final String TOPIC_NAME_RAWPAYLOAD = "stream-topic-rawpayload";
   private static final String PUBSUB_NAME = "messagebus";
+  private static final String REDIS_ALIAS = "pubsub-stream-redis";
 
   private static final Network NETWORK = TestContainerNetworks.PUBSUB_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
       .withNetwork(NETWORK)
-      .withNetworkAliases("redis");
+      .withNetworkAliases(REDIS_ALIAS);
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
@@ -73,7 +74,7 @@ public class PubSubStreamIT {
           "pubsub.redis",
           "v1",
           Map.of(
-              "redisHost", "redis:6379",
+              "redisHost", REDIS_ALIAS + ":6379",
               "redisPassword", "",
               "processingTimeout", "100ms",
               "redeliverInterval", "100ms")));

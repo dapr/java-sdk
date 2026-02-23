@@ -47,13 +47,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ConfigurationClientIT {
 
   private static final String CONFIG_STORE_NAME = "redisconfigstore";
+  private static final String REDIS_ALIAS = "configuration-redis";
 
   private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
       .withNetwork(NETWORK)
-      .withNetworkAliases("redis");
+      .withNetworkAliases(REDIS_ALIAS);
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
@@ -63,7 +64,8 @@ public class ConfigurationClientIT {
           CONFIG_STORE_NAME,
           "configuration.redis",
           "v1",
-          Map.of("redisHost", "redis:6379", "redisPassword", "")));
+          Map.of("redisHost", REDIS_ALIAS + ":6379", "redisPassword", "")))
+      .dependsOn(REDIS);
 
   @BeforeAll
   public static void init() throws Exception {

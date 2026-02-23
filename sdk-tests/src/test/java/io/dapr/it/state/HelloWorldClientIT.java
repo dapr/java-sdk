@@ -39,13 +39,14 @@ import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TA
 public class HelloWorldClientIT {
 
   private static final String STATE_STORE_NAME = "statestore";
+  private static final String REDIS_ALIAS = "hello-world-redis";
 
   private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
       .withNetwork(NETWORK)
-      .withNetworkAliases("redis");
+      .withNetworkAliases(REDIS_ALIAS);
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
@@ -56,8 +57,9 @@ public class HelloWorldClientIT {
           "state.redis",
           "v1",
           Map.of(
-              "redisHost", "redis:6379",
-              "redisPassword", "")));
+              "redisHost", REDIS_ALIAS + ":6379",
+              "redisPassword", "")))
+      .dependsOn(REDIS);
 
   @BeforeAll
   public static void waitForSidecar() throws Exception {

@@ -43,16 +43,18 @@ import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TA
 public class GRPCStateClientIT extends AbstractStateClientIT {
 
   private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
+  private static final String REDIS_ALIAS = "grpc-state-redis";
+  private static final String MONGO_ALIAS = "grpc-state-mongo";
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
       .withNetwork(NETWORK)
-      .withNetworkAliases("redis");
+      .withNetworkAliases(REDIS_ALIAS);
 
   @Container
   private static final GenericContainer<?> MONGO = new GenericContainer<>("mongo:7")
       .withNetwork(NETWORK)
-      .withNetworkAliases("mongo");
+      .withNetworkAliases(MONGO_ALIAS);
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
@@ -63,7 +65,7 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
           "state.redis",
           "v1",
           Map.of(
-              "redisHost", "redis:6379",
+              "redisHost", REDIS_ALIAS + ":6379",
               "redisPassword", "",
               "actorStateStore", "true")))
       .withComponent(new Component(
@@ -71,9 +73,10 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
           "state.mongodb",
           "v1",
           Map.of(
-              "host", "mongo:27017",
+              "host", MONGO_ALIAS + ":27017",
               "databaseName", "local",
-              "collectionName", "testCollection")));
+              "collectionName", "testCollection")))
+      .dependsOn(REDIS, MONGO);
 
   private static DaprClient daprClient;
 

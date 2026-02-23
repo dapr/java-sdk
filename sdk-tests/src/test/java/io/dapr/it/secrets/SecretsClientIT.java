@@ -48,13 +48,14 @@ public class SecretsClientIT {
   private static final String KEY1 = UUID.randomUUID().toString();
 
   private static final String KYE2 = UUID.randomUUID().toString();
+  private static final String REDIS_ALIAS = "secrets-redis";
 
   private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
       .withNetwork(NETWORK)
-      .withNetworkAliases("redis");
+      .withNetworkAliases(REDIS_ALIAS);
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
@@ -64,7 +65,8 @@ public class SecretsClientIT {
           SECRETS_STORE_NAME,
           "secretstores.redis",
           "v1",
-          Map.of("redisHost", "redis:6379", "redisPassword", "")));
+          Map.of("redisHost", REDIS_ALIAS + ":6379", "redisPassword", "")))
+      .dependsOn(REDIS);
 
   @BeforeAll
   public static void init() throws Exception {
