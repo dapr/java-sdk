@@ -14,22 +14,19 @@ limitations under the License.
 package io.dapr.it.secrets;
 
 import io.dapr.it.testcontainers.TestContainerNetworks;
-
 import io.dapr.client.DaprClient;
 import io.dapr.it.testcontainers.DaprClientFactory;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Map;
-import java.util.UUID;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,50 +34,45 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test Secrets Store APIs backed by redis secret store.
+ * Test Secrets Store APIs backed by local file secret store.
  */
 @Testcontainers
 @Tag("testcontainers")
 public class SecretsClientIT {
 
   private static final String SECRETS_STORE_NAME = "localSecretStore";
+  private static final String SECRET_FILE_PATH = "/dapr-resources/secrets.json";
 
-  private static final String KEY1 = UUID.randomUUID().toString();
-
-  private static final String KYE2 = UUID.randomUUID().toString();
-  private static final String REDIS_ALIAS = "secrets-redis";
+  private static final String KEY1 = "metrics";
+  private static final String KEY2 = "person";
+  private static final String SECRET_FILE_CONTENT = "{\n"
+      + "  \"" + KEY1 + "\": {\n"
+      + "    \"title\": \"The Metrics IV\",\n"
+      + "    \"year\": \"2020\"\n"
+      + "  },\n"
+      + "  \"" + KEY2 + "\": {\n"
+      + "    \"name\": \"Jon Doe\"\n"
+      + "  }\n"
+      + "}\n";
 
   private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
-
-  @Container
-  private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
-      .withNetwork(NETWORK)
-      .withNetworkAliases(REDIS_ALIAS);
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withNetwork(NETWORK)
       .withAppName("secrets-it")
+      .withCopyToContainer(Transferable.of(SECRET_FILE_CONTENT), SECRET_FILE_PATH)
       .withComponent(new Component(
           SECRETS_STORE_NAME,
-          "secretstores.redis",
+          "secretstores.local.file",
           "v1",
-          Map.of("redisHost", REDIS_ALIAS + ":6379", "redisPassword", "")))
-      .dependsOn(REDIS);
+          Map.of("secretsFile", SECRET_FILE_PATH, "multiValued", "true")));
 
   @BeforeAll
   public static void init() throws Exception {
     try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       client.waitForSidecar(10000).block();
     }
-  }
-
-  @BeforeEach
-  public void setup() throws Exception {
-    REDIS.execInContainer("redis-cli", "DEL", KEY1);
-    REDIS.execInContainer("redis-cli", "DEL", KYE2);
-    REDIS.execInContainer("redis-cli", "HSET", KEY1, "title", "The Metrics IV", "year", "2020");
-    REDIS.execInContainer("redis-cli", "HSET", KYE2, "name", "Jon Doe");
   }
 
   @Test
@@ -101,8 +93,8 @@ public class SecretsClientIT {
       assertEquals(2, data.get(KEY1).size());
       assertEquals("The Metrics IV", data.get(KEY1).get("title"));
       assertEquals("2020", data.get(KEY1).get("year"));
-      assertEquals(1, data.get(KYE2).size());
-      assertEquals("Jon Doe", data.get(KYE2).get("name"));
+      assertEquals(1, data.get(KEY2).size());
+      assertEquals("Jon Doe", data.get(KEY2).get("name"));
     }
   }
 
