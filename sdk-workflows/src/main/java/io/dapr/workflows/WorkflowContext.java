@@ -381,7 +381,7 @@ public interface WorkflowContext {
    * @return a new {@link Task} that completes when the child-workflow completes or fails
    */
   default Task<Void> callChildWorkflow(String name, Object input) {
-    return this.callChildWorkflow(name, input, null);
+    return this.callChildWorkflow(name, input, Void.class);
   }
 
   /**

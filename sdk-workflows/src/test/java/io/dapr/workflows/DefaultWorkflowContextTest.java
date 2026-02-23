@@ -39,7 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DefaultWorkflowContextTest {
   private DefaultWorkflowContext context;
@@ -290,7 +294,7 @@ public class DefaultWorkflowContextTest {
     String expectedName = "TestActivity";
 
     context.callChildWorkflow(expectedName);
-    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, null, null, null, null);
+    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, null, null, null, Void.class);
   }
 
   @Test
