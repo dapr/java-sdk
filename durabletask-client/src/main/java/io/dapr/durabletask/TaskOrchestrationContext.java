@@ -446,7 +446,7 @@ public interface TaskOrchestrationContext {
    * @return a new {@link Task} that completes when the sub-orchestration completes or fails
    */
   default Task<Void> callSubOrchestrator(String name, Object input) {
-    return this.callSubOrchestrator(name, input, null);
+    return this.callSubOrchestrator(name, input, Void.class);
   }
 
   /**
