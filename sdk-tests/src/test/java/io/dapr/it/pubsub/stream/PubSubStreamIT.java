@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.pubsub.stream;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.SubscriptionListener;
@@ -54,7 +56,7 @@ public class PubSubStreamIT {
   private static final String TOPIC_NAME_RAWPAYLOAD = "stream-topic-rawpayload";
   private static final String PUBSUB_NAME = "messagebus";
 
-  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network NETWORK = TestContainerNetworks.PUBSUB_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")

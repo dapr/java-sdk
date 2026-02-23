@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.workflows.version.full;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.config.Properties;
 import io.dapr.it.spring.data.CustomMySQLContainer;
@@ -71,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 @Tag("testcontainers")
 public class FullVersioningWorkflowsIT {
 
-  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network DAPR_NETWORK = TestContainerNetworks.WORKFLOWS_NETWORK;
 
   private static final WaitStrategy MYSQL_WAIT_STRATEGY = Wait
       .forLogMessage(".*port: 3306  MySQL Community Server \\(GPL\\).*", 1)

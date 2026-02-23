@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.resiliency;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
 import eu.rekawek.toxiproxy.model.ToxicDirection;
@@ -44,7 +46,7 @@ public class WaitForSidecarIT {
   // Use a number large enough to make sure it will respect the entire timeout.
   private static final Duration LATENCY = Duration.ofSeconds(5);
 
-  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network NETWORK = TestContainerNetworks.GENERAL_NETWORK;
   private static final String APP_ID = "wait-for-sidecar-it";
 
   @Container

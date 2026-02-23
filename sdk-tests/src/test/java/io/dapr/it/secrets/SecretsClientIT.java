@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.secrets;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.it.testcontainers.DaprClientFactory;
 import io.dapr.testcontainers.Component;
@@ -47,7 +49,7 @@ public class SecretsClientIT {
 
   private static final String KYE2 = UUID.randomUUID().toString();
 
-  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")

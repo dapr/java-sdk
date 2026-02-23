@@ -1,6 +1,8 @@
 package io.dapr.it.tracing.grpc;
 
 import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.config.Properties;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.tracing.Validation;
 import io.dapr.testcontainers.DaprContainer;
@@ -56,9 +58,9 @@ public class TracingIT {
 
   @BeforeEach
   public void setup() {
-    daprClient = new io.dapr.client.DaprClientBuilder()
-        .withPropertyOverride(io.dapr.config.Properties.HTTP_ENDPOINT, "http://localhost:" + DAPR_CONTAINER.getHttpPort())
-        .withPropertyOverride(io.dapr.config.Properties.GRPC_ENDPOINT, "http://localhost:" + DAPR_CONTAINER.getGrpcPort())
+    daprClient = new DaprClientBuilder()
+        .withPropertyOverride(Properties.HTTP_ENDPOINT, "http://localhost:" + DAPR_CONTAINER.getHttpPort())
+        .withPropertyOverride(Properties.GRPC_ENDPOINT, "http://localhost:" + DAPR_CONTAINER.getGrpcPort())
         .build();
     daprClient.waitForSidecar(10000).block();
   }

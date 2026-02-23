@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.jobs;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.ConstantFailurePolicy;
 import io.dapr.client.domain.DeleteJobRequest;
@@ -42,7 +44,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Random;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.Assert.assertEquals;
@@ -58,9 +59,8 @@ import static org.junit.Assert.assertEquals;
 @Tag("testcontainers")
 public class DaprJobsIT {
 
-  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
-  private static final Random RANDOM = new Random();
-  private static final int PORT = RANDOM.nextInt(1000) + 8000;
+  private static final Network DAPR_NETWORK = TestContainerNetworks.GENERAL_NETWORK;
+  private static final int PORT = TestContainerNetworks.allocateFreePort();
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)

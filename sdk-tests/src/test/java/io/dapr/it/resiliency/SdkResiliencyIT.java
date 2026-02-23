@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.resiliency;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import eu.rekawek.toxiproxy.Proxy;
@@ -69,7 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class SdkResiliencyIT {
 
   public static final int WIREMOCK_PORT = 8888;
-  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network NETWORK = TestContainerNetworks.GENERAL_NETWORK;
   private static final String STATE_STORE_NAME = "kvstore";
   private static final int INFINITE_RETRY = -1;
 

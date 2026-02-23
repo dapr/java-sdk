@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.conversations;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationRequest;
@@ -37,7 +39,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
@@ -52,9 +53,8 @@ import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TA
 @Tag("testcontainers")
 public class DaprConversationIT {
 
-    private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
-    private static final Random RANDOM = new Random();
-    private static final int PORT = RANDOM.nextInt(1000) + 8000;
+    private static final Network DAPR_NETWORK = TestContainerNetworks.GENERAL_NETWORK;
+    private static final int PORT = TestContainerNetworks.allocateFreePort();
 
     @Container
     private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)

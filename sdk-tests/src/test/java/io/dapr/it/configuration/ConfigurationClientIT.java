@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.configuration;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
@@ -46,7 +48,7 @@ public class ConfigurationClientIT {
 
   private static final String CONFIG_STORE_NAME = "redisconfigstore";
 
-  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")

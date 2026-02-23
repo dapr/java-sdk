@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.actors;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxy;
@@ -46,8 +48,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Testcontainers
 public class ActorReminderFailoverIT {
@@ -59,18 +63,18 @@ public class ActorReminderFailoverIT {
   private static final String CONTAINER_CLASSPATH = prepareContainerClasspath();
   private static final String FIRST_ACTOR_IDENTIFIER = "4111";
   private static final String SECOND_ACTOR_IDENTIFIER = "4222";
-  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network DAPR_NETWORK = TestContainerNetworks.ACTORS_NETWORK;
 
   @Container
   private static final DaprPlacementContainer SHARED_PLACEMENT_CONTAINER = new DaprPlacementContainer(
-      io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG)
+      DAPR_PLACEMENT_IMAGE_TAG)
       .withNetwork(DAPR_NETWORK)
       .withNetworkAliases("placement")
       .withReuse(false);
 
   @Container
   private static final DaprSchedulerContainer SHARED_SCHEDULER_CONTAINER = new DaprSchedulerContainer(
-      io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG)
+      DAPR_SCHEDULER_IMAGE_TAG)
       .withNetwork(DAPR_NETWORK)
       .withNetworkAliases("scheduler")
       .withReuse(false);

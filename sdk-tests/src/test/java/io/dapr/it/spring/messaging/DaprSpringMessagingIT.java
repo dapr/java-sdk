@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.spring.messaging;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.spring.boot.autoconfigure.client.DaprClientAutoConfiguration;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
@@ -56,7 +58,7 @@ public class DaprSpringMessagingIT {
 
   private static final String PUBSUB_NAME = "pubsub";
   private static final String TOPIC = "mockTopic";
-  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network DAPR_NETWORK = TestContainerNetworks.GENERAL_NETWORK;
   private static final int APP_PORT = 8080;
 
   @Container

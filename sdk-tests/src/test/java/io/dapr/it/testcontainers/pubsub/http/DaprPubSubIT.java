@@ -12,6 +12,8 @@ limitations under the License.
 */
 package io.dapr.it.testcontainers.pubsub.http;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -81,9 +83,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class DaprPubSubIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(DaprPubSubIT.class);
-  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
-  private static final Random RANDOM = new Random();
-  private static final int PORT = RANDOM.nextInt(1000) + 8000;
+  private static final Network DAPR_NETWORK = TestContainerNetworks.PUBSUB_NETWORK;
+  private static final int PORT = TestContainerNetworks.allocateFreePort();
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port.*";
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

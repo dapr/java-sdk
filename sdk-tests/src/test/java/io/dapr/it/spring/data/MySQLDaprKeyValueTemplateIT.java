@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.spring.data;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.spring.data.DaprKeyValueTemplate;
 import io.dapr.testcontainers.Component;
@@ -64,7 +66,7 @@ public class MySQLDaprKeyValueTemplateIT {
 
   private static final Map<String, String> BINDING_PROPERTIES = Map.of("url", BINDING_DSN);
 
-  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network DAPR_NETWORK = TestContainerNetworks.DATA_NETWORK;
 
   private static final WaitStrategy MYSQL_WAIT_STRATEGY = Wait
       .forLogMessage(".*port: 3306  MySQL Community Server \\(GPL\\).*", 1)

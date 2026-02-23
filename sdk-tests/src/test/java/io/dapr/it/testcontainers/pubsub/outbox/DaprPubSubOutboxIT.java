@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.pubsub.outbox;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.State;
@@ -43,7 +45,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
@@ -59,9 +60,8 @@ import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TA
 public class DaprPubSubOutboxIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(DaprPubSubOutboxIT.class);
-  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
-  private static final Random RANDOM = new Random();
-  private static final int PORT = RANDOM.nextInt(1000) + 8000;
+  private static final Network DAPR_NETWORK = TestContainerNetworks.PUBSUB_NETWORK;
+  private static final int PORT = TestContainerNetworks.allocateFreePort();
 
   private static final String PUBSUB_APP_ID = "pubsub-dapr-app";
   private static final String PUBSUB_NAME = "pubsub";

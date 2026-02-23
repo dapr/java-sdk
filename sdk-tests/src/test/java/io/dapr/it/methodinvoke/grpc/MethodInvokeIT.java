@@ -1,7 +1,9 @@
 package io.dapr.it.methodinvoke.grpc;
 
 import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.resiliency.ResiliencyOptions;
+import io.dapr.config.Properties;
 import io.dapr.it.MethodInvokeServiceGrpc;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprProtocol;
@@ -129,10 +131,10 @@ public class MethodInvokeIT {
   }
 
   private static class DaprClientBuilderFactory {
-    io.dapr.client.DaprClientBuilder newBuilder(DaprContainer daprContainer) {
-      return new io.dapr.client.DaprClientBuilder()
-          .withPropertyOverride(io.dapr.config.Properties.HTTP_ENDPOINT, "http://localhost:" + daprContainer.getHttpPort())
-          .withPropertyOverride(io.dapr.config.Properties.GRPC_ENDPOINT, "http://localhost:" + daprContainer.getGrpcPort());
+    DaprClientBuilder newBuilder(DaprContainer daprContainer) {
+      return new DaprClientBuilder()
+          .withPropertyOverride(Properties.HTTP_ENDPOINT, "http://localhost:" + daprContainer.getHttpPort())
+          .withPropertyOverride(Properties.GRPC_ENDPOINT, "http://localhost:" + daprContainer.getGrpcPort());
     }
   }
 }

@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.state;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.State;
 import io.dapr.it.testcontainers.DaprClientFactory;
@@ -40,7 +42,7 @@ import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TA
 @Tag("testcontainers")
 public class GRPCStateClientIT extends AbstractStateClientIT {
 
-  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")

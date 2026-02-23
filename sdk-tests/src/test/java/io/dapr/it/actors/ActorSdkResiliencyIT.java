@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.actors;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
 import eu.rekawek.toxiproxy.model.ToxicDirection;
@@ -76,7 +78,7 @@ public class ActorSdkResiliencyIT {
 
   private static final int MAX_RETRIES = -1;  // Infinity
 
-  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network NETWORK = TestContainerNetworks.ACTORS_NETWORK;
 
   private static final int GRPC_PROXY_PORT = 8666;
   private static final int HTTP_PROXY_PORT = 8667;

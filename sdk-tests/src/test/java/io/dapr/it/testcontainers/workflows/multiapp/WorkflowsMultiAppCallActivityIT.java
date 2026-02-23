@@ -13,6 +13,8 @@
 
 package io.dapr.it.testcontainers.workflows.multiapp;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.it.testcontainers.ContainerConstants;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
@@ -54,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("testcontainers")
 public class WorkflowsMultiAppCallActivityIT {
 
-  private static final Network DAPR_NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network DAPR_NETWORK = TestContainerNetworks.WORKFLOWS_NETWORK;
   
   @Container
   private final static DaprPlacementContainer sharedPlacementContainer = new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)

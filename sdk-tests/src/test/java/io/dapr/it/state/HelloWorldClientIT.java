@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.state;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.it.testcontainers.DaprClientFactory;
 import io.dapr.testcontainers.Component;
@@ -38,7 +40,7 @@ public class HelloWorldClientIT {
 
   private static final String STATE_STORE_NAME = "statestore";
 
-  private static final Network NETWORK = io.dapr.it.testcontainers.TestContainerNetworks.SHARED_NETWORK;
+  private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
 
   @Container
   private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
