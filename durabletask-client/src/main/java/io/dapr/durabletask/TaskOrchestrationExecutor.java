@@ -48,7 +48,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.logging.Logger;
 
-final class TaskOrchestrationExecutor {
+public final class TaskOrchestrationExecutor {
 
   private static final String EMPTY_STRING = "";
   private final TaskOrchestrationFactories orchestrationFactories;
@@ -57,6 +57,15 @@ final class TaskOrchestrationExecutor {
   private final Duration maximumTimerInterval;
   private final String appId;
 
+  /**
+   * Creates a new TaskOrchestrationExecutor.
+   *
+   * @param orchestrationFactories map of orchestration names to their factories
+   * @param dataConverter          converter for serializing/deserializing data
+   * @param maximumTimerInterval   maximum duration for timer intervals
+   * @param logger                 logger for orchestration execution
+   * @param appId                  application ID for cross-app routing
+   */
   public TaskOrchestrationExecutor(
       TaskOrchestrationFactories orchestrationFactories,
       DataConverter dataConverter,
@@ -70,6 +79,13 @@ final class TaskOrchestrationExecutor {
     this.appId = appId; // extracted from router
   }
 
+  /**
+   * Executes the orchestration with the given past and new events.
+   *
+   * @param pastEvents list of past history events
+   * @param newEvents  list of new history events
+   * @return the result of the orchestrator execution
+   */
   public TaskOrchestratorResult execute(List<OrchestratorService.HistoryEvent> pastEvents,
                                         List<OrchestratorService.HistoryEvent> newEvents) {
     ContextImplTask context = new ContextImplTask(pastEvents, newEvents);
@@ -192,6 +208,14 @@ final class TaskOrchestrationExecutor {
 
     private void setAppId(String appId) {
       this.appId = appId;
+    }
+
+    private boolean hasSourceAppId() {
+      return this.appId != null && !this.appId.isEmpty();
+    }
+
+    private boolean hasTargetAppId(TaskOptions options) {
+      return options != null && options.hasAppID();
     }
 
     @Override
@@ -329,36 +353,32 @@ final class TaskOrchestrationExecutor {
       }
 
       // Add router information for cross-app routing
-      // Router always has a source app ID from EXECUTIONSTARTED event
-      OrchestratorService.TaskRouter.Builder routerBuilder = OrchestratorService.TaskRouter.newBuilder()
-          .setSourceAppID(this.appId);
-
-      // Add target app ID if specified in options
-      if (options != null && options.hasAppID()) {
+      OrchestratorService.TaskRouter router = null;
+      if (hasSourceAppId() && hasTargetAppId(options)) {
         String targetAppId = options.getAppID();
-        OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+        scheduleTaskBuilder.setRouter(OrchestratorService.TaskRouter.newBuilder()
             .setSourceAppID(this.appId)
             .setTargetAppID(targetAppId)
-            .build();
-        scheduleTaskBuilder.setRouter(router);
+            .build());
         this.logger.fine(() -> String.format(
             "cross app routing detected: source=%s, target=%s",
             this.appId, targetAppId));
       }
+
+      // Capture for use inside lambda
+      final OrchestratorService.TaskRouter actionRouter = router;
+
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
-        OrchestratorService.ScheduleTaskAction scheduleTaskAction = scheduleTaskBuilder.build();
         OrchestratorService.OrchestratorAction.Builder actionBuilder = OrchestratorService.OrchestratorAction
             .newBuilder()
             .setId(id)
             .setScheduleTask(scheduleTaskBuilder);
-        if (options != null && options.hasAppID()) {
-          String targetAppId = options.getAppID();
-          OrchestratorService.TaskRouter actionRouter = OrchestratorService.TaskRouter.newBuilder()
+        if (hasSourceAppId() && hasTargetAppId(options)) {
+          actionBuilder.setRouter(OrchestratorService.TaskRouter.newBuilder()
               .setSourceAppID(this.appId)
-              .setTargetAppID(targetAppId)
-              .build();
-          actionBuilder.setRouter(actionRouter);
+              .setTargetAppID(options.getAppID())
+              .build());
         }
         this.pendingActions.put(id, actionBuilder.build());
 
@@ -499,13 +519,40 @@ final class TaskOrchestrationExecutor {
       }
       createSubOrchestrationActionBuilder.setInstanceId(instanceId);
 
-      // TODO: @cicoyle - add suborchestration cross app logic here when its supported
+      // Add router information for cross-app routing of sub-orchestrations
+      if (hasSourceAppId()) {
+        OrchestratorService.TaskRouter.Builder routerBuilder = OrchestratorService.TaskRouter.newBuilder()
+            .setSourceAppID(this.appId);
+
+        // Add target app ID if specified in options
+        if (hasTargetAppId(options)) {
+          routerBuilder.setTargetAppID(options.getAppID());
+          this.logger.fine(() -> String.format(
+              "cross app sub-orchestration routing detected: source=%s, target=%s",
+              this.appId, options.getAppID()));
+        }
+
+        createSubOrchestrationActionBuilder.setRouter(routerBuilder.build());
+      }
+
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
-        this.pendingActions.put(id, OrchestratorService.OrchestratorAction.newBuilder()
+        OrchestratorService.OrchestratorAction.Builder actionBuilder = OrchestratorService.OrchestratorAction
+            .newBuilder()
             .setId(id)
-            .setCreateSubOrchestration(createSubOrchestrationActionBuilder)
-            .build());
+            .setCreateSubOrchestration(createSubOrchestrationActionBuilder);
+
+        // Set router on the OrchestratorAction for cross-app routing
+        if (hasSourceAppId()) {
+          OrchestratorService.TaskRouter.Builder actionRouterBuilder = OrchestratorService.TaskRouter.newBuilder()
+              .setSourceAppID(this.appId);
+          if (hasTargetAppId(options)) {
+            actionRouterBuilder.setTargetAppID(options.getAppID());
+          }
+          actionBuilder.setRouter(actionRouterBuilder.build());
+        }
+
+        this.pendingActions.put(id, actionBuilder.build());
 
         if (!this.isReplaying) {
           this.logger.fine(() -> String.format(
@@ -941,11 +988,20 @@ final class TaskOrchestrationExecutor {
       }
 
       int id = this.sequenceNumber++;
-      OrchestratorService.OrchestratorAction action = OrchestratorService.OrchestratorAction.newBuilder()
+      OrchestratorService.OrchestratorAction.Builder actionBuilder = OrchestratorService.OrchestratorAction
+          .newBuilder()
           .setId(id)
-          .setCompleteOrchestration(builder.build())
-          .build();
-      this.pendingActions.put(id, action);
+          .setCompleteOrchestration(builder.build());
+
+      // Add router to completion action for cross-app routing back to parent
+      if (hasSourceAppId()) {
+        actionBuilder.setRouter(
+            OrchestratorService.TaskRouter.newBuilder()
+                .setSourceAppID(this.appId)
+                .build());
+      }
+
+      this.pendingActions.put(id, actionBuilder.build());
       this.isComplete = true;
     }
 
@@ -1009,7 +1065,16 @@ final class TaskOrchestrationExecutor {
             this.setInput(executionStarted.getInput().getValue());
             this.setInstanceId(executionStarted.getOrchestrationInstance().getInstanceId());
             this.logger.fine(() -> this.instanceId + ": Workflow execution started");
-            this.setAppId(e.getRouter().getSourceAppID());
+            // For cross-app suborchestrations, if the router has a target, use that as our appID
+            // since that's where we're actually executing
+            if (e.hasRouter()) {
+              OrchestratorService.TaskRouter router = e.getRouter();
+              if (router.hasTargetAppID()) {
+                this.setAppId(router.getTargetAppID());
+              } else {
+                this.setAppId(router.getSourceAppID());
+              }
+            }
 
             var versionName = "";
             if (!StringUtils.isEmpty(this.orchestratorVersionName)) {
