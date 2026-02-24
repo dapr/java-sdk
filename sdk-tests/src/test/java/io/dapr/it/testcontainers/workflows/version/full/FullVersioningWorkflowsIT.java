@@ -13,12 +13,10 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.workflows.version.full;
 
-import io.dapr.it.testcontainers.TestContainerNetworks;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.config.Properties;
 import io.dapr.it.spring.data.CustomMySQLContainer;
 import io.dapr.it.testcontainers.ContainerConstants;
+import io.dapr.it.testcontainers.TestContainerNetworks;
 import io.dapr.it.testcontainers.workflows.TestWorkflowsApplication;
 import io.dapr.it.testcontainers.workflows.TestWorkflowsConfiguration;
 import io.dapr.testcontainers.Component;
@@ -27,13 +25,10 @@ import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.DaprPlacementContainer;
 import io.dapr.testcontainers.DaprSchedulerContainer;
 import io.dapr.workflows.client.DaprWorkflowClient;
+import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.workflows.client.WorkflowState;
-import io.dapr.workflows.runtime.WorkflowRuntime;
-import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -45,10 +40,10 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,10 +52,8 @@ import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -72,6 +65,13 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 @Testcontainers
 @Tag("testcontainers")
 public class FullVersioningWorkflowsIT {
+
+  private static final Duration WORKFLOW_START_TIMEOUT = Duration.ofSeconds(20);
+  private static final Duration WORKFLOW_COMPLETION_TIMEOUT = Duration.ofSeconds(20);
+  private static final Duration ACTIVITY1_EXECUTION_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration STATE_VISIBILITY_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration EVENT_RETRY_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration POLL_INTERVAL = Duration.ofMillis(250);
 
   private static final Network DAPR_NETWORK = TestContainerNetworks.WORKFLOWS_NETWORK;
 
@@ -92,16 +92,18 @@ public class FullVersioningWorkflowsIT {
       .waitingFor(MYSQL_WAIT_STRATEGY);
 
   @Container
-  private final static DaprPlacementContainer sharedPlacementContainer = new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)
-      .withNetwork(DAPR_NETWORK)
-      .withNetworkAliases("placement")
-      .withReuse(false);
+  private static final DaprPlacementContainer SHARED_PLACEMENT_CONTAINER =
+      new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)
+          .withNetwork(DAPR_NETWORK)
+          .withNetworkAliases("placement")
+          .withReuse(false);
 
   @Container
-  private final static DaprSchedulerContainer sharedSchedulerContainer = new DaprSchedulerContainer(DAPR_SCHEDULER_IMAGE_TAG)
-      .withNetwork(DAPR_NETWORK)
-      .withNetworkAliases("scheduler")
-      .withReuse(false);
+  private static final DaprSchedulerContainer SHARED_SCHEDULER_CONTAINER =
+      new DaprSchedulerContainer(DAPR_SCHEDULER_IMAGE_TAG)
+          .withNetwork(DAPR_NETWORK)
+          .withNetworkAliases("scheduler")
+          .withReuse(false);
 
   @Container
   private static final DaprContainer DAPR_CONTAINER_V1 = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
@@ -109,27 +111,27 @@ public class FullVersioningWorkflowsIT {
       .withNetworkAliases("dapr-worker-v1")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.mysql", "v1", STATE_STORE_PROPERTIES))
-      .withPlacementContainer(sharedPlacementContainer)
-      .withSchedulerContainer(sharedSchedulerContainer)
+      .withPlacementContainer(SHARED_PLACEMENT_CONTAINER)
+      .withSchedulerContainer(SHARED_SCHEDULER_CONTAINER)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
-      .withLogConsumer(outputFrame -> System.out.println("daprV1 -> " +outputFrame.getUtf8String()))
+      .withLogConsumer(outputFrame -> System.out.println("daprV1 -> " + outputFrame.getUtf8String()))
       .withAppChannelAddress("host.testcontainers.internal")
-      .dependsOn(MY_SQL_CONTAINER, sharedPlacementContainer, sharedSchedulerContainer);
+      .dependsOn(MY_SQL_CONTAINER, SHARED_PLACEMENT_CONTAINER, SHARED_SCHEDULER_CONTAINER);
 
   private static final DaprContainer DAPR_CONTAINER_V2 = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withAppName("dapr-worker")
       .withNetworkAliases("dapr-worker-v2")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.mysql", "v1", STATE_STORE_PROPERTIES))
-      .withPlacementContainer(sharedPlacementContainer)
-      .withSchedulerContainer(sharedSchedulerContainer)
+      .withPlacementContainer(SHARED_PLACEMENT_CONTAINER)
+      .withSchedulerContainer(SHARED_SCHEDULER_CONTAINER)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println("daprV2 -> " + outputFrame.getUtf8String()))
       .withAppChannelAddress("host.testcontainers.internal")
-      .dependsOn(MY_SQL_CONTAINER, sharedPlacementContainer, sharedSchedulerContainer);
+      .dependsOn(MY_SQL_CONTAINER, SHARED_PLACEMENT_CONTAINER, SHARED_SCHEDULER_CONTAINER);
 
   @Container
-  private final static GenericContainer<?> workerV1 = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
+  private static final GenericContainer<?> WORKER_V1 = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -142,8 +144,8 @@ public class FullVersioningWorkflowsIT {
       .waitingFor(Wait.forLogMessage(".*WorkerV1 started.*", 1))
       .withLogConsumer(outputFrame -> System.out.println("WorkerV1: " + outputFrame.getUtf8String()));
 
-// This container will be started manually
-  private final static GenericContainer<?> workerV2 = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
+  // This container is started manually during cutover.
+  private static final GenericContainer<?> WORKER_V2 = new GenericContainer<>(ContainerConstants.JDK_17_TEMURIN_JAMMY)
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
@@ -156,15 +158,12 @@ public class FullVersioningWorkflowsIT {
       .waitingFor(Wait.forLogMessage(".*WorkerV2 started.*", 1))
       .withLogConsumer(outputFrame -> System.out.println("WorkerV2: " + outputFrame.getUtf8String()));
 
-
   private static Map<String, String> createStateStoreProperties() {
     Map<String, String> result = new HashMap<>();
-
     result.put("keyPrefix", "name");
     result.put("schemaName", "dapr_db");
     result.put("actorStateStore", "true");
     result.put("connectionString", STATE_STORE_DSN);
-
     return result;
   }
 
@@ -176,53 +175,115 @@ public class FullVersioningWorkflowsIT {
 
   @Test
   public void testWorkflows() throws Exception {
-    DaprWorkflowClient workflowClientV1 = daprWorkflowClient(DAPR_CONTAINER_V1.getHttpEndpoint(), DAPR_CONTAINER_V1.getGrpcEndpoint());
-// Start workflow V1
-    String instanceIdV1 = workflowClientV1.scheduleNewWorkflow("VersionWorkflow");
-    workflowClientV1.waitForWorkflowStart(instanceIdV1, Duration.ofSeconds(10), false);
+    String instanceIdV1;
+    try (DaprWorkflowClient workflowClientV1 =
+             daprWorkflowClient(DAPR_CONTAINER_V1.getHttpEndpoint(), DAPR_CONTAINER_V1.getGrpcEndpoint())) {
+      instanceIdV1 = workflowClientV1.scheduleNewWorkflow("VersionWorkflow");
+      workflowClientV1.waitForWorkflowStart(instanceIdV1, WORKFLOW_START_TIMEOUT, false);
+      waitForContainerLog(WORKER_V1, "Activity1 called.", ACTIVITY1_EXECUTION_TIMEOUT);
+    }
 
-    // Stop worker and dapr
-    workerV1.stop();
+    WORKER_V1.stop();
     DAPR_CONTAINER_V1.stop();
 
-    // Start new worker with patched workflow
     DAPR_CONTAINER_V2.start();
-    workerV2.start();
-    Thread.sleep(1000);
-    DaprWorkflowClient workflowClientV2 = daprWorkflowClient(DAPR_CONTAINER_V2.getHttpEndpoint(), DAPR_CONTAINER_V2.getGrpcEndpoint());
+    WORKER_V2.start();
 
-    // Start workflow V2
-    String instanceIdV2 = workflowClientV2.scheduleNewWorkflow("VersionWorkflow");
-    workflowClientV2.waitForWorkflowStart(instanceIdV2, Duration.ofSeconds(10), false);
+    try (DaprWorkflowClient workflowClientV2 =
+             daprWorkflowClient(DAPR_CONTAINER_V2.getHttpEndpoint(), DAPR_CONTAINER_V2.getGrpcEndpoint())) {
+      String instanceIdV2 = workflowClientV2.scheduleNewWorkflow("VersionWorkflow");
+      workflowClientV2.waitForWorkflowStart(instanceIdV2, WORKFLOW_START_TIMEOUT, false);
 
-    // Continue workflow V1
-    workflowClientV2.raiseEvent(instanceIdV1, "test", null);
+      waitForWorkflowStateVisibility(workflowClientV2, instanceIdV1, STATE_VISIBILITY_TIMEOUT);
+      raiseEventWithRetry(workflowClientV2, instanceIdV1, "test", null, EVENT_RETRY_TIMEOUT);
 
-    // Wait for workflow to complete
-    Duration timeout = Duration.ofSeconds(10);
-    WorkflowState workflowStatusV1 = workflowClientV2.waitForWorkflowCompletion(instanceIdV1, timeout, true);
-    WorkflowState workflowStatusV2 = workflowClientV2.waitForWorkflowCompletion(instanceIdV2, timeout, true);
+      WorkflowState workflowStatusV1 =
+          workflowClientV2.waitForWorkflowCompletion(instanceIdV1, WORKFLOW_COMPLETION_TIMEOUT, true);
+      WorkflowState workflowStatusV2 =
+          workflowClientV2.waitForWorkflowCompletion(instanceIdV2, WORKFLOW_COMPLETION_TIMEOUT, true);
 
-    assertNotNull(workflowStatusV1);
-    assertNotNull(workflowStatusV2);
-
-    String resultV1 = workflowStatusV1.readOutputAs(String.class);
-    assertEquals("Activity1, Activity2", resultV1);
-
-    String resultV2 = workflowStatusV2.readOutputAs(String.class);
-    assertEquals("Activity3, Activity4", resultV2);
+      assertNotNull(workflowStatusV1);
+      assertNotNull(workflowStatusV2);
+      assertEquals("Activity1, Activity2", workflowStatusV1.readOutputAs(String.class));
+      assertEquals("Activity3, Activity4", workflowStatusV2.readOutputAs(String.class));
+    }
   }
 
-  public DaprWorkflowClient daprWorkflowClient(
-     String daprHttpEndpoint,
-      String daprGrpcEndpoint
-  ){
+  public DaprWorkflowClient daprWorkflowClient(String daprHttpEndpoint, String daprGrpcEndpoint) {
     Map<String, String> overrides = Map.of(
         "dapr.http.endpoint", daprHttpEndpoint,
         "dapr.grpc.endpoint", daprGrpcEndpoint
     );
-
     return new DaprWorkflowClient(new Properties(overrides));
   }
-}
 
+  private static void waitForContainerLog(
+      GenericContainer<?> container,
+      String expectedText,
+      Duration timeout
+  ) throws InterruptedException {
+    Instant deadline = Instant.now().plus(timeout);
+    while (Instant.now().isBefore(deadline)) {
+      if (container.getLogs().contains(expectedText)) {
+        return;
+      }
+      Thread.sleep(POLL_INTERVAL.toMillis());
+    }
+    throw new AssertionError("Timed out waiting for container log: " + expectedText);
+  }
+
+  private static void waitForWorkflowStateVisibility(
+      DaprWorkflowClient workflowClient,
+      String instanceId,
+      Duration timeout
+  ) throws InterruptedException {
+    Instant deadline = Instant.now().plus(timeout);
+    while (Instant.now().isBefore(deadline)) {
+      WorkflowState workflowState = workflowClient.getWorkflowState(instanceId, false);
+      if (workflowState != null && workflowState.getRuntimeStatus() != WorkflowRuntimeStatus.PENDING) {
+        return;
+      }
+      Thread.sleep(POLL_INTERVAL.toMillis());
+    }
+    throw new AssertionError("Timed out waiting for workflow state visibility for instance: " + instanceId);
+  }
+
+  private static void raiseEventWithRetry(
+      DaprWorkflowClient workflowClient,
+      String instanceId,
+      String eventName,
+      Object payload,
+      Duration timeout
+  ) throws InterruptedException {
+    Instant deadline = Instant.now().plus(timeout);
+    RuntimeException lastException = null;
+    while (Instant.now().isBefore(deadline)) {
+      try {
+        workflowClient.raiseEvent(instanceId, eventName, payload);
+        return;
+      } catch (RuntimeException ex) {
+        if (!isTransientActorResolutionFailure(ex)) {
+          throw ex;
+        }
+        lastException = ex;
+        Thread.sleep(POLL_INTERVAL.toMillis());
+      }
+    }
+
+    throw new AssertionError("Timed out raising event for workflow instance " + instanceId, lastException);
+  }
+
+  private static boolean isTransientActorResolutionFailure(Throwable throwable) {
+    Throwable current = throwable;
+    while (current != null) {
+      String message = current.getMessage();
+      if (message != null
+          && (message.contains("did not find address for actor")
+          || message.contains("DaprBuiltInActorNotFoundRetries"))) {
+        return true;
+      }
+      current = current.getCause();
+    }
+    return false;
+  }
+}
