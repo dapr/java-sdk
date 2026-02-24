@@ -17,7 +17,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
@@ -120,7 +119,7 @@ public class PubSubIT extends BaseIT {
         this.getClass().getSimpleName(),
         60000));
 
-    try (DaprPreviewClient client = daprRun.newDaprClientBuilder().buildPreviewClient()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       assertThrowsDaprException(
             "INVALID_ARGUMENT",
             "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
@@ -152,8 +151,7 @@ public class PubSubIT extends BaseIT {
         return "application/json";
       }
     };
-    try (DaprClient client = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).build();
-         DaprPreviewClient previewClient = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).build()) {
       // Only for the gRPC test
       // Send a multiple messages on one topic in messagebus pubsub via publishEvents API.
       List<String> messages = new ArrayList<>();
@@ -161,7 +159,7 @@ public class PubSubIT extends BaseIT {
         messages.add(String.format("This is message #%d on topic %s", i, TOPIC_BULK));
       }
       //Publishing 10 messages
-      BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "", messages).block();
+      BulkPublishResponse response = client.publishEvents(PUBSUB_NAME, TOPIC_BULK, "", messages).block();
       System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
           NUM_MESSAGES, TOPIC_BULK, PUBSUB_NAME));
       assertNotNull(response, "expected not null bulk publish response");
@@ -170,14 +168,14 @@ public class PubSubIT extends BaseIT {
       //Publishing an object.
       MyObject object = new MyObject();
       object.setId("123");
-      response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
+      response = client.publishEvents(PUBSUB_NAME, TOPIC_BULK,
           "application/json", Collections.singletonList(object)).block();
       System.out.println("Published one object.");
       assertNotNull(response, "expected not null bulk publish response");
       assertEquals(0, response.getFailedEntries().size(), "expected no failures in the response");
 
       //Publishing a single byte: Example of non-string based content published
-      previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "",
+      client.publishEvents(PUBSUB_NAME, TOPIC_BULK, "",
           Collections.singletonList(new byte[]{1})).block();
       System.out.println("Published one byte.");
 
@@ -197,7 +195,7 @@ public class PubSubIT extends BaseIT {
           ));
 
       //Publishing a cloud event.
-      previewClient.publishEvents(req).block();
+      client.publishEvents(req).block();
       assertNotNull(response, "expected not null bulk publish response");
       assertEquals(0, response.getFailedEntries().size(), "expected no failures in the response");
 

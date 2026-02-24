@@ -379,6 +379,15 @@ public interface TaskOrchestrationContext {
   void continueAsNew(Object input, boolean preserveUnprocessedEvents);
 
   /**
+   * Check if the given patch name can be applied to the orchestration.
+   *
+   * @param patchName The name of the patch to check.
+   * @return True if the given patch name can be applied to the orchestration, False otherwise.
+   */
+
+  boolean isPatched(String patchName);
+  
+  /**
    * Create a new Uuid that is safe for replay within an orchestration or operation.
    *
    * <p>The default implementation of this method creates a name-based Uuid
@@ -437,7 +446,7 @@ public interface TaskOrchestrationContext {
    * @return a new {@link Task} that completes when the sub-orchestration completes or fails
    */
   default Task<Void> callSubOrchestrator(String name, Object input) {
-    return this.callSubOrchestrator(name, input, null);
+    return this.callSubOrchestrator(name, input, Void.class);
   }
 
   /**

@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
+
 import java.time.Duration;
 
 /**
@@ -20,10 +22,18 @@ import java.time.Duration;
  * This implementation of {@link FailurePolicy} retries a job a fixed number of times
  * with a constant delay between each retry attempt.
  */
+@JsonTypeName("CONSTANT")
 public class ConstantFailurePolicy implements FailurePolicy {
 
   private Integer maxRetries;
   private Duration durationBetweenRetries;
+
+  /**
+   * Default constructor.
+   */
+  public ConstantFailurePolicy() {
+
+  }
 
   /**
    * Constructs a {@code JobConstantFailurePolicy} with the specified maximum number of retries.

@@ -17,20 +17,15 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
-import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationRequestAlpha2;
 import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.ConversationResponseAlpha2;
 import io.dapr.client.domain.DecryptRequestAlpha1;
-import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.EncryptRequestAlpha1;
-import io.dapr.client.domain.GetJobRequest;
-import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
-import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
@@ -168,9 +163,11 @@ public interface DaprPreviewClient extends AutoCloseable {
    * Publish multiple events to Dapr in a single request.
    *
    * @param request {@link BulkPublishRequest} object.
-   * @return A Mono of {@link BulkPublishResponse} object.
    * @param <T> The type of events to publish in the call.
+   * @return A Mono of {@link BulkPublishResponse} object.
+   * @deprecated This method is now stable. Use {@link DaprClient#publishEvents(BulkPublishRequest)} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request);
 
   /**
@@ -180,11 +177,14 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param topicName the topicName where the event will be published.
    * @param events the {@link List} of events to be published.
    * @param contentType the content type of the event. Use Mime based types.
+   * @param <T> The type of the events to publish in the call.
    * @return the {@link BulkPublishResponse} containing publish status of each event.
    *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
    *     generated based on the order of events in the {@link List}.
-   * @param <T> The type of the events to publish in the call.
+   * @deprecated This method is now stable.
+   *     Use {@link DaprClient#publishEvents(String, String, String, List)} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                  List<T> events);
 
@@ -195,11 +195,14 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param topicName the topicName where the event will be published.
    * @param events the varargs of events to be published.
    * @param contentType the content type of the event. Use Mime based types.
+   * @param <T> The type of the events to publish in the call.
    * @return the {@link BulkPublishResponse} containing publish status of each event.
    *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
    *     generated based on the order of events in the {@link List}.
-   * @param <T> The type of the events to publish in the call.
+   * @deprecated This method is now stable.
+   *     Use {@link DaprClient#publishEvents(String, String, String, Object[])} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                  T... events);
 
@@ -211,11 +214,14 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param events the {@link List} of events to be published.
    * @param contentType the content type of the event. Use Mime based types.
    * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @param <T> The type of the events to publish in the call.
    * @return the {@link BulkPublishResponse} containing publish status of each event.
    *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
    *     generated based on the order of events in the {@link List}.
-   * @param <T> The type of the events to publish in the call.
+   * @deprecated This method is now stable.
+   *     Use {@link DaprClient#publishEvents(String, String, String, Map, List)} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                  Map<String,String> requestMetadata, List<T> events);
 
@@ -227,11 +233,14 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param events the varargs of events to be published.
    * @param contentType the content type of the event. Use Mime based types.
    * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @param <T> The type of the events to publish in the call.
    * @return the {@link BulkPublishResponse} containing publish status of each event.
    *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
    *     generated based on the order of events in the {@link List}.
-   * @param <T> The type of the events to publish in the call.
+   * @deprecated This method is now stable.
+   *     Use {@link DaprClient#publishEvents(String, String, String, Map, Object[])} instead.
    */
+  @Deprecated
   <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                  Map<String,String> requestMetadata, T... events);
 
@@ -277,11 +286,38 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param type Type for object deserialization.
    * @param <T> Type of object deserialization.
    * @return An active subscription.
-   * @deprecated Use {@link #subscribeToEvents(String, String, TypeRef)} instead for a more reactive approach.
+   * @deprecated Use {@link #subscribeToTopic(String, String, TypeRef)} instead for a more reactive approach.
    */
   @Deprecated
   <T> Subscription subscribeToEvents(
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux.
+   *
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param type Type for object deserialization.
+   * @param <T> Type of the event payload.
+   * @return A Flux of deserialized event payloads.
+   * @deprecated Use {@link #subscribeToTopic(String, String, TypeRef)} instead.
+   */
+  @Deprecated
+  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux with metadata support.
+   *
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param type Type for object deserialization.
+   * @param metadata Subscription metadata (e.g., {"rawPayload": "true"}).
+   * @param <T> Type of the event payload.
+   * @return A Flux of deserialized event payloads.
+   * @deprecated Use {@link #subscribeToTopic(String, String, TypeRef, Map)} instead.
+   */
+  @Deprecated
+  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata);
 
   /**
    * Subscribe to pubsub events via streaming using Project Reactor Flux.
@@ -298,12 +334,12 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return A Flux of deserialized event payloads.
    * @param <T> Type of the event payload.
    */
-  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type);
+  <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type);
 
   /**
    * Subscribe to pubsub events via streaming using Project Reactor Flux with metadata support.
    *
-   * <p>If metadata is null or empty, this method delegates to {@link #subscribeToEvents(String, String, TypeRef)}.
+   * <p>If metadata is null or empty, this method delegates to {@link #subscribeToTopic(String, String, TypeRef)}.
    * Use metadata {@code {"rawPayload": "true"}} for raw payload subscriptions where Dapr
    * delivers messages without CloudEvent wrapping.
    *
@@ -314,7 +350,7 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return A Flux of deserialized event payloads.
    * @param <T> Type of the event payload.
    */
-  <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata);
+  <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata);
 
   /*
    * Converse with an LLM.

@@ -17,6 +17,8 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 import io.dapr.client.domain.AssistantMessage;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
@@ -75,6 +77,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -143,7 +146,7 @@ public class DaprPreviewClientGrpcTest {
   public void publishEventsExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument");
-    }).when(daprStub).bulkPublishEventAlpha1(any(DaprPubsubProtos.BulkPublishRequest.class), any());
+    }).when(daprStub).bulkPublishEvent(any(DaprPubsubProtos.BulkPublishRequest.class), any());
 
     assertThrowsDaprException(
             StatusRuntimeException.class,
@@ -160,7 +163,7 @@ public class DaprPreviewClientGrpcTest {
           (StreamObserver<DaprPubsubProtos.BulkPublishResponse>) invocation.getArguments()[1];
       observer.onError(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
       return null;
-    }).when(daprStub).bulkPublishEventAlpha1(any(DaprPubsubProtos.BulkPublishRequest.class), any());
+    }).when(daprStub).bulkPublishEvent(any(DaprPubsubProtos.BulkPublishRequest.class), any());
 
     assertThrowsDaprException(
             ExecutionException.class,
@@ -179,7 +182,7 @@ public class DaprPreviewClientGrpcTest {
       observer.onNext(DaprPubsubProtos.BulkPublishResponse.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).bulkPublishEventAlpha1(any(DaprPubsubProtos.BulkPublishRequest.class), any());
+    }).when(daprStub).bulkPublishEvent(any(DaprPubsubProtos.BulkPublishRequest.class), any());
 
 
     BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "testEntry"
@@ -224,7 +227,7 @@ public class DaprPreviewClientGrpcTest {
       observer.onNext(builder.build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).bulkPublishEventAlpha1(any(DaprPubsubProtos.BulkPublishRequest.class), any());
+    }).when(daprStub).bulkPublishEvent(any(DaprPubsubProtos.BulkPublishRequest.class), any());
 
     BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "test",
             "text/plain", null);
@@ -245,7 +248,7 @@ public class DaprPreviewClientGrpcTest {
       observer.onNext(builder.build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).bulkPublishEventAlpha1(any(DaprPubsubProtos.BulkPublishRequest.class), any());
+    }).when(daprStub).bulkPublishEvent(any(DaprPubsubProtos.BulkPublishRequest.class), any());
 
     Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
             "text/plain", Collections.singletonList("test"));
@@ -263,7 +266,7 @@ public class DaprPreviewClientGrpcTest {
       observer.onNext(builder.build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).bulkPublishEventAlpha1(any(DaprPubsubProtos.BulkPublishRequest.class), any());
+    }).when(daprStub).bulkPublishEvent(any(DaprPubsubProtos.BulkPublishRequest.class), any());
 
     Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
             "text/plain", new HashMap<String, String>(){{
@@ -282,7 +285,7 @@ public class DaprPreviewClientGrpcTest {
       observer.onNext(DaprPubsubProtos.BulkPublishResponse.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).bulkPublishEventAlpha1(ArgumentMatchers.argThat(bulkPublishRequest -> {
+    }).when(daprStub).bulkPublishEvent(ArgumentMatchers.argThat(bulkPublishRequest -> {
       DaprPubsubProtos.BulkPublishRequestEntry entry = bulkPublishRequest.getEntries(0);
       if (!"application/json".equals(bulkPublishRequest.getEntries(0).getContentType())) {
         return false;
@@ -314,7 +317,7 @@ public class DaprPreviewClientGrpcTest {
       observer.onNext(DaprPubsubProtos.BulkPublishResponse.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).bulkPublishEventAlpha1(ArgumentMatchers.argThat(bulkPublishRequest -> {
+    }).when(daprStub).bulkPublishEvent(ArgumentMatchers.argThat(bulkPublishRequest -> {
       DaprPubsubProtos.BulkPublishRequestEntry entry = bulkPublishRequest.getEntries(0);
       if (!"application/json".equals(entry.getContentType())) {
         return false;
@@ -333,6 +336,29 @@ public class DaprPreviewClientGrpcTest {
     BulkPublishResponse<String> result = previewClient.publishEvents(req).block();
     Assertions.assertNotNull(result);
     Assertions.assertEquals( 0, result.getFailedEntries().size(), "expected no entries to be failed");
+  }
+
+  @Test
+  public void publishEventsFallbackToAlphaOnUnimplemented() {
+    doAnswer((Answer<Void>) invocation -> {
+      throw newStatusRuntimeException("UNIMPLEMENTED", "bulkPublishEvent not supported");
+    }).when(daprStub).bulkPublishEvent(any(DaprPubsubProtos.BulkPublishRequest.class), any());
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprPubsubProtos.BulkPublishResponse> observer =
+          (StreamObserver<DaprPubsubProtos.BulkPublishResponse>) invocation.getArguments()[1];
+      observer.onNext(DaprPubsubProtos.BulkPublishResponse.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).bulkPublishEventAlpha1(any(DaprPubsubProtos.BulkPublishRequest.class), any());
+
+    BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "test", "text/plain", null);
+    BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+            Collections.singletonList(entry));
+    BulkPublishResponse<String> result = previewClient.publishEvents(req).block();
+    
+    Assertions.assertNotNull(result);
+    assertEquals(0, result.getFailedEntries().size(), "expected no entries to be failed");
   }
 
   @Test
@@ -637,8 +663,8 @@ public class DaprPreviewClientGrpcTest {
     final AtomicInteger eventCount = new AtomicInteger(0);
     final Semaphore gotAll = new Semaphore(0);
 
-    // subscribeToEvents now returns Flux<T> directly (raw data)
-    var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING)
+    // subscribeToTopic returns Flux<T> directly (raw data)
+    var disposable = previewClient.subscribeToTopic(pubsubName, topicName, TypeRef.STRING)
             .doOnNext(rawData -> {
               // rawData is String directly, not CloudEvent
               assertEquals(data, rawData);
@@ -725,7 +751,180 @@ public class DaprPreviewClientGrpcTest {
     final Semaphore gotAll = new Semaphore(0);
     Map<String, String> metadata = Map.of("rawPayload", "true");
 
-    // Use subscribeToEvents with rawPayload metadata
+    // Use subscribeToTopic with rawPayload metadata
+    var disposable = previewClient.subscribeToTopic(pubsubName, topicName, TypeRef.STRING, metadata)
+            .doOnNext(rawData -> {
+              assertEquals(data, rawData);
+              assertTrue(rawData instanceof String);
+
+              int count = eventCount.incrementAndGet();
+
+              if (count >= numEvents) {
+                gotAll.release();
+              }
+            })
+            .subscribe();
+
+    gotAll.acquire();
+    disposable.dispose();
+
+    assertEquals(numEvents, eventCount.get());
+
+    // Verify metadata was passed to gRPC request
+    assertNotNull(capturedMetadata.get());
+    assertEquals("true", capturedMetadata.get().get("rawPayload"));
+  }
+
+  @SuppressWarnings("deprecation")
+  @Test
+  public void deprecatedSubscribeToEventsFluxTest() throws Exception {
+    var numEvents = 10;
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var data = "my message";
+    var started = new Semaphore(0);
+
+    doAnswer((Answer<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> observer =
+          (StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      var emitterThread = new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+
+        observer.onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+
+        for (int i = 0; i < numEvents; i++) {
+          DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response =
+              DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+                  .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                      .setId(Integer.toString(i))
+                      .setPubsubName(pubsubName)
+                      .setTopic(topicName)
+                      .setData(ByteString.copyFromUtf8("\"" + data + "\""))
+                      .setDataContentType("application/json")
+                      .build())
+                  .build();
+          observer.onNext(response);
+        }
+
+        observer.onCompleted();
+      });
+
+      emitterThread.start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 subscribeTopicEventsRequestAlpha1) {
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+          // No-op
+        }
+
+        @Override
+        public void onCompleted() {
+          // No-op
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    final AtomicInteger eventCount = new AtomicInteger(0);
+    final Semaphore gotAll = new Semaphore(0);
+
+    // Test deprecated subscribeToEvents method (delegates to subscribeToTopic)
+    var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING)
+            .doOnNext(rawData -> {
+              assertEquals(data, rawData);
+              assertTrue(rawData instanceof String);
+
+              int count = eventCount.incrementAndGet();
+
+              if (count >= numEvents) {
+                gotAll.release();
+              }
+            })
+            .subscribe();
+
+    gotAll.acquire();
+    disposable.dispose();
+
+    assertEquals(numEvents, eventCount.get());
+  }
+
+  @SuppressWarnings("deprecation")
+  @Test
+  public void deprecatedSubscribeToEventsWithMetadataTest() throws Exception {
+    var numEvents = 10;
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var data = "my message";
+    var started = new Semaphore(0);
+    var capturedMetadata = new AtomicReference<java.util.Map<String, String>>();
+
+    doAnswer((Answer<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> observer =
+          (StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      var emitterThread = new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+
+        observer.onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+
+        for (int i = 0; i < numEvents; i++) {
+          DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response =
+              DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+                  .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                      .setId(Integer.toString(i))
+                      .setPubsubName(pubsubName)
+                      .setTopic(topicName)
+                      .setData(ByteString.copyFromUtf8("\"" + data + "\""))
+                      .setDataContentType("application/json")
+                      .build())
+                  .build();
+          observer.onNext(response);
+        }
+
+        observer.onCompleted();
+      });
+
+      emitterThread.start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request) {
+          if (request.hasInitialRequest()) {
+            capturedMetadata.set(request.getInitialRequest().getMetadataMap());
+          }
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+          // No-op
+        }
+
+        @Override
+        public void onCompleted() {
+          // No-op
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    final AtomicInteger eventCount = new AtomicInteger(0);
+    final Semaphore gotAll = new Semaphore(0);
+    Map<String, String> metadata = Map.of("rawPayload", "true");
+
+    // Test deprecated subscribeToEvents method with metadata (delegates to subscribeToTopic)
     var disposable = previewClient.subscribeToEvents(pubsubName, topicName, TypeRef.STRING, metadata)
             .doOnNext(rawData -> {
               assertEquals(data, rawData);
@@ -1061,6 +1260,9 @@ public class DaprPreviewClientGrpcTest {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("max_tokens", "1000");
 
+    Struct responseFormat = Struct.newBuilder().putFields("type",
+        Value.newBuilder().setStringValue("text").build()).build();
+
     ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
     request.setContextId("test-context");
     request.setTemperature(0.7);
@@ -1069,11 +1271,31 @@ public class DaprPreviewClientGrpcTest {
     request.setToolChoice("auto");
     request.setMetadata(metadata);
     request.setParameters(parameters);
+    request.setPromptCacheRetention(Duration.ofDays(1));
+    request.setResponseFormat(responseFormat);
 
     // Mock response with tool calls
     DaprAiProtos.ConversationResponseAlpha2 grpcResponse = DaprAiProtos.ConversationResponseAlpha2.newBuilder()
         .setContextId("test-context")
         .addOutputs(DaprAiProtos.ConversationResultAlpha2.newBuilder()
+            .setModel("gpt-3.5-turbo")
+            .setUsage(DaprAiProtos.ConversationResultAlpha2CompletionUsage.newBuilder()
+                .setPromptTokens(100)
+                .setCompletionTokens(100)
+                .setTotalTokens(200)
+                .setCompletionTokensDetails(DaprAiProtos.ConversationResultAlpha2CompletionUsageCompletionTokensDetails
+                    .newBuilder()
+                    .setAudioTokens(10)
+                    .setReasoningTokens(11)
+                    .setAcceptedPredictionTokens(222)
+                    .setRejectedPredictionTokens(321)
+                    .build())
+                .setPromptTokensDetails(DaprAiProtos.ConversationResultAlpha2CompletionUsagePromptTokensDetails
+                    .newBuilder()
+                    .setAudioTokens(654)
+                    .setCachedTokens(1112)
+                    .build())
+                .build())
             .addChoices(DaprAiProtos.ConversationResultChoices.newBuilder()
                 .setFinishReason("tool_calls")
                 .setIndex(0)
@@ -1108,6 +1330,17 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("tool_calls", choice.getFinishReason());
     assertEquals("I'll help you get the weather information.", choice.getMessage().getContent());
     assertEquals(1, choice.getMessage().getToolCalls().size());
+    assertEquals("gpt-3.5-turbo", response.getOutputs().get(0).getModel());
+    assertEquals(100, response.getOutputs().get(0).getUsage().getCompletionTokens());
+    assertEquals(100, response.getOutputs().get(0).getUsage().getPromptTokens());
+    assertEquals(200, response.getOutputs().get(0).getUsage().getTotalTokens());
+    assertEquals(10, response.getOutputs().get(0).getUsage().getCompletionTokenDetails().getAudioTokens());
+    assertEquals(11, response.getOutputs().get(0).getUsage().getCompletionTokenDetails().getReasoningTokens());
+    assertEquals(222, response.getOutputs().get(0).getUsage().getCompletionTokenDetails().getAcceptedPredictionTokens());
+    assertEquals(321, response.getOutputs().get(0).getUsage().getCompletionTokenDetails().getRejectedPredictionTokens());
+    assertEquals(654, response.getOutputs().get(0).getUsage().getPromptTokenDetails().getAudioTokens());
+    assertEquals(1112, response.getOutputs().get(0).getUsage().getPromptTokenDetails().getCachedTokens());
+
 
     ConversationToolCalls toolCall = choice.getMessage().getToolCalls().get(0);
     assertEquals("call_123", toolCall.getId());
@@ -1128,6 +1361,11 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("value1", capturedRequest.getMetadataMap().get("key1"));
     assertEquals(1, capturedRequest.getToolsCount());
     assertEquals("get_weather", capturedRequest.getTools(0).getFunction().getName());
+    assertEquals(Struct.newBuilder().putFields("type",
+            Value.newBuilder().setStringValue("text").build()).build(),
+        capturedRequest.getResponseFormat());
+    assertEquals(Duration.ofDays(1).getSeconds(), capturedRequest.getPromptCacheRetention().getSeconds());
+    assertEquals(0, capturedRequest.getPromptCacheRetention().getNanos());
   }
 
   @Test

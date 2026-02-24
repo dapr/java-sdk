@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import io.grpc.Channel;
 
 import java.time.Duration;
@@ -24,7 +26,7 @@ import java.util.concurrent.ExecutorService;
  *
  */
 public final class DurableTaskGrpcWorkerBuilder {
-  final HashMap<String, TaskOrchestrationFactory> orchestrationFactories = new HashMap<>();
+  TaskOrchestrationFactories orchestrationFactories = new TaskOrchestrationFactories();
   final HashMap<String, TaskActivityFactory> activityFactories = new HashMap<>();
   int port;
   Channel channel;
@@ -40,17 +42,7 @@ public final class DurableTaskGrpcWorkerBuilder {
    * @return this builder object
    */
   public DurableTaskGrpcWorkerBuilder addOrchestration(TaskOrchestrationFactory factory) {
-    String key = factory.getName();
-    if (key == null || key.length() == 0) {
-      throw new IllegalArgumentException("A non-empty task orchestration name is required.");
-    }
-
-    if (this.orchestrationFactories.containsKey(key)) {
-      throw new IllegalArgumentException(
-          String.format("A task orchestration factory named %s is already registered.", key));
-    }
-
-    this.orchestrationFactories.put(key, factory);
+    this.orchestrationFactories.addOrchestration(factory);
     return this;
   }
 

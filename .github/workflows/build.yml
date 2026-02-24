@@ -108,8 +108,8 @@ jobs:
         experimental: [ false ]
         include:
           - java: 17
-            spring-boot-version: 3.4.9
-            spring-boot-display-version: 3.4.x
+            spring-boot-version: 4.0.2
+            spring-boot-display-version: 4.0.x
             experimental: false
     env:
       GOVER: "1.20"
@@ -117,9 +117,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.16.5
-      DAPR_RUNTIME_VER: 1.17.0-rc.2
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.16.5/install/install.sh
+      DAPR_CLI_VER: 1.17.0-rc.2
+      DAPR_RUNTIME_VER: 1.17.0-rc.10
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.17.0-rc.2/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
@@ -197,21 +197,38 @@ jobs:
         /home/runner/.local/bin/toxiproxy-server --version
     - name: Clean up and install sdk
       run: ./mvnw clean install -B -q -DskipTests
-    - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
+    - name: Integration tests using spring boot 3.x version ${{ matrix.spring-boot-version }}
       id: integration_tests
+      if: ${{ matrix.spring-boot-display-version == '3.5.x' }}
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
+    - name: Integration tests using spring boot 4.x version ${{ matrix.spring-boot-version }}
+      id: integration_sb4_tests
+      if: ${{ matrix.spring-boot-display-version == '4.0.x' }}
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-sb4-tests dependency:copy-dependencies verify
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v6
       with:
         name: failsafe-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/failsafe-reports
+    - name: Upload failsafe test report for sb4 sdk-tests on failure
+      if: ${{ failure() && steps.integration_sb4_tests.conclusion == 'failure' }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: failsafe-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
+        path: spring-boot-4-sdk-tests/target/failsafe-reports
     - name: Upload surefire test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v6
       with:
         name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/surefire-reports
+    - name: Upload surefire test report for sdk-tests on failure
+      if: ${{ failure() && steps.integration_sb4_tests.conclusion == 'failure' }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
+        path: spring-boot-4-sdk-tests/target/surefire-reports
 
 
   publish:

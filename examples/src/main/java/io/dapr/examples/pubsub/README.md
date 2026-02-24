@@ -275,13 +275,12 @@ Once running, the Subscriber should print the output as follows:
 
 Messages have been retrieved from the topic.
 
-### Bulk Publish Messages 
-> Note : This API is currently in Alpha stage in Dapr runtime, hence the API methods in SDK are part of the DaprPreviewClient class.  
+### Bulk Publish Messages
 
 Another feature provided by the SDK is to allow users to publish multiple messages in a single call to the Dapr sidecar.
-For this example, we have a simple Java application with a main method that uses the Dapr gPRC Preview Client to publish 10 messages to a specific topic in a single call.
+For this example, we have a simple Java application with a main method that uses the Dapr Client to publish 10 messages to a specific topic in a single call.
 
-In the `BulkPublisher.java` file, you will find the `BulkPublisher` class, containing the main method. The main method declares a Dapr Preview Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: one is for Dapr's sent and recieved objects, and the second is for objects to be persisted.
+In the `BulkPublisher.java` file, you will find the `BulkPublisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: one is for Dapr's sent and recieved objects, and the second is for objects to be persisted.
 The client publishes messages using `publishEvents` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
 Dapr's sidecar will automatically wrap the payload received into a CloudEvent object, which will later on be parsed by the subscriber.
 
@@ -296,11 +295,10 @@ public class BulkPublisher {
     OpenTelemetry openTelemetry = OpenTelemetryConfig.createOpenTelemetry();
     Tracer tracer = openTelemetry.getTracer(BulkPublisher.class.getCanonicalName());
     Span span = tracer.spanBuilder("Bulk Publisher's Main").setSpanKind(Span.Kind.CLIENT).startSpan();
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
-      DaprClient c = (DaprClient)client;
-      c.waitForSidecar(10000);
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
+      client.waitForSidecar(10000);
       try (Scope scope = span.makeCurrent()) {
-        System.out.println("Using preview client...");
+        System.out.println("Using Dapr client...");
         List<String> messages = new ArrayList<>();
         System.out.println("Constructing the list of messages to publish");
         for (int i = 0; i < NUM_MESSAGES; i++) {
@@ -333,7 +331,7 @@ public class BulkPublisher {
   }
 }
 ```
-The code uses the `DaprPreviewClient` created by the `DaprClientBuilder` is used for the `publishEvents` (BulkPublish) preview API.
+The code uses the `DaprClient` created by the `DaprClientBuilder` for the `publishEvents` (BulkPublish) API.
 
 In this case, when the `publishEvents` call is made, one of the arguments to the method is the content type of data, this being `text/plain` in the example.
 In this case, when parsing and printing the response, there is a concept of EntryID, which is automatically generated or can be set manually when using the `BulkPublishRequest` object.
@@ -350,7 +348,7 @@ In this case, the application **MUST** override the content-type parameter via `
 public class CloudEventBulkPublisher {
   ///...
   public static void main(String[] args) throws Exception {
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
       // Construct request
       BulkPublishRequest<CloudEvent<Map<String, String>>> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
       List<BulkPublishRequestEntry<CloudEvent<Map<String, String>>>> entries = new ArrayList<>();
@@ -414,7 +412,7 @@ Once running, the BulkPublisher should print the output as follows:
 ```txt
 ✅  You're up and running! Both Dapr and your app logs will appear here.
 
-== APP == Using preview client...
+== APP == Using Dapr client...
 == APP == Constructing the list of messages to publish
 == APP == Going to publish message : This is message #0
 == APP == Going to publish message : This is message #1
@@ -655,13 +653,15 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
   ///...
 }
 ```
-The `BulkSubscriberGrpcService.java` file is responsible for implementing the processing of bulk message subscriptions. When Dapr's sidecar successfully subscribes to bulk messages, it will call `onBulkTopicEventAlpha1` and pass them as a request parameter. You can refer to the example on how to handle bulk messages and respond correctly over gPRC.
+
+The `SubscriberGrpcService.java` now handles both regular and bulk message subscriptions since bulk pubsub is now stable. When Dapr's sidecar successfully subscribes to messages, it will call either `onTopicEvent` for regular messages or `onBulkTopicEvent` for bulk messages. Below is an example of the bulk handler:
 
 ```java
-public class BulkSubscriberGrpcService extends AppCallbackAlphaGrpc.AppCallbackAlphaImplBase {
+public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
+  // ... onTopicEvent method shown above ...
 
   @Override
-  public void onBulkTopicEventAlpha1(io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkRequest request,
+  public void onBulkTopicEvent(io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkRequest request,
           io.grpc.stub.StreamObserver<io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkResponse> responseObserver) {
     try {
       TopicEventBulkResponse.Builder responseBuilder = TopicEventBulkResponse.newBuilder();
@@ -669,6 +669,7 @@ public class BulkSubscriberGrpcService extends AppCallbackAlphaGrpc.AppCallbackA
       if (request.getEntriesCount() == 0) {
         responseObserver.onNext(responseBuilder.build());
         responseObserver.onCompleted();
+        return;
       }
 
       System.out.println("Bulk Subscriber received " + request.getEntriesCount() + " messages.");
@@ -715,11 +716,11 @@ background: true
 sleep: 15
 -->
 ```bash
-// stop http subscriber if you have started one.
+# stop http subscriber if you have started one.
 dapr stop --app-id subscriber
 
 
-// start a grpc subscriber
+# start a grpc subscriber
 dapr run --resources-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.grpc.Subscriber -p 3000
 ```
 <!-- END_STEP -->

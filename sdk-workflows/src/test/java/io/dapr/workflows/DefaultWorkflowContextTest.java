@@ -36,9 +36,14 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DefaultWorkflowContextTest {
   private DefaultWorkflowContext context;
@@ -139,6 +144,11 @@ public class DefaultWorkflowContextTest {
       @Override
       public void setCustomStatus(Object status) {
 
+      }
+
+      @Override
+      public boolean isPatched(String patchName) {
+        return false;
       }
     };
     context = new DefaultWorkflowContext(mockInnerContext);
@@ -284,7 +294,7 @@ public class DefaultWorkflowContextTest {
     String expectedName = "TestActivity";
 
     context.callChildWorkflow(expectedName);
-    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, null, null, null, null);
+    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, null, null, null, Void.class);
   }
 
   @Test
@@ -411,11 +421,45 @@ public class DefaultWorkflowContextTest {
   }
 
   @Test
+  public void callChildWorkflowWithAppId() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+    String expectedAppId = "remote-app";
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(expectedAppId);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+        .callSubOrchestrator(
+            eq(expectedName),
+            eq(expectedInput),
+            eq(expectedInstanceId),
+            captor.capture(),
+            eq(String.class)
+        );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    assertEquals(expectedAppId, taskOptions.getAppID());
+    assertNull(taskOptions.getRetryPolicy());
+    assertNull(taskOptions.getRetryHandler());
+  }
+
+  @Test
   public void setCustomStatusWorkflow() {
     String customStatus = "CustomStatus";
 
     context.setCustomStatus(customStatus);
     verify(mockInnerContext, times(1)).setCustomStatus(customStatus);
+
+  }
+
+  @Test
+  public void testIsPatched() {
+    context.isPatched("patch");
+    verify(mockInnerContext, times(1)).isPatched("patch");
 
   }
 
