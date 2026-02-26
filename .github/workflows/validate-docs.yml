@@ -17,7 +17,7 @@ on:
 jobs:
   build:
     name: "Validate Javadocs generation"
-    runs-on: oracle-4cpu-16gb-arm64
+    runs-on: oracle-vm-4cpu-16gb-arm64
     timeout-minutes: 30
     env:
       JDK_VER: 17
