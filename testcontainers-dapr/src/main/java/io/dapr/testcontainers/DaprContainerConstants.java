@@ -14,8 +14,10 @@ limitations under the License.
 package io.dapr.testcontainers;
 
 public interface DaprContainerConstants {
-  String DAPR_VERSION = "1.16.0-rc.5";
+  String DAPR_VERSION = "1.17.0-rc.10";
+  String DAPR_WORKFLOWS_DASHBOARD_VERSION = "0.0.1";
   String DAPR_RUNTIME_IMAGE_TAG = "daprio/daprd:" + DAPR_VERSION;
   String DAPR_PLACEMENT_IMAGE_TAG = "daprio/placement:" + DAPR_VERSION;
   String DAPR_SCHEDULER_IMAGE_TAG = "daprio/scheduler:" + DAPR_VERSION;
+  String DAPR_WORKFLOWS_DASHBOARD = "ghcr.io/diagridio/diagrid-dashboard:" + DAPR_WORKFLOWS_DASHBOARD_VERSION;
 }

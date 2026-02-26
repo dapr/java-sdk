@@ -13,19 +13,26 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
-import com.google.protobuf.StringValue;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
-import io.dapr.durabletask.implementation.protobuf.OrchestratorService.TaskFailureDetails;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
+import io.dapr.durabletask.runner.ActivityRunner;
+import io.dapr.durabletask.runner.OrchestratorRunner;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +49,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private static final Logger logger = Logger.getLogger(DurableTaskGrpcWorker.class.getPackage().getName());
   private static final Duration DEFAULT_MAXIMUM_TIMER_INTERVAL = Duration.ofDays(3);
 
-  private final HashMap<String, TaskOrchestrationFactory> orchestrationFactories = new HashMap<>();
+  private final TaskOrchestrationFactories orchestrationFactories;
+
   private final HashMap<String, TaskActivityFactory> activityFactories = new HashMap<>();
 
   private final ManagedChannel managedSidecarChannel;
@@ -50,6 +58,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private final Duration maximumTimerInterval;
   private final ExecutorService workerPool;
   private final String appId; // App ID for cross-app routing
+  private final Tracer tracer;
 
   private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient;
   private final boolean isExecutorServiceManaged;
@@ -57,7 +66,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private Thread workerThread;
 
   DurableTaskGrpcWorker(DurableTaskGrpcWorkerBuilder builder) {
-    this.orchestrationFactories.putAll(builder.orchestrationFactories);
+    this.orchestrationFactories = builder.orchestrationFactories;
     this.activityFactories.putAll(builder.activityFactories);
     this.appId = builder.appId;
 
@@ -81,12 +90,20 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
       sidecarGrpcChannel = this.managedSidecarChannel;
     }
 
+    this.tracer = GlobalOpenTelemetry.getTracer("dapr-workflow");
+
     this.sidecarClient = TaskHubSidecarServiceGrpc.newBlockingStub(sidecarGrpcChannel);
     this.dataConverter = builder.dataConverter != null ? builder.dataConverter : new JacksonDataConverter();
     this.maximumTimerInterval = builder.maximumTimerInterval != null ? builder.maximumTimerInterval
         : DEFAULT_MAXIMUM_TIMER_INTERVAL;
-    this.workerPool = builder.executorService != null ? builder.executorService : Executors.newCachedThreadPool();
+
+    ExecutorService rawExecutor = builder.executorService != null
+        ? builder.executorService : Executors.newCachedThreadPool();
+    this.workerPool = Context.taskWrapping(rawExecutor);
+
     this.isExecutorServiceManaged = builder.executorService == null;
+
+
   }
 
   /**
@@ -115,7 +132,9 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
    *
    */
   public void close() {
-    this.workerThread.interrupt();
+    if (this.workerThread != null) {
+      this.workerThread.interrupt();
+    }
     this.isNormalShutdown = true;
     this.shutDownWorkerPool();
     this.closeSideCarChannel();
@@ -159,102 +178,25 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
         while (workItemStream.hasNext()) {
           OrchestratorService.WorkItem workItem = workItemStream.next();
           OrchestratorService.WorkItem.RequestCase requestType = workItem.getRequestCase();
+
           if (requestType == OrchestratorService.WorkItem.RequestCase.ORCHESTRATORREQUEST) {
             OrchestratorService.OrchestratorRequest orchestratorRequest = workItem.getOrchestratorRequest();
             logger.log(Level.FINEST,
                 String.format("Processing orchestrator request for instance: {0}",
                     orchestratorRequest.getInstanceId()));
 
-            // TODO: Error handling
-            this.workerPool.submit(() -> {
-              TaskOrchestratorResult taskOrchestratorResult = taskOrchestrationExecutor.execute(
-                  orchestratorRequest.getPastEventsList(),
-                  orchestratorRequest.getNewEventsList());
-
-              OrchestratorService.OrchestratorResponse response = OrchestratorService.OrchestratorResponse.newBuilder()
-                  .setInstanceId(orchestratorRequest.getInstanceId())
-                  .addAllActions(taskOrchestratorResult.getActions())
-                  .setCustomStatus(StringValue.of(taskOrchestratorResult.getCustomStatus()))
-                  .setCompletionToken(workItem.getCompletionToken())
-                  .build();
-
-              try {
-                this.sidecarClient.completeOrchestratorTask(response);
-                logger.log(Level.FINEST,
-                    "Completed orchestrator request for instance: {0}",
-                    orchestratorRequest.getInstanceId());
-              } catch (StatusRuntimeException e) {
-                if (e.getStatus().getCode() == Status.Code.UNAVAILABLE) {
-                  logger.log(Level.WARNING,
-                      "The sidecar at address {0} is unavailable while completing the orchestrator task.",
-                      this.getSidecarAddress());
-                } else if (e.getStatus().getCode() == Status.Code.CANCELLED) {
-                  logger.log(Level.WARNING,
-                      "Durable Task worker has disconnected from {0} while completing the orchestrator task.",
-                      this.getSidecarAddress());
-                } else {
-                  logger.log(Level.WARNING,
-                      "Unexpected failure completing the orchestrator task at {0}.",
-                      this.getSidecarAddress());
-                }
-              }
-            });
+            this.workerPool.submit(new OrchestratorRunner(workItem, taskOrchestrationExecutor, sidecarClient, tracer));
           } else if (requestType == OrchestratorService.WorkItem.RequestCase.ACTIVITYREQUEST) {
             OrchestratorService.ActivityRequest activityRequest = workItem.getActivityRequest();
-            logger.log(Level.FINEST,
-                String.format("Processing activity request: %s for instance: %s}",
+
+            logger.log(Level.INFO,
+                String.format("Processing activity request: %s for instance: %s, gRPC thread context: %s",
                     activityRequest.getName(),
-                    activityRequest.getOrchestrationInstance().getInstanceId()));
+                    activityRequest.getOrchestrationInstance().getInstanceId(),
+                    Context.current()));
 
-            // TODO: Error handling
-            this.workerPool.submit(() -> {
-              String output = null;
-              TaskFailureDetails failureDetails = null;
-              try {
-                output = taskActivityExecutor.execute(
-                    activityRequest.getName(),
-                    activityRequest.getInput().getValue(),
-                    activityRequest.getTaskExecutionId(),
-                    activityRequest.getTaskId());
-              } catch (Throwable e) {
-                failureDetails = TaskFailureDetails.newBuilder()
-                    .setErrorType(e.getClass().getName())
-                    .setErrorMessage(e.getMessage())
-                    .setStackTrace(StringValue.of(FailureDetails.getFullStackTrace(e)))
-                    .build();
-              }
+            this.workerPool.submit(new ActivityRunner(workItem, taskActivityExecutor, sidecarClient, tracer));
 
-              OrchestratorService.ActivityResponse.Builder responseBuilder = OrchestratorService.ActivityResponse
-                  .newBuilder()
-                  .setInstanceId(activityRequest.getOrchestrationInstance().getInstanceId())
-                  .setTaskId(activityRequest.getTaskId())
-                  .setCompletionToken(workItem.getCompletionToken());
-
-              if (output != null) {
-                responseBuilder.setResult(StringValue.of(output));
-              }
-
-              if (failureDetails != null) {
-                responseBuilder.setFailureDetails(failureDetails);
-              }
-
-              try {
-                this.sidecarClient.completeActivityTask(responseBuilder.build());
-              } catch (StatusRuntimeException e) {
-                if (e.getStatus().getCode() == Status.Code.UNAVAILABLE) {
-                  logger.log(Level.WARNING,
-                      "The sidecar at address {0} is unavailable while completing the activity task.",
-                      this.getSidecarAddress());
-                } else if (e.getStatus().getCode() == Status.Code.CANCELLED) {
-                  logger.log(Level.WARNING,
-                      "Durable Task worker has disconnected from {0} while completing the activity task.",
-                      this.getSidecarAddress());
-                } else {
-                  logger.log(Level.WARNING, "Unexpected failure completing the activity task at {0}.",
-                      this.getSidecarAddress());
-                }
-              }
-            });
           } else if (requestType == OrchestratorService.WorkItem.RequestCase.HEALTHPING) {
             // No-op
           } else {
@@ -324,5 +266,58 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
 
   private String getSidecarAddress() {
     return this.sidecarClient.getChannel().authority();
+  }
+
+  /**
+   * Extracts trace context from the ActivityRequest's ParentTraceContext field
+   * and creates an OpenTelemetry Context with the parent span set.
+   *
+   * @param activityRequest The activity request containing the parent trace context
+   * @return A Context with the parent span set, or the current context if no trace context is present
+   */
+  private Context extractTraceContext(OrchestratorService.ActivityRequest activityRequest) {
+    if (!activityRequest.hasParentTraceContext()) {
+      logger.log(Level.FINE, "No parent trace context in activity request");
+      return Context.current();
+    }
+
+    OrchestratorService.TraceContext traceContext = activityRequest.getParentTraceContext();
+    String traceParent = traceContext.getTraceParent();
+
+    if (traceParent.isEmpty()) {
+      logger.log(Level.FINE, "Empty traceparent in activity request");
+      return Context.current();
+    }
+
+    logger.log(Level.INFO,
+        String.format("Extracting trace context from ActivityRequest: traceparent=%s", traceParent));
+
+    // Use W3CTraceContextPropagator to extract the trace context
+    Map<String, String> carrier = new HashMap<>();
+    carrier.put("traceparent", traceParent);
+    if (traceContext.hasTraceState()) {
+      carrier.put("tracestate", traceContext.getTraceState().getValue());
+    }
+
+    TextMapGetter<Map<String, String>> getter = new TextMapGetter<Map<String, String>>() {
+      @Override
+      public Iterable<String> keys(Map<String, String> carrier) {
+        return carrier.keySet();
+      }
+
+      @Override
+      public String get(Map<String, String> carrier, String key) {
+        return carrier.get(key);
+      }
+    };
+
+
+    Context extractedContext = W3CTraceContextPropagator.getInstance()
+        .extract(Context.current(), carrier, getter);
+
+    logger.log(Level.INFO,
+        String.format("Extracted trace context: %s", extractedContext));
+
+    return extractedContext;
   }
 }

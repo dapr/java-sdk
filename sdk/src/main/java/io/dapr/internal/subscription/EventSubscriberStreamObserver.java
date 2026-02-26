@@ -19,13 +19,15 @@ import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprPubsubProtos;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
 /**
  * StreamObserver implementation for subscribing to Dapr pub/sub events.
@@ -35,28 +37,29 @@ import java.io.IOException;
  *
  * @param <T> The type of the event payload
  */
-public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1> {
+public class EventSubscriberStreamObserver<T>
+    implements StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> {
 
   private static final Logger logger = LoggerFactory.getLogger(EventSubscriberStreamObserver.class);
 
   private final DaprGrpc.DaprStub stub;
-  private final FluxSink<CloudEvent<T>> sink;
+  private final FluxSink<T> sink;
   private final TypeRef<T> type;
   private final DaprObjectSerializer objectSerializer;
 
-  private StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> requestStream;
+  private StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> requestStream;
 
   /**
    * Creates a new EventSubscriberStreamObserver.
    *
    * @param stub              The gRPC stub for making Dapr service calls
-   * @param sink              The FluxSink to emit CloudEvents to
+   * @param sink              The FluxSink to emit deserialized event data to
    * @param type              The TypeRef for deserializing event payloads
    * @param objectSerializer  The serializer to use for deserialization
    */
   public EventSubscriberStreamObserver(
       DaprGrpc.DaprStub stub,
-      FluxSink<CloudEvent<T>> sink,
+      FluxSink<T> sink,
       TypeRef<T> type,
       DaprObjectSerializer objectSerializer) {
     this.stub = stub;
@@ -65,41 +68,12 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
     this.objectSerializer = objectSerializer;
   }
 
-  /** Starts the subscription by sending the initial request.
-   *
-   * @param request The subscription request
-   * @return The StreamObserver to send further requests (acknowledgments)
-   */
-  public StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> start(
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 request
-  ) {
-    requestStream = stub.subscribeTopicEventsAlpha1(this);
-
-    requestStream.onNext(request);
-
-    return requestStream;
+  private static DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 buildSuccessAck(String eventId) {
+    return buildAckRequest(eventId, DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.SUCCESS);
   }
 
-  @Override
-  public void onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1 response) {
-    if (!isValidEventMessage(response)) {
-      return;
-    }
-
-    DaprAppCallbackProtos.TopicEventRequest message = response.getEventMessage();
-    String eventId = message.getId();
-
-    try {
-      T data = deserializeEventData(message);
-      CloudEvent<T> cloudEvent = buildCloudEvent(message, data);
-      emitEventAndAcknowledge(cloudEvent, eventId);
-    } catch (IOException e) {
-      // Deserialization failure - send DROP ack
-      handleDeserializationError(eventId, e);
-    } catch (Exception e) {
-      // Processing failure - send RETRY ack
-      handleProcessingError(eventId, e);
-    }
+  private static DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 buildRetryAck(String eventId) {
+    return buildAckRequest(eventId, DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.RETRY);
   }
 
   @Override
@@ -112,25 +86,8 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
     sink.complete();
   }
 
-  private boolean isValidEventMessage(DaprProtos.SubscribeTopicEventsResponseAlpha1 response) {
-    if (response.getEventMessage() == null) {
-      logger.debug("Received response with null event message, skipping");
-      return false;
-    }
-
-    DaprAppCallbackProtos.TopicEventRequest message = response.getEventMessage();
-
-    if (message.getPubsubName() == null || message.getPubsubName().isEmpty()) {
-      logger.debug("Received event with empty pubsub name, skipping");
-      return false;
-    }
-
-    if (message.getId() == null || message.getId().isEmpty()) {
-      logger.debug("Received event with empty ID, skipping");
-      return false;
-    }
-
-    return true;
+  private static DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 buildDropAck(String eventId) {
+    return buildAckRequest(eventId, DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.DROP);
   }
 
   private T deserializeEventData(DaprAppCallbackProtos.TopicEventRequest message) throws IOException {
@@ -139,25 +96,71 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
       return null;
     }
 
+    // Check if the user requested CloudEvent<T> - we need to construct it from protobuf fields
+    if (isCloudEventType(type)) {
+      return buildCloudEventFromMessage(message);
+    }
+
     return objectSerializer.deserialize(message.getData().toByteArray(), type);
   }
 
-  private CloudEvent<T> buildCloudEvent(DaprAppCallbackProtos.TopicEventRequest message, T data) {
-    CloudEvent<T> cloudEvent = new CloudEvent<>();
+  private boolean isCloudEventType(TypeRef<T> typeRef) {
+    Type t = typeRef.getType();
 
+    if (t instanceof ParameterizedType) {
+      ParameterizedType pt = (ParameterizedType) t;
+      return pt.getRawType() == CloudEvent.class;
+    }
+
+    return t == CloudEvent.class;
+  }
+
+  @SuppressWarnings("unchecked")
+  private T buildCloudEventFromMessage(DaprAppCallbackProtos.TopicEventRequest message) throws IOException {
+    // Extract inner type from CloudEvent<T>
+    TypeRef<?> innerType = extractInnerType(type);
+
+    // Deserialize the data field into the inner type
+    Object data;
+    if (innerType != null) {
+      data = objectSerializer.deserialize(message.getData().toByteArray(), innerType);
+    } else {
+      data = message.getData().toStringUtf8();
+    }
+
+    // Build CloudEvent from protobuf fields
+    CloudEvent<Object> cloudEvent = new CloudEvent<>();
     cloudEvent.setId(message.getId());
+    cloudEvent.setSource(message.getSource());
     cloudEvent.setType(message.getType());
     cloudEvent.setSpecversion(message.getSpecVersion());
     cloudEvent.setDatacontenttype(message.getDataContentType());
+    cloudEvent.setData(data);
     cloudEvent.setTopic(message.getTopic());
     cloudEvent.setPubsubName(message.getPubsubName());
-    cloudEvent.setData(data);
 
-    return cloudEvent;
+    return (T) cloudEvent;
   }
 
-  private void emitEventAndAcknowledge(CloudEvent<T> cloudEvent, String eventId) {
-    sink.next(cloudEvent);
+  private TypeRef<?> extractInnerType(TypeRef<T> cloudEventType) {
+    Type t = cloudEventType.getType();
+
+    if (t instanceof ParameterizedType) {
+      ParameterizedType pt = (ParameterizedType) t;
+      Type[] typeArgs = pt.getActualTypeArguments();
+      if (typeArgs.length > 0) {
+        return TypeRef.get(typeArgs[0]);
+      }
+    }
+
+    return null; // Raw CloudEvent without type parameter
+  }
+
+  private void emitDataAndAcknowledge(T data, String eventId) {
+    // Only emit if data is not null (Reactor doesn't allow null values in Flux)
+    if (data != null) {
+      sink.next(data);
+    }
 
     // Send SUCCESS acknowledgment
     requestStream.onNext(buildSuccessAck(eventId));
@@ -192,23 +195,11 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
     sink.error(DaprException.propagate(cause));
   }
 
-  private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildSuccessAck(String eventId) {
-    return buildAckRequest(eventId, DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.SUCCESS);
-  }
-
-  private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildRetryAck(String eventId) {
-    return buildAckRequest(eventId, DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.RETRY);
-  }
-
-  private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildDropAck(String eventId) {
-    return buildAckRequest(eventId, DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.DROP);
-  }
-
-  private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildAckRequest(
+  private static DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 buildAckRequest(
       String eventId,
       DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus status) {
-    DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1 eventProcessed =
-        DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1.newBuilder()
+    DaprPubsubProtos.SubscribeTopicEventsRequestProcessedAlpha1 eventProcessed =
+        DaprPubsubProtos.SubscribeTopicEventsRequestProcessedAlpha1.newBuilder()
             .setId(eventId)
             .setStatus(
                 DaprAppCallbackProtos.TopicEventResponse.newBuilder()
@@ -216,8 +207,66 @@ public class EventSubscriberStreamObserver<T> implements StreamObserver<DaprProt
                     .build())
             .build();
 
-    return DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+    return DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
         .setEventProcessed(eventProcessed)
         .build();
+  }
+
+  /**
+   * Starts the subscription by sending the initial request.
+   *
+   * @param request The subscription request
+   * @return The StreamObserver to send further requests (acknowledgments)
+   */
+  public StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> start(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request
+  ) {
+    requestStream = stub.subscribeTopicEventsAlpha1(this);
+
+    requestStream.onNext(request);
+
+    return requestStream;
+  }
+
+  @Override
+  public void onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response) {
+    if (!isValidEventMessage(response)) {
+      return;
+    }
+
+    DaprAppCallbackProtos.TopicEventRequest message = response.getEventMessage();
+    String eventId = message.getId();
+
+    try {
+      T data = deserializeEventData(message);
+      emitDataAndAcknowledge(data, eventId);
+    } catch (IOException e) {
+      // Deserialization failure - send DROP ack
+      handleDeserializationError(eventId, e);
+    } catch (Exception e) {
+      // Processing failure - send RETRY ack
+      handleProcessingError(eventId, e);
+    }
+  }
+
+  private boolean isValidEventMessage(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response) {
+    if (response.getEventMessage() == null) {
+      logger.debug("Received response with null event message, skipping");
+      return false;
+    }
+
+    DaprAppCallbackProtos.TopicEventRequest message = response.getEventMessage();
+
+    if (message.getPubsubName() == null || message.getPubsubName().isEmpty()) {
+      logger.debug("Received event with empty pubsub name, skipping");
+      return false;
+    }
+
+    if (message.getId() == null || message.getId().isEmpty()) {
+      logger.debug("Received event with empty ID, skipping");
+      return false;
+    }
+
+    return true;
   }
 }

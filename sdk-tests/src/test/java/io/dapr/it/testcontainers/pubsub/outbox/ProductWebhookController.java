@@ -26,12 +26,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequestMapping("/webhooks/products")
 public class ProductWebhookController {
 
-  public static final List<CloudEvent<Product>> EVENT_LIST = new CopyOnWriteArrayList<>();
+  public final List<CloudEvent<Product>> events = new CopyOnWriteArrayList<>();
 
   @PostMapping("/created")
   @Topic(name = "product.created", pubsubName = "pubsub")
-  public void handleEvent(@RequestBody CloudEvent cloudEvent) {
+  public void handleEvent(@RequestBody CloudEvent<Product> cloudEvent) {
     System.out.println("Received product.created event: " + cloudEvent.getData());
-    EVENT_LIST.add(cloudEvent);
+
+    events.add(cloudEvent);
+  }
+
+  public List<CloudEvent<Product>> getEventList() {
+    return events;
   }
 }

@@ -20,7 +20,6 @@ import io.dapr.durabletask.TaskFailedException;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -42,7 +41,6 @@ public interface WorkflowContext {
    * @return Logger
    */
   Logger getLogger();
-
 
   /**
    * Gets the name of the current workflow.
@@ -383,7 +381,7 @@ public interface WorkflowContext {
    * @return a new {@link Task} that completes when the child-workflow completes or fails
    */
   default Task<Void> callChildWorkflow(String name, Object input) {
-    return this.callChildWorkflow(name, input, null);
+    return this.callChildWorkflow(name, input, Void.class);
   }
 
   /**
@@ -533,5 +531,12 @@ public interface WorkflowContext {
    * @param status to be set to the current execution
    */
   void setCustomStatus(Object status);
-  
+
+  /**
+   * Checks if the patch has been applied.
+   *
+   * @param patchName the patch name to check
+   * @return true if already applied
+   */
+  boolean isPatched(String patchName);
 }

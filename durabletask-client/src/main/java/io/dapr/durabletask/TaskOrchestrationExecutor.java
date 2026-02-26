@@ -19,7 +19,11 @@ import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService.ScheduleTaskAction.Builder;
 import io.dapr.durabletask.interruption.ContinueAsNewInterruption;
 import io.dapr.durabletask.interruption.OrchestratorBlockedException;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
+import io.dapr.durabletask.orchestration.exception.VersionNotRegisteredException;
 import io.dapr.durabletask.util.UuidGenerator;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -44,17 +48,26 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.logging.Logger;
 
-final class TaskOrchestrationExecutor {
+public final class TaskOrchestrationExecutor {
 
   private static final String EMPTY_STRING = "";
-  private final HashMap<String, TaskOrchestrationFactory> orchestrationFactories;
+  private final TaskOrchestrationFactories orchestrationFactories;
   private final DataConverter dataConverter;
   private final Logger logger;
   private final Duration maximumTimerInterval;
   private final String appId;
 
+  /**
+   * Creates a new TaskOrchestrationExecutor.
+   *
+   * @param orchestrationFactories map of orchestration names to their factories
+   * @param dataConverter          converter for serializing/deserializing data
+   * @param maximumTimerInterval   maximum duration for timer intervals
+   * @param logger                 logger for orchestration execution
+   * @param appId                  application ID for cross-app routing
+   */
   public TaskOrchestrationExecutor(
-      HashMap<String, TaskOrchestrationFactory> orchestrationFactories,
+      TaskOrchestrationFactories orchestrationFactories,
       DataConverter dataConverter,
       Duration maximumTimerInterval,
       Logger logger,
@@ -66,6 +79,13 @@ final class TaskOrchestrationExecutor {
     this.appId = appId; // extracted from router
   }
 
+  /**
+   * Executes the orchestration with the given past and new events.
+   *
+   * @param pastEvents list of past history events
+   * @param newEvents  list of new history events
+   * @return the result of the orchestrator execution
+   */
   public TaskOrchestratorResult execute(List<OrchestratorService.HistoryEvent> pastEvents,
                                         List<OrchestratorService.HistoryEvent> newEvents) {
     ContextImplTask context = new ContextImplTask(pastEvents, newEvents);
@@ -79,6 +99,9 @@ final class TaskOrchestrationExecutor {
       }
       completed = true;
       logger.finest("The orchestrator execution completed normally");
+    } catch (VersionNotRegisteredException versionNotRegisteredException) {
+      logger.warning("The orchestrator version is not registered: " + versionNotRegisteredException.toString());
+      context.setVersionNotRegistered();
     } catch (OrchestratorBlockedException orchestratorBlockedException) {
       logger.fine("The orchestrator has yielded and will await for new events.");
     } catch (ContinueAsNewInterruption continueAsNewInterruption) {
@@ -87,7 +110,7 @@ final class TaskOrchestrationExecutor {
     } catch (Exception e) {
       // The orchestrator threw an unhandled exception - fail it
       // TODO: What's the right way to log this?
-      logger.warning("The orchestrator failed with an unhandled exception: " + e.toString());
+      logger.warning("The orchestrator failed with an unhandled exception: " + e);
       context.fail(new FailureDetails(e));
     }
 
@@ -97,12 +120,16 @@ final class TaskOrchestrationExecutor {
       context.complete(null);
     }
 
-    return new TaskOrchestratorResult(context.pendingActions.values(), context.getCustomStatus());
+    return new TaskOrchestratorResult(context.pendingActions.values(),
+        context.getCustomStatus(),
+        context.versionName,
+        context.encounteredPatches);
   }
 
   private class ContextImplTask implements TaskOrchestrationContext {
 
     private String orchestratorName;
+    private final List<String> encounteredPatches = new ArrayList<>();
     private String rawInput;
     private String instanceId;
     private Instant currentInstant;
@@ -127,6 +154,12 @@ final class TaskOrchestrationExecutor {
     private Object continuedAsNewInput;
     private boolean preserveUnprocessedEvents;
     private Object customStatus;
+    private final Map<String, Boolean> appliedPatches = new HashMap<>();
+    private final Map<String, Boolean> historyPatches = new HashMap<>();
+
+    private String orchestratorVersionName;
+
+    private String versionName;
 
     public ContextImplTask(List<OrchestratorService.HistoryEvent> pastEvents,
                            List<OrchestratorService.HistoryEvent> newEvents) {
@@ -175,6 +208,14 @@ final class TaskOrchestrationExecutor {
 
     private void setAppId(String appId) {
       this.appId = appId;
+    }
+
+    private boolean hasSourceAppId() {
+      return this.appId != null && !this.appId.isEmpty();
+    }
+
+    private boolean hasTargetAppId(TaskOptions options) {
+      return options != null && options.hasAppID();
     }
 
     @Override
@@ -312,36 +353,32 @@ final class TaskOrchestrationExecutor {
       }
 
       // Add router information for cross-app routing
-      // Router always has a source app ID from EXECUTIONSTARTED event
-      OrchestratorService.TaskRouter.Builder routerBuilder = OrchestratorService.TaskRouter.newBuilder()
-          .setSourceAppID(this.appId);
-
-      // Add target app ID if specified in options
-      if (options != null && options.hasAppID()) {
+      OrchestratorService.TaskRouter router = null;
+      if (hasSourceAppId() && hasTargetAppId(options)) {
         String targetAppId = options.getAppID();
-        OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+        scheduleTaskBuilder.setRouter(OrchestratorService.TaskRouter.newBuilder()
             .setSourceAppID(this.appId)
             .setTargetAppID(targetAppId)
-            .build();
-        scheduleTaskBuilder.setRouter(router);
+            .build());
         this.logger.fine(() -> String.format(
             "cross app routing detected: source=%s, target=%s",
             this.appId, targetAppId));
       }
+
+      // Capture for use inside lambda
+      final OrchestratorService.TaskRouter actionRouter = router;
+
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
-        OrchestratorService.ScheduleTaskAction scheduleTaskAction = scheduleTaskBuilder.build();
         OrchestratorService.OrchestratorAction.Builder actionBuilder = OrchestratorService.OrchestratorAction
             .newBuilder()
             .setId(id)
             .setScheduleTask(scheduleTaskBuilder);
-        if (options != null && options.hasAppID()) {
-          String targetAppId = options.getAppID();
-          OrchestratorService.TaskRouter actionRouter = OrchestratorService.TaskRouter.newBuilder()
+        if (hasSourceAppId() && hasTargetAppId(options)) {
+          actionBuilder.setRouter(OrchestratorService.TaskRouter.newBuilder()
               .setSourceAppID(this.appId)
-              .setTargetAppID(targetAppId)
-              .build();
-          actionBuilder.setRouter(actionRouter);
+              .setTargetAppID(options.getAppID())
+              .build());
         }
         this.pendingActions.put(id, actionBuilder.build());
 
@@ -361,6 +398,34 @@ final class TaskOrchestrationExecutor {
       };
 
       return this.createAppropriateTask(taskFactory, options);
+    }
+
+    @Override
+    public boolean isPatched(String patchName) {
+      var isPatched = this.checkPatch(patchName);
+      if (isPatched) {
+        this.encounteredPatches.add(patchName);
+      }
+
+      return isPatched;
+    }
+
+    public boolean checkPatch(String patchName) {
+      if (this.appliedPatches.containsKey(patchName)) {
+        return this.appliedPatches.get(patchName);
+      }
+
+      if (this.historyPatches.containsKey(patchName)) {
+        this.appliedPatches.put(patchName, true);
+        return true;
+      }
+
+      if (this.isReplaying) {
+        this.appliedPatches.put(patchName, false);
+        return false;
+      }
+      this.appliedPatches.put(patchName, true);
+      return true;
     }
 
     @Override
@@ -438,7 +503,7 @@ final class TaskOrchestrationExecutor {
 
       if (input instanceof TaskOptions) {
         throw new IllegalArgumentException("TaskOptions cannot be used as an input. "
-           + "Did you call the wrong method overload?");
+            + "Did you call the wrong method overload?");
       }
 
       String serializedInput = this.dataConverter.serialize(input);
@@ -454,13 +519,40 @@ final class TaskOrchestrationExecutor {
       }
       createSubOrchestrationActionBuilder.setInstanceId(instanceId);
 
-      // TODO: @cicoyle - add suborchestration cross app logic here when its supported
+      // Add router information for cross-app routing of sub-orchestrations
+      if (hasSourceAppId()) {
+        OrchestratorService.TaskRouter.Builder routerBuilder = OrchestratorService.TaskRouter.newBuilder()
+            .setSourceAppID(this.appId);
+
+        // Add target app ID if specified in options
+        if (hasTargetAppId(options)) {
+          routerBuilder.setTargetAppID(options.getAppID());
+          this.logger.fine(() -> String.format(
+              "cross app sub-orchestration routing detected: source=%s, target=%s",
+              this.appId, options.getAppID()));
+        }
+
+        createSubOrchestrationActionBuilder.setRouter(routerBuilder.build());
+      }
+
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
-        this.pendingActions.put(id, OrchestratorService.OrchestratorAction.newBuilder()
+        OrchestratorService.OrchestratorAction.Builder actionBuilder = OrchestratorService.OrchestratorAction
+            .newBuilder()
             .setId(id)
-            .setCreateSubOrchestration(createSubOrchestrationActionBuilder)
-            .build());
+            .setCreateSubOrchestration(createSubOrchestrationActionBuilder);
+
+        // Set router on the OrchestratorAction for cross-app routing
+        if (hasSourceAppId()) {
+          OrchestratorService.TaskRouter.Builder actionRouterBuilder = OrchestratorService.TaskRouter.newBuilder()
+              .setSourceAppID(this.appId);
+          if (hasTargetAppId(options)) {
+            actionRouterBuilder.setTargetAppID(options.getAppID());
+          }
+          actionBuilder.setRouter(actionRouterBuilder.build());
+        }
+
+        this.pendingActions.put(id, actionBuilder.build());
 
         if (!this.isReplaying) {
           this.logger.fine(() -> String.format(
@@ -527,7 +619,7 @@ final class TaskOrchestrationExecutor {
       // If a non-infinite timeout is specified, schedule an internal durable timer.
       // If the timer expires and the external event task hasn't yet completed, we'll cancel the task.
       if (hasTimeout) {
-        this.createTimer(timeout).future.thenRun(() -> {
+        this.createTimer(name, timeout).future.thenRun(() -> {
           if (!eventTask.isDone()) {
             // Book-keeping - remove the task record for the canceled task
             eventQueue.removeIf(t -> t.task == eventTask);
@@ -670,7 +762,7 @@ final class TaskOrchestrationExecutor {
       Helpers.throwIfArgumentNull(duration, "duration");
 
       Instant finalFireAt = this.currentInstant.plus(duration);
-      return createTimer(finalFireAt);
+      return createTimer("", finalFireAt);
     }
 
     @Override
@@ -679,18 +771,38 @@ final class TaskOrchestrationExecutor {
       Helpers.throwIfArgumentNull(zonedDateTime, "zonedDateTime");
 
       Instant finalFireAt = zonedDateTime.toInstant();
-      return createTimer(finalFireAt);
+      return createTimer("", finalFireAt);
     }
 
-    private Task<Void> createTimer(Instant finalFireAt) {
-      return new TimerTask(finalFireAt);
+    public Task<Void> createTimer(String name, Duration duration) {
+      Helpers.throwIfOrchestratorComplete(this.isComplete);
+      Helpers.throwIfArgumentNull(duration, "duration");
+      Helpers.throwIfArgumentNull(name, "name");
+
+      Instant finalFireAt = this.currentInstant.plus(duration);
+      return createTimer(name, finalFireAt);
     }
 
-    private CompletableTask<Void> createInstantTimer(int id, Instant fireAt) {
+    @Override
+    public Task<Void> createTimer(String name, ZonedDateTime zonedDateTime) {
+      Helpers.throwIfOrchestratorComplete(this.isComplete);
+      Helpers.throwIfArgumentNull(zonedDateTime, "zonedDateTime");
+      Helpers.throwIfArgumentNull(name, "name");
+
+      Instant finalFireAt = zonedDateTime.toInstant();
+      return createTimer(name, finalFireAt);
+    }
+
+    private Task<Void> createTimer(String name, Instant finalFireAt) {
+      return new TimerTask(name, finalFireAt);
+    }
+
+    private CompletableTask<Void> createInstantTimer(String name, int id, Instant fireAt) {
       Timestamp ts = DataConverter.getTimestampFromInstant(fireAt);
       this.pendingActions.put(id, OrchestratorService.OrchestratorAction.newBuilder()
           .setId(id)
-          .setCreateTimer(OrchestratorService.CreateTimerAction.newBuilder().setFireAt(ts))
+          .setCreateTimer(OrchestratorService.CreateTimerAction.newBuilder()
+              .setName(name).setFireAt(ts))
           .build());
 
       if (!this.isReplaying) {
@@ -876,11 +988,20 @@ final class TaskOrchestrationExecutor {
       }
 
       int id = this.sequenceNumber++;
-      OrchestratorService.OrchestratorAction action = OrchestratorService.OrchestratorAction.newBuilder()
+      OrchestratorService.OrchestratorAction.Builder actionBuilder = OrchestratorService.OrchestratorAction
+          .newBuilder()
           .setId(id)
-          .setCompleteOrchestration(builder.build())
-          .build();
-      this.pendingActions.put(id, action);
+          .setCompleteOrchestration(builder.build());
+
+      // Add router to completion action for cross-app routing back to parent
+      if (hasSourceAppId()) {
+        actionBuilder.setRouter(
+            OrchestratorService.TaskRouter.newBuilder()
+                .setSourceAppID(this.appId)
+                .build());
+      }
+
+      this.pendingActions.put(id, actionBuilder.build());
       this.isComplete = true;
     }
 
@@ -924,6 +1045,14 @@ final class TaskOrchestrationExecutor {
           case ORCHESTRATORSTARTED:
             Instant instant = DataConverter.getInstantFromTimestamp(e.getTimestamp());
             this.setCurrentInstant(instant);
+
+            if (StringUtils.isNotEmpty(e.getOrchestratorStarted().getVersion().getName())) {
+              this.orchestratorVersionName = e.getOrchestratorStarted().getVersion().getName();
+            }
+            for (var patch : e.getOrchestratorStarted().getVersion().getPatchesList()) {
+              this.historyPatches.put(patch, true);
+            }
+
             this.logger.fine(() -> this.instanceId + ": Workflow orchestrator started");
             break;
           case ORCHESTRATORCOMPLETED:
@@ -936,19 +1065,37 @@ final class TaskOrchestrationExecutor {
             this.setInput(executionStarted.getInput().getValue());
             this.setInstanceId(executionStarted.getOrchestrationInstance().getInstanceId());
             this.logger.fine(() -> this.instanceId + ": Workflow execution started");
-            this.setAppId(e.getRouter().getSourceAppID());
+            // For cross-app suborchestrations, if the router has a target, use that as our appID
+            // since that's where we're actually executing
+            if (e.hasRouter()) {
+              OrchestratorService.TaskRouter router = e.getRouter();
+              if (router.hasTargetAppID()) {
+                this.setAppId(router.getTargetAppID());
+              } else {
+                this.setAppId(router.getSourceAppID());
+              }
+            }
+
+            var versionName = "";
+            if (!StringUtils.isEmpty(this.orchestratorVersionName)) {
+              versionName = this.orchestratorVersionName;
+            }
 
             // Create and invoke the workflow orchestrator
             TaskOrchestrationFactory factory = TaskOrchestrationExecutor.this.orchestrationFactories
-                .get(executionStarted.getName());
+                .getOrchestrationFactory(executionStarted.getName(), versionName);
+
             if (factory == null) {
               // Try getting the default orchestrator
-              factory = TaskOrchestrationExecutor.this.orchestrationFactories.get("*");
+              factory = TaskOrchestrationExecutor.this.orchestrationFactories
+                  .getOrchestrationFactory("*");
             }
             // TODO: Throw if the factory is null (orchestration by that name doesn't exist)
             if (factory == null) {
               throw new IllegalStateException("No factory found for orchestrator: " + executionStarted.getName());
             }
+
+            this.versionName = factory.getVersionName();
 
             TaskOrchestration orchestrator = factory.create();
             orchestrator.run(this);
@@ -958,6 +1105,9 @@ final class TaskOrchestrationExecutor {
             break;
           case EXECUTIONTERMINATED:
             this.handleExecutionTerminated(e);
+            break;
+          case EXECUTIONSTALLED:
+            this.logger.fine(() -> this.instanceId + ": Workflow execution stalled");
             break;
           case TASKSCHEDULED:
             this.handleTaskScheduled(e);
@@ -996,6 +1146,22 @@ final class TaskOrchestrationExecutor {
             throw new IllegalStateException("Don't know how to handle history type " + e.getEventTypeCase());
         }
       }
+    }
+
+    public void setVersionNotRegistered() {
+      this.pendingActions.clear();
+
+      OrchestratorService.CompleteOrchestrationAction.Builder builder = OrchestratorService.CompleteOrchestrationAction
+          .newBuilder();
+      builder.setOrchestrationStatus(OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_STALLED);
+
+      int id = this.sequenceNumber++;
+      OrchestratorService.OrchestratorAction action = OrchestratorService.OrchestratorAction.newBuilder()
+          .setId(id)
+          .setCompleteOrchestration(builder.build())
+          .build();
+      this.pendingActions.put(id, action);
+
     }
 
     private class TaskRecord<V> {
@@ -1069,10 +1235,10 @@ final class TaskOrchestrationExecutor {
       private Instant finalFireAt;
       CompletableTask<Void> task;
 
-      public TimerTask(Instant finalFireAt) {
+      public TimerTask(String name, Instant finalFireAt) {
         super();
-        CompletableTask<Void> firstTimer = createTimerTask(finalFireAt);
-        CompletableFuture<Void> timerChain = createTimerChain(finalFireAt, firstTimer.future);
+        CompletableTask<Void> firstTimer = createTimerTask(name, finalFireAt);
+        CompletableFuture<Void> timerChain = createTimerChain(name, finalFireAt, firstTimer.future);
         this.task = new CompletableTask<>(timerChain);
         this.finalFireAt = finalFireAt;
       }
@@ -1083,26 +1249,27 @@ final class TaskOrchestrationExecutor {
       // reached finalFireAt. If that is the case, we create a new sub-timer task and make a recursive call on
       // that new sub-timer task so that once it completes, another sub-timer task is created
       // if necessary. Otherwise, we return and no more sub-timers are created.
-      private CompletableFuture<Void> createTimerChain(Instant finalFireAt, CompletableFuture<Void> currentFuture) {
+      private CompletableFuture<Void> createTimerChain(String name, Instant finalFireAt,
+                                                       CompletableFuture<Void> currentFuture) {
         return currentFuture.thenRun(() -> {
           Instant currentInstsanceMinusNanos = currentInstant.minusNanos(currentInstant.getNano());
           Instant finalFireAtMinusNanos = finalFireAt.minusNanos(finalFireAt.getNano());
           if (currentInstsanceMinusNanos.compareTo(finalFireAtMinusNanos) >= 0) {
             return;
           }
-          Task<Void> nextTimer = createTimerTask(finalFireAt);
-          createTimerChain(finalFireAt, nextTimer.future);
+          Task<Void> nextTimer = createTimerTask(name + "-next", finalFireAt);
+          createTimerChain(name, finalFireAt, nextTimer.future);
         });
       }
 
-      private CompletableTask<Void> createTimerTask(Instant finalFireAt) {
+      private CompletableTask<Void> createTimerTask(String name, Instant finalFireAt) {
         CompletableTask<Void> nextTimer;
         Duration remainingTime = Duration.between(currentInstant, finalFireAt);
         if (remainingTime.compareTo(maximumTimerInterval) > 0) {
           Instant nextFireAt = currentInstant.plus(maximumTimerInterval);
-          nextTimer = createInstantTimer(sequenceNumber++, nextFireAt);
+          nextTimer = createInstantTimer(name, sequenceNumber++, nextFireAt);
         } else {
-          nextTimer = createInstantTimer(sequenceNumber++, finalFireAt);
+          nextTimer = createInstantTimer(name, sequenceNumber++, finalFireAt);
         }
         nextTimer.setParentTask(this);
         return nextTimer;
@@ -1232,7 +1399,7 @@ final class TaskOrchestrationExecutor {
         Duration delay = this.getNextDelay();
         if (!delay.isZero() && !delay.isNegative()) {
           // Use a durable timer to create the delay between retries
-          this.context.createTimer(delay).await();
+          this.context.createTimer(getName() + "-retry",delay).await();
         }
 
         this.totalRetryTime = Duration.between(this.startTime, this.context.getCurrentInstant());

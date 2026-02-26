@@ -13,13 +13,20 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DaprMetadata;
+import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.GetJobRequest;
+import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
@@ -27,6 +34,7 @@ import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.SaveStateRequest;
+import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
@@ -86,6 +94,77 @@ public interface DaprClient extends AutoCloseable {
    * @return a Mono plan of a Dapr's void response.
    */
   Mono<Void> publishEvent(PublishEventRequest request);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param request {@link BulkPublishRequest} object.
+   * @return A Mono of {@link BulkPublishResponse} object.
+   * @param <T> The type of events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the {@link List} of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 List<T> events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the varargs of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 T... events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the {@link List} of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 Map<String,String> requestMetadata, List<T> events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the varargs of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 Map<String,String> requestMetadata, T... events);
 
   /**
    * Invoke a service method, using serialization.
@@ -701,6 +780,38 @@ public interface DaprClient extends AutoCloseable {
    * @return DaprMetadata containing Dapr Metadata from the metadata endpoint.
    */
   Mono<DaprMetadata> getMetadata();
+
+  /**
+   * Schedules a job using the provided job request details.
+   *
+   * @param scheduleJobRequest The request containing the details of the job to schedule.
+   *                         Must include a name and optional schedule, data, and other related properties.
+   * @return A {@link Mono} that completes when the job scheduling operation is successful or raises an error.
+   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
+   */
+  public Mono<Void> scheduleJob(ScheduleJobRequest scheduleJobRequest);
+
+  /**
+   * Retrieves details of a specific job.
+   *
+   * @param getJobRequest The request containing the job name for which the details are to be fetched.
+   *      The name property is mandatory.
+   * @return A {@link Mono} that emits the {@link GetJobResponse} containing job details or raises an
+   *      error if the job is not found.
+   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
+   */
+
+  public Mono<GetJobResponse> getJob(GetJobRequest getJobRequest);
+
+  /**
+   * Deletes a job based on the given request.
+   *
+   * @param deleteJobRequest The request containing the job name to be deleted.
+   *                        The name property is mandatory.
+   * @return A {@link Mono} that completes when the job is successfully deleted or raises an error.
+   * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
+   */
+  public Mono<Void> deleteJob(DeleteJobRequest deleteJobRequest);
 
   /**
    * Gracefully shutdown the dapr runtime.

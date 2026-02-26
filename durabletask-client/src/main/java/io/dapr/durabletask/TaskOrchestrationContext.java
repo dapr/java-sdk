@@ -190,6 +190,19 @@ public interface TaskOrchestrationContext {
    *
    * <p>Specifying a long delay (for example, a delay of a few days or more) may result in the creation of multiple,
    * internally-managed durable timers. The orchestration code doesn't need to be aware of this behavior. However,
+   * it may be visible in framework logs and the stored history state.
+   *
+   * @param name of the timer
+   * @param delay the amount of time before the timer should expire
+   * @return a new {@code Task} that completes after the specified delay
+   */
+  Task<Void> createTimer(String name, Duration delay);
+
+  /**
+   * Creates a durable timer that expires after the specified delay.
+   *
+   * <p>Specifying a long delay (for example, a delay of a few days or more) may result in the creation of multiple,
+   * internally-managed durable timers. The orchestration code doesn't need to be aware of this behavior. However,
    * it may be visible in framework logs and the stored history state.</p>
    *
    * @param delay the amount of time before the timer should expire
@@ -208,6 +221,19 @@ public interface TaskOrchestrationContext {
    * @return a new {@code Task} that completes after the specified delay
    */
   Task<Void> createTimer(ZonedDateTime zonedDateTime);
+
+  /**
+   * Creates a durable timer that expires after the specified timestamp with specific zone.
+   *
+   * <p>Specifying a long delay (for example, a delay of a few days or more) may result in the creation of multiple,
+   * internally-managed durable timers. The orchestration code doesn't need to be aware of this behavior. However,
+   * it may be visible in framework logs and the stored history state.
+   *
+   * @param name for the timer
+   * @param zonedDateTime timestamp with specific zone when the timer should expire
+   * @return a new {@code Task} that completes after the specified delay
+   */
+  Task<Void> createTimer(String name, ZonedDateTime zonedDateTime);
 
   /**
    * Transitions the orchestration into the {@link OrchestrationRuntimeStatus#COMPLETED} state with the given output.
@@ -353,6 +379,15 @@ public interface TaskOrchestrationContext {
   void continueAsNew(Object input, boolean preserveUnprocessedEvents);
 
   /**
+   * Check if the given patch name can be applied to the orchestration.
+   *
+   * @param patchName The name of the patch to check.
+   * @return True if the given patch name can be applied to the orchestration, False otherwise.
+   */
+
+  boolean isPatched(String patchName);
+  
+  /**
    * Create a new Uuid that is safe for replay within an orchestration or operation.
    *
    * <p>The default implementation of this method creates a name-based Uuid
@@ -411,7 +446,7 @@ public interface TaskOrchestrationContext {
    * @return a new {@link Task} that completes when the sub-orchestration completes or fails
    */
   default Task<Void> callSubOrchestrator(String name, Object input) {
-    return this.callSubOrchestrator(name, input, null);
+    return this.callSubOrchestrator(name, input, Void.class);
   }
 
   /**

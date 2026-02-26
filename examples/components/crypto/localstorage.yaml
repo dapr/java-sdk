@@ -1,0 +1,12 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: localstoragecrypto
+spec:
+  type: crypto.dapr.localstorage
+  version: v1
+  metadata:
+    # Path to the directory containing keys (PEM files)
+    # This path is relative to the resources-path directory
+    - name: path
+      value: "./components/crypto/keys/"

@@ -42,18 +42,22 @@ import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.ConversationResponseAlpha2;
 import io.dapr.client.domain.ConversationResultAlpha2;
 import io.dapr.client.domain.ConversationResultChoices;
+import io.dapr.client.domain.ConversationResultCompletionUsage;
+import io.dapr.client.domain.ConversationResultCompletionUsageDetails;
 import io.dapr.client.domain.ConversationResultMessage;
+import io.dapr.client.domain.ConversationResultPromptUsageDetails;
 import io.dapr.client.domain.ConversationToolCalls;
 import io.dapr.client.domain.ConversationToolCallsOfFunction;
 import io.dapr.client.domain.ConversationTools;
 import io.dapr.client.domain.ConversationToolsFunction;
 import io.dapr.client.domain.DaprMetadata;
+import io.dapr.client.domain.DecryptRequestAlpha1;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DropFailurePolicy;
+import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.FailurePolicy;
-import io.dapr.client.domain.FailurePolicyType;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
@@ -95,18 +99,21 @@ import io.dapr.internal.subscription.EventSubscriberStreamObserver;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
+import io.dapr.utils.FailurePolicyUtils;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
+import io.dapr.v1.DaprAiProtos;
+import io.dapr.v1.DaprBindingsProtos;
+import io.dapr.v1.DaprConfigurationProtos;
+import io.dapr.v1.DaprCryptoProtos;
 import io.dapr.v1.DaprGrpc;
+import io.dapr.v1.DaprJobsProtos;
+import io.dapr.v1.DaprLockProtos;
+import io.dapr.v1.DaprMetadataProtos;
 import io.dapr.v1.DaprProtos;
-import io.dapr.v1.DaprProtos.ActiveActorsCount;
-import io.dapr.v1.DaprProtos.ActorRuntime;
-import io.dapr.v1.DaprProtos.AppConnectionHealthProperties;
-import io.dapr.v1.DaprProtos.AppConnectionProperties;
-import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
-import io.dapr.v1.DaprProtos.PubsubSubscription;
-import io.dapr.v1.DaprProtos.PubsubSubscriptionRule;
-import io.dapr.v1.DaprProtos.RegisteredComponents;
+import io.dapr.v1.DaprPubsubProtos;
+import io.dapr.v1.DaprSecretProtos;
+import io.dapr.v1.DaprStateProtos;
 import io.grpc.Channel;
 import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
@@ -343,7 +350,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
       Object data = request.getData();
-      DaprProtos.PublishEventRequest.Builder envelopeBuilder = DaprProtos.PublishEventRequest.newBuilder()
+      DaprPubsubProtos.PublishEventRequest.Builder envelopeBuilder = DaprPubsubProtos.PublishEventRequest.newBuilder()
           .setTopic(topic)
           .setPubsubName(pubsubName)
           .setData(ByteString.copyFrom(objectSerializer.serialize(data)));
@@ -380,7 +387,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
-      DaprProtos.BulkPublishRequest.Builder envelopeBuilder = DaprProtos.BulkPublishRequest.newBuilder();
+      DaprPubsubProtos.BulkPublishRequest.Builder envelopeBuilder = DaprPubsubProtos.BulkPublishRequest.newBuilder();
       envelopeBuilder.setTopic(topic);
       envelopeBuilder.setPubsubName(pubsubName);
 
@@ -412,7 +419,8 @@ public class DaprClientImpl extends AbstractDaprClient {
           throw DaprException.propagate(ex);
         }
 
-        DaprProtos.BulkPublishRequestEntry.Builder reqEntryBuilder = DaprProtos.BulkPublishRequestEntry.newBuilder()
+        DaprPubsubProtos.BulkPublishRequestEntry.Builder reqEntryBuilder = DaprPubsubProtos.BulkPublishRequestEntry
+            .newBuilder()
             .setEntryId(entry.getEntryId())
             .setEvent(ByteString.copyFrom(data))
             .setContentType(contentType);
@@ -435,13 +443,30 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
       return Mono.deferContextual(
           context ->
-              this.<DaprProtos.BulkPublishResponse>createMono(
-                  it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
-              )
+              this.<DaprPubsubProtos.BulkPublishResponse>createMono(
+                  it -> intercept(context, asyncStub).bulkPublishEvent(envelopeBuilder.build(), it)
+              ).onErrorResume(throwable -> {
+                // Check if the error is UNIMPLEMENTED, and try the alpha API just in case
+                // The exception might be wrapped in DaprException, so check both
+                Throwable cause = throwable;
+                if (throwable instanceof DaprException && throwable.getCause() != null) {
+                  cause = throwable.getCause();
+                }
+                
+                if (cause instanceof io.grpc.StatusRuntimeException) {
+                  io.grpc.StatusRuntimeException statusException = (io.grpc.StatusRuntimeException) cause;
+                  if (statusException.getStatus().getCode() == io.grpc.Status.Code.UNIMPLEMENTED) {
+                    return this.<DaprPubsubProtos.BulkPublishResponse>createMono(
+                        it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
+                    );
+                  }
+                }
+                return Mono.error(throwable);
+              })
       ).map(
           it -> {
             List<BulkPublishResponseFailedEntry<T>> entries = new ArrayList<>();
-            for (DaprProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
+            for (DaprPubsubProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
               BulkPublishResponseFailedEntry<T> domainEntry = new BulkPublishResponseFailedEntry<T>(
                   entryMap.get(entry.getEntryId()),
                   entry.getError());
@@ -464,13 +489,13 @@ public class DaprClientImpl extends AbstractDaprClient {
   @Override
   public <T> Subscription subscribeToEvents(
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type) {
-    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
-        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+    DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+        DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
             .setPubsubName(pubsubName)
             .build();
-    DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
-        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+    DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request =
+        DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
             .setInitialRequest(initialRequest)
             .build();
     return buildSubscription(listener, type, request);
@@ -479,16 +504,46 @@ public class DaprClientImpl extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  @Deprecated
   @Override
-  public <T> Flux<CloudEvent<T>> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
-    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
-        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
+    return subscribeToTopic(pubsubName, topic, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Deprecated
+  @Override
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
+    return subscribeToTopic(pubsubName, topic, type, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type) {
+    return subscribeToTopic(pubsubName, topic, type, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
+    DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.Builder initialRequestBuilder =
+        DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
-            .setPubsubName(pubsubName)
-            .build();
-    DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
-        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
-            .setInitialRequest(initialRequest)
+            .setPubsubName(pubsubName);
+
+    if (metadata != null && !metadata.isEmpty()) {
+      initialRequestBuilder.putAllMetadata(metadata);
+    }
+
+    DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request =
+        DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+            .setInitialRequest(initialRequestBuilder.build())
             .build();
 
     return Flux.create(sink -> {
@@ -499,7 +554,7 @@ public class DaprClientImpl extends AbstractDaprClient {
           type,
           this.objectSerializer
       );
-      StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> requestStream = eventSubscriber.start(request);
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> requestStream = eventSubscriber.start(request);
 
       // Cleanup when Flux is cancelled or completed
       sink.onDispose(() -> {
@@ -516,7 +571,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   private <T> Subscription<T> buildSubscription(
       SubscriptionListener<T> listener,
       TypeRef<T> type,
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 request) {
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request) {
     var interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
     Subscription<T> subscription = new Subscription<>(interceptedStub, request, listener, response -> {
       if (response.getEventMessage() == null) {
@@ -635,7 +690,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       byte[] byteData = objectSerializer.serialize(data);
-      DaprProtos.InvokeBindingRequest.Builder builder = DaprProtos.InvokeBindingRequest.newBuilder()
+      DaprBindingsProtos.InvokeBindingRequest.Builder builder = DaprBindingsProtos.InvokeBindingRequest.newBuilder()
           .setName(name).setOperation(operation);
       if (byteData != null) {
         builder.setData(ByteString.copyFrom(byteData));
@@ -643,11 +698,11 @@ public class DaprClientImpl extends AbstractDaprClient {
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
-      DaprProtos.InvokeBindingRequest envelope = builder.build();
+      DaprBindingsProtos.InvokeBindingRequest envelope = builder.build();
 
       Metadata responseMetadata = new Metadata();
       return Mono.deferContextual(
-          context -> this.<DaprProtos.InvokeBindingResponse>createMono(
+          context -> this.<DaprBindingsProtos.InvokeBindingResponse>createMono(
               responseMetadata,
               it -> intercept(context, asyncStub, m -> responseMetadata.merge(m)).invokeBinding(envelope, it)
           )
@@ -693,7 +748,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       if ((key == null) || (key.trim().isEmpty())) {
         throw new IllegalArgumentException("Key cannot be null or empty.");
       }
-      DaprProtos.GetStateRequest.Builder builder = DaprProtos.GetStateRequest.newBuilder()
+      DaprStateProtos.GetStateRequest.Builder builder = DaprStateProtos.GetStateRequest.newBuilder()
           .setStoreName(stateStoreName)
           .setKey(key);
       if (metadata != null) {
@@ -703,11 +758,11 @@ public class DaprClientImpl extends AbstractDaprClient {
         builder.setConsistency(getGrpcStateConsistency(options));
       }
 
-      DaprProtos.GetStateRequest envelope = builder.build();
+      DaprStateProtos.GetStateRequest envelope = builder.build();
 
       return Mono.deferContextual(
           context ->
-              this.<DaprProtos.GetStateResponse>createMono(
+              this.<DaprStateProtos.GetStateResponse>createMono(
                   it -> intercept(context, asyncStub).getState(envelope, it)
               )
       ).map(
@@ -744,7 +799,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       if (parallelism < 0) {
         throw new IllegalArgumentException("Parallelism cannot be negative.");
       }
-      DaprProtos.GetBulkStateRequest.Builder builder = DaprProtos.GetBulkStateRequest.newBuilder()
+      DaprStateProtos.GetBulkStateRequest.Builder builder = DaprStateProtos.GetBulkStateRequest.newBuilder()
           .setStoreName(stateStoreName)
           .addAllKeys(keys)
           .setParallelism(parallelism);
@@ -752,10 +807,10 @@ public class DaprClientImpl extends AbstractDaprClient {
         builder.putAllMetadata(metadata);
       }
 
-      DaprProtos.GetBulkStateRequest envelope = builder.build();
+      DaprStateProtos.GetBulkStateRequest envelope = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
+          context -> this.<DaprStateProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
               .getBulkState(envelope, it)
           )
       ).map(
@@ -778,7 +833,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private <T> State<T> buildStateKeyValue(
-      DaprProtos.BulkStateItem item,
+      DaprStateProtos.BulkStateItem item,
       TypeRef<T> type) throws IOException {
     String key = item.getKey();
     String error = item.getError();
@@ -802,7 +857,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private <T> State<T> buildStateKeyValue(
-      DaprProtos.GetStateResponse response,
+      DaprStateProtos.GetStateResponse response,
       String requestedKey,
       StateOptions stateOptions,
       TypeRef<T> type) throws IOException {
@@ -832,23 +887,25 @@ public class DaprClientImpl extends AbstractDaprClient {
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
-      DaprProtos.ExecuteStateTransactionRequest.Builder builder = DaprProtos.ExecuteStateTransactionRequest
+      DaprStateProtos.ExecuteStateTransactionRequest.Builder builder = DaprStateProtos.ExecuteStateTransactionRequest
           .newBuilder();
       builder.setStoreName(stateStoreName);
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
       for (TransactionalStateOperation<?> operation : operations) {
-        DaprProtos.TransactionalStateOperation.Builder operationBuilder = DaprProtos.TransactionalStateOperation
+        DaprStateProtos.TransactionalStateOperation.Builder operationBuilder = DaprStateProtos
+            .TransactionalStateOperation
             .newBuilder();
         operationBuilder.setOperationType(operation.getOperation().toString().toLowerCase());
         operationBuilder.setRequest(buildStateRequest(operation.getRequest()).build());
         builder.addOperations(operationBuilder.build());
       }
-      DaprProtos.ExecuteStateTransactionRequest req = builder.build();
+      DaprStateProtos.ExecuteStateTransactionRequest req = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).executeStateTransaction(req, it))
+          context -> this.<Empty>createMono(it -> intercept(context, asyncStub)
+              .executeStateTransaction(req, it))
       ).then();
     } catch (Exception e) {
       return DaprException.wrapMono(e);
@@ -866,12 +923,12 @@ public class DaprClientImpl extends AbstractDaprClient {
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
-      DaprProtos.SaveStateRequest.Builder builder = DaprProtos.SaveStateRequest.newBuilder();
+      DaprStateProtos.SaveStateRequest.Builder builder = DaprStateProtos.SaveStateRequest.newBuilder();
       builder.setStoreName(stateStoreName);
       for (State<?> state : states) {
         builder.addStates(buildStateRequest(state).build());
       }
-      DaprProtos.SaveStateRequest req = builder.build();
+      DaprStateProtos.SaveStateRequest req = builder.build();
 
       return Mono.deferContextual(
           context -> this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))
@@ -941,7 +998,7 @@ public class DaprClientImpl extends AbstractDaprClient {
           optionBuilder.setConsistency(getGrpcStateConsistency(options));
         }
       }
-      DaprProtos.DeleteStateRequest.Builder builder = DaprProtos.DeleteStateRequest.newBuilder()
+      DaprStateProtos.DeleteStateRequest.Builder builder = DaprStateProtos.DeleteStateRequest.newBuilder()
           .setStoreName(stateStoreName)
           .setKey(key);
       if (metadata != null) {
@@ -955,7 +1012,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         builder.setOptions(optionBuilder.build());
       }
 
-      DaprProtos.DeleteStateRequest req = builder.build();
+      DaprStateProtos.DeleteStateRequest req = builder.build();
 
       return Mono.deferContextual(
           context -> this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))
@@ -984,18 +1041,19 @@ public class DaprClientImpl extends AbstractDaprClient {
       return DaprException.wrapMono(e);
     }
 
-    DaprProtos.GetSecretRequest.Builder requestBuilder = DaprProtos.GetSecretRequest.newBuilder()
+    DaprSecretProtos.GetSecretRequest.Builder requestBuilder = DaprSecretProtos.GetSecretRequest.newBuilder()
         .setStoreName(secretStoreName)
         .setKey(key);
 
     if (metadata != null) {
       requestBuilder.putAllMetadata(metadata);
     }
-    DaprProtos.GetSecretRequest req = requestBuilder.build();
+    DaprSecretProtos.GetSecretRequest req = requestBuilder.build();
 
     return Mono.deferContextual(
-        context -> this.<DaprProtos.GetSecretResponse>createMono(it -> intercept(context, asyncStub).getSecret(req, it))
-    ).map(DaprProtos.GetSecretResponse::getDataMap);
+        context -> this.<DaprSecretProtos.GetSecretResponse>createMono(
+            it -> intercept(context, asyncStub).getSecret(req, it))
+    ).map(DaprSecretProtos.GetSecretResponse::getDataMap);
   }
 
   /**
@@ -1010,21 +1068,21 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("Secret store name cannot be null or empty.");
       }
 
-      DaprProtos.GetBulkSecretRequest.Builder builder = DaprProtos.GetBulkSecretRequest.newBuilder()
+      DaprSecretProtos.GetBulkSecretRequest.Builder builder = DaprSecretProtos.GetBulkSecretRequest.newBuilder()
           .setStoreName(storeName);
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
 
-      DaprProtos.GetBulkSecretRequest envelope = builder.build();
+      DaprSecretProtos.GetBulkSecretRequest envelope = builder.build();
 
       return Mono.deferContextual(
           context ->
-              this.<DaprProtos.GetBulkSecretResponse>createMono(
+              this.<DaprSecretProtos.GetBulkSecretResponse>createMono(
                   it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
               )
       ).map(it -> {
-        Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
+        Map<String, DaprSecretProtos.SecretResponse> secretsMap = it.getDataMap();
         if (secretsMap == null) {
           return Collections.emptyMap();
         }
@@ -1062,16 +1120,16 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("ExpiryInSeconds cannot be negative.");
       }
 
-      DaprProtos.TryLockRequest.Builder builder = DaprProtos.TryLockRequest.newBuilder()
+      DaprLockProtos.TryLockRequest.Builder builder = DaprLockProtos.TryLockRequest.newBuilder()
               .setStoreName(stateStoreName)
               .setResourceId(resourceId)
               .setLockOwner(lockOwner)
               .setExpiryInSeconds(expiryInSeconds);
 
-      DaprProtos.TryLockRequest tryLockRequest = builder.build();
+      DaprLockProtos.TryLockRequest tryLockRequest = builder.build();
 
       return Mono.deferContextual(
-              context -> this.<DaprProtos.TryLockResponse>createMono(
+          context -> this.<DaprLockProtos.TryLockResponse>createMono(
                       it -> intercept(context, asyncStub).tryLockAlpha1(tryLockRequest, it)
               )
       ).flatMap(response -> {
@@ -1106,15 +1164,15 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("LockOwner cannot be null or empty.");
       }
 
-      DaprProtos.UnlockRequest.Builder builder = DaprProtos.UnlockRequest.newBuilder()
+      DaprLockProtos.UnlockRequest.Builder builder = DaprLockProtos.UnlockRequest.newBuilder()
               .setStoreName(stateStoreName)
               .setResourceId(resourceId)
               .setLockOwner(lockOwner);
 
-      DaprProtos.UnlockRequest unlockRequest = builder.build();
+      DaprLockProtos.UnlockRequest unlockRequest = builder.build();
 
       return Mono.deferContextual(
-              context -> this.<DaprProtos.UnlockResponse>createMono(
+          context -> this.<DaprLockProtos.UnlockResponse>createMono(
                       it -> intercept(context, asyncStub).unlockAlpha1(unlockRequest, it)
               )
       ).flatMap(response -> {
@@ -1153,17 +1211,17 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("Both query and queryString fields are not set.");
       }
 
-      DaprProtos.QueryStateRequest.Builder builder = DaprProtos.QueryStateRequest.newBuilder()
+      DaprStateProtos.QueryStateRequest.Builder builder = DaprStateProtos.QueryStateRequest.newBuilder()
           .setStoreName(storeName)
           .setQuery(queryString);
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
 
-      DaprProtos.QueryStateRequest envelope = builder.build();
+      DaprStateProtos.QueryStateRequest envelope = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<DaprProtos.QueryStateResponse>createMono(
+          context -> this.<DaprStateProtos.QueryStateResponse>createMono(
               it -> intercept(context, asyncStub).queryStateAlpha1(envelope, it)
           )
       ).map(
@@ -1188,7 +1246,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private <T> QueryStateItem<T> buildQueryStateKeyValue(
-      DaprProtos.QueryStateItem item,
+      DaprStateProtos.QueryStateItem item,
       TypeRef<T> type) throws IOException {
     String key = item.getKey();
     String error = item.getError();
@@ -1253,13 +1311,14 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
 
-      DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
+      DaprConfigurationProtos.GetConfigurationRequest.Builder builder = DaprConfigurationProtos.GetConfigurationRequest
+          .newBuilder()
           .setStoreName(configurationStoreName).addAllKeys(keys);
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
 
-      DaprProtos.GetConfigurationRequest envelope = builder.build();
+      DaprConfigurationProtos.GetConfigurationRequest envelope = builder.build();
       return this.getConfiguration(envelope);
 
     } catch (Exception ex) {
@@ -1267,10 +1326,11 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
   }
 
-  private Mono<Map<String, ConfigurationItem>> getConfiguration(DaprProtos.GetConfigurationRequest envelope) {
+  private Mono<Map<String, ConfigurationItem>> getConfiguration(DaprConfigurationProtos
+                                                                    .GetConfigurationRequest envelope) {
     return Mono.deferContextual(
         context ->
-            this.<DaprProtos.GetConfigurationResponse>createMono(
+            this.<DaprConfigurationProtos.GetConfigurationResponse>createMono(
                 it -> intercept(context, asyncStub).getConfiguration(envelope, it)
             )
     ).map(
@@ -1301,7 +1361,9 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       // keys can and empty list for subscribe all scenario, so we do not need check for empty keys.
-      DaprProtos.SubscribeConfigurationRequest.Builder builder = DaprProtos.SubscribeConfigurationRequest.newBuilder()
+      DaprConfigurationProtos.SubscribeConfigurationRequest.Builder builder = DaprConfigurationProtos
+          .SubscribeConfigurationRequest
+          .newBuilder()
           .setStoreName(configurationStoreName)
           .addAllKeys(keys);
 
@@ -1309,8 +1371,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         builder.putAllMetadata(metadata);
       }
 
-      DaprProtos.SubscribeConfigurationRequest envelope = builder.build();
-      return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
+      DaprConfigurationProtos.SubscribeConfigurationRequest envelope = builder.build();
+      return this.<DaprConfigurationProtos.SubscribeConfigurationResponse>createFlux(
           it -> intercept(null, asyncStub).subscribeConfiguration(envelope, it)
       ).map(
           it -> {
@@ -1343,14 +1405,14 @@ public class DaprClientImpl extends AbstractDaprClient {
       if (id.isEmpty()) {
         throw new IllegalArgumentException("Subscription id can not be null or empty.");
       }
-      DaprProtos.UnsubscribeConfigurationRequest.Builder builder =
-          DaprProtos.UnsubscribeConfigurationRequest.newBuilder()
+      DaprConfigurationProtos.UnsubscribeConfigurationRequest.Builder builder =
+          DaprConfigurationProtos.UnsubscribeConfigurationRequest.newBuilder()
               .setId(id)
               .setStoreName(configurationStoreName);
 
-      DaprProtos.UnsubscribeConfigurationRequest envelope = builder.build();
+      DaprConfigurationProtos.UnsubscribeConfigurationRequest envelope = builder.build();
 
-      return this.<DaprProtos.UnsubscribeConfigurationResponse>createMono(
+      return this.<DaprConfigurationProtos.UnsubscribeConfigurationResponse>createMono(
           it -> intercept(null, asyncStub).unsubscribeConfiguration(envelope, it)
       ).map(
           it -> new UnsubscribeConfigurationResponse(it.getOk(), it.getMessage())
@@ -1367,7 +1429,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateScheduleJobRequest(scheduleJobRequest);
 
-      DaprProtos.Job.Builder jobBuilder = DaprProtos.Job.newBuilder();
+      DaprJobsProtos.Job.Builder jobBuilder = DaprJobsProtos.Job.newBuilder();
       jobBuilder.setName(scheduleJobRequest.getName());
 
       DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -1395,14 +1457,13 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       if (scheduleJobRequest.getFailurePolicy() != null) {
-        jobBuilder.setFailurePolicy(getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
+        jobBuilder.setFailurePolicy(FailurePolicyUtils.getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
       }
 
-
-      Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
+      Mono<DaprJobsProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
-                          .scheduleJobAlpha1(DaprProtos.ScheduleJobRequest.newBuilder()
+                      .scheduleJobAlpha1(DaprJobsProtos.ScheduleJobRequest.newBuilder()
                                   .setOverwrite(scheduleJobRequest.getOverwrite())
                                   .setJob(jobBuilder.build()).build(), it)
               )
@@ -1421,16 +1482,16 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateGetJobRequest(getJobRequest);
 
-      Mono<DaprProtos.GetJobResponse> getJobResponseMono =
+      Mono<DaprJobsProtos.GetJobResponse> getJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
-                      .getJobAlpha1(DaprProtos.GetJobRequest.newBuilder()
+                      .getJobAlpha1(DaprJobsProtos.GetJobRequest.newBuilder()
                           .setName(getJobRequest.getName()).build(), it)
               )
           );
 
       return getJobResponseMono.map(response -> {
-        DaprProtos.Job job = response.getJob();
+        DaprJobsProtos.Job job = response.getJob();
         GetJobResponse getJobResponse = null;
 
         if (job.hasSchedule() && job.hasDueTime()) {
@@ -1477,32 +1538,6 @@ public class DaprClientImpl extends AbstractDaprClient {
             ChronoUnit.NANOS));
   }
 
-  private CommonProtos.JobFailurePolicy getJobFailurePolicy(FailurePolicy failurePolicy) {
-    CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
-
-    if (failurePolicy.getFailurePolicyType() == FailurePolicyType.DROP) {
-      jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
-      return jobFailurePolicyBuilder.build();
-    }
-
-    CommonProtos.JobFailurePolicyConstant.Builder constantPolicyBuilder =
-        CommonProtos.JobFailurePolicyConstant.newBuilder();
-    ConstantFailurePolicy jobConstantFailurePolicy = (ConstantFailurePolicy)failurePolicy;
-
-    if (jobConstantFailurePolicy.getMaxRetries() != null) {
-      constantPolicyBuilder.setMaxRetries(jobConstantFailurePolicy.getMaxRetries());
-    }
-
-    if (jobConstantFailurePolicy.getDurationBetweenRetries() != null) {
-      constantPolicyBuilder.setInterval(com.google.protobuf.Duration.newBuilder()
-          .setNanos(jobConstantFailurePolicy.getDurationBetweenRetries().getNano()).build());
-    }
-
-    jobFailurePolicyBuilder.setConstant(constantPolicyBuilder.build());
-
-    return jobFailurePolicyBuilder.build();
-  }
-
   /**
    * {@inheritDoc}
    */
@@ -1510,10 +1545,10 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateDeleteJobRequest(deleteJobRequest);
 
-      Mono<DaprProtos.DeleteJobResponse> deleteJobResponseMono =
+      Mono<DaprJobsProtos.DeleteJobResponse> deleteJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
-                      .deleteJobAlpha1(DaprProtos.DeleteJobRequest.newBuilder()
+                      .deleteJobAlpha1(DaprJobsProtos.DeleteJobRequest.newBuilder()
                           .setName(deleteJobRequest.getName()).build(), it)
               )
           );
@@ -1656,10 +1691,10 @@ public class DaprClientImpl extends AbstractDaprClient {
 
   @Override
   public Mono<DaprMetadata> getMetadata() {
-    DaprProtos.GetMetadataRequest metadataRequest = DaprProtos.GetMetadataRequest.newBuilder().build();
+    DaprMetadataProtos.GetMetadataRequest metadataRequest = DaprMetadataProtos.GetMetadataRequest.newBuilder().build();
     return Mono.deferContextual(
-        context -> this.<DaprProtos.GetMetadataResponse>createMono(
-            it -> intercept(context, asyncStub).getMetadata(metadataRequest, it)))
+            context -> this.<DaprMetadataProtos.GetMetadataResponse>createMono(
+                it -> intercept(context, asyncStub).getMetadata(metadataRequest, it)))
         .map(
             it -> {
               try {
@@ -1680,7 +1715,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateConversationRequest(conversationRequest);
 
-      DaprProtos.ConversationRequest.Builder protosConversationRequestBuilder = DaprProtos.ConversationRequest
+      DaprAiProtos.ConversationRequest.Builder protosConversationRequestBuilder = DaprAiProtos.ConversationRequest
           .newBuilder().setTemperature(conversationRequest.getTemperature())
           .setScrubPII(conversationRequest.isScrubPii())
           .setName(conversationRequest.getName());
@@ -1694,7 +1729,7 @@ public class DaprClientImpl extends AbstractDaprClient {
           throw new IllegalArgumentException("Conversation input content cannot be null or empty.");
         }
 
-        DaprProtos.ConversationInput.Builder conversationInputOrBuilder = DaprProtos.ConversationInput.newBuilder()
+        DaprAiProtos.ConversationInput.Builder conversationInputOrBuilder = DaprAiProtos.ConversationInput.newBuilder()
             .setContent(input.getContent())
             .setScrubPII(input.isScrubPii());
 
@@ -1705,7 +1740,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         protosConversationRequestBuilder.addInputs(conversationInputOrBuilder.build());
       }
 
-      Mono<DaprProtos.ConversationResponse> conversationResponseMono = Mono.deferContextual(
+      Mono<DaprAiProtos.ConversationResponse> conversationResponseMono = Mono.deferContextual(
           context -> this.createMono(
               it -> intercept(context, asyncStub)
                   .converseAlpha1(protosConversationRequestBuilder.build(), it)
@@ -1715,7 +1750,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       return conversationResponseMono.map(conversationResponse -> {
 
         List<ConversationOutput> conversationOutputs = new ArrayList<>();
-        for (DaprProtos.ConversationResult conversationResult : conversationResponse.getOutputsList()) {
+        for (DaprAiProtos.ConversationResult conversationResult : conversationResponse.getOutputsList()) {
           Map<String, byte[]> parameters = new HashMap<>();
           for (Map.Entry<String, Any> entrySet : conversationResult.getParametersMap().entrySet()) {
             parameters.put(entrySet.getKey(), entrySet.getValue().toByteArray());
@@ -1758,17 +1793,18 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("Conversation Inputs cannot be null or empty.");
       }
 
-      DaprProtos.ConversationRequestAlpha2 protoRequest = buildConversationRequestProto(conversationRequestAlpha2);
-      
-      Mono<DaprProtos.ConversationResponseAlpha2> conversationResponseMono = Mono.deferContextual(
+      DaprAiProtos.ConversationRequestAlpha2 protoRequest = buildConversationRequestProto(conversationRequestAlpha2);
+
+      Mono<DaprAiProtos.ConversationResponseAlpha2> conversationResponseMono = Mono.deferContextual(
           context -> this.createMono(
               it -> intercept(context, asyncStub).converseAlpha2(protoRequest, it)
           )
       );
-      
-      DaprProtos.ConversationResponseAlpha2 conversationResponse = conversationResponseMono.block();
+
+      DaprAiProtos.ConversationResponseAlpha2 conversationResponse = conversationResponseMono.block();
 
       assert conversationResponse != null;
+
       List<ConversationResultAlpha2> results = buildConversationResults(conversationResponse.getOutputsList());
       return Mono.just(new ConversationResponseAlpha2(conversationResponse.getContextId(), results));
     } catch (Exception ex) {
@@ -1776,8 +1812,8 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
   }
 
-  private DaprProtos.ConversationRequestAlpha2 buildConversationRequestProto(ConversationRequestAlpha2 request) {
-    DaprProtos.ConversationRequestAlpha2.Builder builder = DaprProtos.ConversationRequestAlpha2
+  private DaprAiProtos.ConversationRequestAlpha2 buildConversationRequestProto(ConversationRequestAlpha2 request) {
+    DaprAiProtos.ConversationRequestAlpha2.Builder builder = DaprAiProtos.ConversationRequestAlpha2
         .newBuilder()
         .setTemperature(request.getTemperature())
         .setScrubPii(request.isScrubPii())
@@ -1820,27 +1856,41 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
 
     for (ConversationInputAlpha2 input : request.getInputs()) {
-      DaprProtos.ConversationInputAlpha2.Builder inputBuilder = DaprProtos.ConversationInputAlpha2
+      DaprAiProtos.ConversationInputAlpha2.Builder inputBuilder = DaprAiProtos.ConversationInputAlpha2
               .newBuilder()
               .setScrubPii(input.isScrubPii());
 
       if (input.getMessages() != null) {
         for (ConversationMessage message : input.getMessages()) {
-          DaprProtos.ConversationMessage protoMessage = buildConversationMessage(message);
+          DaprAiProtos.ConversationMessage protoMessage = buildConversationMessage(message);
           inputBuilder.addMessages(protoMessage);
         }
       }
 
       builder.addInputs(inputBuilder.build());
     }
+
+    if (request.getResponseFormat() != null) {
+      builder.setResponseFormat(request.getResponseFormat());
+    }
+
+    if (request.getPromptCacheRetention() != null) {
+      Duration javaDuration = request.getPromptCacheRetention();
+      builder.setPromptCacheRetention(
+          com.google.protobuf.Duration.newBuilder()
+              .setSeconds(javaDuration.getSeconds())
+              .setNanos(javaDuration.getNano())
+              .build()
+      );
+    }
     
     return builder.build();
   }
 
-  private DaprProtos.ConversationTools buildConversationTools(ConversationTools tool) {
+  private DaprAiProtos.ConversationTools buildConversationTools(ConversationTools tool) {
     ConversationToolsFunction function = tool.getFunction();
 
-    DaprProtos.ConversationToolsFunction.Builder protoFunction = DaprProtos.ConversationToolsFunction.newBuilder()
+    DaprAiProtos.ConversationToolsFunction.Builder protoFunction = DaprAiProtos.ConversationToolsFunction.newBuilder()
         .setName(function.getName());
 
     if (function.getDescription() != null) {
@@ -1864,16 +1914,16 @@ public class DaprClientImpl extends AbstractDaprClient {
       protoFunction.setParameters(Struct.newBuilder().putAllFields(functionParams).build());
     }
 
-    return DaprProtos.ConversationTools.newBuilder().setFunction(protoFunction).build();
+    return DaprAiProtos.ConversationTools.newBuilder().setFunction(protoFunction).build();
   }
 
-  private DaprProtos.ConversationMessage buildConversationMessage(ConversationMessage message) {
-    DaprProtos.ConversationMessage.Builder messageBuilder = DaprProtos.ConversationMessage.newBuilder();
+  private DaprAiProtos.ConversationMessage buildConversationMessage(ConversationMessage message) {
+    DaprAiProtos.ConversationMessage.Builder messageBuilder = DaprAiProtos.ConversationMessage.newBuilder();
 
     switch (message.getRole()) {
       case TOOL:
-        DaprProtos.ConversationMessageOfTool.Builder toolMessage =
-            DaprProtos.ConversationMessageOfTool.newBuilder();
+        DaprAiProtos.ConversationMessageOfTool.Builder toolMessage =
+            DaprAiProtos.ConversationMessageOfTool.newBuilder();
         if (message.getName() != null) {
           toolMessage.setName(message.getName());
         }
@@ -1886,8 +1936,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         messageBuilder.setOfTool(toolMessage);
         break;
       case USER:
-        DaprProtos.ConversationMessageOfUser.Builder userMessage =
-            DaprProtos.ConversationMessageOfUser.newBuilder();
+        DaprAiProtos.ConversationMessageOfUser.Builder userMessage =
+            DaprAiProtos.ConversationMessageOfUser.newBuilder();
         if (message.getName() != null) {
           userMessage.setName(message.getName());
         }
@@ -1897,8 +1947,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         messageBuilder.setOfUser(userMessage);
         break;
       case ASSISTANT:
-        DaprProtos.ConversationMessageOfAssistant.Builder assistantMessage =
-            DaprProtos.ConversationMessageOfAssistant.newBuilder();
+        DaprAiProtos.ConversationMessageOfAssistant.Builder assistantMessage =
+            DaprAiProtos.ConversationMessageOfAssistant.newBuilder();
 
         if (message.getName() != null) {
           assistantMessage.setName(message.getName());
@@ -1912,8 +1962,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         messageBuilder.setOfAssistant(assistantMessage);
         break;
       case DEVELOPER:
-        DaprProtos.ConversationMessageOfDeveloper.Builder developerMessage =
-            DaprProtos.ConversationMessageOfDeveloper.newBuilder();
+        DaprAiProtos.ConversationMessageOfDeveloper.Builder developerMessage =
+            DaprAiProtos.ConversationMessageOfDeveloper.newBuilder();
         if (message.getName() != null) {
           developerMessage.setName(message.getName());
         }
@@ -1923,8 +1973,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         messageBuilder.setOfDeveloper(developerMessage);
         break;
       case SYSTEM:
-        DaprProtos.ConversationMessageOfSystem.Builder systemMessage =
-            DaprProtos.ConversationMessageOfSystem.newBuilder();
+        DaprAiProtos.ConversationMessageOfSystem.Builder systemMessage =
+            DaprAiProtos.ConversationMessageOfSystem.newBuilder();
         if (message.getName() != null) {
           systemMessage.setName(message.getName());
         }
@@ -1941,31 +1991,55 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private List<ConversationResultAlpha2> buildConversationResults(
-      List<DaprProtos.ConversationResultAlpha2> protoResults) {
+      List<DaprAiProtos.ConversationResultAlpha2> protoResults) {
     List<ConversationResultAlpha2> results = new ArrayList<>();
-    
-    for (DaprProtos.ConversationResultAlpha2 protoResult : protoResults) {
+
+    for (DaprAiProtos.ConversationResultAlpha2 protoResult : protoResults) {
       List<ConversationResultChoices> choices = new ArrayList<>();
-        
-      for (DaprProtos.ConversationResultChoices protoChoice : protoResult.getChoicesList()) {
+
+      for (DaprAiProtos.ConversationResultChoices protoChoice : protoResult.getChoicesList()) {
         ConversationResultMessage message = buildConversationResultMessage(protoChoice);
         choices.add(new ConversationResultChoices(protoChoice.getFinishReason(), protoChoice.getIndex(), message));
-      }  
+      }
 
-      results.add(new ConversationResultAlpha2(choices));
+      results.add(new ConversationResultAlpha2(
+          choices,
+          protoResult.getModel(),
+          getConversationResultCompletionUsage(protoResult))
+      );
     }
     
     return results;
   }
 
-  private ConversationResultMessage buildConversationResultMessage(DaprProtos.ConversationResultChoices protoChoice) {
+  private static ConversationResultCompletionUsage getConversationResultCompletionUsage(
+      DaprAiProtos.ConversationResultAlpha2 protoResult) {
+    var usage = new ConversationResultCompletionUsage(
+        protoResult.getUsage().getCompletionTokens(),
+        protoResult.getUsage().getPromptTokens(),
+        protoResult.getUsage().getTotalTokens());
+
+    usage.setCompletionTokenDetails(new ConversationResultCompletionUsageDetails(
+        protoResult.getUsage().getCompletionTokensDetails().getAcceptedPredictionTokens(),
+        protoResult.getUsage().getCompletionTokensDetails().getAudioTokens(),
+        protoResult.getUsage().getCompletionTokensDetails().getReasoningTokens(),
+        protoResult.getUsage().getCompletionTokensDetails().getRejectedPredictionTokens()));
+
+    usage.setPromptTokenDetails(new ConversationResultPromptUsageDetails(
+        protoResult.getUsage().getPromptTokensDetails().getAudioTokens(),
+        protoResult.getUsage().getPromptTokensDetails().getCachedTokens()
+    ));
+    return usage;
+  }
+
+  private ConversationResultMessage buildConversationResultMessage(DaprAiProtos.ConversationResultChoices protoChoice) {
     if (!protoChoice.hasMessage()) {
       return null;
     }
 
     List<ConversationToolCalls> toolCalls = new ArrayList<>();
 
-    for (DaprProtos.ConversationToolCalls protoToolCall : protoChoice.getMessage().getToolCallsList()) {
+    for (DaprAiProtos.ConversationToolCalls protoToolCall : protoChoice.getMessage().getToolCallsList()) {
       ConversationToolCallsOfFunction function = null;
       if (protoToolCall.hasFunction()) {
         function = new ConversationToolCallsOfFunction(
@@ -1984,12 +2058,12 @@ public class DaprClientImpl extends AbstractDaprClient {
     );
   }
 
-  private List<DaprProtos.ConversationMessageContent> getConversationMessageContent(
+  private List<DaprAiProtos.ConversationMessageContent> getConversationMessageContent(
       ConversationMessage conversationMessage) {
 
-    List<DaprProtos.ConversationMessageContent> conversationMessageContents = new ArrayList<>();
+    List<DaprAiProtos.ConversationMessageContent> conversationMessageContents = new ArrayList<>();
     for (ConversationMessageContent conversationMessageContent: conversationMessage.getContent()) {
-      conversationMessageContents.add(DaprProtos.ConversationMessageContent.newBuilder()
+      conversationMessageContents.add(DaprAiProtos.ConversationMessageContent.newBuilder()
           .setText(conversationMessageContent.getText())
           .build());
     }
@@ -1997,12 +2071,12 @@ public class DaprClientImpl extends AbstractDaprClient {
     return conversationMessageContents;
   }
 
-  private List<DaprProtos.ConversationToolCalls> getConversationToolCalls(
+  private List<DaprAiProtos.ConversationToolCalls> getConversationToolCalls(
       AssistantMessage assistantMessage) {
-    List<DaprProtos.ConversationToolCalls> conversationToolCalls = new ArrayList<>();
+    List<DaprAiProtos.ConversationToolCalls> conversationToolCalls = new ArrayList<>();
     for (ConversationToolCalls conversationToolCall: assistantMessage.getToolCalls()) {
-      DaprProtos.ConversationToolCalls.Builder toolCallsBuilder = DaprProtos.ConversationToolCalls.newBuilder()
-          .setFunction(DaprProtos.ConversationToolCallsOfFunction.newBuilder()
+      DaprAiProtos.ConversationToolCalls.Builder toolCallsBuilder = DaprAiProtos.ConversationToolCalls.newBuilder()
+          .setFunction(DaprAiProtos.ConversationToolCallsOfFunction.newBuilder()
                   .setName(conversationToolCall.getFunction().getName())
                   .setArguments(conversationToolCall.getFunction().getArguments())
                   .build());
@@ -2016,7 +2090,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     return conversationToolCalls;
   }
 
-  private DaprMetadata buildDaprMetadata(DaprProtos.GetMetadataResponse response) throws IOException {
+  private DaprMetadata buildDaprMetadata(DaprMetadataProtos.GetMetadataResponse response) throws IOException {
     String id = response.getId();
     String runtimeVersion = response.getRuntimeVersion();
     List<String> enabledFeatures = response.getEnabledFeaturesList();
@@ -2031,37 +2105,37 @@ public class DaprClientImpl extends AbstractDaprClient {
       subscriptions, appConnectionProperties);
   }
 
-  private List<ActorMetadata> getActors(DaprProtos.GetMetadataResponse response) {
-    ActorRuntime actorRuntime = response.getActorRuntime();
-    List<ActiveActorsCount> activeActorsList = actorRuntime.getActiveActorsList();
+  private List<ActorMetadata> getActors(DaprMetadataProtos.GetMetadataResponse response) {
+    DaprMetadataProtos.ActorRuntime actorRuntime = response.getActorRuntime();
+    List<DaprMetadataProtos.ActiveActorsCount> activeActorsList = actorRuntime.getActiveActorsList();
 
     List<ActorMetadata> actors = new ArrayList<>();
-    for (ActiveActorsCount aac : activeActorsList) {
+    for (DaprMetadataProtos.ActiveActorsCount aac : activeActorsList) {
       actors.add(new ActorMetadata(aac.getType(), aac.getCount()));
     }
 
     return actors;
   }
 
-  private List<ComponentMetadata> getComponents(DaprProtos.GetMetadataResponse response) {
-    List<RegisteredComponents> registeredComponentsList = response.getRegisteredComponentsList();
+  private List<ComponentMetadata> getComponents(DaprMetadataProtos.GetMetadataResponse response) {
+    List<DaprMetadataProtos.RegisteredComponents> registeredComponentsList = response.getRegisteredComponentsList();
 
     List<ComponentMetadata> components = new ArrayList<>();
-    for (RegisteredComponents rc : registeredComponentsList) {
+    for (DaprMetadataProtos.RegisteredComponents rc : registeredComponentsList) {
       components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion(), rc.getCapabilitiesList()));
     }
 
     return components;
   }
 
-  private List<SubscriptionMetadata> getSubscriptions(DaprProtos.GetMetadataResponse response) {
-    List<PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
+  private List<SubscriptionMetadata> getSubscriptions(DaprMetadataProtos.GetMetadataResponse response) {
+    List<DaprMetadataProtos.PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
 
     List<SubscriptionMetadata> subscriptions = new ArrayList<>();
-    for (PubsubSubscription s : subscriptionsList) {
-      List<PubsubSubscriptionRule> rulesList = s.getRules().getRulesList();
+    for (DaprMetadataProtos.PubsubSubscription s : subscriptionsList) {
+      List<DaprMetadataProtos.PubsubSubscriptionRule> rulesList = s.getRules().getRulesList();
       List<RuleMetadata> rules = new ArrayList<>();
-      for (PubsubSubscriptionRule r : rulesList) {
+      for (DaprMetadataProtos.PubsubSubscriptionRule r : rulesList) {
         rules.add(new RuleMetadata(r.getMatch(), r.getPath()));
       }
       subscriptions.add(new SubscriptionMetadata(s.getPubsubName(), s.getTopic(), s.getMetadataMap(), rules,
@@ -2071,19 +2145,19 @@ public class DaprClientImpl extends AbstractDaprClient {
     return subscriptions;
   }
 
-  private List<HttpEndpointMetadata> getHttpEndpoints(DaprProtos.GetMetadataResponse response) {
-    List<MetadataHTTPEndpoint> httpEndpointsList = response.getHttpEndpointsList();
+  private List<HttpEndpointMetadata> getHttpEndpoints(DaprMetadataProtos.GetMetadataResponse response) {
+    List<DaprMetadataProtos.MetadataHTTPEndpoint> httpEndpointsList = response.getHttpEndpointsList();
 
     List<HttpEndpointMetadata> httpEndpoints = new ArrayList<>();
-    for (MetadataHTTPEndpoint m : httpEndpointsList) {
+    for (DaprMetadataProtos.MetadataHTTPEndpoint m : httpEndpointsList) {
       httpEndpoints.add(new HttpEndpointMetadata(m.getName()));
     }
 
     return httpEndpoints;
   }
 
-  private AppConnectionPropertiesMetadata getAppConnectionProperties(DaprProtos.GetMetadataResponse response) {
-    AppConnectionProperties appConnectionProperties = response.getAppConnectionProperties();
+  private AppConnectionPropertiesMetadata getAppConnectionProperties(DaprMetadataProtos.GetMetadataResponse response) {
+    DaprMetadataProtos.AppConnectionProperties appConnectionProperties = response.getAppConnectionProperties();
     int port = appConnectionProperties.getPort();
     String protocol = appConnectionProperties.getProtocol();
     String channelAddress = appConnectionProperties.getChannelAddress();
@@ -2094,12 +2168,12 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private AppConnectionPropertiesHealthMetadata getAppConnectionPropertiesHealth(
-      AppConnectionProperties appConnectionProperties) {
+      DaprMetadataProtos.AppConnectionProperties appConnectionProperties) {
     if (!appConnectionProperties.hasHealth()) {
       return null;
     }
 
-    AppConnectionHealthProperties health = appConnectionProperties.getHealth();
+    DaprMetadataProtos.AppConnectionHealthProperties health = appConnectionProperties.getHealth();
     String healthCheckPath = health.getHealthCheckPath();
     String healthProbeInterval = health.getHealthProbeInterval();
     String healthProbeTimeout = health.getHealthProbeTimeout();
@@ -2107,5 +2181,199 @@ public class DaprClientImpl extends AbstractDaprClient {
 
     return new AppConnectionPropertiesHealthMetadata(healthCheckPath, healthProbeInterval, healthProbeTimeout,
         healthThreshold);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<byte[]> encrypt(EncryptRequestAlpha1 request) {
+    try {
+      if (request == null) {
+        throw new IllegalArgumentException("EncryptRequestAlpha1 cannot be null.");
+      }
+      if (request.getComponentName() == null || request.getComponentName().trim().isEmpty()) {
+        throw new IllegalArgumentException("Component name cannot be null or empty.");
+      }
+      if (request.getKeyName() == null || request.getKeyName().trim().isEmpty()) {
+        throw new IllegalArgumentException("Key name cannot be null or empty.");
+      }
+      if (request.getKeyWrapAlgorithm() == null || request.getKeyWrapAlgorithm().trim().isEmpty()) {
+        throw new IllegalArgumentException("Key wrap algorithm cannot be null or empty.");
+      }
+      if (request.getPlainTextStream() == null) {
+        throw new IllegalArgumentException("Plaintext stream cannot be null.");
+      }
+
+      return Flux.create(sink -> {
+        // Create response observer to receive encrypted data
+        final StreamObserver<DaprCryptoProtos.EncryptResponse> responseObserver =
+            new StreamObserver<DaprCryptoProtos.EncryptResponse>() {
+              @Override
+              public void onNext(DaprCryptoProtos.EncryptResponse response) {
+                if (response.hasPayload()) {
+                  byte[] data = response.getPayload().getData().toByteArray();
+                  if (data.length > 0) {
+                    sink.next(data);
+                  }
+                }
+              }
+
+              @Override
+              public void onError(Throwable t) {
+                sink.error(DaprException.propagate(new DaprException("ENCRYPT_ERROR",
+                    "Error during encryption: " + t.getMessage(), t)));
+              }
+
+              @Override
+              public void onCompleted() {
+                sink.complete();
+              }
+            };
+
+        // Build options for the first message
+        DaprCryptoProtos.EncryptRequestOptions.Builder optionsBuilder = DaprCryptoProtos.EncryptRequestOptions
+            .newBuilder()
+            .setComponentName(request.getComponentName())
+            .setKeyName(request.getKeyName())
+            .setKeyWrapAlgorithm(request.getKeyWrapAlgorithm());
+
+        if (request.getDataEncryptionCipher() != null && !request.getDataEncryptionCipher().isEmpty()) {
+          optionsBuilder.setDataEncryptionCipher(request.getDataEncryptionCipher());
+        }
+        optionsBuilder.setOmitDecryptionKeyName(request.isOmitDecryptionKeyName());
+        if (request.getDecryptionKeyName() != null && !request.getDecryptionKeyName().isEmpty()) {
+          optionsBuilder.setDecryptionKeyName(request.getDecryptionKeyName());
+        }
+
+        final DaprCryptoProtos.EncryptRequestOptions options = optionsBuilder.build();
+        final long[] sequenceNumber = {0};
+        final boolean[] firstMessage = {true};
+
+        // Get the request stream observer from gRPC
+        final StreamObserver<DaprCryptoProtos.EncryptRequest> requestObserver =
+            intercept(null, asyncStub).encryptAlpha1(responseObserver);
+
+        // Subscribe to the plaintext stream and send chunks
+        request.getPlainTextStream()
+            .doOnNext(chunk -> {
+              DaprCryptoProtos.EncryptRequest.Builder reqBuilder = DaprCryptoProtos.EncryptRequest.newBuilder()
+                  .setPayload(CommonProtos.StreamPayload.newBuilder()
+                      .setData(ByteString.copyFrom(chunk))
+                      .setSeq(sequenceNumber[0]++)
+                      .build());
+
+              // Include options only in the first message
+              if (firstMessage[0]) {
+                reqBuilder.setOptions(options);
+                firstMessage[0] = false;
+              }
+
+              requestObserver.onNext(reqBuilder.build());
+            })
+            .doOnError(error -> {
+              requestObserver.onError(error);
+              sink.error(DaprException.propagate(new DaprException("ENCRYPT_ERROR", 
+                  "Error reading plaintext stream: " + error.getMessage(), error)));
+            })
+            .doOnComplete(() -> {
+              requestObserver.onCompleted();
+            })
+            .subscribe();
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapFlux(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<byte[]> decrypt(DecryptRequestAlpha1 request) {
+    try {
+      if (request == null) {
+        throw new IllegalArgumentException("DecryptRequestAlpha1 cannot be null.");
+      }
+      if (request.getComponentName() == null || request.getComponentName().trim().isEmpty()) {
+        throw new IllegalArgumentException("Component name cannot be null or empty.");
+      }
+      if (request.getCipherTextStream() == null) {
+        throw new IllegalArgumentException("Ciphertext stream cannot be null.");
+      }
+
+      return Flux.create(sink -> {
+        // Create response observer to receive decrypted data
+        final StreamObserver<DaprCryptoProtos.DecryptResponse> responseObserver =
+            new StreamObserver<DaprCryptoProtos.DecryptResponse>() {
+              @Override
+              public void onNext(DaprCryptoProtos.DecryptResponse response) {
+                if (response.hasPayload()) {
+                  byte[] data = response.getPayload().getData().toByteArray();
+                  if (data.length > 0) {
+                    sink.next(data);
+                  }
+                }
+              }
+
+              @Override
+              public void onError(Throwable t) {
+                sink.error(DaprException.propagate(new DaprException("DECRYPT_ERROR",
+                    "Error during decryption: " + t.getMessage(), t)));
+              }
+
+              @Override
+              public void onCompleted() {
+                sink.complete();
+              }
+            };
+
+        // Build options for the first message
+        DaprCryptoProtos.DecryptRequestOptions.Builder optionsBuilder = DaprCryptoProtos.DecryptRequestOptions
+            .newBuilder()
+            .setComponentName(request.getComponentName());
+
+        if (request.getKeyName() != null && !request.getKeyName().isEmpty()) {
+          optionsBuilder.setKeyName(request.getKeyName());
+        }
+
+        final DaprCryptoProtos.DecryptRequestOptions options = optionsBuilder.build();
+        final long[] sequenceNumber = {0};
+        final boolean[] firstMessage = {true};
+
+        // Get the request stream observer from gRPC
+        final StreamObserver<DaprCryptoProtos.DecryptRequest> requestObserver =
+            intercept(null, asyncStub).decryptAlpha1(responseObserver);
+
+        // Subscribe to the ciphertext stream and send chunks
+        request.getCipherTextStream()
+            .doOnNext(chunk -> {
+              DaprCryptoProtos.DecryptRequest.Builder reqBuilder = DaprCryptoProtos.DecryptRequest.newBuilder()
+                  .setPayload(CommonProtos.StreamPayload.newBuilder()
+                      .setData(ByteString.copyFrom(chunk))
+                      .setSeq(sequenceNumber[0]++)
+                      .build());
+
+              // Include options only in the first message
+              if (firstMessage[0]) {
+                reqBuilder.setOptions(options);
+                firstMessage[0] = false;
+              }
+
+              requestObserver.onNext(reqBuilder.build());
+            })
+            .doOnError(error -> {
+              requestObserver.onError(error);
+              sink.error(DaprException.propagate(new DaprException("DECRYPT_ERROR", 
+                  "Error reading ciphertext stream: " + error.getMessage(), error)));
+            })
+            .doOnComplete(() -> {
+              requestObserver.onCompleted();
+            })
+            .subscribe();
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapFlux(ex);
+    }
   }
 }

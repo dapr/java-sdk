@@ -20,8 +20,8 @@ import com.google.protobuf.Empty;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.DurationUtils;
+import io.dapr.v1.DaprActorsProtos;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Mono;
@@ -32,6 +32,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
+import static io.dapr.utils.FailurePolicyUtils.getJobFailurePolicy;
 
 /**
  * A DaprClient over HTTP for Actor's runtime.
@@ -78,14 +80,14 @@ class DaprClientImpl implements DaprClient {
    */
   @Override
   public Mono<byte[]> getState(String actorType, String actorId, String keyName) {
-    DaprProtos.GetActorStateRequest req =
-            DaprProtos.GetActorStateRequest.newBuilder()
+    DaprActorsProtos.GetActorStateRequest req =
+        DaprActorsProtos.GetActorStateRequest.newBuilder()
                     .setActorType(actorType)
                     .setActorId(actorId)
                     .setKey(keyName)
                     .build();
 
-    return Mono.<DaprProtos.GetActorStateResponse>create(it ->
+    return Mono.<DaprActorsProtos.GetActorStateResponse>create(it ->
             client.getActorState(req, createStreamObserver(it))).map(r -> r.getData().toByteArray());
   }
 
@@ -97,13 +99,13 @@ class DaprClientImpl implements DaprClient {
       String actorType,
       String actorId,
       List<ActorStateOperation> operations) {
-    List<DaprProtos.TransactionalActorStateOperation> grpcOps = new ArrayList<>();
+    List<DaprActorsProtos.TransactionalActorStateOperation> grpcOps = new ArrayList<>();
     for (ActorStateOperation op : operations) {
       String operationType = op.getOperationType();
       String key = op.getKey();
       Object value = op.getValue();
-      DaprProtos.TransactionalActorStateOperation.Builder opBuilder =
-          DaprProtos.TransactionalActorStateOperation.newBuilder()
+      DaprActorsProtos.TransactionalActorStateOperation.Builder opBuilder =
+          DaprActorsProtos.TransactionalActorStateOperation.newBuilder()
               .setOperationType(operationType)
               .setKey(key);
       if (value != null) {
@@ -126,8 +128,8 @@ class DaprClientImpl implements DaprClient {
       grpcOps.add(opBuilder.build());
     }
 
-    DaprProtos.ExecuteActorStateTransactionRequest req =
-        DaprProtos.ExecuteActorStateTransactionRequest.newBuilder()
+    DaprActorsProtos.ExecuteActorStateTransactionRequest req =
+        DaprActorsProtos.ExecuteActorStateTransactionRequest.newBuilder()
             .setActorType(actorType)
             .setActorId(actorId)
             .addAllOperations(grpcOps)
@@ -145,15 +147,21 @@ class DaprClientImpl implements DaprClient {
       String actorId,
       String reminderName,
       ActorReminderParams reminderParams) {
-    DaprProtos.RegisterActorReminderRequest req =
-            DaprProtos.RegisterActorReminderRequest.newBuilder()
+
+    var builder =
+        DaprActorsProtos.RegisterActorReminderRequest.newBuilder()
                     .setActorType(actorType)
                     .setActorId(actorId)
                     .setName(reminderName)
                     .setData(ByteString.copyFrom(reminderParams.getData()))
                     .setDueTime(DurationUtils.convertDurationToDaprFormat(reminderParams.getDueTime()))
-                    .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()))
-                    .build();
+            .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()));
+
+    if (reminderParams.getFailurePolicy() != null) {
+      builder.setFailurePolicy(getJobFailurePolicy(reminderParams.getFailurePolicy()));
+    }
+
+    DaprActorsProtos.RegisterActorReminderRequest req = builder.build();
     return Mono.<Empty>create(it -> client.registerActorReminder(req, createStreamObserver(it))).then().then();
   }
 
@@ -162,8 +170,8 @@ class DaprClientImpl implements DaprClient {
    */
   @Override
   public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
-    DaprProtos.UnregisterActorReminderRequest req =
-        DaprProtos.UnregisterActorReminderRequest.newBuilder()
+    DaprActorsProtos.UnregisterActorReminderRequest req =
+        DaprActorsProtos.UnregisterActorReminderRequest.newBuilder()
             .setActorType(actorType)
             .setActorId(actorId)
             .setName(reminderName)
@@ -181,8 +189,8 @@ class DaprClientImpl implements DaprClient {
       String actorId,
       String timerName,
       ActorTimerParams timerParams) {
-    DaprProtos.RegisterActorTimerRequest req =
-         DaprProtos.RegisterActorTimerRequest.newBuilder()
+    DaprActorsProtos.RegisterActorTimerRequest req =
+        DaprActorsProtos.RegisterActorTimerRequest.newBuilder()
              .setActorType(actorType)
              .setActorId(actorId)
              .setName(timerName)
@@ -200,8 +208,8 @@ class DaprClientImpl implements DaprClient {
    */
   @Override
   public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
-    DaprProtos.UnregisterActorTimerRequest req =
-        DaprProtos.UnregisterActorTimerRequest.newBuilder()
+    DaprActorsProtos.UnregisterActorTimerRequest req =
+        DaprActorsProtos.UnregisterActorTimerRequest.newBuilder()
             .setActorType(actorType)
             .setActorId(actorId)
             .setName(timerName)

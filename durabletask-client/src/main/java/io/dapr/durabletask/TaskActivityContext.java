@@ -34,7 +34,6 @@ public interface TaskActivityContext {
    */
   <T> T getInput(Class<T> targetType);
 
-
   /**
    * Gets the execution id of the current task activity.
    *
@@ -48,4 +47,10 @@ public interface TaskActivityContext {
    * @return the task id of the current task activity
    */
   int getTaskId();
+
+  /**
+   * Gets the trace parent id for the current workflow execution.
+   * @return trace parent id
+   */
+  String getTraceParent();
 }

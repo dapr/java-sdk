@@ -15,12 +15,15 @@ package io.dapr.workflows.runtime;
 
 import io.dapr.config.Properties;
 import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
+import io.dapr.durabletask.TaskActivityFactory;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,8 +83,8 @@ public class WorkflowRuntimeBuilder {
         this.executorService = this.executorService == null ? Executors.newCachedThreadPool() : this.executorService;
         if (instance == null) {
           instance = new WorkflowRuntime(
-                  this.builder.withExecutorService(this.executorService).build(),
-                  this.managedChannel, this.executorService);
+              this.builder.withExecutorService(this.executorService).build(),
+              this.managedChannel, this.executorService);
         }
       }
     }
@@ -113,11 +116,50 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(Class<T> clazz) {
-    this.builder.addOrchestration(new WorkflowClassWrapper<>(clazz));
-    this.workflowSet.add(clazz.getCanonicalName());
-    this.workflows.add(clazz.getSimpleName());
+    return this.registerWorkflow(clazz.getCanonicalName(), clazz, null, null);
+  }
 
-    this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
+  /**
+   * Registers a Workflow object.
+   *
+   * @param <T>   any Workflow type
+   * @param name  the name of the workflow to register
+   * @param clazz the class being registered
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(String name, Class<T> clazz) {
+    return this.registerWorkflow(name, clazz, null, null);
+  }
+
+  /**
+   * Registers a Workflow object.
+   *
+   * @param <T>             any Workflow type
+   * @param name            the name of the workflow to register
+   * @param clazz           the class being registered
+   * @param versionName     the version name of the workflow
+   * @param isLatestVersion whether the workflow is the latest version
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(String name,
+                                                                      Class<T> clazz,
+                                                                      String versionName,
+                                                                      Boolean isLatestVersion) {
+
+    if (StringUtils.isEmpty(name)) {
+      throw new IllegalArgumentException("Workflow name cannot be empty");
+    }
+
+    this.builder.addOrchestration(new WorkflowClassWrapper<>(name, clazz, versionName, isLatestVersion));
+    this.workflowSet.add(name);
+    this.workflows.add(name);
+
+    if (StringUtils.isEmpty(versionName)) {
+      this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
+    } else {
+      this.logger.info("Registered Workflow Version: {} {} - isLatest  {}",
+          clazz.getSimpleName(), versionName, isLatestVersion);
+    }
 
     return this;
   }
@@ -125,18 +167,44 @@ public class WorkflowRuntimeBuilder {
   /**
    * Registers a Workflow object.
    *
-   * @param <T>   any Workflow type
+   * @param <T>      any Workflow type
    * @param instance the workflow instance being registered
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(T instance) {
-    Class<T> clazz = (Class<T>) instance.getClass();
+    var name = instance.getClass().getCanonicalName();
+    this.registerWorkflow(name, instance, null, null);
+    return this;
+  }
 
-    this.builder.addOrchestration(new WorkflowInstanceWrapper<>(instance));
-    this.workflowSet.add(clazz.getCanonicalName());
-    this.workflows.add(clazz.getSimpleName());
+  /**
+   * Registers a Workflow object.
+   *
+   * @param <T>             any Workflow type
+   * @param name            the name of the workflow to register
+   * @param instance        the workflow instance being registered
+   * @param versionName     the version name of the workflow
+   * @param isLatestVersion whether the workflow is the latest version
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(String name,
+                                                                      T instance,
+                                                                      String versionName,
+                                                                      Boolean isLatestVersion) {
+    if (StringUtils.isEmpty(name)) {
+      throw new IllegalArgumentException("Workflow name cannot be empty");
+    }
 
-    this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
+    this.builder.addOrchestration(new WorkflowInstanceWrapper<>(name, instance, versionName, isLatestVersion));
+    this.workflowSet.add(name);
+    this.workflows.add(name);
+
+    if (StringUtils.isEmpty(versionName)) {
+      this.logger.info("Registered Workflow {}: {}", name, instance.getClass());
+    } else {
+      this.logger.info("Registered Workflow Version {}: {} {} - isLatest {}",
+          name, instance.getClass().getSimpleName(), versionName, isLatestVersion);
+    }
 
     return this;
   }
@@ -156,11 +224,15 @@ public class WorkflowRuntimeBuilder {
    * Registers an Activity object.
    *
    * @param <T>   any WorkflowActivity type
-   * @param name Name of the activity to register.
+   * @param name  Name of the activity to register.
    * @param clazz Class of the activity to register.
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(String name, Class<T> clazz) {
+    if (StringUtils.isEmpty(name)) {
+      throw new IllegalArgumentException("Activity name cannot be empty");
+    }
+
     this.builder.addActivity(new WorkflowActivityClassWrapper<>(name, clazz));
     this.activitySet.add(name);
     this.activities.add(name);
@@ -173,7 +245,7 @@ public class WorkflowRuntimeBuilder {
   /**
    * Registers an Activity object.
    *
-   * @param <T>   any WorkflowActivity type
+   * @param <T>      any WorkflowActivity type
    * @param instance the class instance being registered
    * @return the WorkflowRuntimeBuilder
    */
@@ -184,8 +256,8 @@ public class WorkflowRuntimeBuilder {
   /**
    * Registers an Activity object.
    *
-   * @param <T>   any WorkflowActivity type
-   * @param name Name of the activity to register.
+   * @param <T>      any WorkflowActivity type
+   * @param name     Name of the activity to register.
    * @param instance the class instance being registered
    * @return the WorkflowRuntimeBuilder
    */
@@ -199,4 +271,51 @@ public class WorkflowRuntimeBuilder {
     return this;
   }
 
+  /**
+   * Registers a Task Activity using a {@link TaskActivityFactory}.
+   *
+   * <p>This method allows advanced use cases where activities are created
+   * dynamically or require custom instantiation logic instead of relying
+   * on class-based or instance-based registration.
+   *
+   * @param activityName        the logical name of the activity to register
+   * @param taskActivityFactory the factory responsible for creating the activity
+   * @return the {@link WorkflowRuntimeBuilder}
+   */
+  public WorkflowRuntimeBuilder registerTaskActivityFactory(
+      String activityName,
+      TaskActivityFactory taskActivityFactory) {
+
+    this.builder.addActivity(taskActivityFactory);
+    this.activitySet.add(activityName);
+    this.activities.add(activityName);
+
+    this.logger.info("Registered Activity: {}", activityName);
+
+    return this;
+  }
+
+  /**
+   * Registers a Task Orchestration using a {@link TaskOrchestrationFactory}.
+   *
+   * <p>This method is intended for advanced scenarios where orchestrations
+   * are created programmatically or require custom construction logic,
+   * rather than being registered via workflow classes or instances.
+   *
+   * @param orchestrationName        the logical name of the orchestration to register
+   * @param taskOrchestrationFactory the factory responsible for creating the orchestration
+   * @return the {@link WorkflowRuntimeBuilder}
+   */
+  public WorkflowRuntimeBuilder registerTaskOrchestrationFactory(
+      String orchestrationName,
+      TaskOrchestrationFactory taskOrchestrationFactory) {
+
+    this.builder.addOrchestration(taskOrchestrationFactory);
+    this.workflows.add(orchestrationName);
+    this.workflowSet.add(orchestrationName);
+
+    this.logger.info("Registered Workflow: {}", orchestrationName);
+
+    return this;
+  }
 }

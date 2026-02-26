@@ -7,7 +7,7 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.17.0-SNAPSHOT</version>
+    <version>1.18.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -19,20 +19,23 @@
 
   <modules>
     <module>dapr-spring-data</module>
+    <module>dapr-spring-6-data</module>
     <module>dapr-spring-messaging</module>
     <module>dapr-spring-workflows</module>
+    <module>dapr-spring-boot-properties</module>
     <module>dapr-spring-boot-autoconfigure</module>
+    <module>dapr-spring-boot-4-autoconfigure</module>
     <module>dapr-spring-boot-tests</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter</module>
+    <module>dapr-spring-boot-starters/dapr-spring-boot-4-starter</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter-test</module>
+    <module>dapr-spring-boot-starters/dapr-spring-boot-4-starter-test</module>
   </modules>
 
   <properties>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
-    <!-- WARNING: don't change this property unless you also update .github/scripts/update_sdk_version.sh -->
-    <dapr.spring.version>1.17.0-SNAPSHOT</dapr.spring.version>
   </properties>
 
   <dependencyManagement>
@@ -40,27 +43,42 @@
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-data</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-6-data</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-messaging</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-workflows</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-autoconfigure</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-autoconfigure</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-properties</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-tests</artifactId>
-        <version>${dapr.spring.version}</version>
+        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

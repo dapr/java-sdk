@@ -21,7 +21,7 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprPubsubProtos;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,9 +34,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for EventSubscriberStreamObserver.
@@ -47,7 +54,7 @@ class EventSubscriberStreamObserverTest {
   public static final String TOPIC_NAME = "topic";
   private DaprGrpc.DaprStub mockStub;
   private DaprObjectSerializer objectSerializer;
-  private StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1> mockRequestStream;
+  private StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> mockRequestStream;
 
   @BeforeEach
   @SuppressWarnings("unchecked")
@@ -62,7 +69,7 @@ class EventSubscriberStreamObserverTest {
   @Test
   @DisplayName("Should successfully process events and send SUCCESS acks")
   void testSuccessfulEventProcessing() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -71,12 +78,12 @@ class EventSubscriberStreamObserverTest {
       );
 
       // Start the subscription
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
       );
       observer.start(initialRequest);
 
       // Simulate receiving an event
-      DaprProtos.SubscribeTopicEventsResponseAlpha1 response = buildEventResponse(
+      DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response = buildEventResponse(
           "event-1",
           "Hello World"
       );
@@ -87,20 +94,17 @@ class EventSubscriberStreamObserverTest {
     });
 
     StepVerifier.create(flux)
-        .assertNext(cloudEvent -> {
-          assertEquals("Hello World", cloudEvent.getData());
-          assertEquals("event-1", cloudEvent.getId());
-          assertEquals(PUBSUB_NAME, cloudEvent.getPubsubName());
-          assertEquals(TOPIC_NAME, cloudEvent.getTopic());
+        .assertNext(data -> {
+          assertEquals("Hello World", data);
         })
         .verifyComplete();
 
-    ArgumentCaptor<DaprProtos.SubscribeTopicEventsRequestAlpha1> requestCaptor =
-        ArgumentCaptor.forClass(DaprProtos.SubscribeTopicEventsRequestAlpha1.class);
+    ArgumentCaptor<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> requestCaptor =
+        ArgumentCaptor.forClass(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1.class);
 
     verify(mockRequestStream, times(2)).onNext(requestCaptor.capture());
 
-    List<DaprProtos.SubscribeTopicEventsRequestAlpha1> requests = requestCaptor.getAllValues();
+    List<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> requests = requestCaptor.getAllValues();
 
     assertEquals(2, requests.size());
     assertTrue(requests.get(0).hasInitialRequest());
@@ -115,7 +119,7 @@ class EventSubscriberStreamObserverTest {
   @Test
   @DisplayName("Should handle multiple consecutive events correctly")
   void testMultipleEvents() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -123,7 +127,7 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
       );
       observer.start(initialRequest);
 
@@ -135,17 +139,14 @@ class EventSubscriberStreamObserverTest {
     });
 
     StepVerifier.create(flux)
-        .assertNext(cloudEvent -> {
-          assertEquals("Message 1", cloudEvent.getData());
-          assertEquals("event-1", cloudEvent.getId());
+        .assertNext(data -> {
+          assertEquals("Message 1", data);
         })
-        .assertNext(cloudEvent -> {
-          assertEquals("Message 2", cloudEvent.getData());
-          assertEquals("event-2", cloudEvent.getId());
+        .assertNext(data -> {
+          assertEquals("Message 2", data);
         })
-        .assertNext(cloudEvent -> {
-          assertEquals("Message 3", cloudEvent.getData());
-          assertEquals("event-3", cloudEvent.getId());
+        .assertNext(data -> {
+          assertEquals("Message 3", data);
         })
         .verifyComplete();
 
@@ -155,7 +156,7 @@ class EventSubscriberStreamObserverTest {
   @Test
   @DisplayName("Should send DROP ack when deserialization fails")
   void testDeserializationError() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -163,12 +164,12 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
       );
       observer.start(initialRequest);
 
       // Send an event with invalid data (can't deserialize to String)
-      DaprProtos.SubscribeTopicEventsResponseAlpha1 response = DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+      DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response = DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
           .setEventMessage(
               DaprAppCallbackProtos.TopicEventRequest.newBuilder()
                   .setId("event-1")
@@ -189,13 +190,13 @@ class EventSubscriberStreamObserverTest {
             && error.getMessage().contains("event-1"))
         .verify();
 
-    ArgumentCaptor<DaprProtos.SubscribeTopicEventsRequestAlpha1> requestCaptor =
-        ArgumentCaptor.forClass(DaprProtos.SubscribeTopicEventsRequestAlpha1.class);
+    ArgumentCaptor<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> requestCaptor =
+        ArgumentCaptor.forClass(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1.class);
 
     verify(mockRequestStream, atLeast(2)).onNext(requestCaptor.capture());
 
-    List<DaprProtos.SubscribeTopicEventsRequestAlpha1> ackRequests = requestCaptor.getAllValues().stream()
-        .filter(DaprProtos.SubscribeTopicEventsRequestAlpha1::hasEventProcessed)
+    List<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1> ackRequests = requestCaptor.getAllValues().stream()
+        .filter(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1::hasEventProcessed)
         .collect(Collectors.toList());
 
     assertEquals(1, ackRequests.size());
@@ -209,7 +210,7 @@ class EventSubscriberStreamObserverTest {
   @Test
   @DisplayName("Should send RETRY ack when non-deserialization error occurs")
   void testProcessingError() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -217,7 +218,7 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest();
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest();
       observer.start(initialRequest);
 
       // Simulate a processing error by throwing during sink.next()
@@ -240,7 +241,7 @@ class EventSubscriberStreamObserverTest {
   @Test
   @DisplayName("Should propagate gRPC errors as DaprException")
   void testGrpcError() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -248,7 +249,7 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest();
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest();
       observer.start(initialRequest);
 
       // Simulate gRPC error
@@ -263,7 +264,7 @@ class EventSubscriberStreamObserverTest {
   @Test
   @DisplayName("Should handle null event messages gracefully without emitting events")
   void testNullEventMessage() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -271,11 +272,11 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
       );
       observer.start(initialRequest);
 
-      DaprProtos.SubscribeTopicEventsResponseAlpha1 response = DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+      DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response = DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
           .build();
 
       observer.onNext(response);
@@ -291,7 +292,7 @@ class EventSubscriberStreamObserverTest {
   @Test
   @DisplayName("Should skip events with empty pubsub name")
   void testEmptyPubsubName() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -299,11 +300,11 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
       );
       observer.start(initialRequest);
 
-      DaprProtos.SubscribeTopicEventsResponseAlpha1 response = DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+      DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response = DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
           .setEventMessage(
               DaprAppCallbackProtos.TopicEventRequest.newBuilder()
                   .setId("event-1")
@@ -327,7 +328,7 @@ class EventSubscriberStreamObserverTest {
   @Test
   @DisplayName("Should skip events with empty event ID")
   void testEmptyEventId() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -335,11 +336,11 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
       );
       observer.start(initialRequest);
 
-      DaprProtos.SubscribeTopicEventsResponseAlpha1 response = DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+      DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response = DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
           .setEventMessage(
               DaprAppCallbackProtos.TopicEventRequest.newBuilder()
                   .setId("")
@@ -361,17 +362,17 @@ class EventSubscriberStreamObserverTest {
   }
 
   @Test
-  @DisplayName("Should handle null type parameter and emit CloudEvent with null data")
-  void testNullData() {
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+  @DisplayName("Should handle null type parameter by skipping emission but still sending ack")
+  void testNullTypeSkipsEmission() {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
-          null, // null type
+          null, // null type - deserialize returns null
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
       );
 
       observer.start(initialRequest);
@@ -379,15 +380,11 @@ class EventSubscriberStreamObserverTest {
       observer.onCompleted();
     });
 
+    // No events emitted since null values are skipped (Reactor doesn't allow null)
     StepVerifier.create(flux)
-        .assertNext(cloudEvent -> {
-          assertNull(cloudEvent.getData());
-          assertEquals("event-1", cloudEvent.getId());
-          assertEquals(PUBSUB_NAME, cloudEvent.getPubsubName());
-          assertEquals(TOPIC_NAME, cloudEvent.getTopic());
-        })
         .verifyComplete();
 
+    // But ack is still sent
     verify(mockRequestStream, times(2)).onNext(any());
   }
 
@@ -397,7 +394,7 @@ class EventSubscriberStreamObserverTest {
     TestEvent testEvent = new TestEvent("test-name", 42);
     byte[] serializedEvent = objectSerializer.serialize(testEvent);
 
-    Flux<CloudEvent<TestEvent>> flux = Flux.create(sink -> {
+    Flux<TestEvent> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<TestEvent> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -405,11 +402,11 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest(
       );
       observer.start(initialRequest);
 
-      DaprProtos.SubscribeTopicEventsResponseAlpha1 response = DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+      DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response = DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
           .setEventMessage(
               DaprAppCallbackProtos.TopicEventRequest.newBuilder()
                   .setId("event-1")
@@ -425,11 +422,9 @@ class EventSubscriberStreamObserverTest {
     });
 
     StepVerifier.create(flux)
-        .assertNext(cloudEvent -> {
-          TestEvent event = cloudEvent.getData();
+        .assertNext(event -> {
           assertEquals("test-name", event.name);
           assertEquals(42, event.value);
-          assertEquals("event-1", cloudEvent.getId());
         })
         .verifyComplete();
   }
@@ -439,9 +434,9 @@ class EventSubscriberStreamObserverTest {
   void testErrorDuringSendingAck() {
     doThrow(new RuntimeException("Failed to send ack"))
         .when(mockRequestStream)
-        .onNext(argThat(DaprProtos.SubscribeTopicEventsRequestAlpha1::hasEventProcessed));
+        .onNext(argThat(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1::hasEventProcessed));
 
-    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+    Flux<String> flux = Flux.create(sink -> {
       EventSubscriberStreamObserver<String> observer = new EventSubscriberStreamObserver<>(
           mockStub,
           sink,
@@ -449,22 +444,114 @@ class EventSubscriberStreamObserverTest {
           objectSerializer
       );
 
-      DaprProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest();
+      DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 initialRequest = buildInitialRequest();
       observer.start(initialRequest);
 
       observer.onNext(buildEventResponse("event-1", "Hello"));
     });
 
     StepVerifier.create(flux)
-        .assertNext(cloudEvent -> assertEquals("Hello", cloudEvent.getData()))  // Event is emitted before ack
+        .assertNext(data -> assertEquals("Hello", data))  // Event is emitted before ack
         .expectError(DaprException.class)  // Then error when sending ack
         .verify();
   }
 
-  private DaprProtos.SubscribeTopicEventsRequestAlpha1 buildInitialRequest() {
-    return DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+  @Test
+  @DisplayName("Should construct CloudEvent from TopicEventRequest when TypeRef<CloudEvent<T>> is used")
+  void testCloudEventTypeConstruction() {
+    Flux<CloudEvent<String>> flux = Flux.create(sink -> {
+      EventSubscriberStreamObserver<CloudEvent<String>> observer = new EventSubscriberStreamObserver<>(
+          mockStub,
+          sink,
+          new TypeRef<CloudEvent<String>>() {},
+          objectSerializer
+      );
+
+      observer.start(buildInitialRequest());
+
+      // Build response with all CloudEvent fields
+      DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response = DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+          .setEventMessage(
+              DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                  .setId("event-123")
+                  .setSource("test-source")
+                  .setType("test.event.type")
+                  .setSpecVersion("1.0")
+                  .setDataContentType("application/json")
+                  .setPubsubName(PUBSUB_NAME)
+                  .setTopic(TOPIC_NAME)
+                  .setData(ByteString.copyFromUtf8("\"Hello World\""))
+                  .build()
+          )
+          .build();
+
+      observer.onNext(response);
+      observer.onCompleted();
+    });
+
+    StepVerifier.create(flux)
+        .assertNext(cloudEvent -> {
+          assertEquals("event-123", cloudEvent.getId());
+          assertEquals("test-source", cloudEvent.getSource());
+          assertEquals("test.event.type", cloudEvent.getType());
+          assertEquals("1.0", cloudEvent.getSpecversion());
+          assertEquals(TOPIC_NAME, cloudEvent.getTopic());
+          assertEquals(PUBSUB_NAME, cloudEvent.getPubsubName());
+          assertEquals("Hello World", cloudEvent.getData());
+        })
+        .verifyComplete();
+
+    // Verify SUCCESS ack was sent
+    verify(mockRequestStream, times(2)).onNext(any());
+  }
+
+  @Test
+  @DisplayName("Should handle raw CloudEvent type without generic parameter")
+  void testRawCloudEventType() {
+    Flux<CloudEvent> flux = Flux.create(sink -> {
+      EventSubscriberStreamObserver<CloudEvent> observer = new EventSubscriberStreamObserver<>(
+          mockStub,
+          sink,
+          TypeRef.get(CloudEvent.class),
+          objectSerializer
+      );
+
+      observer.start(buildInitialRequest());
+
+      DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 response = DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+          .setEventMessage(
+              DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                  .setId("event-456")
+                  .setSource("raw-source")
+                  .setType("raw.event.type")
+                  .setSpecVersion("1.0")
+                  .setPubsubName(PUBSUB_NAME)
+                  .setTopic(TOPIC_NAME)
+                  .setData(ByteString.copyFromUtf8("raw data content"))
+                  .build()
+          )
+          .build();
+
+      observer.onNext(response);
+      observer.onCompleted();
+    });
+
+    StepVerifier.create(flux)
+        .assertNext(cloudEvent -> {
+          assertEquals("event-456", cloudEvent.getId());
+          assertEquals("raw-source", cloudEvent.getSource());
+          assertEquals("raw.event.type", cloudEvent.getType());
+          assertEquals(TOPIC_NAME, cloudEvent.getTopic());
+          // Raw CloudEvent has data as string
+          assertEquals("raw data content", cloudEvent.getData());
+        })
+        .verifyComplete();
+  }
+
+  private DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 buildInitialRequest() {
+    return DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
         .setInitialRequest(
-            DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+            DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
                 .setPubsubName(PUBSUB_NAME)
                 .setTopic(TOPIC_NAME)
                 .build()
@@ -472,11 +559,11 @@ class EventSubscriberStreamObserverTest {
         .build();
   }
 
-  private DaprProtos.SubscribeTopicEventsResponseAlpha1 buildEventResponse(String eventId, String data) {
+  private DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 buildEventResponse(String eventId, String data) {
 
     try {
       byte[] serializedData = objectSerializer.serialize(data);
-      return DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+      return DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
           .setEventMessage(
               DaprAppCallbackProtos.TopicEventRequest.newBuilder()
                   .setId(eventId)

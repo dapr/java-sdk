@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.spring.workflows.config;
 
+import io.dapr.spring.workflows.config.annotations.ActivityMetadata;
+import io.dapr.spring.workflows.config.annotations.WorkflowMetadata;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowRuntime;
@@ -46,17 +48,38 @@ public class DaprWorkflowsConfiguration implements ApplicationContextAware {
     Map<String, Workflow> workflowBeans = applicationContext.getBeansOfType(Workflow.class);
 
     for (Workflow workflow :  workflowBeans.values()) {
-      LOGGER.info("Dapr Workflow: '{}' registered", workflow.getClass().getName());
 
-      workflowRuntimeBuilder.registerWorkflow(workflow);
+      // Get the workflowDefinition annotation from the workflow class and validate it
+      // If the annotation is not present, register the instance
+      // If preset register with the workflowDefinition annotation values
+      WorkflowMetadata workflowDefinition = workflow.getClass().getAnnotation(WorkflowMetadata.class);
+
+      if (workflowDefinition == null) {
+        // No annotation present, register the instance with default behavior
+        LOGGER.info("Dapr Workflow: '{}' registered", workflow.getClass().getName());
+        workflowRuntimeBuilder.registerWorkflow(workflow);
+        continue;
+      }
+
+      // Register with annotation values
+      String workflowName = workflowDefinition.name();
+      String workflowVersion = workflowDefinition.version();
+      boolean isLatest = workflowDefinition.isLatest();
+
+      workflowRuntimeBuilder.registerWorkflow(workflowName, workflow, workflowVersion, isLatest);
     }
 
     Map<String, WorkflowActivity> workflowActivitiesBeans = applicationContext.getBeansOfType(WorkflowActivity.class);
 
     for (WorkflowActivity activity :  workflowActivitiesBeans.values()) {
       LOGGER.info("Dapr Workflow Activity: '{}' registered", activity.getClass().getName());
+      ActivityMetadata activityDefinition = activity.getClass().getAnnotation(ActivityMetadata.class);
+      if (activityDefinition == null) {
+        workflowRuntimeBuilder.registerActivity(activity);
+        continue;
+      }
 
-      workflowRuntimeBuilder.registerActivity(activity);
+      workflowRuntimeBuilder.registerActivity(activityDefinition.name(), activity);
     }
 
     WorkflowRuntime runtime = workflowRuntimeBuilder.build();
