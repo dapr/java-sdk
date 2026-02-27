@@ -15,6 +15,7 @@ package io.dapr.testcontainers.converter;
 
 import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
+import io.dapr.testcontainers.HttpPipeline;
 import io.dapr.testcontainers.ListEntry;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
@@ -74,6 +75,16 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
       }
 
       configurationSpec.put("tracing", tracingMap);
+
+    }
+
+    HttpPipeline httpPipeline = configuration.getHttpPipeline();
+    if (httpPipeline != null) {
+
+      Map<String, Object> httpPipelineMap = new LinkedHashMap<>();
+      List<ListEntry> handlers = httpPipeline.getHandlers();
+      httpPipelineMap.put("handlers", handlers);
+      configurationSpec.put("httpPipeline", httpPipelineMap);
 
     }
 
