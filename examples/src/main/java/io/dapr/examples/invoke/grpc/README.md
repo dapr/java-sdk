@@ -77,7 +77,7 @@ Now run the service code:
 
 <!-- STEP
 name: Run demo service
-expected_stdout_lines:
+expected_stderr_lines:
   - 'INFO: greet to World'
 background: true
 sleep: 1
@@ -123,7 +123,7 @@ Finally, open a new command line terminal and run the client code to send some m
 
 <!-- STEP
 name: Run demo client
-expected_stdout_lines:
+expected_stderr_lines:
   - 'INFO: Will try to greet World ...'
   - 'INFO: Greeting: Hello World'
 background: true
