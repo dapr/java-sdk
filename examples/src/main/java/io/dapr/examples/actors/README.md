@@ -260,49 +260,49 @@ dapr run --resources-path ./components/actors --app-id demoactorclient -- java -
 Once running, the `demoactorservice` logs will start displaying the different steps: 
 First, we can see actors being activated and the `say` method being invoked:
 ```text
-== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-5] INFO  io.dapr.actors.ActorTrace - Actor:a855706e-f477-4530-9bff-d7b1cd2988f8 Activating ...
+2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-5] INFO  io.dapr.actors.ActorTrace - Actor:a855706e-f477-4530-9bff-d7b1cd2988f8 Activating ...
 
-== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-6] INFO  io.dapr.actors.ActorTrace - Actor:4720f646-baaa-4fae-86dd-aec2fc2ead6e Activating ...
+2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-6] INFO  io.dapr.actors.ActorTrace - Actor:4720f646-baaa-4fae-86dd-aec2fc2ead6e Activating ...
 
-== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-7] INFO  io.dapr.actors.ActorTrace - Actor:d54592a5-5b5b-4925-8974-6cf309fbdbbf Activating ...
+2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-7] INFO  io.dapr.actors.ActorTrace - Actor:d54592a5-5b5b-4925-8974-6cf309fbdbbf Activating ...
 
-== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-5] INFO  io.dapr.actors.ActorTrace - Actor:a855706e-f477-4530-9bff-d7b1cd2988f8 Activated
+2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-5] INFO  io.dapr.actors.ActorTrace - Actor:a855706e-f477-4530-9bff-d7b1cd2988f8 Activated
 
-== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-7] INFO  io.dapr.actors.ActorTrace - Actor:d54592a5-5b5b-4925-8974-6cf309fbdbbf Activated
+2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-7] INFO  io.dapr.actors.ActorTrace - Actor:d54592a5-5b5b-4925-8974-6cf309fbdbbf Activated
 
-== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-6] INFO  io.dapr.actors.ActorTrace - Actor:4720f646-baaa-4fae-86dd-aec2fc2ead6e Activated
+2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-6] INFO  io.dapr.actors.ActorTrace - Actor:4720f646-baaa-4fae-86dd-aec2fc2ead6e Activated
 
-== APP == Server say method for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf: Message #2 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:48.459
+Server say method for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf: Message #2 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:48.459
 
-== APP == Server say method for actor 4720f646-baaa-4fae-86dd-aec2fc2ead6e: Message #4 received from actor at index 2 with ID 4720f646-baaa-4fae-86dd-aec2fc2ead6e @ 2023-05-23 11:04:48.695
+Server say method for actor 4720f646-baaa-4fae-86dd-aec2fc2ead6e: Message #4 received from actor at index 2 with ID 4720f646-baaa-4fae-86dd-aec2fc2ead6e @ 2023-05-23 11:04:48.695
 
-== APP == Server say method for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf: Message #3 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:48.708
+Server say method for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf: Message #3 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:48.708
 ```
 
 Then we can see reminders and timers in action:
 ```text
-== APP == Server timer triggered with state ping! {0}  for actor a855706e-f477-4530-9bff-d7b1cd2988f8@ 2023-05-23 11:04:49.021
+Server timer triggered with state ping! {0}  for actor a855706e-f477-4530-9bff-d7b1cd2988f8@ 2023-05-23 11:04:49.021
 
-== APP == Server timer triggered with state ping! {1}  for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf@ 2023-05-23 11:04:49.021
+Server timer triggered with state ping! {1}  for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf@ 2023-05-23 11:04:49.021
 
-== APP == Reminder myremind with state {2} triggered for actor 4720f646-baaa-4fae-86dd-aec2fc2ead6e @ 2023-05-23 11:04:52.012
+Reminder myremind with state {2} triggered for actor 4720f646-baaa-4fae-86dd-aec2fc2ead6e @ 2023-05-23 11:04:52.012
 
-== APP == Reminder myremind with state {1} triggered for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:52.012
+Reminder myremind with state {1} triggered for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:52.012
 
-== APP == Reminder myremind with state {0} triggered for actor a855706e-f477-4530-9bff-d7b1cd2988f8 @ 2023-05-23 11:04:52.012
+Reminder myremind with state {0} triggered for actor a855706e-f477-4530-9bff-d7b1cd2988f8 @ 2023-05-23 11:04:52.012
 ```
 
 Finally, the console for `demoactorclient` got the service responses:
 ```text
-== APP == Reply 2023-05-23 11:04:49.288 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
+Reply 2023-05-23 11:04:49.288 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
 
-== APP == Reply 2023-05-23 11:04:49.408 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
+Reply 2023-05-23 11:04:49.408 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
 
-== APP == Reply 2023-05-23 11:04:49.515 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf 
+Reply 2023-05-23 11:04:49.515 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf 
 
-== APP == Reply 2023-05-23 11:04:49.740 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
+Reply 2023-05-23 11:04:49.740 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
 
-== APP == Reply 2023-05-23 11:04:49.863 received from actor at index 2 with ID 4720f646-baaa-4fae-86dd-aec2fc2ead6e 
+Reply 2023-05-23 11:04:49.863 received from actor at index 2 with ID 4720f646-baaa-4fae-86dd-aec2fc2ead6e 
 ```
 
 For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](https://github.com/dapr/java-sdk/blob/master/sdk-tests/src/test/java/io/dapr/it/actors/services/springboot/DaprApplication.java) Application implementation.
