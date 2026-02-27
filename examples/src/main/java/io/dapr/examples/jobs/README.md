@@ -96,8 +96,8 @@ Use the following command to run this example-
 <!-- STEP
 name: Run Demo Jobs Client example
 expected_stdout_lines:
-  - "== APP == Job Name: dapr-job-1"
-  - "== APP == Job Payload: Hello World!"
+  - "Job Name: dapr-job-1"
+  - "Job Payload: Hello World!"
 background: true
 output_match_mode: substring
 sleep: 10
@@ -115,8 +115,8 @@ java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.jobs.DemoJobsC
 
 ### Sample output
 ```
-== APP == Job Name: dapr-job-1
-== APP == Job Payload: Hello World!
+Job Name: dapr-job-1
+Job Payload: Hello World!
 ```
 ### Cleanup
 
