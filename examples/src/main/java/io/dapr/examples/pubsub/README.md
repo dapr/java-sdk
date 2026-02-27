@@ -728,7 +728,7 @@ dapr run --resources-path ./components/pubsub --app-id subscriber --app-port 300
 
 Use the follow command to start a publisher
 <!-- STEP
-name: Run Publisher
+name: Run Publisher for gRPC
 expected_stdout_lines:
   - 'Published message: This is message #0'
   - 'Published message: This is message #1'
@@ -760,7 +760,7 @@ Subscriber got: This is message #9
 If you run a bulk publisher using following command
 
 <!-- STEP
-name: Run Publisher on bulk topic
+name: Run Publisher on bulk topic for gRPC
 expected_stdout_lines:
   - 'Published message: This is message #0'
   - 'Published message: This is message #1'
