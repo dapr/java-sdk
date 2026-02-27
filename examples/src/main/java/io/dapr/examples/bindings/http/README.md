@@ -130,10 +130,10 @@ Execute the following command to run the Input Binding example:
 <!-- STEP
 name: Run input binding
 expected_stdout_lines:
-  - '== APP == Received message through binding: {"message":"Message #0"}'
-  - '== APP == Received message through binding: "Message #1"'
-  - '== APP == Received message through binding: {"message":"Message #2"}'
-  - '== APP == Received message through binding: "Message #3"'
+  - 'Received message through binding: {"message":"Message #0"}'
+  - 'Received message through binding: "Message #1"'
+  - 'Received message through binding: {"message":"Message #2"}'
+  - 'Received message through binding: "Message #3"'
 background: true
 sleep: 10
 -->
@@ -200,10 +200,10 @@ Execute the following command to run the Output Binding example:
 <!-- STEP
 name: Run output binding
 expected_stdout_lines:
-  - '== APP == sending a class with message: Message #0'
-  - '== APP == sending a plain string: Message #1'
-  - '== APP == sending a class with message: Message #2'
-  - '== APP == sending a plain string: Message #3'
+  - 'sending a class with message: Message #0'
+  - 'sending a plain string: Message #1'
+  - 'sending a class with message: Message #2'
+  - 'sending a plain string: Message #3'
 background: true
 sleep: 30
 -->
@@ -217,13 +217,13 @@ dapr run --resources-path ./components/bindings --app-id outputbinding -- java -
 Once running, the OutputBindingExample should print the output as follows:
 
 ```txt
-== APP == sending a class with message: Message #0
+sending a class with message: Message #0
 
-== APP == sending a plain string: Message #1
+sending a plain string: Message #1
 
-== APP == sending a class with message: Message #2
+sending a class with message: Message #2
 
-== APP == sending a plain string: Message #3
+sending a plain string: Message #3
 ```
 
 Events have been sent.
@@ -231,13 +231,13 @@ Events have been sent.
 Once running, the InputBindingExample should print the output as follows:
 
 ```txt
-== APP == Received message through binding: {"message":"Message #0"}
+Received message through binding: {"message":"Message #0"}
 
-== APP == Received message through binding: "Message #1"
+Received message through binding: "Message #1"
 
-== APP == Received message through binding: {"message":"Message #2"}
+Received message through binding: {"message":"Message #2"}
 
-== APP == Received message through binding: "Message #3"
+Received message through binding: "Message #3"
 ```
 
 Events have been retrieved from the binding.

@@ -156,23 +156,23 @@ The Dapr client is also within a try-with-resource block to properly close the c
 <!-- STEP
 name: Check state example
 expected_stdout_lines:
-  - "== APP == Waiting for Dapr sidecar ..."
-  - "== APP == Dapr sidecar is ready."    
-  - "== APP == Saving class with message: my message"
-  - "== APP == Retrieved class message from state: my message"
-  - "== APP == Updating previous state and adding another state 'test state'... "
-  - "== APP == Saving updated class with message: my message updated"
-  - "== APP == Retrieved messages using bulk get:"
-  - "== APP == StateKeyValue{key='myKey', value=my message updated, etag='2', metadata={'{}'}, error='null', options={'null'}}"
-  - "== APP == StateKeyValue{key='myKey2', value=test message, etag='1', metadata={'{}'}, error='null', options={'null'}}"
-  - "== APP == Deleting states..."
-  - "== APP == Verify delete key request is aborted if an etag different from stored is passed."
-  - "== APP == Expected failure. ABORTED"
-  - "== APP == Trying to delete again with correct etag."
-  - "== APP == Trying to retrieve deleted states:"
-  - "== APP == StateKeyValue{key='myKey', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}"
-  - "== APP == StateKeyValue{key='myKey2', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}"
-  - "== APP == Done"
+  - "Waiting for Dapr sidecar ..."
+  - "Dapr sidecar is ready."    
+  - "Saving class with message: my message"
+  - "Retrieved class message from state: my message"
+  - "Updating previous state and adding another state 'test state'... "
+  - "Saving updated class with message: my message updated"
+  - "Retrieved messages using bulk get:"
+  - "StateKeyValue{key='myKey', value=my message updated, etag='2', metadata={'{}'}, error='null', options={'null'}}"
+  - "StateKeyValue{key='myKey2', value=test message, etag='1', metadata={'{}'}, error='null', options={'null'}}"
+  - "Deleting states..."
+  - "Verify delete key request is aborted if an etag different from stored is passed."
+  - "Expected failure. ABORTED"
+  - "Trying to delete again with correct etag."
+  - "Trying to retrieve deleted states:"
+  - "StateKeyValue{key='myKey', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}"
+  - "StateKeyValue{key='myKey2', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}"
+  - "Done"
 background: true
 sleep: 5 
 -->
@@ -187,23 +187,23 @@ dapr run --resources-path ./components/state --app-id state-example -- java -jar
 Once running, the StateClient should print the output as follows:
 
 ```txt
-== APP == Waiting for Dapr sidecar ...
-== APP == Dapr sidecar is ready.
-== APP == Saving class with message: my message
-== APP == Retrieved class message from state: my message
-== APP == Updating previous state and adding another state 'test state'... 
-== APP == Saving updated class with message: my message updated
-== APP == Retrieved messages using bulk get:
-== APP == StateKeyValue{key='myKey', value=my message updated, etag='2', metadata={'{}'}, error='null', options={'null'}}
-== APP == StateKeyValue{key='myKey2', value=test message, etag='1', metadata={'{}'}, error='null', options={'null'}}
-== APP == Deleting states...
-== APP == Verify delete key request is aborted if an etag different from stored is passed.
-== APP == Expected failure. ABORTED: failed deleting state with key myKey: possible etag mismatch. error from state store: ERR Error running script (call to f_9b5da7354cb61e2ca9faff50f6c43b81c73c0b94): @user_script:1: user_script:1: failed to delete Tailmad-Fang||myKey 
-== APP == Trying to delete again with correct etag.
-== APP == Trying to retrieve deleted states: 
-== APP == StateKeyValue{key='myKey', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
-== APP == StateKeyValue{key='myKey2', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
-== APP == Done
+Waiting for Dapr sidecar ...
+Dapr sidecar is ready.
+Saving class with message: my message
+Retrieved class message from state: my message
+Updating previous state and adding another state 'test state'... 
+Saving updated class with message: my message updated
+Retrieved messages using bulk get:
+StateKeyValue{key='myKey', value=my message updated, etag='2', metadata={'{}'}, error='null', options={'null'}}
+StateKeyValue{key='myKey2', value=test message, etag='1', metadata={'{}'}, error='null', options={'null'}}
+Deleting states...
+Verify delete key request is aborted if an etag different from stored is passed.
+Expected failure. ABORTED: failed deleting state with key myKey: possible etag mismatch. error from state store: ERR Error running script (call to f_9b5da7354cb61e2ca9faff50f6c43b81c73c0b94): @user_script:1: user_script:1: failed to delete Tailmad-Fang||myKey 
+Trying to delete again with correct etag.
+Trying to retrieve deleted states: 
+StateKeyValue{key='myKey', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
+StateKeyValue{key='myKey2', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
+Done
 ```
 
 ### Cleanup

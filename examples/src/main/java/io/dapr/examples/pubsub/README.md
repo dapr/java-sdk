@@ -195,8 +195,8 @@ Execute the following command to run the Publisher example:
 <!-- STEP
 name: Run Publisher
 expected_stdout_lines:
-  - '== APP == Published message: This is message #0'
-  - '== APP == Published message: This is message #1'
+  - 'Published message: This is message #0'
+  - 'Published message: This is message #1'
 background: true
 sleep: 15
 -->
@@ -212,27 +212,27 @@ Once running, the Publisher should print the output as follows:
 ```txt
 ✅  You're up and running! Both Dapr and your app logs will appear here.
 
-== APP == Published message: This is message #0
+Published message: This is message #0
 
-== APP == Published message: This is message #1
+Published message: This is message #1
 
-== APP == Published message: This is message #2
+Published message: This is message #2
 
-== APP == Published message: This is message #3
+Published message: This is message #3
 
-== APP == Published message: This is message #4
+Published message: This is message #4
 
-== APP == Published message: This is message #5
+Published message: This is message #5
 
-== APP == Published message: This is message #6
+Published message: This is message #6
 
-== APP == Published message: This is message #7
+Published message: This is message #7
 
-== APP == Published message: This is message #8
+Published message: This is message #8
 
-== APP == Published message: This is message #9
+Published message: This is message #9
 
-== APP == Done.
+Done.
 
 ```
 
@@ -241,35 +241,35 @@ Messages have been published in the topic.
 Once running, the Subscriber should print the output as follows:
 
 ```txt
-== APP == Subscriber got: This is message #3
-== APP == Subscriber got: {"id":"1f646657-0032-4797-b59b-c57b4f40743b","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #3","expiration":"2020-12-24T05:29:12Z"}
+Subscriber got: This is message #3
+Subscriber got: {"id":"1f646657-0032-4797-b59b-c57b4f40743b","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #3","expiration":"2020-12-24T05:29:12Z"}
 
-== APP == Subscriber got: This is message #8
-== APP == Subscriber got: {"id":"a22b97ce-9008-4fba-8b57-c3c3e1f031b6","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #8","expiration":"2020-12-24T05:29:15Z"}
+Subscriber got: This is message #8
+Subscriber got: {"id":"a22b97ce-9008-4fba-8b57-c3c3e1f031b6","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #8","expiration":"2020-12-24T05:29:15Z"}
 
-== APP == Subscriber got: This is message #0
-== APP == Subscriber got: {"id":"abb2f110-6862-49f7-8c8d-189f6dcd177d","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #0","expiration":"2020-12-24T05:29:11Z"}
+Subscriber got: This is message #0
+Subscriber got: {"id":"abb2f110-6862-49f7-8c8d-189f6dcd177d","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #0","expiration":"2020-12-24T05:29:11Z"}
 
-== APP == Subscriber got: This is message #7
-== APP == Subscriber got: {"id":"043f31d3-c13a-4a02-ac89-64ecca946598","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #7","expiration":"2020-12-24T05:29:14Z"}
+Subscriber got: This is message #7
+Subscriber got: {"id":"043f31d3-c13a-4a02-ac89-64ecca946598","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #7","expiration":"2020-12-24T05:29:14Z"}
 
-== APP == Subscriber got: This is message #2
-== APP == Subscriber got: {"id":"acc554f4-7109-4c31-9374-0e5936b90180","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #2","expiration":"2020-12-24T05:29:12Z"}
+Subscriber got: This is message #2
+Subscriber got: {"id":"acc554f4-7109-4c31-9374-0e5936b90180","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #2","expiration":"2020-12-24T05:29:12Z"}
 
-== APP == Subscriber got: This is message #9
-== APP == Subscriber got: {"id":"8b3ad160-368d-4b0f-9925-8fa2a2fbf5ca","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #9","expiration":"2020-12-24T05:29:15Z"}
+Subscriber got: This is message #9
+Subscriber got: {"id":"8b3ad160-368d-4b0f-9925-8fa2a2fbf5ca","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #9","expiration":"2020-12-24T05:29:15Z"}
 
-== APP == Subscriber got: This is message #1
-== APP == Subscriber got: {"id":"e41d4512-511a-4a2b-80f3-a0a4d091c9a5","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #1","expiration":"2020-12-24T05:29:11Z"}
+Subscriber got: This is message #1
+Subscriber got: {"id":"e41d4512-511a-4a2b-80f3-a0a4d091c9a5","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #1","expiration":"2020-12-24T05:29:11Z"}
 
-== APP == Subscriber got: This is message #4
-== APP == Subscriber got: {"id":"33e21664-128e-4fc4-b5c4-ed257f758336","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #4","expiration":"2020-12-24T05:29:13Z"}
+Subscriber got: This is message #4
+Subscriber got: {"id":"33e21664-128e-4fc4-b5c4-ed257f758336","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #4","expiration":"2020-12-24T05:29:13Z"}
 
-== APP == Subscriber got: This is message #6
-== APP == Subscriber got: {"id":"bd14f1ee-ca6b-47f7-8130-dd1e6de5b03c","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #6","expiration":"2020-12-24T05:29:14Z"}
+Subscriber got: This is message #6
+Subscriber got: {"id":"bd14f1ee-ca6b-47f7-8130-dd1e6de5b03c","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #6","expiration":"2020-12-24T05:29:14Z"}
 
-== APP == Subscriber got: This is message #5
-== APP == Subscriber got: {"id":"acc57cd6-71da-4ba3-9a12-9c921ca49af7","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #5","expiration":"2020-12-24T05:29:13Z"}
+Subscriber got: This is message #5
+Subscriber got: {"id":"acc57cd6-71da-4ba3-9a12-9c921ca49af7","source":"publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"application/json","data":"This is message #5","expiration":"2020-12-24T05:29:13Z"}
 
 ```
 
@@ -397,7 +397,7 @@ Execute the following command to run the BulkPublisher example:
 name: Run Bulk Publisher
 match_order: sequential
 expected_stdout_lines:
-  - '== APP == Published the set of messages in a single call to Dapr'
+  - 'Published the set of messages in a single call to Dapr'
 background: true
 -->
 
@@ -412,20 +412,20 @@ Once running, the BulkPublisher should print the output as follows:
 ```txt
 ✅  You're up and running! Both Dapr and your app logs will appear here.
 
-== APP == Using Dapr client...
-== APP == Constructing the list of messages to publish
-== APP == Going to publish message : This is message #0
-== APP == Going to publish message : This is message #1
-== APP == Going to publish message : This is message #2
-== APP == Going to publish message : This is message #3
-== APP == Going to publish message : This is message #4
-== APP == Going to publish message : This is message #5
-== APP == Going to publish message : This is message #6
-== APP == Going to publish message : This is message #7
-== APP == Going to publish message : This is message #8
-== APP == Going to publish message : This is message #9
-== APP == Published the set of messages in a single call to Dapr
-== APP == Done
+Using Dapr client...
+Constructing the list of messages to publish
+Going to publish message : This is message #0
+Going to publish message : This is message #1
+Going to publish message : This is message #2
+Going to publish message : This is message #3
+Going to publish message : This is message #4
+Going to publish message : This is message #5
+Going to publish message : This is message #6
+Going to publish message : This is message #7
+Going to publish message : This is message #8
+Going to publish message : This is message #9
+Published the set of messages in a single call to Dapr
+Done
 
 ```
 
@@ -434,26 +434,26 @@ Messages have been published in the topic.
 The Subscriber started previously [here](#running-the-subscriber) should print the output as follows:
 
 ```txt
-== APP == Subscriber got from bulk published topic: This is message #1
-== APP == Subscriber got: {"id":"323935ed-d8db-4ea2-ba28-52352b1d1b34","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #1","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #0
-== APP == Subscriber got: {"id":"bb2f4833-0473-446b-a6cc-04a36de5ac0a","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #0","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #5
-== APP == Subscriber got: {"id":"07bad175-4be4-4beb-a983-4def2eba5768","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #5","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #6
-== APP == Subscriber got: {"id":"b99fba4d-732a-4d18-bf10-b37916dedfb1","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #6","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #2
-== APP == Subscriber got: {"id":"2976f254-7859-449e-b66c-57fab4a72aef","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #2","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #3
-== APP == Subscriber got: {"id":"f21ff2b5-4842-481d-9a96-e4c299d1c463","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #3","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #4
-== APP == Subscriber got: {"id":"4bf50438-e576-4f5f-bb40-bd31c716ad02","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #4","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #7
-== APP == Subscriber got: {"id":"f0c8b53b-7935-478e-856b-164d329d25ab","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #7","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #9
-== APP == Subscriber got: {"id":"b280569f-cc29-471f-9cb7-682d8d6bd553","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #9","data_base64":null}
-== APP == Subscriber got from bulk published topic: This is message #8
-== APP == Subscriber got: {"id":"df20d841-296e-4c6b-9dcb-dd17920538e7","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #8","data_base64":null}
+Subscriber got from bulk published topic: This is message #1
+Subscriber got: {"id":"323935ed-d8db-4ea2-ba28-52352b1d1b34","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #1","data_base64":null}
+Subscriber got from bulk published topic: This is message #0
+Subscriber got: {"id":"bb2f4833-0473-446b-a6cc-04a36de5ac0a","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #0","data_base64":null}
+Subscriber got from bulk published topic: This is message #5
+Subscriber got: {"id":"07bad175-4be4-4beb-a983-4def2eba5768","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #5","data_base64":null}
+Subscriber got from bulk published topic: This is message #6
+Subscriber got: {"id":"b99fba4d-732a-4d18-bf10-b37916dedfb1","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #6","data_base64":null}
+Subscriber got from bulk published topic: This is message #2
+Subscriber got: {"id":"2976f254-7859-449e-b66c-57fab4a72aef","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #2","data_base64":null}
+Subscriber got from bulk published topic: This is message #3
+Subscriber got: {"id":"f21ff2b5-4842-481d-9a96-e4c299d1c463","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #3","data_base64":null}
+Subscriber got from bulk published topic: This is message #4
+Subscriber got: {"id":"4bf50438-e576-4f5f-bb40-bd31c716ad02","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #4","data_base64":null}
+Subscriber got from bulk published topic: This is message #7
+Subscriber got: {"id":"f0c8b53b-7935-478e-856b-164d329d25ab","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #7","data_base64":null}
+Subscriber got from bulk published topic: This is message #9
+Subscriber got: {"id":"b280569f-cc29-471f-9cb7-682d8d6bd553","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #9","data_base64":null}
+Subscriber got from bulk published topic: This is message #8
+Subscriber got: {"id":"df20d841-296e-4c6b-9dcb-dd17920538e7","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #8","data_base64":null}
 ```
 
 > Note: the Redis pubsub component does not have a native bulk publish implementation, and uses Dapr runtime's default bulk publish implementation which is concurrent. Therefore, the order of the events that are published are not guaranteed.
@@ -465,8 +465,8 @@ You can also run the publisher to publish messages to `testingtopicbulk` topic, 
 <!-- STEP
 name: Run Publisher on bulk topic
 expected_stdout_lines:
-  - '== APP == Published message: This is message #0'
-  - '== APP == Published message: This is message #1'
+  - 'Published message: This is message #0'
+  - 'Published message: This is message #1'
 background: true
 -->
 
@@ -479,27 +479,27 @@ dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar ta
 Once running, the Publisher should print the same output as seen [above](#running-the-publisher). The Subscriber should print the output as follows:
 
 ```txt
-== APP == Bulk Subscriber got 10 messages.
-== APP == Bulk Subscriber message has entry ID: d4d81c57-d75c-4a22-a747-e907099ca135
-== APP == Bulk Subscriber got: This is message #0
-== APP == Bulk Subscriber message has entry ID: f109c837-f7c8-4839-8d71-2df9c467875c
-== APP == Bulk Subscriber got: This is message #1
-== APP == Bulk Subscriber message has entry ID: d735044f-1320-43e1-bd41-787ad9d26427
-== APP == Bulk Subscriber got: This is message #2
-== APP == Bulk Subscriber message has entry ID: afe74e5a-1a2b-498a-beca-7a6383141ccf
-== APP == Bulk Subscriber got: This is message #3
-== APP == Bulk Subscriber message has entry ID: 1df3fa51-d137-4749-891d-973ce58f1e1c
-== APP == Bulk Subscriber got: This is message #4
-== APP == Bulk Subscriber message has entry ID: ecab82bd-77be-40a1-8b62-2dbb3388d726
-== APP == Bulk Subscriber got: This is message #5
-== APP == Bulk Subscriber message has entry ID: 49a63916-ed09-4101-969e-13a860e35c55
-== APP == Bulk Subscriber got: This is message #6
-== APP == Bulk Subscriber message has entry ID: 897ec32c-ad74-4512-8979-ee0a455433e8
-== APP == Bulk Subscriber got: This is message #7
-== APP == Bulk Subscriber message has entry ID: 67367edc-27a6-4c8c-9e39-31caa0f74b2d
-== APP == Bulk Subscriber got: This is message #8
-== APP == Bulk Subscriber message has entry ID: f134d21f-0a05-408d-977c-1397b999e908
-== APP == Bulk Subscriber got: This is message #9
+Bulk Subscriber got 10 messages.
+Bulk Subscriber message has entry ID: d4d81c57-d75c-4a22-a747-e907099ca135
+Bulk Subscriber got: This is message #0
+Bulk Subscriber message has entry ID: f109c837-f7c8-4839-8d71-2df9c467875c
+Bulk Subscriber got: This is message #1
+Bulk Subscriber message has entry ID: d735044f-1320-43e1-bd41-787ad9d26427
+Bulk Subscriber got: This is message #2
+Bulk Subscriber message has entry ID: afe74e5a-1a2b-498a-beca-7a6383141ccf
+Bulk Subscriber got: This is message #3
+Bulk Subscriber message has entry ID: 1df3fa51-d137-4749-891d-973ce58f1e1c
+Bulk Subscriber got: This is message #4
+Bulk Subscriber message has entry ID: ecab82bd-77be-40a1-8b62-2dbb3388d726
+Bulk Subscriber got: This is message #5
+Bulk Subscriber message has entry ID: 49a63916-ed09-4101-969e-13a860e35c55
+Bulk Subscriber got: This is message #6
+Bulk Subscriber message has entry ID: 897ec32c-ad74-4512-8979-ee0a455433e8
+Bulk Subscriber got: This is message #7
+Bulk Subscriber message has entry ID: 67367edc-27a6-4c8c-9e39-31caa0f74b2d
+Bulk Subscriber got: This is message #8
+Bulk Subscriber message has entry ID: f134d21f-0a05-408d-977c-1397b999e908
+Bulk Subscriber got: This is message #9
 
 ```
 
@@ -589,12 +589,12 @@ Execute the following command to run the HTTP Subscriber example:
 name: Run Http Subscriber
 match_order: none
 expected_stdout_lines:
-  - '== APP == Subscriber got: This is message #1'
-  - '== APP == Subscriber got: This is message #2'
-  - '== APP == Subscriber got from bulk published topic: This is message #2'
-  - '== APP == Subscriber got from bulk published topic: This is message #3'
-  - '== APP == Bulk Subscriber got: This is message #1'
-  - '== APP == Bulk Subscriber got: This is message #2'
+  - 'Subscriber got: This is message #1'
+  - 'Subscriber got: This is message #2'
+  - 'Subscriber got from bulk published topic: This is message #2'
+  - 'Subscriber got from bulk published topic: This is message #3'
+  - 'Bulk Subscriber got: This is message #1'
+  - 'Bulk Subscriber got: This is message #2'
 background: true
 sleep: 15
 -->
@@ -708,10 +708,10 @@ Execute the following command to run the gRPC Subscriber example:
 name: Run gRPC Subscriber
 match_order: none
 expected_stdout_lines:
-  - '== APP == Subscriber got: This is message #1'
-  - '== APP == Subscriber got: This is message #2'
-  - '== APP == Bulk Subscriber got: "This is message #1"'
-  - '== APP == Bulk Subscriber got: "This is message #2"'
+  - 'Subscriber got: This is message #1'
+  - 'Subscriber got: This is message #2'
+  - 'Bulk Subscriber got: "This is message #1"'
+  - 'Bulk Subscriber got: "This is message #2"'
 background: true
 sleep: 15
 -->
@@ -728,10 +728,10 @@ dapr run --resources-path ./components/pubsub --app-id subscriber --app-port 300
 
 Use the follow command to start a publisher
 <!-- STEP
-name: Run Publisher
+name: Run Publisher for gRPC
 expected_stdout_lines:
-  - '== APP == Published message: This is message #0'
-  - '== APP == Published message: This is message #1'
+  - 'Published message: This is message #0'
+  - 'Published message: This is message #1'
 background: true
 sleep: 15
 -->
@@ -745,25 +745,25 @@ dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar ta
 Messages will be subscribed by the gRPC Subscriber and will print the output as follows:
 
 ```
-== APP == Subscriber got: This is message #0
-== APP == Subscriber got: This is message #1
-== APP == Subscriber got: This is message #2
-== APP == Subscriber got: This is message #3
-== APP == Subscriber got: This is message #4
-== APP == Subscriber got: This is message #5
-== APP == Subscriber got: This is message #6
-== APP == Subscriber got: This is message #7
-== APP == Subscriber got: This is message #8
-== APP == Subscriber got: This is message #9
+Subscriber got: This is message #0
+Subscriber got: This is message #1
+Subscriber got: This is message #2
+Subscriber got: This is message #3
+Subscriber got: This is message #4
+Subscriber got: This is message #5
+Subscriber got: This is message #6
+Subscriber got: This is message #7
+Subscriber got: This is message #8
+Subscriber got: This is message #9
 ```
 
 If you run a bulk publisher using following command
 
 <!-- STEP
-name: Run Publisher on bulk topic
+name: Run Publisher on bulk topic for gRPC
 expected_stdout_lines:
-  - '== APP == Published message: This is message #0'
-  - '== APP == Published message: This is message #1'
+  - 'Published message: This is message #0'
+  - 'Published message: This is message #1'
 background: true
 -->
 
@@ -777,32 +777,32 @@ dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar ta
 The console will print the output:
 
 ```
-== APP == Bulk Subscriber received 2 messages.
-== APP == Bulk Subscriber message has entry ID: 0c917871-557c-41db-b038-a250d23ee07c
-== APP == Bulk Subscriber got: "This is message #0"
-== APP == Bulk Subscriber message has entry ID: df114819-0db9-4a04-b06b-d5844d3ff731
-== APP == Bulk Subscriber got: "This is message #1"
-== APP == Bulk Subscriber received 2 messages.
-== APP == Bulk Subscriber message has entry ID: 8161f1e2-caf0-446a-81f7-0b40e7350e19
-== APP == Bulk Subscriber got: "This is message #2"
-== APP == Bulk Subscriber message has entry ID: 173fafa1-d187-4b2d-83bf-b4da00616a3a
-== APP == Bulk Subscriber got: "This is message #3"
-== APP == Bulk Subscriber received 2 messages.
-== APP == Bulk Subscriber message has entry ID: 94f89996-155d-4b52-8a8c-c268662ff3a2
-== APP == Bulk Subscriber got: "This is message #4"
-== APP == Bulk Subscriber message has entry ID: 497c47a4-e4f7-4aeb-abde-099068dea30c
-== APP == Bulk Subscriber got: "This is message #5"
-== APP == Bulk Subscriber received 1 messages.
-== APP == Bulk Subscriber message has entry ID: 892fb1ae-b027-457a-860e-52b9c3219270
-== APP == Bulk Subscriber got: "This is message #6"
-== APP == Bulk Subscriber received 2 messages.
-== APP == Bulk Subscriber message has entry ID: 95abf8cc-e033-483d-9a55-e0491bd97930
-== APP == Bulk Subscriber got: "This is message #7"
-== APP == Bulk Subscriber message has entry ID: eaf75a31-335e-4c1a-b19a-6aa1710f625a
-== APP == Bulk Subscriber got: "This is message #8"
-== APP == Bulk Subscriber received 1 messages.
-== APP == Bulk Subscriber message has entry ID: 9836ef69-6d3c-4738-ba99-1d0ce68ec06b
-== APP == Bulk Subscriber got: "This is message #9"
+Bulk Subscriber received 2 messages.
+Bulk Subscriber message has entry ID: 0c917871-557c-41db-b038-a250d23ee07c
+Bulk Subscriber got: "This is message #0"
+Bulk Subscriber message has entry ID: df114819-0db9-4a04-b06b-d5844d3ff731
+Bulk Subscriber got: "This is message #1"
+Bulk Subscriber received 2 messages.
+Bulk Subscriber message has entry ID: 8161f1e2-caf0-446a-81f7-0b40e7350e19
+Bulk Subscriber got: "This is message #2"
+Bulk Subscriber message has entry ID: 173fafa1-d187-4b2d-83bf-b4da00616a3a
+Bulk Subscriber got: "This is message #3"
+Bulk Subscriber received 2 messages.
+Bulk Subscriber message has entry ID: 94f89996-155d-4b52-8a8c-c268662ff3a2
+Bulk Subscriber got: "This is message #4"
+Bulk Subscriber message has entry ID: 497c47a4-e4f7-4aeb-abde-099068dea30c
+Bulk Subscriber got: "This is message #5"
+Bulk Subscriber received 1 messages.
+Bulk Subscriber message has entry ID: 892fb1ae-b027-457a-860e-52b9c3219270
+Bulk Subscriber got: "This is message #6"
+Bulk Subscriber received 2 messages.
+Bulk Subscriber message has entry ID: 95abf8cc-e033-483d-9a55-e0491bd97930
+Bulk Subscriber got: "This is message #7"
+Bulk Subscriber message has entry ID: eaf75a31-335e-4c1a-b19a-6aa1710f625a
+Bulk Subscriber got: "This is message #8"
+Bulk Subscriber received 1 messages.
+Bulk Subscriber message has entry ID: 9836ef69-6d3c-4738-ba99-1d0ce68ec06b
+Bulk Subscriber got: "This is message #9"
 ```
 >The order of the events that are published are not guaranteed if use redis.
 
@@ -830,8 +830,8 @@ If you would like to add a tracing span as a parent of the span created by Dapr,
 <!-- STEP
 name: Run Publisher with tracing
 expected_stdout_lines:
-  - '== APP == Published message: This is message #0'
-  - '== APP == Published message: This is message #1'
+  - 'Published message: This is message #0'
+  - 'Published message: This is message #1'
 background: true
 sleep: 15
 -->

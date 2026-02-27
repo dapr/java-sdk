@@ -48,11 +48,11 @@ Use the following command to run this example-
 <!-- STEP
 name: Run DistributedLockGrpcClient example
 expected_stdout_lines:
-  - "== APP == Using preview client..."
-  - "== APP == *******trying to get a free distributed lock********"
-  - "== APP == Lock result -> SUCCESS"
-  - "== APP == *******unlock a distributed lock********"
-  - "== APP == Unlock result -> SUCCESS"
+  - "Using preview client..."
+  - "*******trying to get a free distributed lock********"
+  - "Lock result -> SUCCESS"
+  - "*******unlock a distributed lock********"
+  - "Unlock result -> SUCCESS"
 background: true
 sleep: 5
 -->
@@ -65,11 +65,11 @@ dapr run --resources-path ./components/lock --app-id lockgrpc --log-level debug 
 
 ### Sample output
 ```
-== APP == Using preview client...
-== APP == *******trying to get a free distributed lock********
-== APP == Lock result -> SUCCESS
-== APP == *******unlock a distributed lock********
-== APP == Unlock result -> SUCCESS
+Using preview client...
+*******trying to get a free distributed lock********
+Lock result -> SUCCESS
+*******unlock a distributed lock********
+Unlock result -> SUCCESS
 ```
 ### Cleanup
 
