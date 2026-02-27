@@ -104,8 +104,8 @@ Use the following command to execute the demo service example:
 <!-- STEP
 name: Run demo service
 expected_stdout_lines: 
-  - '== APP == Server: "message one"'
-  - '== APP == Server: "message two"'
+  - 'Server: "message one"'
+  - 'Server: "message two"'
 background: true
 sleep: 5
 -->
@@ -152,9 +152,9 @@ Execute the follow script in order to run the InvokeClient example, passing two 
 <!-- STEP
 name: Run demo client
 expected_stdout_lines: 
-  - '== APP == "message one" received'
-  - '== APP == "message two" received'
-  - '== APP == Done'
+  - '"message one" received'
+  - '"message two" received'
+  - 'Done'
 background: true
 sleep: 5
 -->
@@ -168,11 +168,11 @@ dapr run --app-id invokeclient -- java -jar target/dapr-java-sdk-examples-exec.j
 Finally, the console for `invokeclient` should output:
 
 ```text
-== APP == "message one" received
+"message one" received
 
-== APP == "message two" received
+"message two" received
 
-== APP == Done
+Done
 
 ```
 
