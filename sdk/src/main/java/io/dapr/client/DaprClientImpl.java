@@ -128,6 +128,7 @@ import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
 
 import javax.annotation.Nonnull;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -606,6 +607,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   @Override
+  @Deprecated
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
       final String appId = invokeMethodRequest.getAppId();
