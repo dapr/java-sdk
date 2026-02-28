@@ -110,7 +110,7 @@ mkdir -p ./components/crypto/keys && openssl genrsa -out ./components/crypto/key
 <!-- STEP
 name: Run Crypto Example
 expected_stdout_lines:
-  - "== APP == SUCCESS: The decrypted message matches the original."
+  - "SUCCESS: The decrypted message matches the original."
 background: true
 output_match_mode: substring
 sleep: 30
