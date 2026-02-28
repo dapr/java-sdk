@@ -13,25 +13,65 @@ limitations under the License.
 
 package io.dapr.it.state;
 
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
+import io.dapr.client.DaprClient;
+import io.dapr.it.testcontainers.DaprClientFactory;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprStateProtos;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-public class HelloWorldClientIT extends BaseIT {
+import java.util.Map;
+
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+
+@Testcontainers
+@Tag("testcontainers")
+public class HelloWorldClientIT {
+
+  private static final String STATE_STORE_NAME = "statestore";
+  private static final String REDIS_ALIAS = "hello-world-redis";
+
+  private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
+
+  @Container
+  private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
+      .withNetwork(NETWORK)
+      .withNetworkAliases(REDIS_ALIAS);
+
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+      .withNetwork(NETWORK)
+      .withAppName("hello-world-state-it")
+      .withComponent(new Component(
+          STATE_STORE_NAME,
+          "state.redis",
+          "v1",
+          Map.of(
+              "redisHost", REDIS_ALIAS + ":6379",
+              "redisPassword", "")))
+      .dependsOn(REDIS);
+
+  @BeforeAll
+  public static void waitForSidecar() throws Exception {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      client.waitForSidecar(10000).block();
+      client.saveState(STATE_STORE_NAME, "mykey", "Hello World").block();
+    }
+  }
 
   @Test
   public void testHelloWorldState() throws Exception {
-    DaprRun daprRun = startDaprApp(
-        HelloWorldClientIT.class.getSimpleName(),
-        HelloWorldGrpcStateService.SUCCESS_MESSAGE,
-        HelloWorldGrpcStateService.class,
-        false,
-        2000
-    );
-    try (var client = daprRun.newDaprClientBuilder().build()) {
+    try (var client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       var stub = client.newGrpcStub("n/a", DaprGrpc::newBlockingStub);
 
       String key = "mykey";

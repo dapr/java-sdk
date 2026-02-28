@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.workflows.version.patch;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.config.Properties;
 import io.dapr.it.spring.data.CustomMySQLContainer;
 import io.dapr.it.testcontainers.ContainerConstants;
@@ -66,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("testcontainers")
 public class PatchVersioningWorkflowsIT {
 
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = TestContainerNetworks.WORKFLOWS_NETWORK;
 
   private static final WaitStrategy MYSQL_WAIT_STRATEGY = Wait
       .forLogMessage(".*port: 3306  MySQL Community Server \\(GPL\\).*", 1)

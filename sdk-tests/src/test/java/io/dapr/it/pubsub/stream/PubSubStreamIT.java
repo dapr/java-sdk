@@ -13,31 +13,39 @@ limitations under the License.
 
 package io.dapr.it.pubsub.stream;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.SubscriptionListener;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.it.testcontainers.DaprClientFactory;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
 import io.dapr.utils.TypeRef;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
 import static io.dapr.it.Retry.callWithRetry;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
-public class PubSubStreamIT extends BaseIT {
+@Testcontainers
+@Tag("testcontainers")
+public class PubSubStreamIT {
 
   // Must be a large enough number, so we validate that we get more than the initial batch
   // sent by the runtime. When this was first added, the batch size in runtime was set to 10.
@@ -47,39 +55,47 @@ public class PubSubStreamIT extends BaseIT {
   private static final String TOPIC_NAME_CLOUDEVENT = "stream-topic-cloudevent";
   private static final String TOPIC_NAME_RAWPAYLOAD = "stream-topic-rawpayload";
   private static final String PUBSUB_NAME = "messagebus";
+  private static final String REDIS_ALIAS = "pubsub-stream-redis";
 
-  private final List<DaprRun> runs = new ArrayList<>();
+  private static final Network NETWORK = TestContainerNetworks.PUBSUB_NETWORK;
 
-  private DaprRun closeLater(DaprRun run) {
-    this.runs.add(run);
-    return run;
-  }
+  @Container
+  private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
+      .withNetwork(NETWORK)
+      .withNetworkAliases(REDIS_ALIAS);
 
-  @AfterEach
-  public void tearDown() throws Exception {
-    for (DaprRun run : runs) {
-      run.stop();
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+      .withNetwork(NETWORK)
+      .withAppName("pubsub-stream-it")
+      .dependsOn(REDIS)
+      .withComponent(new Component(
+          PUBSUB_NAME,
+          "pubsub.redis",
+          "v1",
+          Map.of(
+              "redisHost", REDIS_ALIAS + ":6379",
+              "redisPassword", "",
+              "processingTimeout", "100ms",
+              "redeliverInterval", "100ms")));
+
+  @BeforeEach
+  public void setup() throws Exception {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      client.waitForSidecar(10000).block();
     }
+    REDIS.execInContainer("redis-cli", "FLUSHALL");
   }
 
   @Test
   public void testPubSub() throws Exception {
-    final DaprRun daprRun = closeLater(startDaprApp(
-        this.getClass().getSimpleName(),
-        60000));
-
     var runId = UUID.randomUUID().toString();
-    try (DaprClient client = daprRun.newDaprClient();
-         DaprPreviewClient previewClient = daprRun.newDaprPreviewClient()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
+         DaprPreviewClient previewClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).buildPreviewClient()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s for run %s", i, TOPIC_NAME, runId);
-        //Publishing messages
         client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
-        System.out.println(
-            String.format("Published message: '%s' to topic '%s' pubsub_name '%s'", message, TOPIC_NAME, PUBSUB_NAME));
       }
-
-      System.out.println("Starting subscription for " + TOPIC_NAME);
 
       Set<String> messages = Collections.synchronizedSet(new HashSet<>());
       Set<String> errors = Collections.synchronizedSet(new HashSet<>());
@@ -89,9 +105,7 @@ public class PubSubStreamIT extends BaseIT {
         @Override
         public Mono<Status> onEvent(CloudEvent<String> event) {
           return Mono.fromCallable(() -> {
-            // Useful to avoid false negatives running locally multiple times.
             if (event.getData().contains(runId)) {
-              // 5% failure rate.
               var decision = random.nextInt(100);
               if (decision < 5) {
                 if (decision % 2 == 0) {
@@ -112,16 +126,13 @@ public class PubSubStreamIT extends BaseIT {
         public void onError(RuntimeException exception) {
           errors.add(exception.getMessage());
         }
-
       };
-      try(var subscription = previewClient.subscribeToEvents(PUBSUB_NAME, TOPIC_NAME, listener, TypeRef.STRING)) {
+
+      try (var subscription = previewClient.subscribeToEvents(PUBSUB_NAME, TOPIC_NAME, listener, TypeRef.STRING)) {
         callWithRetry(() -> {
-          var messageCount =  messages.size();
-          System.out.println(
-              String.format("Got %d messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME));
           assertEquals(NUM_MESSAGES, messages.size());
           assertEquals(4, errors.size());
-        }, 120000); // Time for runtime to retry messages.
+        }, 120000);
 
         subscription.close();
         subscription.awaitTermination();
@@ -131,133 +142,73 @@ public class PubSubStreamIT extends BaseIT {
 
   @Test
   public void testPubSubFlux() throws Exception {
-    final DaprRun daprRun = closeLater(startDaprApp(
-        this.getClass().getSimpleName() + "-flux",
-        60000));
-
     var runId = UUID.randomUUID().toString();
-    try (DaprClient client = daprRun.newDaprClient();
-         DaprPreviewClient previewClient = daprRun.newDaprPreviewClient()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
+         DaprPreviewClient previewClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).buildPreviewClient()) {
 
-      // Publish messages
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("Flux message #%d for run %s", i, runId);
         client.publishEvent(PUBSUB_NAME, TOPIC_NAME_FLUX, message).block();
-        System.out.println(
-            String.format("Published flux message: '%s' to topic '%s'", message, TOPIC_NAME_FLUX));
       }
 
-      System.out.println("Starting Flux subscription for " + TOPIC_NAME_FLUX);
-
       Set<String> messages = Collections.synchronizedSet(new HashSet<>());
-
-      // subscribeToTopic returns Flux<T> directly (raw data)
       var disposable = previewClient.subscribeToTopic(PUBSUB_NAME, TOPIC_NAME_FLUX, TypeRef.STRING)
           .doOnNext(rawMessage -> {
-            // rawMessage is String directly
             if (rawMessage.contains(runId)) {
               messages.add(rawMessage);
-              System.out.println("Received raw message: " + rawMessage);
             }
           })
           .subscribe();
 
-      callWithRetry(() -> {
-        var messageCount = messages.size();
-        System.out.println(
-            String.format("Got %d flux messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME_FLUX));
-        assertEquals(NUM_MESSAGES, messages.size());
-      }, 60000);
-
+      callWithRetry(() -> assertEquals(NUM_MESSAGES, messages.size()), 60000);
       disposable.dispose();
     }
   }
 
   @Test
   public void testPubSubCloudEvent() throws Exception {
-    final DaprRun daprRun = closeLater(startDaprApp(
-        this.getClass().getSimpleName() + "-cloudevent",
-        60000));
-
     var runId = UUID.randomUUID().toString();
-    try (DaprClient client = daprRun.newDaprClient();
-         DaprPreviewClient previewClient = daprRun.newDaprPreviewClient()) {
-
-      // Publish messages
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
+         DaprPreviewClient previewClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).buildPreviewClient()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("CloudEvent message #%d for run %s", i, runId);
         client.publishEvent(PUBSUB_NAME, TOPIC_NAME_CLOUDEVENT, message).block();
-        System.out.println(
-            String.format("Published CloudEvent message: '%s' to topic '%s'", message, TOPIC_NAME_CLOUDEVENT));
       }
 
-      System.out.println("Starting CloudEvent subscription for " + TOPIC_NAME_CLOUDEVENT);
-
       Set<String> messageIds = Collections.synchronizedSet(new HashSet<>());
+      var disposable = previewClient.subscribeToTopic(PUBSUB_NAME, TOPIC_NAME_CLOUDEVENT, new TypeRef<CloudEvent<String>>() {
+      }).doOnNext(cloudEvent -> {
+        if (cloudEvent.getData() != null && cloudEvent.getData().contains(runId)) {
+          messageIds.add(cloudEvent.getId());
+        }
+      }).subscribe();
 
-      // Use TypeRef<CloudEvent<String>> to receive full CloudEvent with metadata
-      var disposable = previewClient.subscribeToTopic(PUBSUB_NAME, TOPIC_NAME_CLOUDEVENT, new TypeRef<CloudEvent<String>>(){})
-          .doOnNext(cloudEvent -> {
-            if (cloudEvent.getData() != null && cloudEvent.getData().contains(runId)) {
-              messageIds.add(cloudEvent.getId());
-              System.out.println("Received CloudEvent with ID: " + cloudEvent.getId()
-                  + ", topic: " + cloudEvent.getTopic()
-                  + ", data: " + cloudEvent.getData());
-            }
-          })
-          .subscribe();
-
-      callWithRetry(() -> {
-        var messageCount = messageIds.size();
-        System.out.println(
-            String.format("Got %d CloudEvent messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME_CLOUDEVENT));
-        assertEquals(NUM_MESSAGES, messageIds.size());
-      }, 60000);
-
+      callWithRetry(() -> assertEquals(NUM_MESSAGES, messageIds.size()), 60000);
       disposable.dispose();
     }
   }
 
   @Test
   public void testPubSubRawPayload() throws Exception {
-    final DaprRun daprRun = closeLater(startDaprApp(
-        this.getClass().getSimpleName() + "-rawpayload",
-        60000));
-
     var runId = UUID.randomUUID().toString();
-    try (DaprClient client = daprRun.newDaprClient();
-         DaprPreviewClient previewClient = daprRun.newDaprPreviewClient()) {
-
-      // Publish messages with rawPayload metadata
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
+         DaprPreviewClient previewClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).buildPreviewClient()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("RawPayload message #%d for run %s", i, runId);
         client.publishEvent(PUBSUB_NAME, TOPIC_NAME_RAWPAYLOAD, message, Map.of("rawPayload", "true")).block();
-        System.out.println(
-            String.format("Published raw payload message: '%s' to topic '%s'", message, TOPIC_NAME_RAWPAYLOAD));
       }
-
-      System.out.println("Starting raw payload subscription for " + TOPIC_NAME_RAWPAYLOAD);
 
       Set<String> messages = Collections.synchronizedSet(new HashSet<>());
       Map<String, String> metadata = Map.of("rawPayload", "true");
-
-      // Use subscribeToTopic with rawPayload metadata
       var disposable = previewClient.subscribeToTopic(PUBSUB_NAME, TOPIC_NAME_RAWPAYLOAD, TypeRef.STRING, metadata)
           .doOnNext(rawMessage -> {
             if (rawMessage.contains(runId)) {
               messages.add(rawMessage);
-              System.out.println("Received raw payload message: " + rawMessage);
             }
           })
           .subscribe();
 
-      callWithRetry(() -> {
-        var messageCount = messages.size();
-        System.out.println(
-            String.format("Got %d raw payload messages out of %d for topic %s.", messageCount, NUM_MESSAGES, TOPIC_NAME_RAWPAYLOAD));
-        assertEquals(NUM_MESSAGES, messages.size());
-      }, 60000);
-
+      callWithRetry(() -> assertEquals(NUM_MESSAGES, messages.size()), 60000);
       disposable.dispose();
     }
   }

@@ -14,35 +14,57 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.BaseIT;
 import io.dapr.it.actors.app.MyActor;
-import io.dapr.it.actors.app.MyActorService;
+import io.dapr.it.actors.app.TestApplication;
+import io.dapr.it.testcontainers.actors.TestDaprActorsConfiguration;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
+import io.dapr.testcontainers.internal.DaprSidecarContainer;
+import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Map;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ActorMethodNameIT extends BaseIT {
+@DaprSpringBootTest(classes = {
+    TestApplication.class,
+    TestDaprActorsConfiguration.class,
+    MyActorRuntimeRegistrationConfiguration.class
+})
+public class ActorMethodNameIT {
 
-  private static Logger logger = LoggerFactory.getLogger(ActorMethodNameIT.class);
+  private static final Logger logger = LoggerFactory.getLogger(ActorMethodNameIT.class);
+
+  @DaprSidecarContainer
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory.createForSpringBootTest("actor-method-name-it")
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()));
+
+  @Autowired
+  private ActorClient actorClient;
+
+  @BeforeEach
+  void setUp() {
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, "MyActorTest");
+  }
 
   @Test
   public void actorMethodNameChange() throws Exception {
-    // The call below will fail if service cannot start successfully.
-    var run = startDaprApp(
-        ActorMethodNameIT.class.getSimpleName(),
-        MyActorService.SUCCESS_MESSAGE,
-        MyActorService.class,
-        true,
-        60000);
-
     logger.debug("Creating proxy builder");
     ActorProxyBuilder<MyActor> proxyBuilder =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient()));
+        new ActorProxyBuilder<>("MyActorTest", MyActor.class, actorClient);
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId("1");
     logger.debug("Building proxy");
@@ -57,7 +79,7 @@ public class ActorMethodNameIT extends BaseIT {
 
     logger.debug("Creating proxy builder 2");
     ActorProxyBuilder<ActorProxy> proxyBuilder2 =
-        new ActorProxyBuilder("MyActorTest", ActorProxy.class, deferClose(run.newActorClient()));
+        new ActorProxyBuilder<>("MyActorTest", ActorProxy.class, actorClient);
     logger.debug("Building proxy 2");
     ActorProxy proxy2 = proxyBuilder2.build(actorId1);
 
@@ -67,6 +89,5 @@ public class ActorMethodNameIT extends BaseIT {
       logger.debug("asserting true response 2: [" + response + "]");
       assertTrue(response);
     }, 60000);
-
   }
 }

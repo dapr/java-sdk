@@ -13,32 +13,57 @@ limitations under the License.
 
 package io.dapr.it.actors;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
+import eu.rekawek.toxiproxy.Proxy;
+import eu.rekawek.toxiproxy.ToxiproxyClient;
+import eu.rekawek.toxiproxy.model.ToxicDirection;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.client.DaprClient;
 import io.dapr.client.resiliency.ResiliencyOptions;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
-import io.dapr.it.ToxiProxyRun;
+import io.dapr.config.Properties;
+import io.dapr.it.actors.services.springboot.DaprApplication;
 import io.dapr.it.actors.services.springboot.DemoActor;
-import io.dapr.it.actors.services.springboot.DemoActorService;
+import io.dapr.it.testcontainers.actors.TestDaprActorsConfiguration;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
+import io.dapr.testcontainers.internal.DaprSidecarContainer;
+import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.ToxiproxyContainer;
+import org.testcontainers.junit.jupiter.Container;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.dapr.it.testcontainers.ContainerConstants.TOXI_PROXY_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test SDK resiliency.
  */
-public class ActorSdkResiliencyIT extends BaseIT {
+@DaprSpringBootTest(classes = {
+    DaprApplication.class,
+    TestDaprActorsConfiguration.class,
+    DemoActorRuntimeRegistrationConfiguration.class
+})
+public class ActorSdkResiliencyIT {
+
+  private static final Logger logger = LoggerFactory.getLogger(ActorSdkResiliencyIT.class);
 
   private static final ActorId ACTOR_ID = new ActorId(UUID.randomUUID().toString());
 
@@ -52,53 +77,80 @@ public class ActorSdkResiliencyIT extends BaseIT {
 
   private static final int MAX_RETRIES = -1;  // Infinity
 
-  private static DaprRun daprRun;
+  private static final Network NETWORK = TestContainerNetworks.ACTORS_NETWORK;
 
-  private static DaprClient daprClient;
+  private static final int GRPC_PROXY_PORT = 8666;
+  private static final int HTTP_PROXY_PORT = 8667;
+
+  @DaprSidecarContainer
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory.createForSpringBootTest("actor-sdk-resiliency-it")
+      .withNetwork(NETWORK)
+      .withNetworkAliases("dapr")
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()));
+
+  @Container
+  private static final ToxiproxyContainer TOXIPROXY = new ToxiproxyContainer(TOXI_PROXY_IMAGE_TAG)
+      .withNetwork(NETWORK);
+
+  private static Proxy grpcProxy;
+  private static Proxy httpProxy;
+
+  private static ActorClient actorClient;
+  private static ActorClient toxiActorClient;
+  private static ActorClient resilientActorClient;
+  private static ActorClient oneRetryActorClient;
 
   private static DemoActor demoActor;
-
-  private static ToxiProxyRun toxiProxyRun;
-
   private static DemoActor toxiDemoActor;
-
   private static DemoActor resilientDemoActor;
-
   private static DemoActor oneRetryDemoActor;
 
   @BeforeAll
-  public static void init() throws Exception {
-    daprRun = startDaprApp(
-            ActorSdkResiliencyIT.class.getSimpleName(),
-            DemoActorService.SUCCESS_MESSAGE,
-            DemoActorService.class,
-            true,
-            60000);
+  public static void init() throws IOException {
+    ToxiproxyClient toxiproxyClient = new ToxiproxyClient(TOXIPROXY.getHost(), TOXIPROXY.getControlPort());
+    grpcProxy = toxiproxyClient.createProxy("dapr-grpc", "0.0.0.0:" + GRPC_PROXY_PORT, "dapr:50001");
+    httpProxy = toxiproxyClient.createProxy("dapr-http", "0.0.0.0:" + HTTP_PROXY_PORT, "dapr:3500");
+  }
 
-    demoActor = buildDemoActorProxy(deferClose(daprRun.newActorClient()));
-    daprClient = daprRun.newDaprClientBuilder().build();
+  @BeforeEach
+  public void setUp() throws Exception {
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, "DemoActorTest");
 
-    toxiProxyRun = new ToxiProxyRun(daprRun, LATENCY, JITTER);
-    toxiProxyRun.start();
+    removeToxics(grpcProxy);
+    removeToxics(httpProxy);
 
-    toxiDemoActor = buildDemoActorProxy(
-        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT)));
-    resilientDemoActor = buildDemoActorProxy(
-        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(MAX_RETRIES)));
-    oneRetryDemoActor = buildDemoActorProxy(
-        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1)));
+    grpcProxy.toxics().latency("latency-grpc", ToxicDirection.DOWNSTREAM, LATENCY.toMillis())
+        .setJitter(JITTER.toMillis());
+    httpProxy.toxics().latency("latency-http", ToxicDirection.DOWNSTREAM, LATENCY.toMillis())
+        .setJitter(JITTER.toMillis());
+
+    actorClient = new ActorClient(new Properties(Map.of(
+        "dapr.http.endpoint", DAPR_CONTAINER.getHttpEndpoint(),
+        "dapr.grpc.endpoint", DAPR_CONTAINER.getGrpcEndpoint()
+    )));
+    toxiActorClient = newActorClientViaToxiProxy(new ResiliencyOptions().setTimeout(TIMEOUT));
+    resilientActorClient = newActorClientViaToxiProxy(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(MAX_RETRIES));
+    oneRetryActorClient = newActorClientViaToxiProxy(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1));
+
+    demoActor = buildDemoActorProxy(actorClient);
+    toxiDemoActor = buildDemoActorProxy(toxiActorClient);
+    resilientDemoActor = buildDemoActorProxy(resilientActorClient);
+    oneRetryDemoActor = buildDemoActorProxy(oneRetryActorClient);
   }
 
   private static DemoActor buildDemoActorProxy(ActorClient actorClient) {
-    ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class, actorClient);
+    ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder<>(DemoActor.class, actorClient);
     return builder.build(ACTOR_ID);
   }
 
   @AfterAll
   public static void tearDown() throws Exception {
-    if (toxiProxyRun != null) {
-      toxiProxyRun.stop();
-    }
+    closeQuietly(oneRetryActorClient);
+    closeQuietly(resilientActorClient);
+    closeQuietly(toxiActorClient);
+    closeQuietly(actorClient);
   }
 
   @Test
@@ -133,5 +185,32 @@ public class ActorSdkResiliencyIT extends BaseIT {
     assertTrue(retryOneClientErrorCount.get() > 0);
     // A client without retries should have more errors than a client with one retry.
     assertTrue(toxiClientErrorCount.get() > retryOneClientErrorCount.get());
+  }
+
+  private static ActorClient newActorClientViaToxiProxy(ResiliencyOptions resiliencyOptions) {
+    return new ActorClient(new Properties(Map.of(
+        "dapr.http.endpoint", "http://localhost:" + TOXIPROXY.getMappedPort(HTTP_PROXY_PORT),
+        "dapr.grpc.endpoint", "localhost:" + TOXIPROXY.getMappedPort(GRPC_PROXY_PORT)
+    )), resiliencyOptions);
+  }
+
+  private static void removeToxics(Proxy proxy) {
+    try {
+      proxy.toxics().getAll().forEach(toxic -> {
+        try {
+          toxic.remove();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static void closeQuietly(ActorClient client) {
+    if (client != null) {
+      client.close();
+    }
   }
 }

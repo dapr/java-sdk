@@ -3,14 +3,21 @@ package io.dapr.it.methodinvoke.grpc;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.resiliency.ResiliencyOptions;
-import io.dapr.it.AppRun;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.config.Properties;
 import io.dapr.it.MethodInvokeServiceGrpc;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprProtocol;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
+import io.dapr.utils.NetworkUtils;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 import java.util.Map;
@@ -23,102 +30,111 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MethodInvokeIT extends BaseIT {
+@Testcontainers
+@Tag("testcontainers")
+public class MethodInvokeIT {
 
-    //Number of messages to be sent: 10
-    private static final int NUM_MESSAGES = 10;
-    private static final int TIMEOUT_MS = 100;
-    private static final ResiliencyOptions RESILIENCY_OPTIONS = new ResiliencyOptions()
-        .setTimeout(Duration.ofMillis(TIMEOUT_MS));
+  private static final String APP_ID = "methodinvoke-grpc";
 
-    /**
-     * Run of a Dapr application.
-     */
-    private DaprRun daprRun = null;
+  // Number of messages to be sent: 10
+  private static final int NUM_MESSAGES = 10;
+  private static final int TIMEOUT_MS = 100;
+  private static final ResiliencyOptions RESILIENCY_OPTIONS = new ResiliencyOptions()
+      .setTimeout(Duration.ofMillis(TIMEOUT_MS));
 
-    @BeforeEach
-    public void init() throws Exception {
-        daprRun = startDaprApp(
-          MethodInvokeIT.class.getSimpleName() + "grpc",
-          MethodInvokeService.SUCCESS_MESSAGE,
-          MethodInvokeService.class,
-          AppRun.AppProtocol.GRPC,  // appProtocol
-          60000);
-        daprRun.waitForAppHealth(40000);
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory
+      .createForSpringBootTest(APP_ID)
+      .withAppProtocol(DaprProtocol.GRPC);
+
+  private DaprClient daprClient;
+
+  @BeforeAll
+  public static void startGrpcApp() throws Exception {
+    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
+    Thread appThread = new Thread(() -> {
+      try {
+        MethodInvokeService.main(new String[] {String.valueOf(DAPR_CONTAINER.getAppPort())});
+      } catch (Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    });
+    appThread.setDaemon(true);
+    appThread.start();
+    NetworkUtils.waitForSocket("127.0.0.1", DAPR_CONTAINER.getAppPort(), 60000);
+  }
+
+  @BeforeEach
+  public void init() {
+    daprClient = new DaprClientBuilderFactory().newBuilder(DAPR_CONTAINER).build();
+    daprClient.waitForSidecar(10000).block();
+  }
+
+  @AfterEach
+  public void closeClient() throws Exception {
+    daprClient.close();
+  }
+
+  @Test
+  public void testInvoke() {
+    MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(daprClient);
+
+    for (int i = 0; i < NUM_MESSAGES; i++) {
+      String message = String.format("This is message #%d", i);
+      PostMessageRequest req = PostMessageRequest.newBuilder().setId(i).setMessage(message).build();
+      stub.postMessage(req);
+      System.out.println("Invoke method messages : " + message);
     }
 
-    @Test
-    public void testInvoke() throws Exception {
-        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
-            client.waitForSidecar(10000).block();
-            daprRun.waitForAppHealth(10000);
+    Map<Integer, String> messages = stub.getMessages(GetMessagesRequest.newBuilder().build()).getMessagesMap();
+    assertEquals(NUM_MESSAGES, messages.size());
 
-            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
-            
-            for (int i = 0; i < NUM_MESSAGES; i++) {
-                String message = String.format("This is message #%d", i);
-                PostMessageRequest req = PostMessageRequest.newBuilder().setId(i).setMessage(message).build();
+    stub.deleteMessage(DeleteMessageRequest.newBuilder().setId(1).build());
+    messages = stub.getMessages(GetMessagesRequest.newBuilder().build()).getMessagesMap();
+    assertEquals(NUM_MESSAGES - 1, messages.size());
 
-                stub.postMessage(req);
+    stub.postMessage(PostMessageRequest.newBuilder().setId(2).setMessage("updated message").build());
+    messages = stub.getMessages(GetMessagesRequest.newBuilder().build()).getMessagesMap();
+    assertEquals("updated message", messages.get(2));
+  }
 
-                System.out.println("Invoke method messages : " + message);
-            }
+  @Test
+  public void testInvokeTimeout() throws Exception {
+    try (DaprClient resilientClient = new DaprClientBuilderFactory().newBuilder(DAPR_CONTAINER)
+        .withResiliencyOptions(RESILIENCY_OPTIONS)
+        .build()) {
+      resilientClient.waitForSidecar(10000).block();
+      MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(resilientClient);
+      long started = System.currentTimeMillis();
+      SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
+      StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));
+      long delay = System.currentTimeMillis() - started;
+      Status.Code code = exception.getStatus().getCode();
 
-            Map<Integer, String> messages = stub.getMessages(GetMessagesRequest.newBuilder().build()).getMessagesMap();
-            assertEquals(NUM_MESSAGES, messages.size());
-
-            // Delete one message.
-            stub.deleteMessage(DeleteMessageRequest.newBuilder().setId(1).build());
-            messages = stub.getMessages(GetMessagesRequest.newBuilder().build()).getMessagesMap();
-            assertEquals(NUM_MESSAGES - 1, messages.size());
-
-            // Now update one message.
-            stub.postMessage(PostMessageRequest.newBuilder().setId(2).setMessage("updated message").build());
-            messages = stub.getMessages(GetMessagesRequest.newBuilder().build()).getMessagesMap();
-            assertEquals("updated message", messages.get(2));
-        }
+      assertTrue(delay >= TIMEOUT_MS, "Delay: " + delay + " is not greater than timeout: " + TIMEOUT_MS);
+      assertEquals(Status.DEADLINE_EXCEEDED.getCode(), code, "Expected timeout error");
     }
+  }
 
-    @Test
-    public void testInvokeTimeout() throws Exception {
-        try (DaprClient client = daprRun.newDaprClientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
-            client.waitForSidecar(10000).block();
-            daprRun.waitForAppHealth(10000);
+  @Test
+  public void testInvokeException() {
+    MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(daprClient);
+    SleepRequest req = SleepRequest.newBuilder().setSeconds(-9).build();
+    StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));
 
-            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
-            long started = System.currentTimeMillis();
-            SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
-            StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));
-            long delay = System.currentTimeMillis() - started;
-            Status.Code code = exception.getStatus().getCode();
+    assertEquals(Status.UNKNOWN.getCode(), exception.getStatus().getCode());
+    assertEquals("Application error processing RPC", exception.getStatus().getDescription());
+  }
 
-            assertTrue(delay >= TIMEOUT_MS, "Delay: " + delay + " is not greater than timeout: " + TIMEOUT_MS);
-            assertEquals(Status.DEADLINE_EXCEEDED.getCode(), code, "Expected timeout error");
-        }
+  private MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub createGrpcStub(DaprClient client) {
+    return client.newGrpcStub(APP_ID, MethodInvokeServiceGrpc::newBlockingStub);
+  }
+
+  private static class DaprClientBuilderFactory {
+    DaprClientBuilder newBuilder(DaprContainer daprContainer) {
+      return new DaprClientBuilder()
+          .withPropertyOverride(Properties.HTTP_ENDPOINT, "http://localhost:" + daprContainer.getHttpPort())
+          .withPropertyOverride(Properties.GRPC_ENDPOINT, "http://localhost:" + daprContainer.getGrpcPort());
     }
-
-    @Test
-    public void testInvokeException() throws Exception {
-        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
-            client.waitForSidecar(10000).block();
-            daprRun.waitForAppHealth(10000);
-
-            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
-
-            SleepRequest req = SleepRequest.newBuilder().setSeconds(-9).build();
-            StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));
-
-            // The error messages should be improved once runtime has standardized error serialization in the API.
-            // This message is not ideal but last time it was improved, there was side effects reported by users.
-            // If this test fails, there might be a regression in runtime (like we had in 1.10.0).
-            // The expectations below are as per 1.9 release and (later on) hotfixed in 1.10.
-            assertEquals(Status.UNKNOWN.getCode(), exception.getStatus().getCode());
-            // The error message below is added starting in Dapr 1.15.0
-            assertEquals("Application error processing RPC", exception.getStatus().getDescription());
-        }
-    }
-
-    private MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub createGrpcStub(DaprClient client) {
-        return client.newGrpcStub(daprRun.getAppName(), MethodInvokeServiceGrpc::newBlockingStub);
-    }
+  }
 }

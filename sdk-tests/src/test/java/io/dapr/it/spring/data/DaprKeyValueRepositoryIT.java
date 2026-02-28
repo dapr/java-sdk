@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.spring.data;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -55,7 +57,7 @@ public class DaprKeyValueRepositoryIT {
 
   private static final Map<String, String> BINDING_PROPERTIES = Map.of("connectionString", CONNECTION_STRING);
 
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = TestContainerNetworks.DATA_NETWORK;
 
   @Container
   private static final PostgreSQLContainer<?> POSTGRE_SQL_CONTAINER = new PostgreSQLContainer<>("postgres:16-alpine")

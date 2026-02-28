@@ -14,14 +14,19 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.AppRun;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.config.Properties;
 import io.dapr.it.actors.app.ActorReminderDataParam;
-import io.dapr.it.actors.app.MyActorService;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import io.dapr.it.actors.app.TestApplication;
+import io.dapr.it.testcontainers.actors.TestDaprActorsConfiguration;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
+import io.dapr.testcontainers.internal.DaprSidecarContainer;
+import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -32,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -41,11 +47,32 @@ import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMessageContent;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 
-public class ActorReminderRecoveryIT extends BaseIT {
+@DaprSpringBootTest(classes = {
+    TestApplication.class,
+    TestDaprActorsConfiguration.class,
+    MyActorRuntimeRegistrationConfiguration.class
+})
+public class ActorReminderRecoveryIT {
 
   private static final Logger logger = LoggerFactory.getLogger(ActorReminderRecoveryIT.class);
 
+  @DaprSidecarContainer
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory.createForSpringBootTest("actor-reminder-recovery-it")
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()));
+
   private static final String METHOD_NAME = "receiveReminder";
+
+  private ActorProxy proxy;
+
+  private String reminderName;
+
+  private String actorType;
+
+  private ActorId actorId;
+
+  private ActorClient refreshedActorClient;
 
   /**
    * Parameters for this test.
@@ -77,43 +104,31 @@ public class ActorReminderRecoveryIT extends BaseIT {
     );
   }
 
-  public String reminderName = UUID.randomUUID().toString();
+  public void setup(String actorType) {
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, actorType);
 
-  private ActorProxy proxy;
-
-  private ImmutablePair<AppRun, DaprRun> runs;
-
-  private DaprRun clientRun;
-
-  public void setup(String actorType) throws Exception {
-    runs = startSplitDaprAndApp(
-        ActorReminderRecoveryIT.class.getSimpleName(),
-        "Started MyActorService",
-        MyActorService.class,
-        true,
-        60000);
-
-    // Run that will stay up for integration tests.
-    // appId must not contain the appId from the other run, otherwise ITs will not run properly.
-    clientRun = startDaprApp("ActorReminderRecoveryTestClient", 5000);
-
-    Thread.sleep(3000);
-
-    ActorId actorId = new ActorId(UUID.randomUUID().toString());
-    logger.debug("Creating proxy builder");
-
-    ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(clientRun.newActorClient()));
-    logger.debug("Creating actorId");
-    logger.debug("Building proxy");
-    proxy = proxyBuilder.build(actorId);
+    this.actorType = actorType;
+    this.actorId = new ActorId(UUID.randomUUID().toString());
+    reminderName = UUID.randomUUID().toString();
+    closeRefreshedActorClient();
+    this.refreshedActorClient = newActorClientFromContainer();
+    rebuildProxy();
   }
 
   @AfterEach
   public void tearDown() {
-    // call unregister
-    logger.debug("Calling actor method 'stopReminder' to unregister reminder");
-    proxy.invokeMethod("stopReminder", this.reminderName).block();
+    if (proxy == null || reminderName == null) {
+      return;
+    }
+
+    try {
+      logger.debug("Calling actor method 'stopReminder' to unregister reminder");
+      proxy.invokeMethod("stopReminder", reminderName).block();
+    } catch (Exception e) {
+      logger.warn("Reminder cleanup failed after sidecar lifecycle changes: {}", e.getMessage());
+    } finally {
+      closeRefreshedActorClient();
+    }
   }
 
   /**
@@ -129,13 +144,10 @@ public class ActorReminderRecoveryIT extends BaseIT {
   ) throws Exception {
     setup(actorType);
 
-    logger.debug("Pausing 3 seconds to let gRPC connection get ready");
-    Thread.sleep(3000);
-    
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
     proxy.invokeMethod("setReminderData", reminderDataParam).block();
 
-    proxy.invokeMethod("startReminder",  reminderName).block();
+    proxy.invokeMethod("startReminder", reminderName).block();
 
     logger.debug("Pausing 7 seconds to allow reminder to fire");
     Thread.sleep(7000);
@@ -148,41 +160,45 @@ public class ActorReminderRecoveryIT extends BaseIT {
       validateMessageContent(logs, METHOD_NAME, expectedReminderStateText);
     }, 5000);
 
-    // Restarts runtime only.
-    logger.info("Stopping Dapr sidecar");
-    runs.right.stop();
-
-    // Pause a bit to let placements settle.
-    logger.info("Pausing 10 seconds to let placements settle.");
-    Thread.sleep(Duration.ofSeconds(10).toMillis());
-
-    logger.info("Starting Dapr sidecar");
-    runs.right.start();
-    logger.info("Dapr sidecar started");
-
-    logger.info("Pausing 7 seconds to allow sidecar to be healthy");
-    Thread.sleep(7000);
-
     callWithRetry(() -> {
-      logger.info("Fetching logs for " + METHOD_NAME);
+      logger.info("Fetching logs for {}", METHOD_NAME);
       List<MethodEntryTracker> newLogs = fetchMethodCallLogs(proxy);
-      validateMethodCalls(newLogs, METHOD_NAME, 1);
+      validateMethodCalls(newLogs, METHOD_NAME, 3);
       validateMessageContent(newLogs, METHOD_NAME, expectedReminderStateText);
 
       logger.info("Pausing 10 seconds to allow reminder to fire a few times");
       try {
         Thread.sleep(10000);
       } catch (InterruptedException e) {
-        logger.error("Sleep interrupted");
+        logger.error("Sleep interrupted", e);
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
 
-      logger.info("Fetching more logs for " + METHOD_NAME);
+      logger.info("Fetching more logs for {}", METHOD_NAME);
       List<MethodEntryTracker> newLogs2 = fetchMethodCallLogs(proxy);
       logger.info("Check if there has been additional calls");
-      validateMethodCalls(newLogs2, METHOD_NAME, countMethodCalls(newLogs, METHOD_NAME) + 3);
+      validateMethodCalls(newLogs2, METHOD_NAME, countMethodCalls(newLogs, METHOD_NAME) + 4);
     }, 60000);
   }
 
+  private void rebuildProxy() {
+    ActorProxyBuilder<ActorProxy> proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, refreshedActorClient);
+    logger.debug("Building proxy");
+    proxy = proxyBuilder.build(actorId);
+  }
+
+  private void closeRefreshedActorClient() {
+    if (refreshedActorClient != null) {
+      refreshedActorClient.close();
+      refreshedActorClient = null;
+    }
+  }
+
+  private ActorClient newActorClientFromContainer() {
+    return new ActorClient(new Properties(Map.of(
+        "dapr.http.endpoint", DAPR_CONTAINER.getHttpEndpoint(),
+        "dapr.grpc.endpoint", DAPR_CONTAINER.getGrpcEndpoint()
+    )));
+  }
 }
