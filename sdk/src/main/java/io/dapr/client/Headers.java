@@ -32,4 +32,9 @@ public final class Headers {
    * Header for Api Logging User-Agent.
    */
   public static final String DAPR_USER_AGENT = "User-Agent";
+
+  /**
+   * W3C Baggage header for context propagation.
+   */
+  public static final String BAGGAGE = "baggage";
 }

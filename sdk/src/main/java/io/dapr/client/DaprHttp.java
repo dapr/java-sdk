@@ -66,7 +66,8 @@ public class DaprHttp implements AutoCloseable {
   /**
    * Context entries allowed to be in HTTP Headers.
    */
-  private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS = Set.of("grpc-trace-bin", "traceparent", "tracestate");
+  private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS =
+      Set.of("grpc-trace-bin", "traceparent", "tracestate", "baggage");
 
   /**
    * Object mapper to parse DaprError with or without details.
