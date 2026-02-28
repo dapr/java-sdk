@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.actors;
 
-import java.util.Map;
-
 import io.dapr.actors.runtime.ActorRuntime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +21,13 @@ import org.springframework.context.annotation.Configuration;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.config.Properties;
 
+import java.lang.reflect.Field;
+import java.util.Map;
+
 @Configuration
 public class TestDaprActorsConfiguration {
+  private static final Object ACTOR_RUNTIME_RESET_LOCK = new Object();
+
   @Bean
   public ActorClient daprActorClient(
       @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
@@ -43,11 +46,29 @@ public class TestDaprActorsConfiguration {
       @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
       @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
   ){
+    resetActorRuntimeSingleton();
+
     Map<String, String> overrides = Map.of(
 	      "dapr.http.endpoint", daprHttpEndpoint,
         "dapr.grpc.endpoint", daprGrpcEndpoint
     );
 
     return ActorRuntime.getInstance(new Properties(overrides));
+  }
+
+  private static void resetActorRuntimeSingleton() {
+    synchronized (ACTOR_RUNTIME_RESET_LOCK) {
+      try {
+        Field instanceField = ActorRuntime.class.getDeclaredField("instance");
+        instanceField.setAccessible(true);
+        ActorRuntime instance = (ActorRuntime) instanceField.get(null);
+        if (instance != null) {
+          instance.close();
+          instanceField.set(null, null);
+        }
+      } catch (ReflectiveOperationException e) {
+        throw new IllegalStateException("Failed to reset ActorRuntime singleton for test isolation.", e);
+      }
+    }
   }
 }

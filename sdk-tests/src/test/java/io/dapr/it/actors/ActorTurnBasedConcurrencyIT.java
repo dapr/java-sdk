@@ -26,7 +26,6 @@ import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.internal.DaprContainerFactory;
 import io.dapr.testcontainers.internal.DaprSidecarContainer;
 import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
-import io.dapr.testcontainers.wait.strategy.DaprWait;
 import io.dapr.utils.Version;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -81,8 +80,7 @@ public class ActorTurnBasedConcurrencyIT {
 
   @BeforeEach
   public void setUp() {
-    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
-    DaprWait.forActorType(ACTOR_TYPE).waitUntilReady(DAPR_CONTAINER);
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, ACTOR_TYPE);
   }
 
   @AfterEach

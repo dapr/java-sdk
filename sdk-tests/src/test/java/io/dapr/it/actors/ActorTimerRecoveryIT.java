@@ -71,7 +71,7 @@ public class ActorTimerRecoveryIT {
    */
   @Test
   public void timerRecoveryTest() throws Exception {
-    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, ACTOR_TYPE);
 
     ActorClient refreshedActorClient = actorClient;
     try {
@@ -100,6 +100,7 @@ public class ActorTimerRecoveryIT {
 
       DAPR_CONTAINER.stop();
       DAPR_CONTAINER.start();
+      ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, ACTOR_TYPE);
       refreshedActorClient = new ActorClient(new Properties(Map.of(
           "dapr.http.endpoint", DAPR_CONTAINER.getHttpEndpoint(),
           "dapr.grpc.endpoint", DAPR_CONTAINER.getGrpcEndpoint()

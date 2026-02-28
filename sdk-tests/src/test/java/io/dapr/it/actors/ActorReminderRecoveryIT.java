@@ -27,9 +27,7 @@ import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.internal.DaprContainerFactory;
 import io.dapr.testcontainers.internal.DaprSidecarContainer;
 import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
-import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -106,13 +104,8 @@ public class ActorReminderRecoveryIT {
     );
   }
 
-  @BeforeEach
-  public void setUp() {
-    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
-  }
-
   public void setup(String actorType) {
-    DaprWait.forActorType(actorType).waitUntilReady(DAPR_CONTAINER);
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, actorType);
 
     this.actorType = actorType;
     this.actorId = new ActorId(UUID.randomUUID().toString());

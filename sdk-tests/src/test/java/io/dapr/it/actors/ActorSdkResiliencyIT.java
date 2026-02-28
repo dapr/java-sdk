@@ -32,7 +32,6 @@ import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.internal.DaprContainerFactory;
 import io.dapr.testcontainers.internal.DaprSidecarContainer;
 import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
-import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -117,8 +116,7 @@ public class ActorSdkResiliencyIT {
 
   @BeforeEach
   public void setUp() throws Exception {
-    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
-    DaprWait.forActorType("DemoActorTest").waitUntilReady(DAPR_CONTAINER);
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, "DemoActorTest");
 
     removeToxics(grpcProxy);
     removeToxics(httpProxy);

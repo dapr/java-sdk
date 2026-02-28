@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.core.annotation.AliasFor;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -57,6 +58,7 @@ import java.lang.annotation.Target;
 @ExtendWith(DaprSpringBootExtension.class)  // Must be first to register container before Spring starts
 @Testcontainers  // Starts containers via @Container/@DaprSidecarContainer
 @ContextConfiguration(initializers = DaprSpringBootContextInitializer.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT)  // Starts Spring context last
 public @interface DaprSpringBootTest {
 

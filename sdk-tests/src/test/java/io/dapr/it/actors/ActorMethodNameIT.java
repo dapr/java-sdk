@@ -26,7 +26,6 @@ import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.internal.DaprContainerFactory;
 import io.dapr.testcontainers.internal.DaprSidecarContainer;
 import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
-import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -58,8 +57,7 @@ public class ActorMethodNameIT {
 
   @BeforeEach
   void setUp() {
-    org.testcontainers.Testcontainers.exposeHostPorts(DAPR_CONTAINER.getAppPort());
-    DaprWait.forActors().waitUntilReady(DAPR_CONTAINER);
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, "MyActorTest");
   }
 
   @Test
