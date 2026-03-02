@@ -153,9 +153,9 @@ dapr run --app-id chainingworker --resources-path ./components/workflows --dapr-
 
 Once running, the logs will start displaying the different steps: First, you can see workflow is starting:
 ```text
-== APP == Start workflow runtime
-== APP == Nov 07, 2023 11:03:07 AM com.microsoft.durabletask.DurableTaskGrpcWorker startAndBlock
-== APP == INFO: Durable Task worker is connecting to sidecar at 127.0.0.1:50001.
+Start workflow runtime
+Nov 07, 2023 11:03:07 AM com.microsoft.durabletask.DurableTaskGrpcWorker startAndBlock
+INFO: Durable Task worker is connecting to sidecar at 127.0.0.1:50001.
 ```
 
 <!-- END_STEP -->
@@ -179,17 +179,17 @@ dapr stop --app-id chainingworker
 
 Now you can see the worker logs showing the acitvity is invoked in sequnce and the status of each activity:
 ```text
-== APP == 2023-11-07 11:03:14,178 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.chain.DemoChainWorkflow
-== APP == 2023-11-07 11:03:14,229 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
-== APP == 2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: Tokyo
-== APP == 2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: TOKYO
-== APP == 2023-11-07 11:03:14,266 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
-== APP == 2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: London
-== APP == 2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: LONDON
-== APP == 2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
-== APP == 2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: Seattle
-== APP == 2023-11-07 11:03:14,283 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: SEATTLE
-== APP == 2023-11-07 11:03:14,298 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Workflow finished with result: TOKYO, LONDON, SEATTLE
+2023-11-07 11:03:14,178 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.chain.DemoChainWorkflow
+2023-11-07 11:03:14,229 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
+2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: Tokyo
+2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: TOKYO
+2023-11-07 11:03:14,266 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
+2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: London
+2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: LONDON
+2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
+2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: Seattle
+2023-11-07 11:03:14,283 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: SEATTLE
+2023-11-07 11:03:14,298 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Workflow finished with result: TOKYO, LONDON, SEATTLE
 ```
 and the client logs showing the workflow is started and finished with expected result:
 ```text
@@ -291,23 +291,23 @@ dapr stop --app-id faninoutworker
 
 Now you can see the logs from worker:
 ```text
-== APP == 2023-11-07 14:52:03,075 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.faninout.DemoFanInOutWorkflow
-== APP == 2023-11-07 14:52:03,144 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,147 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 2.
-== APP == 2023-11-07 14:52:03,148 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
-== APP == 2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 9.
-== APP == 2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
-== APP == 2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 21.
-== APP == 2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
-== APP == 2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 17.
-== APP == 2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
-== APP == 2023-11-07 14:52:03,173 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,173 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 11.
-== APP == 2023-11-07 14:52:03,174 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
-== APP == 2023-11-07 14:52:03,212 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Workflow finished with result: 60
+2023-11-07 14:52:03,075 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.faninout.DemoFanInOutWorkflow
+2023-11-07 14:52:03,144 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
+2023-11-07 14:52:03,147 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 2.
+2023-11-07 14:52:03,148 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
+2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
+2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 9.
+2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
+2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
+2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 21.
+2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
+2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
+2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 17.
+2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
+2023-11-07 14:52:03,173 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
+2023-11-07 14:52:03,173 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 11.
+2023-11-07 14:52:03,174 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
+2023-11-07 14:52:03,212 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Workflow finished with result: 60
 ```
 
 and the client:
@@ -378,26 +378,26 @@ java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.cont
 
 You will see the logs from worker showing the `CleanUpActivity` is invoked every 10 seconds after previous one is finished:
 ```text
-== APP == 2023-11-07 14:44:42,004 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
-== APP == 2023-11-07 14:44:42,004 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - call CleanUpActivity to do the clean up
-== APP == 2023-11-07 14:44:42,009 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - Starting Activity: io.dapr.examples.workflows.continueasnew.CleanUpActivity
-== APP == 2023-11-07 14:44:42,009 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - start clean up work, it may take few seconds to finish...
-== APP == 2023-11-07 14:44:47,026 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
-== APP == 2023-11-07 14:44:47,026 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - call CleanUpActivity to do the clean up
-== APP == 2023-11-07 14:44:47,030 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - CleanUpActivity finished
-== APP == 2023-11-07 14:44:47,030 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - wait 10 seconds for next clean up
-== APP == 2023-11-07 14:44:47,033 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - Starting Activity: io.dapr.examples.workflows.continueasnew.CleanUpActivity
-== APP == 2023-11-07 14:44:47,033 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - start clean up work, it may take few seconds to finish...
-== APP == 2023-11-07 14:44:52,053 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - CleanUpActivity finished
-== APP == 2023-11-07 14:44:52,053 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - wait 10 seconds for next clean up
-== APP == 2023-11-07 14:44:57,006 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
-== APP == 2023-11-07 14:44:57,006 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - call CleanUpActivity to do the clean up
-== APP == 2023-11-07 14:44:57,012 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - Starting Activity: io.dapr.examples.workflows.continueasnew.CleanUpActivity
-== APP == 2023-11-07 14:44:57,012 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - start clean up work, it may take few seconds to finish...
-== APP == 2023-11-07 14:45:02,017 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
-== APP == 2023-11-07 14:45:02,020 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - call CleanUpActivity to do the clean up
-== APP == 2023-11-07 14:45:02,021 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - CleanUpActivity finished
-== APP == 2023-11-07 14:45:02,021 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - wait 10 seconds for next clean up
+2023-11-07 14:44:42,004 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
+2023-11-07 14:44:42,004 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - call CleanUpActivity to do the clean up
+2023-11-07 14:44:42,009 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - Starting Activity: io.dapr.examples.workflows.continueasnew.CleanUpActivity
+2023-11-07 14:44:42,009 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - start clean up work, it may take few seconds to finish...
+2023-11-07 14:44:47,026 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
+2023-11-07 14:44:47,026 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - call CleanUpActivity to do the clean up
+2023-11-07 14:44:47,030 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - CleanUpActivity finished
+2023-11-07 14:44:47,030 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - wait 10 seconds for next clean up
+2023-11-07 14:44:47,033 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - Starting Activity: io.dapr.examples.workflows.continueasnew.CleanUpActivity
+2023-11-07 14:44:47,033 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - start clean up work, it may take few seconds to finish...
+2023-11-07 14:44:52,053 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - CleanUpActivity finished
+2023-11-07 14:44:52,053 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - wait 10 seconds for next clean up
+2023-11-07 14:44:57,006 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
+2023-11-07 14:44:57,006 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - call CleanUpActivity to do the clean up
+2023-11-07 14:44:57,012 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - Starting Activity: io.dapr.examples.workflows.continueasnew.CleanUpActivity
+2023-11-07 14:44:57,012 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.c.CleanUpActivity - start clean up work, it may take few seconds to finish...
+2023-11-07 14:45:02,017 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
+2023-11-07 14:45:02,020 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - call CleanUpActivity to do the clean up
+2023-11-07 14:45:02,021 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - CleanUpActivity finished
+2023-11-07 14:45:02,021 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - wait 10 seconds for next clean up
 ...
 ```
 
@@ -450,12 +450,12 @@ java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.exte
 
 The worker logs:
 ```text
-== APP == 2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow
-== APP == 2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Waiting for approval...
-== APP == 2023-11-07 16:01:23,324 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval granted - do the approved action
-== APP == 2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity
-== APP == 2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Running approval activity...
-== APP == 2023-11-07 16:01:28,410 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval-activity finished
+2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow
+2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Waiting for approval...
+2023-11-07 16:01:23,324 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval granted - do the approved action
+2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity
+2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Running approval activity...
+2023-11-07 16:01:28,410 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval-activity finished
 ```
 
 The client log:
@@ -543,16 +543,16 @@ java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chil
 
 The log from worker:
 ```text
-== APP == 2023-11-07 20:08:52,521 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.childworkflow.DemoWorkflow
-== APP == 2023-11-07 20:08:52,523 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - calling childworkflow with input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,561 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting ChildWorkflow: io.dapr.examples.workflows.childworkflow.DemoChildWorkflow
-== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow received input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow is calling Activity: io.dapr.examples.workflows.childworkflow.ReverseActivity
-== APP == 2023-11-07 20:08:52,576 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Starting Activity: io.dapr.examples.workflows.childworkflow.ReverseActivity
-== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Message Received from input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Sending message to output: !wolfkroW rpaD olleH
-== APP == 2023-11-07 20:08:52,596 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow finished with: !wolfkroW rpaD olleH
-== APP == 2023-11-07 20:08:52,611 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - childworkflow finished with: !wolfkroW rpaD olleH
+2023-11-07 20:08:52,521 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.childworkflow.DemoWorkflow
+2023-11-07 20:08:52,523 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - calling childworkflow with input: Hello Dapr Workflow!
+2023-11-07 20:08:52,561 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting ChildWorkflow: io.dapr.examples.workflows.childworkflow.DemoChildWorkflow
+2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow received input: Hello Dapr Workflow!
+2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow is calling Activity: io.dapr.examples.workflows.childworkflow.ReverseActivity
+2023-11-07 20:08:52,576 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Starting Activity: io.dapr.examples.workflows.childworkflow.ReverseActivity
+2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Message Received from input: Hello Dapr Workflow!
+2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Sending message to output: !wolfkroW rpaD olleH
+2023-11-07 20:08:52,596 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow finished with: !wolfkroW rpaD olleH
+2023-11-07 20:08:52,611 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - childworkflow finished with: !wolfkroW rpaD olleH
 ```
 
 The log from client:
@@ -884,12 +884,12 @@ dapr stop --app-id suspendresumeworker
 
 The worker logs:
 ```text
-== APP == 2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.suspendresume.DemoExternalEventWorkflow
-== APP == 2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Waiting for approval...
-== APP == 2023-11-07 16:01:23,324 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval granted - do the approved action
-== APP == 2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity
-== APP == 2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Running approval activity...
-== APP == 2023-11-07 16:01:28,410 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval-activity finished
+2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.suspendresume.DemoExternalEventWorkflow
+2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Waiting for approval...
+2023-11-07 16:01:23,324 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval granted - do the approved action
+2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity
+2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Running approval activity...
+2023-11-07 16:01:28,410 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval-activity finished
 ```
 
 The client log:
