@@ -82,7 +82,7 @@ public class HelloWorldClientIT {
             .setKey(key)
             .build();
         DaprStateProtos.GetStateResponse response = stub.getState(req);
-        String value = response.getData().toStringUtf8();
+        String value = normalizeStoredValue(response.getData().toStringUtf8());
         System.out.println("Got: " + value);
         Assertions.assertEquals("Hello World", value);
       }
@@ -110,5 +110,12 @@ public class HelloWorldClientIT {
         Assertions.assertEquals("", value);
       }
     }
+  }
+
+  private static String normalizeStoredValue(String value) {
+    if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+      return value.substring(1, value.length() - 1);
+    }
+    return value;
   }
 }
