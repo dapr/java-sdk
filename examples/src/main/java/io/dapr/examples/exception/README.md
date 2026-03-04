@@ -64,10 +64,10 @@ public class Client {
 <!-- STEP
 name: Run exception example 
 expected_stdout_lines:
-  - '== APP == Error code: INVALID_ARGUMENT'
-  - '== APP == Error message: INVALID_ARGUMENT: pubsub unknown_pubsub is not found'
-  - '== APP == Reason: DAPR_PUBSUB_NOT_FOUND'
-  - '== APP == Error payload size: 116'
+  - 'Error code: INVALID_ARGUMENT'
+  - 'Error message: INVALID_ARGUMENT: pubsub unknown_pubsub is not found'
+  - 'Reason: DAPR_PUBSUB_NOT_FOUND'
+  - 'Error payload size: 116'
 background: true
 sleep: 5
 -->
@@ -81,13 +81,13 @@ dapr run --app-id exception-example -- java -jar target/dapr-java-sdk-examples-e
 Once running, the State Client Example should print the output as follows:
 
 ```txt
-== APP == Error code: ERR_PUBSUB_NOT_FOUND
+Error code: ERR_PUBSUB_NOT_FOUND
 
-== APP == Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found
+Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found
 
-== APP == Reason: DAPR_PUBSUB_NOT_FOUND
+Reason: DAPR_PUBSUB_NOT_FOUND
 
-== APP == Error payload size: 116
+Error payload size: 116
 ...
 
 ```

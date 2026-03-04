@@ -102,7 +102,7 @@ Use the following command to run this example-
 <!-- STEP
 name: Run Demo Conversation Client example
 expected_stdout_lines:
-  - "== APP == Conversation output: Hello How are you? This is the my number <ISBN>"
+  - "Conversation output: Hello How are you? This is the my number <ISBN>"
 background: true
 output_match_mode: substring
 sleep: 10
@@ -116,7 +116,7 @@ dapr run --resources-path ./components/conversation --app-id myapp --app-port 80
 
 ### Sample output
 ```
-== APP == Conversation output: Hello How are you? This is the my number <ISBN>
+Conversation output: Hello How are you? This is the my number <ISBN>
 ```
 ### Cleanup
 
