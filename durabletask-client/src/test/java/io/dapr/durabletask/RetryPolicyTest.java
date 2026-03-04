@@ -80,61 +80,9 @@ public class RetryPolicyTest {
     assertThrows(IllegalArgumentException.class, () -> policy.setJitterFactor(Double.POSITIVE_INFINITY));
   }
 
-  // ---- deterministic delay formula ----
 
   /**
-   * Verifies that the jitter reduction formula is deterministic: given the same
-   * firstAttempt epoch millis and attempt number (which together form the seed),
-   * the reduced delay must always equal the pre-computed expected value.
-   *
-   * <p>This mirrors the logic in TaskOrchestrationExecutor.RetriableTask.getNextDelay():
-   * <pre>
-   *   seed      = firstAttempt.toEpochMilli() + attemptNumber
-   *   reduction = new Random(seed).nextDouble() * jitterFactor
-   *   delay     = (long)(baseDelayMillis * (1.0 - reduction))
-   * </pre>
-   */
-  @Test
-  void jitterDelayIsDeterministicForGivenSeed() {
-    long firstAttemptEpochMillis = 1_700_000_000_000L;
-    int attemptNumber = 1;
-    long baseDelayMillis = 1000L;
-    double jitterFactor = 0.5;
 
-    long seed = firstAttemptEpochMillis + attemptNumber;
-    double reduction = new Random(seed).nextDouble() * jitterFactor;
-    long expected = (long) (baseDelayMillis * (1.0 - reduction));
-
-    // Calling with the same seed twice must produce the same result.
-    long seed2 = firstAttemptEpochMillis + attemptNumber;
-    double reduction2 = new Random(seed2).nextDouble() * jitterFactor;
-    long result2 = (long) (baseDelayMillis * (1.0 - reduction2));
-
-    assertEquals(expected, result2);
-  }
-
-  /**
-   * Verifies that with jitterFactor=0.5 the reduced delay is always between
-   * 50% and 100% of the base delay (i.e. never negative or exceeding the base).
-   */
-  @Test
-  void jitterReducedDelayIsWithinExpectedBounds() {
-    long baseDelayMillis = 2000L;
-    double jitterFactor = 0.5;
-
-    for (int attempt = 1; attempt <= 10; attempt++) {
-      long seed = System.currentTimeMillis() + attempt;
-      double reduction = new Random(seed).nextDouble() * jitterFactor;
-      long reduced = (long) (baseDelayMillis * (1.0 - reduction));
-
-      assertTrue(reduced >= (long) (baseDelayMillis * (1.0 - jitterFactor)),
-          "Reduced delay should be >= base * (1 - jitterFactor)");
-      assertTrue(reduced <= baseDelayMillis,
-          "Reduced delay should not exceed base delay");
-    }
-  }
-
-  /**
    * With jitterFactor=0 the delay must be unchanged.
    */
   @Test
