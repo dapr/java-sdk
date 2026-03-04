@@ -523,4 +523,44 @@ public class DefaultWorkflowContextTest {
             .setRetryTimeout(Duration.ofSeconds(9))
             .build());
   }
+
+  @Test
+  public void callActivityRetryPolicyMaxRetryIntervalShouldBePropagated() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    Duration expectedMaxRetryInterval = Duration.ofSeconds(60);
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(5)
+            .setFirstRetryInterval(Duration.ofSeconds(1))
+            .setMaxRetryInterval(expectedMaxRetryInterval)
+            .build();
+    WorkflowTaskOptions options = new WorkflowTaskOptions(retryPolicy);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callActivity(expectedName, expectedInput, options, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callActivity(eq(expectedName), eq(expectedInput), captor.capture(), eq(String.class));
+
+    assertEquals(expectedMaxRetryInterval, captor.getValue().getRetryPolicy().getMaxRetryInterval());
+  }
+
+  @Test
+  public void callActivityRetryPolicyDefaultMaxRetryIntervalShouldBeZeroWhenNotSet() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(5)
+            .setFirstRetryInterval(Duration.ofSeconds(1))
+            .build();
+    WorkflowTaskOptions options = new WorkflowTaskOptions(retryPolicy);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callActivity(expectedName, expectedInput, options, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callActivity(eq(expectedName), eq(expectedInput), captor.capture(), eq(String.class));
+
+    assertEquals(Duration.ZERO, captor.getValue().getRetryPolicy().getMaxRetryInterval());
+  }
 }
