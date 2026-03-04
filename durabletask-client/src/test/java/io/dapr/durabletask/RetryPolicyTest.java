@@ -68,6 +68,18 @@ public class RetryPolicyTest {
     assertThrows(IllegalArgumentException.class, () -> policy.setJitterFactor(1.1));
   }
 
+  @Test
+  void jitterFactorNaNThrows() {
+    RetryPolicy policy = new RetryPolicy(3, Duration.ofSeconds(1));
+    assertThrows(IllegalArgumentException.class, () -> policy.setJitterFactor(Double.NaN));
+  }
+
+  @Test
+  void jitterFactorPositiveInfinityThrows() {
+    RetryPolicy policy = new RetryPolicy(3, Duration.ofSeconds(1));
+    assertThrows(IllegalArgumentException.class, () -> policy.setJitterFactor(Double.POSITIVE_INFINITY));
+  }
+
   // ---- deterministic delay formula ----
 
   /**

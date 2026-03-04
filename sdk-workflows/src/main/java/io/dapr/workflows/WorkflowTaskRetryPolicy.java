@@ -27,6 +27,25 @@ public final class WorkflowTaskRetryPolicy {
   private final Double jitterFactor;
 
   /**
+   * Constructor for WorkflowTaskRetryPolicy (without jitter).
+   * @param maxNumberOfAttempts Maximum number of attempts to retry the workflow.
+   * @param firstRetryInterval Interval to wait before the first retry.
+   * @param backoffCoefficient Coefficient to increase the retry interval.
+   * @param maxRetryInterval Maximum interval to wait between retries.
+   * @param retryTimeout Timeout for the whole retry process.
+   */
+  public WorkflowTaskRetryPolicy(
+      Integer maxNumberOfAttempts,
+      Duration firstRetryInterval,
+      Double backoffCoefficient,
+      Duration maxRetryInterval,
+      Duration retryTimeout
+  ) {
+    this(maxNumberOfAttempts, firstRetryInterval, backoffCoefficient,
+        maxRetryInterval, retryTimeout, null);
+  }
+
+  /**
    * Constructor for WorkflowTaskRetryPolicy.
    * @param maxNumberOfAttempts Maximum number of attempts to retry the workflow.
    * @param firstRetryInterval Interval to wait before the first retry.
@@ -34,7 +53,7 @@ public final class WorkflowTaskRetryPolicy {
    * @param maxRetryInterval Maximum interval to wait between retries.
    * @param retryTimeout Timeout for the whole retry process.
    * @param jitterFactor Jitter factor between 0.0 and 1.0; reduces each retry delay by a random
-   *                     fraction in [0, jitterFactor] to desynchronize concurrent retries.
+   *                     fraction in [0, jitterFactor) to desynchronize concurrent retries.
    *                     0.0 disables jitter (default).
    */
   public WorkflowTaskRetryPolicy(
@@ -193,14 +212,14 @@ public final class WorkflowTaskRetryPolicy {
      * Set the jitter factor applied to the computed retry delay.
      *
      * <p>A value between 0.0 (no jitter, default) and 1.0 (up to 100% reduction). For each retry,
-     * the computed delay is reduced by a random fraction in [0, jitterFactor].
+     * the computed delay is reduced by a random fraction in [0, jitterFactor).
      * This desynchronizes concurrent workflow retries and avoids thundering herd behaviour.</p>
      *
      * @param jitterFactor Jitter factor between 0.0 and 1.0 inclusive
      * @return This builder
      */
     public Builder setJitterFactor(double jitterFactor) {
-      if (jitterFactor < 0.0 || jitterFactor > 1.0) {
+      if (!Double.isFinite(jitterFactor) || jitterFactor < 0.0 || jitterFactor > 1.0) {
         throw new IllegalArgumentException("The value for jitterFactor must be between 0.0 and 1.0 inclusive.");
       }
 

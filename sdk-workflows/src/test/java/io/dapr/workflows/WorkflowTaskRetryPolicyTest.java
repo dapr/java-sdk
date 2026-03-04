@@ -87,6 +87,18 @@ public class WorkflowTaskRetryPolicyTest {
     assertThrows(IllegalArgumentException.class, () -> builder.setJitterFactor(1.1));
   }
 
+  @Test
+  void jitterFactorNaNThrows() {
+    WorkflowTaskRetryPolicy.Builder builder = WorkflowTaskRetryPolicy.newBuilder();
+    assertThrows(IllegalArgumentException.class, () -> builder.setJitterFactor(Double.NaN));
+  }
+
+  @Test
+  void jitterFactorPositiveInfinityThrows() {
+    WorkflowTaskRetryPolicy.Builder builder = WorkflowTaskRetryPolicy.newBuilder();
+    assertThrows(IllegalArgumentException.class, () -> builder.setJitterFactor(Double.POSITIVE_INFINITY));
+  }
+
   // ---- builder chaining ----
 
   @Test

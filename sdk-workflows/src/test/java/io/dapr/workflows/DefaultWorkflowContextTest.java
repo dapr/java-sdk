@@ -563,4 +563,44 @@ public class DefaultWorkflowContextTest {
 
     assertEquals(Duration.ZERO, captor.getValue().getRetryPolicy().getMaxRetryInterval());
   }
+
+  @Test
+  public void callActivityRetryPolicyJitterFactorShouldBePropagated() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    double expectedJitterFactor = 0.5;
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(5)
+            .setFirstRetryInterval(Duration.ofSeconds(1))
+            .setJitterFactor(expectedJitterFactor)
+            .build();
+    WorkflowTaskOptions options = new WorkflowTaskOptions(retryPolicy);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callActivity(expectedName, expectedInput, options, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callActivity(eq(expectedName), eq(expectedInput), captor.capture(), eq(String.class));
+
+    assertEquals(expectedJitterFactor, captor.getValue().getRetryPolicy().getJitterFactor());
+  }
+
+  @Test
+  public void callActivityRetryPolicyDefaultJitterFactorShouldBeZeroWhenNotSet() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(5)
+            .setFirstRetryInterval(Duration.ofSeconds(1))
+            .build();
+    WorkflowTaskOptions options = new WorkflowTaskOptions(retryPolicy);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callActivity(expectedName, expectedInput, options, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callActivity(eq(expectedName), eq(expectedInput), captor.capture(), eq(String.class));
+
+    assertEquals(0.0, captor.getValue().getRetryPolicy().getJitterFactor());
+  }
 }

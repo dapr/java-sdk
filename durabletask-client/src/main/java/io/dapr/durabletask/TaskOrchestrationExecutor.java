@@ -1504,7 +1504,7 @@ public final class TaskOrchestrationExecutor {
                 (long) Helpers.powExact(this.policy.getBackoffCoefficient(), this.attemptNumber));
           } catch (ArithmeticException overflowException) {
             if (maxDelayInMillis > 0) {
-              return this.policy.getMaxRetryInterval();
+              nextDelayInMillis = maxDelayInMillis;
             } else {
               // If no maximum is specified, just throw
               throw new ArithmeticException("The retry policy calculation resulted in an arithmetic "
@@ -1517,7 +1517,7 @@ public final class TaskOrchestrationExecutor {
             nextDelayInMillis = maxDelayInMillis;
           }
 
-          // Apply jitter: reduce delay by a random fraction in [0, jitterFactor].
+          // Apply jitter: reduce delay by a random fraction in [0, jitterFactor).
           // Seed is deterministic so that replay computes the same finalFireAt, preventing
           // the createTimerChain callback from creating spurious extra sub-timers.
           double jitterFactor = this.policy.getJitterFactor();

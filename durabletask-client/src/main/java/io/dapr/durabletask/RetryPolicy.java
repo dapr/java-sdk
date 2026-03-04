@@ -179,7 +179,7 @@ public final class RetryPolicy {
    * Sets the jitter factor applied to the computed retry delay.
    *
    * <p>A value between 0.0 (no jitter) and 1.0 (up to 100% reduction). For each retry, the delay
-   * is reduced by a random fraction in the range {@code [0, jitterFactor]}, using a deterministic
+   * is reduced by a random fraction in the range {@code [0, jitterFactor)}, using a deterministic
    * seed derived from the first-attempt timestamp and the attempt number. The seed must be
    * deterministic: the delay drives the {@code finalFireAt} of a durable timer, and if replay
    * computes a different value, the timer-chain check may create spurious sub-timers that shift
@@ -191,7 +191,7 @@ public final class RetryPolicy {
    * @throws IllegalArgumentException if {@code jitterFactor} is outside [0.0, 1.0]
    */
   public RetryPolicy setJitterFactor(double jitterFactor) {
-    if (jitterFactor < 0.0 || jitterFactor > 1.0) {
+    if (!Double.isFinite(jitterFactor) || jitterFactor < 0.0 || jitterFactor > 1.0) {
       throw new IllegalArgumentException("The value for jitterFactor must be between 0.0 and 1.0 inclusive.");
     }
     this.jitterFactor = jitterFactor;
