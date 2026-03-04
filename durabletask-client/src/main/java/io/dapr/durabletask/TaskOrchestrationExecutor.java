@@ -38,6 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -1513,10 +1514,20 @@ public final class TaskOrchestrationExecutor {
 
           // NOTE: A max delay of zero or less is interpreted to mean no max delay
           if (nextDelayInMillis > maxDelayInMillis && maxDelayInMillis > 0) {
-            return this.policy.getMaxRetryInterval();
-          } else {
-            return Duration.ofMillis(nextDelayInMillis);
+            nextDelayInMillis = maxDelayInMillis;
           }
+
+          // Apply jitter: reduce delay by a random fraction in [0, jitterFactor].
+          // Seed is deterministic so that replay computes the same finalFireAt, preventing
+          // the createTimerChain callback from creating spurious extra sub-timers.
+          double jitterFactor = this.policy.getJitterFactor();
+          if (jitterFactor > 0.0) {
+            long seed = this.firstAttempt.toEpochMilli() + this.attemptNumber;
+            double reduction = new Random(seed).nextDouble() * jitterFactor;
+            nextDelayInMillis = (long) (nextDelayInMillis * (1.0 - reduction));
+          }
+
+          return Duration.ofMillis(nextDelayInMillis);
         }
 
         // If there's no declarative retry policy defined, then the custom code retry handler

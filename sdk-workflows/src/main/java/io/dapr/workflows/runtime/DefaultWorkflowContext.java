@@ -287,6 +287,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
     if (workflowTaskRetryPolicy.getRetryTimeout() != null) {
       retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
     }
+    retryPolicy.setJitterFactor(workflowTaskRetryPolicy.getJitterFactor());
 
     return retryPolicy;
   }

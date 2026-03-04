@@ -24,6 +24,7 @@ public final class WorkflowTaskRetryPolicy {
   private final Double backoffCoefficient;
   private final Duration maxRetryInterval;
   private final Duration retryTimeout;
+  private final Double jitterFactor;
 
   /**
    * Constructor for WorkflowTaskRetryPolicy.
@@ -32,19 +33,24 @@ public final class WorkflowTaskRetryPolicy {
    * @param backoffCoefficient Coefficient to increase the retry interval.
    * @param maxRetryInterval Maximum interval to wait between retries.
    * @param retryTimeout Timeout for the whole retry process.
+   * @param jitterFactor Jitter factor between 0.0 and 1.0; reduces each retry delay by a random
+   *                     fraction in [0, jitterFactor] to desynchronize concurrent retries.
+   *                     0.0 disables jitter (default).
    */
   public WorkflowTaskRetryPolicy(
       Integer maxNumberOfAttempts,
       Duration firstRetryInterval,
       Double backoffCoefficient,
       Duration maxRetryInterval,
-      Duration retryTimeout
+      Duration retryTimeout,
+      Double jitterFactor
   ) {
     this.maxNumberOfAttempts = maxNumberOfAttempts;
     this.firstRetryInterval = firstRetryInterval;
     this.backoffCoefficient = backoffCoefficient;
     this.maxRetryInterval = maxRetryInterval;
     this.retryTimeout = retryTimeout;
+    this.jitterFactor = jitterFactor;
   }
 
   public int getMaxNumberOfAttempts() {
@@ -67,6 +73,10 @@ public final class WorkflowTaskRetryPolicy {
     return retryTimeout;
   }
 
+  public double getJitterFactor() {
+    return jitterFactor != null ? jitterFactor : 0.0;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -78,6 +88,7 @@ public final class WorkflowTaskRetryPolicy {
     private Double backoffCoefficient = 1.0;
     private Duration maxRetryInterval;
     private Duration retryTimeout;
+    private Double jitterFactor = 0.0;
 
     private Builder() {
     }
@@ -92,7 +103,8 @@ public final class WorkflowTaskRetryPolicy {
           this.firstRetryInterval,
           this.backoffCoefficient,
           this.maxRetryInterval,
-          this.retryTimeout
+          this.retryTimeout,
+          this.jitterFactor
       );
     }
 
@@ -173,6 +185,26 @@ public final class WorkflowTaskRetryPolicy {
       }
 
       this.retryTimeout = retryTimeout;
+
+      return this;
+    }
+
+    /**
+     * Set the jitter factor applied to the computed retry delay.
+     *
+     * <p>A value between 0.0 (no jitter, default) and 1.0 (up to 100% reduction). For each retry,
+     * the computed delay is reduced by a random fraction in [0, jitterFactor].
+     * This desynchronizes concurrent workflow retries and avoids thundering herd behaviour.</p>
+     *
+     * @param jitterFactor Jitter factor between 0.0 and 1.0 inclusive
+     * @return This builder
+     */
+    public Builder setJitterFactor(double jitterFactor) {
+      if (jitterFactor < 0.0 || jitterFactor > 1.0) {
+        throw new IllegalArgumentException("The value for jitterFactor must be between 0.0 and 1.0 inclusive.");
+      }
+
+      this.jitterFactor = jitterFactor;
 
       return this;
     }
