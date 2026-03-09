@@ -54,3 +54,8 @@ jobs:
           # Copy first to allow automation to use the latest version and not the release branch's version.
           cp -R ./.github/scripts ${RUNNER_TEMP}/
           ${RUNNER_TEMP}/scripts/create-release.sh ${{ inputs.rel_version }}
+      - name: Create GitHub Release with auto-generated notes
+        if: ${{ !endsWith(inputs.rel_version, '-SNAPSHOT') && !contains(inputs.rel_version, '-rc-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
+        run: gh release create "v${{ inputs.rel_version }}" --generate-notes
