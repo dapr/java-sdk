@@ -57,4 +57,12 @@ class HttpExtensionTest {
     Assertions.assertEquals("user+name=John+Do%C3%AB+%26+Co.", encoded);
   }
 
+  @Test
+  @DisplayName("PATCH constant should use PATCH HTTP method")
+  void patchConstantShouldUsePatchHttpMethod() {
+    Assertions.assertEquals(DaprHttp.HttpMethods.PATCH, HttpExtension.PATCH.getMethod());
+    Assertions.assertTrue(HttpExtension.PATCH.getQueryParams().isEmpty());
+    Assertions.assertTrue(HttpExtension.PATCH.getHeaders().isEmpty());
+  }
+
 }

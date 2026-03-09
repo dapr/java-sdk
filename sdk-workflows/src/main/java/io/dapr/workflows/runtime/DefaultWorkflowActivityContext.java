@@ -99,6 +99,11 @@ public class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   }
 
   @Override
+  public String getTraceParent() {
+    return this.innerContext.getTraceParent();
+  }
+
+  @Override
   public String getTaskExecutionId() {
     return this.innerContext.getTaskExecutionId();
   }

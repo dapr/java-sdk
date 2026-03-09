@@ -51,7 +51,6 @@ public class Subscriber {
     Server server = ServerBuilder.forPort(port)
         .intercept(new SubscriberGrpcService.MetadataInterceptor())
         .addService(new SubscriberGrpcService())
-        .addService(new BulkSubscriberGrpcService())  
         .build();  
     server.start();  
     server.awaitTermination();  

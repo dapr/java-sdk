@@ -50,9 +50,9 @@ public class SubscriberCloudEvent {
     try (var client = new DaprClientBuilder().buildPreviewClient()) {
       System.out.println("Subscribing to topic: " + topicName + " (CloudEvent mode)");
 
-      // Subscribe to events - receives CloudEvent<String> with full metadata
+      // Subscribe to topic - receives CloudEvent<String> with full metadata
       // Use TypeRef<CloudEvent<String>> to get CloudEvent wrapper with metadata
-      client.subscribeToEvents(PUBSUB_NAME, topicName, new TypeRef<CloudEvent<String>>() {})
+      client.subscribeToTopic(PUBSUB_NAME, topicName, new TypeRef<CloudEvent<String>>() {})
           .doOnNext(cloudEvent -> {
             System.out.println("Received CloudEvent:");
             System.out.println("  ID: " + cloudEvent.getId());

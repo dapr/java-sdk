@@ -12,6 +12,18 @@
 
     <!--Temporarily ignoring checking after upgrade to new spotbugs version-->
     <Match>
+      <Package name="~io\.dapr.*"/>
+      <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+
+    <!--Temporarily ignoring checking after upgrade to new spotbugs version-->
+    <Match>
+      <Package name="~io\.dapr.*"/>
+      <Bug pattern="SE_BAD_FIELD"/>
+    </Match>
+
+    <!--Temporarily ignoring checking after upgrade to new spotbugs version-->
+    <Match>
         <Package name="~io\.dapr.*"/>
         <Bug pattern="CT_CONSTRUCTOR_THROW"/>
     </Match>

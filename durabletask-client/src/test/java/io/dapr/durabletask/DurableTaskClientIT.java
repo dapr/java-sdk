@@ -12,13 +12,11 @@ limitations under the License.
 */
 package io.dapr.durabletask;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -42,11 +40,13 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * These integration tests are designed to exercise the core, high-level features of
@@ -118,11 +118,11 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(2, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[1];
+      long[] millisElapsed = new long[1];
       for (int i = 0; i < timestamps.length() - 1; i++) {
-        secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+        millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
       }
-      assertEquals(3, secondsElapsed[0]);
+      assertEquals(3000, millisElapsed[0], 50);
 
     }
   }
@@ -163,19 +163,17 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(3, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[timestamps.length()];
+      long[] millisElapsed = new long[timestamps.length()];
       for (int i = 0; i < timestamps.length() - 1; i++) {
         if (timestamps.get(i + 1) != null && timestamps.get(i) != null) {
-          secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+          millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
         } else {
-          secondsElapsed[i] = -1;
+          millisElapsed[i] = -1;
         }
       }
-      assertEquals(2, secondsElapsed[0]);
-      assertEquals(2, secondsElapsed[1]);
-      assertEquals(-1, secondsElapsed[2]);
-
-
+      assertEquals(2000, millisElapsed[0], 50);
+      assertEquals(2000, millisElapsed[1], 50);
+      assertEquals(-1, millisElapsed[2]);
     }
   }
 
@@ -195,7 +193,6 @@ public class DurableTaskClientIT extends IntegrationTestBase {
                     timestamps.set(counter.get(), LocalDateTime.now());
                     counter.incrementAndGet();
                   }
-
                 }
               }
             })
@@ -218,18 +215,20 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(4, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[timestamps.length()];
+      long[] millisElapsed = new long[timestamps.length()];
       for (int i = 0; i < timestamps.length() - 1; i++) {
         if (timestamps.get(i + 1) != null && timestamps.get(i) != null) {
-          secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+          millisElapsed[i] =
+              java.time.Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
         } else {
-          secondsElapsed[i] = -1;
+          millisElapsed[i] = -1;
         }
       }
-      assertEquals(2, secondsElapsed[0]);
-      assertEquals(2, secondsElapsed[1]);
-      assertEquals(2, secondsElapsed[2]);
-      assertEquals(0, secondsElapsed[3]);
+
+      assertEquals(2000, millisElapsed[0], 50);
+      assertEquals(2000, millisElapsed[1], 50);
+      assertEquals(2000, millisElapsed[2], 50);
+      assertEquals(0, millisElapsed[3]);
 
 
     }
@@ -269,13 +268,13 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(4, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[3];
+      long[] millisElapsed = new long[3];
       for (int i = 0; i < timestamps.length() - 1; i++) {
-        secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+        millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
       }
-      assertEquals(secondsElapsed[0], 3);
-      assertEquals(secondsElapsed[1], 3);
-      assertEquals(secondsElapsed[2], 1);
+      assertEquals(3000, millisElapsed[0], 50);
+      assertEquals(3000, millisElapsed[1], 50);
+      assertEquals(1000, millisElapsed[2], 50);
     }
   }
 
@@ -590,6 +589,138 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertNotNull(instance);
       assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
       assertEquals(15, instance.readOutputAs(int.class));
+    }
+  }
+
+  @Test
+  void subOrchestrationWithActivity() throws TimeoutException {
+    final String parentOrchestratorName = "ParentOrchestrator";
+    final String childOrchestratorName = "ChildOrchestrator";
+    final String activityName = "PlusOne";
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(parentOrchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              int childResult = ctx.callSubOrchestrator(childOrchestratorName, input, int.class).await();
+              ctx.complete(childResult);
+            })
+            .addOrchestrator(childOrchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              int result = ctx.callActivity(activityName, input, int.class).await();
+              ctx.complete(result);
+            })
+            .addActivity(activityName, ctx -> ctx.getInput(int.class) + 1)
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(parentOrchestratorName, 10);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(instance);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+      assertEquals(11, instance.readOutputAs(int.class));
+    }
+  }
+
+  @Test
+  void subOrchestrationChain() throws TimeoutException {
+    final String orchestratorName = "ChainOrchestrator";
+    final String leafOrchestratorName = "LeafOrchestrator";
+    final String activityName = "Double";
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(orchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              // Chain: parent calls child which calls leaf
+              int result = ctx.callSubOrchestrator(leafOrchestratorName, input, int.class).await();
+              // Call activity after sub-orchestration completes
+              result = ctx.callActivity(activityName, result, int.class).await();
+              ctx.complete(result);
+            })
+            .addOrchestrator(leafOrchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              int result = ctx.callActivity(activityName, input, int.class).await();
+              ctx.complete(result);
+            })
+            .addActivity(activityName, ctx -> ctx.getInput(int.class) * 2)
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      // input=3 -> leaf doubles to 6 -> parent doubles to 12
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName, 3);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(instance);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+      assertEquals(12, instance.readOutputAs(int.class));
+    }
+  }
+
+  @Test
+  void subOrchestrationFanOut() throws TimeoutException {
+    final String parentOrchestratorName = "FanOutParent";
+    final String childOrchestratorName = "FanOutChild";
+    final String activityName = "Square";
+    final int childCount = 5;
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(parentOrchestratorName, ctx -> {
+              // Fan out: launch multiple sub-orchestrations in parallel
+              List<Task<Integer>> tasks = IntStream.range(1, childCount + 1)
+                      .mapToObj(i -> ctx.callSubOrchestrator(childOrchestratorName, i, int.class))
+                      .collect(Collectors.toList());
+
+              List<Integer> results = ctx.allOf(tasks).await();
+              int sum = results.stream().mapToInt(Integer::intValue).sum();
+              ctx.complete(sum);
+            })
+            .addOrchestrator(childOrchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              int result = ctx.callActivity(activityName, input, int.class).await();
+              ctx.complete(result);
+            })
+            .addActivity(activityName, ctx -> {
+              int val = ctx.getInput(int.class);
+              return val * val;
+            })
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(parentOrchestratorName, 0);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(instance);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+      // 1^2 + 2^2 + 3^2 + 4^2 + 5^2 = 1 + 4 + 9 + 16 + 25 = 55
+      assertEquals(55, instance.readOutputAs(int.class));
+    }
+  }
+
+  @Test
+  void subOrchestrationWithInstanceId() throws TimeoutException {
+    final String parentOrchestratorName = "ParentWithInstanceId";
+    final String childOrchestratorName = "ChildWithInstanceId";
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(parentOrchestratorName, ctx -> {
+              String childInstanceId = ctx.getInstanceId() + ":child";
+              String result = ctx.callSubOrchestrator(
+                      childOrchestratorName, "hello", childInstanceId, String.class).await();
+              ctx.complete(result);
+            })
+            .addOrchestrator(childOrchestratorName, ctx -> {
+              String input = ctx.getInput(String.class);
+              ctx.complete(input + " world");
+            })
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(parentOrchestratorName, "test");
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(instance);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+      assertEquals("hello world", instance.readOutputAs(String.class));
     }
   }
 

@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.springboot.examples.consumer;
 
 import io.dapr.client.DaprClient;
-import io.dapr.spring.boot.autoconfigure.pubsub.DaprPubSubProperties;
+import io.dapr.spring.boot.properties.pubsub.DaprPubSubProperties;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

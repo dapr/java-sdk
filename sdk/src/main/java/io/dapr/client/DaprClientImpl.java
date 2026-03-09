@@ -444,8 +444,25 @@ public class DaprClientImpl extends AbstractDaprClient {
       return Mono.deferContextual(
           context ->
               this.<DaprPubsubProtos.BulkPublishResponse>createMono(
-                  it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
-              )
+                  it -> intercept(context, asyncStub).bulkPublishEvent(envelopeBuilder.build(), it)
+              ).onErrorResume(throwable -> {
+                // Check if the error is UNIMPLEMENTED, and try the alpha API just in case
+                // The exception might be wrapped in DaprException, so check both
+                Throwable cause = throwable;
+                if (throwable instanceof DaprException && throwable.getCause() != null) {
+                  cause = throwable.getCause();
+                }
+                
+                if (cause instanceof io.grpc.StatusRuntimeException) {
+                  io.grpc.StatusRuntimeException statusException = (io.grpc.StatusRuntimeException) cause;
+                  if (statusException.getStatus().getCode() == io.grpc.Status.Code.UNIMPLEMENTED) {
+                    return this.<DaprPubsubProtos.BulkPublishResponse>createMono(
+                        it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
+                    );
+                  }
+                }
+                return Mono.error(throwable);
+              })
       ).map(
           it -> {
             List<BulkPublishResponseFailedEntry<T>> entries = new ArrayList<>();
@@ -487,16 +504,34 @@ public class DaprClientImpl extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  @Deprecated
   @Override
   public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type) {
-    return subscribeToEvents(pubsubName, topic, type, null);
+    return subscribeToTopic(pubsubName, topic, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Deprecated
+  @Override
+  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
+    return subscribeToTopic(pubsubName, topic, type, metadata);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Flux<T> subscribeToEvents(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
+  public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type) {
+    return subscribeToTopic(pubsubName, topic, type, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
     DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.Builder initialRequestBuilder =
         DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)

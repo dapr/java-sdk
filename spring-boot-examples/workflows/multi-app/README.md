@@ -40,7 +40,7 @@ You can create new workflow instances of the `CustomerWorkflow` by calling the `
 curl -X POST localhost:8080/customers -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
 ```
 
-The workflow definition [`CustomerWorkflow`](orchstrator/src/main/java/io/dapr/springboot/examples/orchestrator/CustomerWorkflow.java) that you can find inside the `orchestrator` app, 
+The workflow definition [`CustomerWorkflow`](orchestrator/src/main/java/io/dapr/springboot/examples/orchestrator/CustomerWorkflow.java) that you can find inside the `orchestrator` app, 
 performs the following orchestration when a new workflow instance is created:
 
 - Call the `RegisterCustomerActivity` activity which can be found inside the `worker-one` application.  

@@ -20,6 +20,7 @@
   <modules>
     <module>patterns</module>
     <module>multi-app</module>
+    <module>versioning</module>
   </modules>
 
   <build>

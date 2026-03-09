@@ -1,0 +1,2 @@
+io.dapr.spring.boot4.autoconfigure.client.DaprJackson3SB4AutoConfiguration
+io.dapr.spring.boot4.autoconfigure.client.DaprClientSB4AutoConfiguration

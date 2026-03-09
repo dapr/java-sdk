@@ -145,6 +145,11 @@ public class WorkflowRuntimeBuilder {
                                                                       Class<T> clazz,
                                                                       String versionName,
                                                                       Boolean isLatestVersion) {
+
+    if (StringUtils.isEmpty(name)) {
+      throw new IllegalArgumentException("Workflow name cannot be empty");
+    }
+
     this.builder.addOrchestration(new WorkflowClassWrapper<>(name, clazz, versionName, isLatestVersion));
     this.workflowSet.add(name);
     this.workflows.add(name);
@@ -167,8 +172,8 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(T instance) {
-    Class<T> clazz = (Class<T>) instance.getClass();
-    this.registerWorkflow(clazz.getCanonicalName(), instance, null, null);
+    var name = instance.getClass().getCanonicalName();
+    this.registerWorkflow(name, instance, null, null);
     return this;
   }
 
@@ -186,6 +191,10 @@ public class WorkflowRuntimeBuilder {
                                                                       T instance,
                                                                       String versionName,
                                                                       Boolean isLatestVersion) {
+    if (StringUtils.isEmpty(name)) {
+      throw new IllegalArgumentException("Workflow name cannot be empty");
+    }
+
     this.builder.addOrchestration(new WorkflowInstanceWrapper<>(name, instance, versionName, isLatestVersion));
     this.workflowSet.add(name);
     this.workflows.add(name);
@@ -220,6 +229,10 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(String name, Class<T> clazz) {
+    if (StringUtils.isEmpty(name)) {
+      throw new IllegalArgumentException("Activity name cannot be empty");
+    }
+
     this.builder.addActivity(new WorkflowActivityClassWrapper<>(name, clazz));
     this.activitySet.add(name);
     this.activities.add(name);
@@ -305,5 +318,4 @@ public class WorkflowRuntimeBuilder {
 
     return this;
   }
-
 }

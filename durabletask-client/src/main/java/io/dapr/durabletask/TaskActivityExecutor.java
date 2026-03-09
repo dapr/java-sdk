@@ -16,11 +16,18 @@ package io.dapr.durabletask;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
-final class TaskActivityExecutor {
+public final class TaskActivityExecutor {
   private final HashMap<String, TaskActivityFactory> activityFactories;
   private final DataConverter dataConverter;
   private final Logger logger;
 
+  /**
+   * Constructor.
+   *
+   * @param activityFactories the activity factories to use for creating activities
+   * @param dataConverter     the data converter to use for serializing and deserializing activity inputs and outputs
+   * @param logger            the logger to use for logging
+   */
   public TaskActivityExecutor(
       HashMap<String, TaskActivityFactory> activityFactories,
       DataConverter dataConverter,
@@ -30,7 +37,19 @@ final class TaskActivityExecutor {
     this.logger = logger;
   }
 
-  public String execute(String taskName, String input, String taskExecutionId, int taskId) throws Throwable {
+  /**
+   * Executes an activity task.
+   *
+   * @param taskName        the name of the activity task to execute
+   * @param input           the serialized input payload for the activity task
+   * @param taskExecutionId Unique ID for the task execution.
+   * @param taskId          Auto-incrementing ID for the task.
+   * @param traceParent     The traceparent header value.
+   * @return the serialized output payload for the activity task, or null if the activity task returned null.
+   * @throws Throwable if an unhandled exception occurs during activity task execution.
+   */
+  public String execute(String taskName, String input,
+                        String taskExecutionId, int taskId, String traceParent) throws Throwable {
     TaskActivityFactory factory = this.activityFactories.get(taskName);
     if (factory == null) {
       throw new IllegalStateException(
@@ -43,7 +62,8 @@ final class TaskActivityExecutor {
           String.format("The task factory '%s' returned a null TaskActivity object.", taskName));
     }
 
-    TaskActivityContextImpl context = new TaskActivityContextImpl(taskName, input, taskExecutionId, taskId);
+    TaskActivityContextImpl context = new TaskActivityContextImpl(
+        taskName, input, taskExecutionId, taskId, traceParent);
 
     // Unhandled exceptions are allowed to escape
     Object output = activity.run(context);
@@ -59,14 +79,17 @@ final class TaskActivityExecutor {
     private final String rawInput;
     private final String taskExecutionId;
     private final int taskId;
+    private final String traceParent;
 
     private final DataConverter dataConverter = TaskActivityExecutor.this.dataConverter;
 
-    public TaskActivityContextImpl(String activityName, String rawInput, String taskExecutionId, int taskId) {
+    public TaskActivityContextImpl(String activityName, String rawInput,
+                                   String taskExecutionId, int taskId, String traceParent) {
       this.name = activityName;
       this.rawInput = rawInput;
       this.taskExecutionId = taskExecutionId;
       this.taskId = taskId;
+      this.traceParent = traceParent;
     }
 
     @Override
@@ -91,6 +114,11 @@ final class TaskActivityExecutor {
     @Override
     public int getTaskId() {
       return this.taskId;
+    }
+
+    @Override
+    public String getTraceParent() {
+      return this.traceParent;
     }
   }
 }
