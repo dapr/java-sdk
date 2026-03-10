@@ -1,3 +1,16 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.quarkiverse.dapr.agents.registry.service;
 
 import io.dapr.client.DaprClient;
@@ -28,9 +41,14 @@ public class AgentRegistry {
 
   private static final Logger LOG = Logger.getLogger(AgentRegistry.class);
 
-  /** Fully-qualified name of langchain4j {@code @Agent} annotation. */
+  /**
+   * Fully-qualified name of langchain4j {@code @Agent} annotation.
+   */
   private static final String AGENT_ANNOTATION_NAME = "dev.langchain4j.agentic.Agent";
-  /** Fully-qualified name of langchain4j {@code @SystemMessage} annotation. */
+
+  /**
+   * Fully-qualified name of langchain4j {@code @SystemMessage} annotation.
+   */
   private static final String SYSTEM_MESSAGE_ANNOTATION_NAME = "dev.langchain4j.service.SystemMessage";
 
   @Inject
@@ -57,8 +75,6 @@ public class AgentRegistry {
     Set<Bean<?>> beans = beanManager.getBeans(Object.class, Any.Literal.INSTANCE);
     LOG.debugf("Found %d CDI beans to scan", beans.size());
 
-    int registered = 0;
-    int failed = 0;
     Set<String> scannedInterfaces = new HashSet<>();
     // Collect all interface classes from CDI beans first
     List<Class<?>> interfacesToScan = new ArrayList<>();
@@ -93,6 +109,8 @@ public class AgentRegistry {
     interfacesToScan.addAll(subAgentClasses);
 
     // Scan all collected interfaces for @Agent methods
+    int registered = 0;
+    int failed = 0;
     for (Class<?> iface : interfacesToScan) {
       LOG.debugf("Scanning interface: %s", iface.getName());
       List<AgentMetadataSchema> agents = scanForAgents(iface, appId);
@@ -125,8 +143,8 @@ public class AgentRegistry {
 
   /**
    * Extracts sub-agent classes from a composite agent annotation.
-   * <p>
-   * Looks for a {@code subAgents()} method returning {@code Class<?>[]} on the annotation.
+   *
+   * <p>Looks for a {@code subAgents()} method returning {@code Class<?>[]} on the annotation.
    * This works for any composite agent annotation (e.g., {@code @SequenceAgent},
    * {@code @ParallelAgent}, etc.) without coupling to specific annotation types.
    */
@@ -148,8 +166,8 @@ public class AgentRegistry {
 
   /**
    * Scans an interface for methods annotated with {@code @Agent} and extracts metadata.
-   * <p>
-   * Uses name-based annotation matching ({@code annotationType().getName()}) instead of
+   *
+   * <p>Uses name-based annotation matching ({@code annotationType().getName()}) instead of
    * class identity ({@code method.getAnnotation(Agent.class)}) to handle classloader
    * differences between library JARs and the Quarkus application classloader.
    */
@@ -213,23 +231,33 @@ public class AgentRegistry {
     return null;
   }
 
-  /** Invokes a no-arg method on an annotation proxy and returns the result as a String. */
+  /**
+   * Invokes a no-arg method on an annotation proxy and returns the result as a String.
+   */
   private static String invokeStringMethod(Annotation ann, String methodName) {
     return invokeMethod(ann, methodName, String.class);
   }
 
-  /** Invokes a no-arg method on an annotation proxy, casting to the expected type. */
+  /**
+   * Invokes a no-arg method on an annotation proxy, casting to the expected type.
+   */
   @SuppressWarnings("unchecked")
   private static <T> T invokeMethod(Annotation ann, String methodName, Class<T> returnType) {
     try {
       Object result = ann.annotationType().getMethod(methodName).invoke(ann);
       return returnType.isInstance(result) ? (T) result : null;
     } catch (Exception e) {
-      LOG.debugf("Failed to invoke %s.%s(): %s", ann.annotationType().getSimpleName(), methodName, e.getMessage());
+      LOG.debugf("Failed to invoke %s.%s(): %s",
+          ann.annotationType().getSimpleName(), methodName, e.getMessage());
       return null;
     }
   }
 
+  /**
+   * Registers an agent schema in the Dapr state store.
+   *
+   * @param schema the agent metadata schema to register
+   */
   public void registerAgent(AgentMetadataSchema schema) {
     String key = "agents:" + team + ":" + schema.getName();
     LOG.infof("Registering agent: %s", key);

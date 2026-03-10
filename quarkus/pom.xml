@@ -41,6 +41,15 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Override the root POM's commons-io 2.14.0 which is too old for
+                 commons-compress 1.28.0 (pulled by quarkus-core-deployment).
+                 commons-compress 1.28.0 calls BoundedInputStream.builder()
+                 which was added in commons-io 2.16.0. -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.20.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

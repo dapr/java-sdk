@@ -1,10 +1,17 @@
+/*
+ * Copyright 2026 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.quarkiverse.dapr.langchain4j.agent.workflow;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import io.quarkiverse.dapr.workflows.WorkflowMetadata;
-import org.jboss.logging.Logger;
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
@@ -14,13 +21,17 @@ import io.quarkiverse.dapr.langchain4j.agent.activities.LlmCallOutput;
 import io.quarkiverse.dapr.langchain4j.agent.activities.ToolCallActivity;
 import io.quarkiverse.dapr.langchain4j.agent.activities.ToolCallInput;
 import io.quarkiverse.dapr.langchain4j.agent.activities.ToolCallOutput;
+import io.quarkiverse.dapr.workflows.WorkflowMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.jboss.logging.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 /**
  * Dapr Workflow representing the execution of a single {@code @Agent}-annotated method,
  * including all tool and LLM calls the agent makes during its ReAct loop.
- * <p>
- * <h3>Lifecycle</h3>
+ *
+ * <p><h3>Lifecycle</h3>
  * <ol>
  *   <li>Started by {@link io.quarkiverse.dapr.langchain4j.workflow.orchestration.activities.AgentExecutionActivity}
  *       (orchestration path) or lazily by {@link io.quarkiverse.dapr.langchain4j.agent.AgentRunLifecycleManager}
@@ -38,77 +49,78 @@ import jakarta.enterprise.context.ApplicationScoped;
  *       {@link AgentRunOutput} as the custom status.</li>
  * </ol>
  */
+
 @ApplicationScoped
 @WorkflowMetadata(name = "agent")
 public class AgentRunWorkflow implements Workflow {
 
-    private static final Logger LOG = Logger.getLogger(AgentRunWorkflow.class);
+  private static final Logger LOG = Logger.getLogger(AgentRunWorkflow.class);
 
-    @Override
-    public WorkflowStub create() {
-        return ctx -> {
-            AgentRunInput input = ctx.getInput(AgentRunInput.class);
-            String agentRunId = input.agentRunId();
-            String agentName = input.agentName();
+  @Override
+  public WorkflowStub create() {
+    return ctx -> {
+      AgentRunInput input = ctx.getInput(AgentRunInput.class);
+      String agentRunId = input.agentRunId();
+      String agentName = input.agentName();
 
-            LOG.infof("[AgentRun:%s] AgentRunWorkflow started — agent=%s, userMessage=%s, systemMessage=%s",
-                    agentRunId, agentName,
-                    truncate(input.userMessage(), 120),
-                    truncate(input.systemMessage(), 120));
+      LOG.infof("[AgentRun:%s] AgentRunWorkflow started — agent=%s, userMessage=%s, systemMessage=%s",
+          agentRunId, agentName,
+          truncate(input.userMessage(), 120),
+          truncate(input.systemMessage(), 120));
 
-            List<ToolCallOutput> toolCallOutputs = new ArrayList<>();
-            List<LlmCallOutput> llmCallOutputs = new ArrayList<>();
+      List<ToolCallOutput> toolCallOutputs = new ArrayList<>();
+      List<LlmCallOutput> llmCallOutputs = new ArrayList<>();
 
-            while (true) {
-                // Wait for the next event from the agent thread or completion signal.
-                AgentEvent event = ctx.waitForExternalEvent("agent-event", AgentEvent.class).await();
+      while (true) {
+        // Wait for the next event from the agent thread or completion signal.
+        AgentEvent event = ctx.waitForExternalEvent("agent-event", AgentEvent.class).await();
 
-                LOG.infof("[AgentRun:%s] Received event: type=%s, callId=%s, name=%s",
-                        agentRunId, event.type(), event.toolCallId(), event.toolName());
+        LOG.infof("[AgentRun:%s] Received event: type=%s, callId=%s, name=%s",
+            agentRunId, event.type(), event.toolCallId(), event.toolName());
 
-                if ("done".equals(event.type())) {
-                    LOG.infof("[AgentRun:%s] AgentRunWorkflow completed — agent=%s, toolCalls=%d, llmCalls=%d",
-                            agentRunId, agentName, toolCallOutputs.size(), llmCallOutputs.size());
-                    break;
-                }
-
-                if ("tool-call".equals(event.type())) {
-                    LOG.infof("[AgentRun:%s] Scheduling ToolCallActivity — tool=%s, args=%s",
-                            agentRunId, event.toolName(), event.args());
-                    ToolCallOutput toolOutput = ctx.callActivity(
-                            "tool-call",
-                            new ToolCallInput(agentRunId, event.toolCallId(), event.toolName(), event.args()),
-                            ToolCallOutput.class).await();
-                    toolCallOutputs.add(toolOutput);
-                    LOG.infof("[AgentRun:%s] ToolCallActivity completed — tool=%s → %s",
-                            agentRunId, event.toolName(), toolOutput.result());
-                    ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs));
-                }
-
-                if ("llm-call".equals(event.type())) {
-                    LOG.infof("[AgentRun:%s] Scheduling LlmCallActivity — method=%s",
-                            agentRunId, event.toolName());
-                    LlmCallOutput llmOutput = ctx.callActivity(
-                            "llm-call",
-                            new LlmCallInput(agentRunId, event.toolCallId(), event.toolName(), event.args()),
-                            LlmCallOutput.class).await();
-                    llmCallOutputs.add(llmOutput);
-                    LOG.infof("[AgentRun:%s] LlmCallActivity completed — method=%s, response=%s",
-                            agentRunId, event.toolName(), llmOutput.response());
-                    ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs));
-                }
-            }
-
-            // Set the final output so it is visible in the Dapr workflow dashboard.
-            ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs));
-        };
-    }
-
-    private static String truncate(String s, int maxLength) {
-        if (s == null) {
-            return null;
+        if ("done".equals(event.type())) {
+          LOG.infof("[AgentRun:%s] AgentRunWorkflow completed — agent=%s, toolCalls=%d, llmCalls=%d",
+              agentRunId, agentName, toolCallOutputs.size(), llmCallOutputs.size());
+          break;
         }
-        String trimmed = s.strip();
-        return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength) + "…";
+
+        if ("tool-call".equals(event.type())) {
+          LOG.infof("[AgentRun:%s] Scheduling ToolCallActivity — tool=%s, args=%s",
+              agentRunId, event.toolName(), event.args());
+          ToolCallOutput toolOutput = ctx.callActivity(
+              "tool-call",
+              new ToolCallInput(agentRunId, event.toolCallId(), event.toolName(), event.args()),
+              ToolCallOutput.class).await();
+          toolCallOutputs.add(toolOutput);
+          LOG.infof("[AgentRun:%s] ToolCallActivity completed — tool=%s → %s",
+              agentRunId, event.toolName(), toolOutput.result());
+          ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs));
+        }
+
+        if ("llm-call".equals(event.type())) {
+          LOG.infof("[AgentRun:%s] Scheduling LlmCallActivity — method=%s",
+              agentRunId, event.toolName());
+          LlmCallOutput llmOutput = ctx.callActivity(
+              "llm-call",
+              new LlmCallInput(agentRunId, event.toolCallId(), event.toolName(), event.args()),
+              LlmCallOutput.class).await();
+          llmCallOutputs.add(llmOutput);
+          LOG.infof("[AgentRun:%s] LlmCallActivity completed — method=%s, response=%s",
+              agentRunId, event.toolName(), llmOutput.response());
+          ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs));
+        }
+      }
+
+      // Set the final output so it is visible in the Dapr workflow dashboard.
+      ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs));
+    };
+  }
+
+  private static String truncate(String s, int maxLength) {
+    if (s == null) {
+      return null;
     }
+    String trimmed = s.strip();
+    return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength) + "…";
+  }
 }

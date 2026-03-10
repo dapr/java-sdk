@@ -69,7 +69,7 @@ class AgentMetadataSchemaTest {
                         .type("conversation")
                         .statestore("memory-store")
                         .build())
-                .llm(LLMMetadata.builder()
+                .llm(LlmMetadata.builder()
                         .client("openai")
                         .provider("openai")
                         .api("chat")
@@ -126,7 +126,7 @@ class AgentMetadataSchemaTest {
 
     @Test
     void buildLlmWithAzureConfig() {
-        LLMMetadata llm = LLMMetadata.builder()
+        LlmMetadata llm = LlmMetadata.builder()
                 .client("azure-openai")
                 .provider("azure")
                 .azureEndpoint("https://my-resource.openai.azure.com")
@@ -143,7 +143,7 @@ class AgentMetadataSchemaTest {
 
     @Test
     void buildLlmWithDefaults() {
-        LLMMetadata llm = LLMMetadata.builder()
+        LlmMetadata llm = LlmMetadata.builder()
                 .client("openai")
                 .provider("openai")
                 .build();
@@ -170,7 +170,7 @@ class AgentMetadataSchemaTest {
 
     @Test
     void llmBuilderRequiresClientAndProvider() {
-        assertThatThrownBy(() -> LLMMetadata.builder().build())
+        assertThatThrownBy(() -> LlmMetadata.builder().build())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("client and provider are required");
     }
@@ -259,7 +259,7 @@ class AgentMetadataSchemaTest {
                         .type("buffer")
                         .statestore("mem-store")
                         .build())
-                .llm(LLMMetadata.builder()
+                .llm(LlmMetadata.builder()
                         .client("openai")
                         .provider("openai")
                         .api("chat")

@@ -33,7 +33,7 @@
             <artifactId>gizmo</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.dapr</groupId>
+            <groupId>io.dapr.quarkus</groupId>
             <artifactId>quarkus-agentic-dapr</artifactId>
             <version>${project.version}</version>
         </dependency>

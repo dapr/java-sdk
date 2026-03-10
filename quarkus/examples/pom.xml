@@ -16,13 +16,13 @@
     <dependencies>
         <!-- Our Dapr Agentic extension (brings quarkus-dapr + quarkus-langchain4j-agentic transitively) -->
         <dependency>
-            <groupId>io.quarkiverse.dapr</groupId>
+            <groupId>io.dapr.quarkus</groupId>
             <artifactId>quarkus-agentic-dapr</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-          <groupId>io.quarkiverse.dapr</groupId>
+          <groupId>io.dapr.quarkus</groupId>
           <artifactId>quarkus-agentic-dapr-agents-registry</artifactId>
           <version>${project.version}</version>
         </dependency>

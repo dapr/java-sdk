@@ -1,3 +1,16 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.quarkiverse.dapr.langchain4j.workflow;
 
 import dev.langchain4j.agentic.UntypedAgent;
@@ -16,40 +29,60 @@ import io.quarkiverse.dapr.langchain4j.workflow.orchestration.ParallelOrchestrat
  */
 public class DaprParallelAgentService<T> extends ParallelAgentServiceImpl<T> implements DaprAgentService {
 
-    private final DaprWorkflowClient workflowClient;
+  private final DaprWorkflowClient workflowClient;
 
-    public DaprParallelAgentService(Class<T> agentServiceClass, DaprWorkflowClient workflowClient) {
-        super(agentServiceClass, resolveMethod(agentServiceClass));
-        this.workflowClient = workflowClient;
-    }
+  /**
+   * Creates a new DaprParallelAgentService.
+   *
+   * @param agentServiceClass the agent service class
+   * @param workflowClient the Dapr workflow client
+   */
+  public DaprParallelAgentService(Class<T> agentServiceClass, DaprWorkflowClient workflowClient) {
+    super(agentServiceClass, resolveMethod(agentServiceClass));
+    this.workflowClient = workflowClient;
+  }
 
-    private static <T> java.lang.reflect.Method resolveMethod(Class<T> agentServiceClass) {
-        if (agentServiceClass == UntypedAgent.class) {
-            return null;
-        }
-        return AgentUtil.validateAgentClass(agentServiceClass, false, ParallelAgent.class);
+  private static <T> java.lang.reflect.Method resolveMethod(Class<T> agentServiceClass) {
+    if (agentServiceClass == UntypedAgent.class) {
+      return null;
     }
+    return AgentUtil.validateAgentClass(agentServiceClass, false, ParallelAgent.class);
+  }
 
-    @Override
-    public String workflowType() {
-        return ParallelOrchestrationWorkflow.class.getCanonicalName();
-    }
+  @Override
+  public String workflowType() {
+    return ParallelOrchestrationWorkflow.class.getCanonicalName();
+  }
 
-    @Override
-    public T build() {
-        return build(() -> new DaprWorkflowPlanner(
-                ParallelOrchestrationWorkflow.class,
-                "Parallel",
-                AgenticSystemTopology.PARALLEL,
-                workflowClient));
-    }
+  @Override
+  public T build() {
+    return build(() -> new DaprWorkflowPlanner(
+        ParallelOrchestrationWorkflow.class,
+        "Parallel",
+        AgenticSystemTopology.PARALLEL,
+        workflowClient));
+  }
 
-    public static DaprParallelAgentService<UntypedAgent> builder(DaprWorkflowClient workflowClient) {
-        return new DaprParallelAgentService<>(UntypedAgent.class, workflowClient);
-    }
+  /**
+   * Creates a builder for untyped agents.
+   *
+   * @param workflowClient the Dapr workflow client
+   * @return a new DaprParallelAgentService instance
+   */
+  public static DaprParallelAgentService<UntypedAgent> builder(DaprWorkflowClient workflowClient) {
+    return new DaprParallelAgentService<>(UntypedAgent.class, workflowClient);
+  }
 
-    public static <T> DaprParallelAgentService<T> builder(Class<T> agentServiceClass,
-            DaprWorkflowClient workflowClient) {
-        return new DaprParallelAgentService<>(agentServiceClass, workflowClient);
-    }
+  /**
+   * Creates a builder for typed agents.
+   *
+   * @param agentServiceClass the agent service class
+   * @param workflowClient the Dapr workflow client
+   * @param <T> the agent service type
+   * @return a new DaprParallelAgentService instance
+   */
+  public static <T> DaprParallelAgentService<T> builder(Class<T> agentServiceClass,
+      DaprWorkflowClient workflowClient) {
+    return new DaprParallelAgentService<>(agentServiceClass, workflowClient);
+  }
 }

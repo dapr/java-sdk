@@ -1,3 +1,16 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.quarkiverse.dapr.examples;
 
 import dev.langchain4j.agentic.Agent;
@@ -7,14 +20,14 @@ import io.quarkiverse.langchain4j.ToolBox;
 
 /**
  * Sub-agent that writes a short research summary about a country by calling tools.
- * <p>
- * The {@link ToolBox} annotation tells quarkus-langchain4j to make {@link ResearchTools}
+ *
+ * <p>The {@link ToolBox} annotation tells quarkus-langchain4j to make {@link ResearchTools}
  * available to the LLM for this agent's method. When the LLM decides to call
  * {@code getPopulation} or {@code getCapital}, the call is intercepted by the Dapr
  * extension and executed inside a {@code ToolCallActivity} Dapr Workflow Activity —
  * providing a durable, auditable record of every tool invocation.
- * <p>
- * <b>Architecture note:</b> No changes are required in this interface to enable the
+ *
+ * <p><b>Architecture note:</b> No changes are required in this interface to enable the
  * Dapr routing. The {@code quarkus-agentic-dapr} deployment module applies
  * {@code @DaprAgentToolInterceptorBinding} to all {@code @Tool}-annotated methods at
  * build time, and {@code DaprWorkflowPlanner} sets the per-agent context on the
@@ -22,14 +35,14 @@ import io.quarkiverse.langchain4j.ToolBox;
  */
 public interface ResearchWriter {
 
-    @ToolBox(ResearchTools.class)
-    @UserMessage("""
-            You are a research assistant.
-            Write a concise 2-sentence summary about the country {{country}}
-            using the available tools to fetch accurate data.
-            Return only the summary.
-            """)
-    @Agent(name = "research-location-agent",
-        description = "Researches and summarises facts about a country", outputKey = "summary")
-    String research(@V("country") String country);
+  @ToolBox(ResearchTools.class)
+  @UserMessage("""
+      You are a research assistant.
+      Write a concise 2-sentence summary about the country {{country}}
+      using the available tools to fetch accurate data.
+      Return only the summary.
+      """)
+  @Agent(name = "research-location-agent",
+      description = "Researches and summarises facts about a country", outputKey = "summary")
+  String research(@V("country") String country);
 }
