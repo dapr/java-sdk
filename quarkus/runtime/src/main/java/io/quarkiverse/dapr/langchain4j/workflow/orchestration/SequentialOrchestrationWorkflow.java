@@ -1,0 +1,49 @@
+package io.quarkiverse.dapr.langchain4j.workflow.orchestration;
+
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowStub;
+import io.quarkiverse.dapr.langchain4j.agent.workflow.AgentRunInput;
+import io.quarkiverse.dapr.langchain4j.workflow.DaprPlannerRegistry;
+import io.quarkiverse.dapr.langchain4j.workflow.DaprWorkflowPlanner;
+import io.quarkiverse.dapr.langchain4j.workflow.DaprWorkflowPlanner.AgentMetadata;
+import io.quarkiverse.dapr.workflows.WorkflowMetadata;
+import jakarta.enterprise.context.ApplicationScoped;
+
+/**
+ * Dapr Workflow that executes agents sequentially, one after another.
+ * Each agent is run as a child {@code AgentRunWorkflow} with a non-blocking bridging
+ * activity for planner coordination. Completion is detected via external events
+ * raised by {@link DaprWorkflowPlanner#nextAction}.
+ */
+@ApplicationScoped
+@WorkflowMetadata(name = "sequential-agent")
+public class SequentialOrchestrationWorkflow implements Workflow {
+
+    @Override
+    public WorkflowStub create() {
+        return ctx -> {
+            OrchestrationInput input = ctx.getInput(OrchestrationInput.class);
+            DaprWorkflowPlanner planner = DaprPlannerRegistry.get(input.plannerId());
+
+            for (int i = 0; i < input.agentCount(); i++) {
+                String agentRunId = input.plannerId() + ":" + i;
+                AgentMetadata metadata = planner.getAgentMetadata(i);
+                AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
+                        metadata.userMessage(), metadata.systemMessage());
+
+                // Start AgentRunWorkflow as a child workflow for proper nesting
+                var childWorkflow = ctx.callChildWorkflow("agent", agentInput, agentRunId, Void.class);
+                // Submit agent to planner (non-blocking activity — returns immediately)
+                ctx.callActivity("agent-call",
+                        new AgentExecInput(input.plannerId(), i, agentRunId), Void.class).await();
+                // Wait for agent completion (signaled by planner's nextAction)
+                ctx.waitForExternalEvent("agent-complete-" + agentRunId, Void.class).await();
+                childWorkflow.await();
+            }
+            // Signal planner that the workflow has completed
+            if (planner != null) {
+                planner.signalWorkflowComplete();
+            }
+        };
+    }
+}

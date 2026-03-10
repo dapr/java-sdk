@@ -715,6 +715,7 @@
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
     <module>durabletask-client</module>
+    <module>quarkus</module>
   </modules>
 
   <profiles>
