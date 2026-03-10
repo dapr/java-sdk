@@ -32,13 +32,12 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 
 import javax.annotation.Nullable;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -305,49 +304,6 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setOutput(StringValue.of(serializeOutput));
     }
     this.sidecarClient.terminateInstance(builder.build());
-  }
-
-  @Override
-  public OrchestrationStatusQueryResult queryInstances(OrchestrationStatusQuery query) {
-    OrchestratorService.InstanceQuery.Builder instanceQueryBuilder = OrchestratorService.InstanceQuery.newBuilder();
-    Optional.ofNullable(query.getCreatedTimeFrom()).ifPresent(createdTimeFrom ->
-        instanceQueryBuilder.setCreatedTimeFrom(DataConverter.getTimestampFromInstant(createdTimeFrom)));
-    Optional.ofNullable(query.getCreatedTimeTo()).ifPresent(createdTimeTo ->
-        instanceQueryBuilder.setCreatedTimeTo(DataConverter.getTimestampFromInstant(createdTimeTo)));
-    Optional.ofNullable(query.getContinuationToken()).ifPresent(token ->
-        instanceQueryBuilder.setContinuationToken(StringValue.of(token)));
-    Optional.ofNullable(query.getInstanceIdPrefix()).ifPresent(prefix ->
-        instanceQueryBuilder.setInstanceIdPrefix(StringValue.of(prefix)));
-    instanceQueryBuilder.setFetchInputsAndOutputs(query.isFetchInputsAndOutputs());
-    instanceQueryBuilder.setMaxInstanceCount(query.getMaxInstanceCount());
-    query.getRuntimeStatusList().forEach(runtimeStatus ->
-        Optional.ofNullable(runtimeStatus).ifPresent(status ->
-            instanceQueryBuilder.addRuntimeStatus(OrchestrationRuntimeStatus.toProtobuf(status))));
-    query.getTaskHubNames().forEach(taskHubName -> Optional.ofNullable(taskHubName).ifPresent(name ->
-        instanceQueryBuilder.addTaskHubNames(StringValue.of(name))));
-    OrchestratorService.QueryInstancesResponse queryInstancesResponse = this.sidecarClient
-        .queryInstances(OrchestratorService.QueryInstancesRequest.newBuilder().setQuery(instanceQueryBuilder).build());
-    return toQueryResult(queryInstancesResponse, query.isFetchInputsAndOutputs());
-  }
-
-  private OrchestrationStatusQueryResult toQueryResult(
-      OrchestratorService.QueryInstancesResponse queryInstancesResponse, boolean fetchInputsAndOutputs) {
-    List<OrchestrationMetadata> metadataList = new ArrayList<>();
-    queryInstancesResponse.getOrchestrationStateList().forEach(state -> {
-      metadataList.add(new OrchestrationMetadata(state, this.dataConverter, fetchInputsAndOutputs));
-    });
-    return new OrchestrationStatusQueryResult(metadataList, queryInstancesResponse.getContinuationToken().getValue());
-  }
-
-  @Override
-  public void createTaskHub(boolean recreateIfExists) {
-    this.sidecarClient.createTaskHub(OrchestratorService.CreateTaskHubRequest.newBuilder()
-        .setRecreateIfExists(recreateIfExists).build());
-  }
-
-  @Override
-  public void deleteTaskHub() {
-    this.sidecarClient.deleteTaskHub(OrchestratorService.DeleteTaskHubRequest.newBuilder().build());
   }
 
   @Override
