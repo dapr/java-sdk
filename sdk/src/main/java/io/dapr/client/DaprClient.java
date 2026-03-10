@@ -178,7 +178,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, Object data, HttpExtension httpExtension,
                            Map<String, String> metadata, TypeRef<T> type);
 
@@ -194,7 +197,10 @@ public interface DaprClient extends AutoCloseable {
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                            Map<String, String> metadata, Class<T> clazz);
 
@@ -209,7 +215,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                            TypeRef<T> type);
 
@@ -224,7 +233,10 @@ public interface DaprClient extends AutoCloseable {
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                            Class<T> clazz);
 
@@ -239,7 +251,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata,
                            TypeRef<T> type);
 
@@ -254,7 +269,10 @@ public interface DaprClient extends AutoCloseable {
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata,
                            Class<T> clazz);
 

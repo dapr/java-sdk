@@ -13,19 +13,21 @@ limitations under the License.
 
 package io.dapr.examples.tracing;
 
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.config.Properties;
 import io.dapr.examples.OpenTelemetryConfig;
-import io.dapr.utils.TypeRef;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 
-import static io.dapr.examples.OpenTelemetryConfig.getReactorContext;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 /**
  * 1. Build and install jars:
@@ -52,30 +54,50 @@ public class InvokeClient {
     Tracer tracer = openTelemetrySdk.getTracer(InvokeClient.class.getCanonicalName());
     Span span = tracer.spanBuilder("Example's Main").setSpanKind(SpanKind.CLIENT).startSpan();
 
-    try (DaprClient client = (new DaprClientBuilder()).build()) {
-      for (String message : args) {
-        try (Scope scope = span.makeCurrent()) {
-          InvokeMethodRequest request = new InvokeMethodRequest(SERVICE_APP_ID, "proxy_echo")
-              .setBody(message)
-              .setHttpExtension(HttpExtension.POST);
-          client.invokeMethod(request, TypeRef.get(byte[].class))
-              .map(r -> {
-                System.out.println(new String(r));
-                return r;
-              })
-              .flatMap(r -> {
-                InvokeMethodRequest sleepRequest = new InvokeMethodRequest(SERVICE_APP_ID, "proxy_sleep")
-                    .setHttpExtension(HttpExtension.POST);
-                return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
-              }).contextWrite(getReactorContext()).block();
-        }
-      }
+    int port = Properties.HTTP_PORT.get();
+    String baseUrl = "http://localhost:" + port + "/v1.0/invoke/" + SERVICE_APP_ID + "/method/";
 
-      span.end();
-      openTelemetrySdk.getSdkTracerProvider().shutdown();
-      Validation.validate();
-      System.out.println("Done");
-      System.exit(0);
+    HttpClient httpClient = HttpClient.newHttpClient();
+
+    for (String message : args) {
+      try (Scope scope = span.makeCurrent()) {
+        // Call proxy_echo
+        HttpRequest.Builder echoBuilder = HttpRequest.newBuilder()
+            .uri(URI.create(baseUrl + "proxy_echo"))
+            .POST(HttpRequest.BodyPublishers.ofString(message));
+        injectTraceContext(echoBuilder);
+        addDaprApiToken(echoBuilder);
+        HttpResponse<byte[]> echoResponse =
+            httpClient.send(echoBuilder.build(), HttpResponse.BodyHandlers.ofByteArray());
+        System.out.println(new String(echoResponse.body()));
+
+        // Call proxy_sleep
+        HttpRequest.Builder sleepBuilder = HttpRequest.newBuilder()
+            .uri(URI.create(baseUrl + "proxy_sleep"))
+            .POST(HttpRequest.BodyPublishers.noBody());
+        injectTraceContext(sleepBuilder);
+        addDaprApiToken(sleepBuilder);
+        httpClient.send(sleepBuilder.build(), HttpResponse.BodyHandlers.discarding());
+      }
+    }
+
+    span.end();
+    openTelemetrySdk.getSdkTracerProvider().shutdown();
+    Validation.validate();
+    System.out.println("Done");
+    System.exit(0);
+  }
+
+  private static void injectTraceContext(HttpRequest.Builder builder) {
+    TextMapSetter<HttpRequest.Builder> setter = HttpRequest.Builder::header;
+    GlobalOpenTelemetry.getPropagators().getTextMapPropagator()
+        .inject(Context.current(), builder, setter);
+  }
+
+  private static void addDaprApiToken(HttpRequest.Builder builder) {
+    String token = Properties.API_TOKEN.get();
+    if (token != null) {
+      builder.header("dapr-api-token", token);
     }
   }
 }
