@@ -240,20 +240,20 @@ The Dapr clients are also within a try-with-resource block to properly close the
 <!-- STEP
 name: Check state example
 expected_stdout_lines:
-  - "== APP == Waiting for Dapr sidecar ..."
-  - "== APP == Dapr sidecar is ready."
-  - "== APP == Insert key: 1, data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}"
-  - "== APP == Insert key: 2, data: Listing{propertyType='row-house', id=1002, city='Seattle', state='WA'}"
-  - "== APP == Insert key: 3, data: Listing{propertyType='apartment', id=1003, city='Portland', state='OR'}"
-  - "== APP == Insert key: 4, data: Listing{propertyType='apartment', id=1001, city='Portland', state='OR'}"
-  - "== APP == Found 3 items."
-  - "== APP == Key: 3"
-  - "== APP == Data: Listing{propertyType='apartment', id=1003, city='Portland', state='OR'}"
-  - "== APP == Key: 4"
-  - "== APP == Data: Listing{propertyType='apartment', id=1001, city='Portland', state='OR'}"
-  - "== APP == Key: 1"
-  - "== APP == Data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}"
-  - "== APP == Done"
+  - "Waiting for Dapr sidecar ..."
+  - "Dapr sidecar is ready."
+  - "Insert key: 1, data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}"
+  - "Insert key: 2, data: Listing{propertyType='row-house', id=1002, city='Seattle', state='WA'}"
+  - "Insert key: 3, data: Listing{propertyType='apartment', id=1003, city='Portland', state='OR'}"
+  - "Insert key: 4, data: Listing{propertyType='apartment', id=1001, city='Portland', state='OR'}"
+  - "Found 3 items."
+  - "Key: 3"
+  - "Data: Listing{propertyType='apartment', id=1003, city='Portland', state='OR'}"
+  - "Key: 4"
+  - "Data: Listing{propertyType='apartment', id=1001, city='Portland', state='OR'}"
+  - "Key: 1"
+  - "Data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}"
+  - "Done"
 background: true
 sleep: 10 
 -->
@@ -268,20 +268,20 @@ dapr run --resources-path ./components/state --app-id query-state-example -H 360
 Once running, the QuerySaveState example should print the output as follows:
 
 ```txt
-== APP == Waiting for Dapr sidecar ...
-== APP == Dapr sidecar is ready.
-== APP == Insert key: 1, data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}
-== APP == Insert key: 2, data: Listing{propertyType='row-house', id=1002, city='Seattle', state='WA'}
-== APP == Insert key: 3, data: Listing{propertyType='apartment', id=1003, city='Portland', state='OR'}
-== APP == Insert key: 4, data: Listing{propertyType='apartment', id=1001, city='Portland', state='OR'}
-== APP == Found 3 items.
-== APP == Key: 3
-== APP == Data: Listing{propertyType='apartment', id=1003, city='Portland', state='OR'}
-== APP == Key: 4
-== APP == Data: Listing{propertyType='apartment', id=1001, city='Portland', state='OR'}
-== APP == Key: 1
-== APP == Data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}
-== APP == Done
+Waiting for Dapr sidecar ...
+Dapr sidecar is ready.
+Insert key: 1, data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}
+Insert key: 2, data: Listing{propertyType='row-house', id=1002, city='Seattle', state='WA'}
+Insert key: 3, data: Listing{propertyType='apartment', id=1003, city='Portland', state='OR'}
+Insert key: 4, data: Listing{propertyType='apartment', id=1001, city='Portland', state='OR'}
+Found 3 items.
+Key: 3
+Data: Listing{propertyType='apartment', id=1003, city='Portland', state='OR'}
+Key: 4
+Data: Listing{propertyType='apartment', id=1001, city='Portland', state='OR'}
+Key: 1
+Data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}
+Done
 ```
 Note that the output is in descending order of the field `id`, and all the `propertyType` field values are the same `apartment`.
 

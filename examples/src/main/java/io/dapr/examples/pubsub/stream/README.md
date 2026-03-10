@@ -119,8 +119,8 @@ Execute the following command to run the raw data Subscriber example:
 <!-- STEP
 name: Run Subscriber
 expected_stdout_lines:
-  - '== APP == Subscriber got: This is message #0'
-  - '== APP == Subscriber got: This is message #1'
+  - 'Subscriber got: This is message #0'
+  - 'Subscriber got: This is message #1'
 background: true
 sleep: 15
 timeout_seconds: 30
@@ -143,8 +143,8 @@ Once the subscriber is running, run the publisher in a new terminal to see the e
 <!-- STEP
 name: Run Publisher
 expected_stdout_lines:
-  - '== APP == Published message: This is message #0'
-  - '== APP == Published message: This is message #1'
+  - 'Published message: This is message #0'
+  - 'Published message: This is message #1'
 background: true
 sleep: 15
 timeout_seconds: 30
