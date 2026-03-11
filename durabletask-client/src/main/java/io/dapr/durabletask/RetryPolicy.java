@@ -14,8 +14,9 @@ limitations under the License.
 package io.dapr.durabletask;
 
 import javax.annotation.Nullable;
+
 import java.time.Duration;
-import java.util.Objects;
+import java.util.Random;
 
 /**
  * A declarative retry policy that can be configured for activity or sub-orchestration calls.
@@ -205,5 +206,23 @@ public final class RetryPolicy {
    */
   public double getJitterFactor() {
     return this.jitterFactor;
+  }
+
+  /**
+   * Applies jitter to a delay value, reducing it by a deterministic random fraction
+   * in [0, jitterFactor). The result is guaranteed to be at least 1ms.
+   *
+   * @param delayInMillis the base delay in milliseconds (must be positive)
+   * @param jitterFactor  the jitter factor in [0.0, 1.0]
+   * @param seed          deterministic seed for the random number generator
+   * @return the jittered delay in milliseconds, always >= 1
+   */
+  static long applyJitter(long delayInMillis, double jitterFactor, long seed) {
+    if (jitterFactor > 0.0) {
+      double reduction = new Random(seed).nextDouble() * jitterFactor;
+      delayInMillis = (long) (delayInMillis * (1.0 - reduction));
+      return Math.max(delayInMillis, 1);
+    }
+    return delayInMillis;
   }
 }

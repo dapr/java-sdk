@@ -16,7 +16,6 @@ package io.dapr.durabletask;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -82,18 +81,26 @@ public class RetryPolicyTest {
 
 
   /**
-
    * With jitterFactor=0 the delay must be unchanged.
    */
   @Test
   void zeroJitterLeavesDelayUnchanged() {
     long baseDelayMillis = 3000L;
-    double jitterFactor = 0.0;
+    assertEquals(baseDelayMillis, RetryPolicy.applyJitter(baseDelayMillis, 0.0, 42L));
+  }
 
-    long seed = 42L;
-    double reduction = new Random(seed).nextDouble() * jitterFactor;
-    long reduced = (long) (baseDelayMillis * (1.0 - reduction));
+  /**
+   * With jitterFactor=1.0 the delay must never drop below 1ms,
+   * even when nextDouble() approaches 1.0.
+   */
+  @Test
+  void jitterWithMaxFactorNeverProducesZeroDelay() {
+    long baseDelayMillis = 1L; // smallest meaningful delay
 
-    assertEquals(baseDelayMillis, reduced);
+    for (int seed = 0; seed < 1000; seed++) {
+      long result = RetryPolicy.applyJitter(baseDelayMillis, 1.0, seed);
+      assertTrue(result >= 1,
+          "Delay must be at least 1ms, but was " + result + " for seed " + seed);
+    }
   }
 }
