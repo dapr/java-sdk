@@ -72,6 +72,7 @@ public class DaprWorkflowPlanner implements Planner {
    * The {@code agentRunId} is forwarded to the planner so it can set
    * {@link DaprAgentContextHolder} on the executing thread before tool calls begin.
    */
+  @SuppressWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
   public record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation, String agentRunId) {
   }
 
@@ -353,6 +354,7 @@ public class DaprWorkflowPlanner implements Planner {
    *
    * @return the agentic scope
    */
+  @SuppressWarnings("EI_EXPOSE_REP")
   public AgenticScope getAgenticScope() {
     return agenticScope;
   }
@@ -436,7 +438,7 @@ public class DaprWorkflowPlanner implements Planner {
    * @param conditions the conditions map
    */
   public void setConditions(Map<Integer, Predicate<AgenticScope>> conditions) {
-    this.conditions = conditions;
+    this.conditions = conditions == null ? Collections.emptyMap() : Map.copyOf(conditions);
   }
 
   private void cleanup() {

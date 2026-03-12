@@ -16,6 +16,7 @@ package io.quarkiverse.dapr.langchain4j.agent.workflow;
 import io.quarkiverse.dapr.langchain4j.agent.activities.LlmCallOutput;
 import io.quarkiverse.dapr.langchain4j.agent.activities.ToolCallOutput;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,4 +34,14 @@ public record AgentRunOutput(
     String agentName,
     List<ToolCallOutput> toolCalls,
     List<LlmCallOutput> llmCalls) {
+
+  /**
+   * Creates an AgentRunOutput with unmodifiable defensive copies of the lists.
+   */
+  public AgentRunOutput(String agentName, List<ToolCallOutput> toolCalls,
+      List<LlmCallOutput> llmCalls) {
+    this.agentName = agentName;
+    this.toolCalls = toolCalls == null ? null : Collections.unmodifiableList(List.copyOf(toolCalls));
+    this.llmCalls = llmCalls == null ? null : Collections.unmodifiableList(List.copyOf(llmCalls));
+  }
 }

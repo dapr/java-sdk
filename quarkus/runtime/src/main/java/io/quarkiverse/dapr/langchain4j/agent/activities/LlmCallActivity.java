@@ -126,7 +126,7 @@ public class LlmCallActivity implements WorkflowActivity {
         Object text = aiMessage.getClass().getMethod("text").invoke(aiMessage);
         return String.valueOf(text);
       }
-    } catch (Exception ignored) {
+    } catch (ReflectiveOperationException ignored) {
       // Not a ChatResponse or missing expected methods — fall through.
     }
     return String.valueOf(result);

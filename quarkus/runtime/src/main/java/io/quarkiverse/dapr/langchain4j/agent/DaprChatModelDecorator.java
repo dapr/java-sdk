@@ -234,12 +234,12 @@ public class DaprChatModelDecorator implements ChatModel {
         if ("UserMessage".equals(msg.getClass().getSimpleName())) {
           try {
             return (String) msg.getClass().getMethod("singleText").invoke(msg);
-          } catch (Exception ex) {
+          } catch (ReflectiveOperationException ex) {
             return String.valueOf(msg);
           }
         }
       }
-    } catch (Exception ignored) {
+    } catch (ReflectiveOperationException ignored) {
       // intentionally empty
     }
     return null;
@@ -259,12 +259,12 @@ public class DaprChatModelDecorator implements ChatModel {
         if ("SystemMessage".equals(msg.getClass().getSimpleName())) {
           try {
             return (String) msg.getClass().getMethod("text").invoke(msg);
-          } catch (Exception ex) {
+          } catch (ReflectiveOperationException ex) {
             return String.valueOf(msg);
           }
         }
       }
-    } catch (Exception ignored) {
+    } catch (ReflectiveOperationException ignored) {
       // intentionally empty
     }
     return null;

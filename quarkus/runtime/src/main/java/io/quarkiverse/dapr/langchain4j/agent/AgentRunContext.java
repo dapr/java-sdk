@@ -14,6 +14,7 @@ limitations under the License.
 package io.quarkiverse.dapr.langchain4j.agent;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,11 +33,38 @@ public class AgentRunContext {
    * Holds all the information needed for {@code ToolCallActivity} to execute the tool
    * and unblock the waiting agent thread.
    */
+  @SuppressWarnings("EI_EXPOSE_REP")
   public record PendingCall(
       Object target,
       Method method,
       Object[] args,
       CompletableFuture<Object> resultFuture) {
+
+    /**
+     * Creates a PendingCall with a defensive copy of args.
+     *
+     * @param target       the object instance on which the method will be invoked
+     * @param method       the reflective method handle
+     * @param args         the arguments to pass to the method
+     * @param resultFuture future to complete when the call finishes
+     */
+    public PendingCall(Object target, Method method, Object[] args,
+        CompletableFuture<Object> resultFuture) {
+      this.target = target;
+      this.method = method;
+      this.args = args == null ? null : Arrays.copyOf(args, args.length);
+      this.resultFuture = resultFuture;
+    }
+
+    /**
+     * Returns a defensive copy of args.
+     *
+     * @return copy of args array
+     */
+    @Override
+    public Object[] args() {
+      return args == null ? null : Arrays.copyOf(args, args.length);
+    }
   }
 
   private final String agentRunId;
