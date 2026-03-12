@@ -169,7 +169,7 @@ public class DaprAgenticProcessor {
    */
   @BuildStep
   IndexDependencyBuildItem indexRuntimeModule() {
-    return new IndexDependencyBuildItem("io.quarkiverse.dapr", "quarkus-agentic-dapr");
+    return new IndexDependencyBuildItem("io.dapr.quarkus", "quarkus-agentic-dapr");
   }
 
   /**

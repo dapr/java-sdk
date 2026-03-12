@@ -50,6 +50,33 @@
                 <artifactId>commons-io</artifactId>
                 <version>2.20.0</version>
             </dependency>
+            <!-- Override the root POM's JUnit 5.11.4 pinning.
+                 Quarkus 3.31.2 uses JUnit 6.0.2; the root POM explicitly pins
+                 junit-jupiter artifacts to 5.11.4 which is incompatible with
+                 junit-platform 6.x (missing Namespace.getParts()). Explicit
+                 entries here override the parent POM's dependencyManagement. -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>6.0.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>6.0.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>6.0.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>6.0.2</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
