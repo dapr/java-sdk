@@ -23,10 +23,10 @@ public class DaprClientProperties {
   public static final int DEFAULT_HTTP_PORT = 3500;
   public static final int DEFAULT_GRPC_PORT = 50001;
 
-  private String httpEndpoint = DEFAULT_HTTP_ENDPOINT;
-  private String grpcEndpoint = DEFAULT_GRPC_ENDPOINT;
-  private Integer httpPort = DEFAULT_HTTP_PORT;
-  private Integer grpcPort = DEFAULT_GRPC_PORT;
+  private String httpEndpoint;
+  private String grpcEndpoint;
+  private Integer httpPort;
+  private Integer grpcPort;
   private String apiToken;
 
   /**
@@ -53,19 +53,19 @@ public class DaprClientProperties {
   }
 
   public String getHttpEndpoint() {
-    return httpEndpoint;
+    return (httpEndpoint != null) ? httpEndpoint : DEFAULT_HTTP_ENDPOINT;
   }
 
   public String getGrpcEndpoint() {
-    return grpcEndpoint;
+    return (grpcEndpoint != null) ? grpcEndpoint : DEFAULT_GRPC_ENDPOINT;
   }
 
   public Integer getHttpPort() {
-    return httpPort;
+    return (httpPort != null) ? httpPort : DEFAULT_HTTP_PORT;
   }
 
   public Integer getGrpcPort() {
-    return grpcPort;
+    return (grpcPort != null) ? grpcPort : DEFAULT_GRPC_PORT;
   }
 
   public void setHttpEndpoint(String httpEndpoint) {
