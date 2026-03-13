@@ -197,8 +197,6 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
 
             this.workerPool.submit(new ActivityRunner(workItem, taskActivityExecutor, sidecarClient, tracer));
 
-          } else if (requestType == OrchestratorService.WorkItem.RequestCase.HEALTHPING) {
-            // No-op
           } else {
             logger.log(Level.WARNING,
                 "Received and dropped an unknown '{0}' work-item from the sidecar.",
