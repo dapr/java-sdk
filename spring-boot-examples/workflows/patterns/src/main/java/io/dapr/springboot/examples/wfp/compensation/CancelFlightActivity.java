@@ -32,6 +32,7 @@ public class CancelFlightActivity implements WorkflowActivity {
     try {
       TimeUnit.SECONDS.sleep(2);
     } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
 

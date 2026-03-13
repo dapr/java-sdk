@@ -62,7 +62,7 @@ public class BookTripWorkflow implements Workflow {
 
       } catch (TaskFailedException e) {
         ctx.getLogger().info("******** executing compensation logic ********");
-        ctx.getLogger().error("Activity failed: {}", e.getMessage());
+        ctx.getLogger().error("Activity failed", e);
 
         Collections.reverse(compensations);
         for (String compensation : compensations) {
@@ -87,7 +87,7 @@ public class BookTripWorkflow implements Workflow {
                 break;
             }
           } catch (TaskFailedException ex) {
-            ctx.getLogger().error("Activity failed during compensation: {}", ex.getMessage());
+            ctx.getLogger().error("Activity failed during compensation", ex);
           }
         }
         ctx.complete("Workflow failed, compensation applied");
