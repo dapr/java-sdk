@@ -56,10 +56,6 @@ public class DaprClientGrpcBaggageTest {
 
   private DaprGrpc.DaprStub daprStub;
 
-  @AfterEach
-  public void tearDown() {
-  }
-
   @Test
   public void testBaggagePropagated() throws IOException {
     String expectedBaggage = "key1=value1,key2=value2";
