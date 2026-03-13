@@ -68,7 +68,7 @@ public class DaprClientGrpcBaggageTest {
     Context context = Context.empty().put(Headers.BAGGAGE, expectedBaggage);
 
     Mono<Void> result = invoke()
-        .contextWrite(it -> it.putAll((ContextView) context));
+        .contextWrite(it -> it.putAll(context));
     result.block();
 
     assertEquals(expectedBaggage, receivedBaggage.get());
@@ -85,7 +85,7 @@ public class DaprClientGrpcBaggageTest {
     Context context = Context.empty();
 
     Mono<Void> result = invoke()
-        .contextWrite(it -> it.putAll((ContextView) context));
+        .contextWrite(it -> it.putAll(context));
     result.block();
 
     assertNull(receivedBaggage.get());
@@ -103,7 +103,7 @@ public class DaprClientGrpcBaggageTest {
     Context context = Context.empty().put(Headers.BAGGAGE, expectedBaggage);
 
     Mono<Void> result = invoke()
-        .contextWrite(it -> it.putAll((ContextView) context));
+        .contextWrite(it -> it.putAll(context));
     result.block();
 
     assertEquals(expectedBaggage, receivedBaggage.get());
@@ -124,7 +124,7 @@ public class DaprClientGrpcBaggageTest {
         .put("traceparent", traceparent);
 
     Mono<Void> result = invoke()
-        .contextWrite(it -> it.putAll((ContextView) context));
+        .contextWrite(it -> it.putAll(context));
     result.block();
 
     assertEquals(expectedBaggage, receivedBaggage.get());
