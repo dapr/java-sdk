@@ -17,7 +17,6 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.Headers;
 import io.dapr.client.domain.HttpExtension;
-import io.dapr.utils.TypeRef;
 import reactor.util.context.Context;
 
 /**
