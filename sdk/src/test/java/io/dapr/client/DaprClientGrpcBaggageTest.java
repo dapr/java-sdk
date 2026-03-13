@@ -159,7 +159,8 @@ public class DaprClientGrpcBaggageTest {
         .addService(service)
         .build().start());
 
-    ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+    ManagedChannel channel = grpcCleanup.register(
+        InProcessChannelBuilder.forName(serverName).directExecutor().build());
     daprStub = DaprGrpc.newStub(channel);
   }
 
