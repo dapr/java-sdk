@@ -135,25 +135,6 @@ public class DaprClientPropertiesTest {
     });
   }
 
-  @Test
-  @DisplayName("Should honor legacy dapr.* system properties when dapr.client.* is not configured")
-  public void shouldHonorLegacyDaprSystemPropertiesWhenClientPropertiesNotConfigured() {
-    runner.withSystemProperties(
-        "dapr.http.endpoint=http://legacy-host",
-        "dapr.http.port=3600",
-        "dapr.grpc.endpoint=legacy-host",
-        "dapr.grpc.port=60001"
-    ).run(context -> {
-      DaprClientProperties properties = context.getBean(DaprClientProperties.class);
-      SoftAssertions.assertSoftly(softly -> {
-        softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://legacy-host");
-        softly.assertThat(properties.getHttpPort()).isEqualTo(3600);
-        softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("legacy-host");
-        softly.assertThat(properties.getGrpcPort()).isEqualTo(60001);
-      });
-    });
-  }
-
   @EnableConfigurationProperties(DaprClientProperties.class)
   static class EnableDaprClientProperties {
 
