@@ -15,6 +15,7 @@ package io.dapr.internal.grpc;
 
 import io.dapr.internal.grpc.interceptors.DaprApiTokenInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprAppIdInterceptor;
+import io.dapr.internal.grpc.interceptors.DaprBaggageInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprMetadataReceiverInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprTimeoutInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprTracingInterceptor;
@@ -126,6 +127,7 @@ public class DaprClientGrpcInterceptors {
         new DaprApiTokenInterceptor(this.daprApiToken),
         new DaprTimeoutInterceptor(this.timeoutPolicy),
         new DaprTracingInterceptor(context),
+        new DaprBaggageInterceptor(context),
         new DaprMetadataReceiverInterceptor(metadataConsumer));
   }
 
