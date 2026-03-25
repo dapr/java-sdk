@@ -63,4 +63,8 @@ jobs:
           # Normalize release version by stripping an optional leading 'v'
           REL_VERSION="${REL_VERSION#v}"
           TAG="v${REL_VERSION}"
-          gh release create "${TAG}" --generate-notes
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists, skipping creation."
+          else
+            gh release create "${TAG}" --generate-notes
+          fi
