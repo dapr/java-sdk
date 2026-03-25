@@ -58,4 +58,9 @@ jobs:
         if: ${{ !endsWith(inputs.rel_version, '-SNAPSHOT') && !contains(inputs.rel_version, '-rc-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
-        run: gh release create "v${{ inputs.rel_version }}" --generate-notes
+          REL_VERSION: ${{ inputs.rel_version }}
+        run: |
+          # Normalize release version by stripping an optional leading 'v'
+          REL_VERSION="${REL_VERSION#v}"
+          TAG="v${REL_VERSION}"
+          gh release create "${TAG}" --generate-notes
