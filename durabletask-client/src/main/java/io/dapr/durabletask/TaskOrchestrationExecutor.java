@@ -142,7 +142,7 @@ public final class TaskOrchestrationExecutor {
     private String appId;
 
     // LinkedHashMap to maintain insertion order when returning the list of pending actions
-    private final Map<Integer, OrchestratorActions.OrchestratorAction> pendingActions = new LinkedHashMap<>();
+    private final Map<Integer, OrchestratorActions.WorkflowAction> pendingActions = new LinkedHashMap<>();
     private final Map<Integer, TaskRecord<?>> openTasks = new HashMap<>();
     private final Map<String, Queue<TaskRecord<?>>> outstandingEvents = new LinkedHashMap<>();
     private final List<HistoryEvents.HistoryEvent> unprocessedEvents = new LinkedList<>();
@@ -368,7 +368,7 @@ public final class TaskOrchestrationExecutor {
 
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
-        OrchestratorActions.OrchestratorAction.Builder actionBuilder = OrchestratorActions.OrchestratorAction
+        OrchestratorActions.WorkflowAction.Builder actionBuilder = OrchestratorActions.WorkflowAction
             .newBuilder()
             .setId(id)
             .setScheduleTask(scheduleTaskBuilder);
@@ -463,8 +463,8 @@ public final class TaskOrchestrationExecutor {
 
       int id = this.sequenceNumber++;
       String serializedEventData = this.dataConverter.serialize(eventData);
-      Orchestration.OrchestrationInstance.Builder orchestrationInstanceBuilder =
-          Orchestration.OrchestrationInstance.newBuilder()
+      Orchestration.WorkflowInstance.Builder orchestrationInstanceBuilder =
+          Orchestration.WorkflowInstance.newBuilder()
             .setInstanceId(instanceId);
       OrchestratorActions.SendEventAction.Builder builder = OrchestratorActions
           .SendEventAction.newBuilder().setInstance(orchestrationInstanceBuilder)
@@ -472,7 +472,7 @@ public final class TaskOrchestrationExecutor {
       if (serializedEventData != null) {
         builder.setData(StringValue.of(serializedEventData));
       }
-      OrchestratorActions.OrchestratorAction.Builder actionBuilder = OrchestratorActions.OrchestratorAction.newBuilder()
+      OrchestratorActions.WorkflowAction.Builder actionBuilder = OrchestratorActions.WorkflowAction.newBuilder()
           .setId(id)
           .setSendEvent(builder);
 
@@ -505,8 +505,8 @@ public final class TaskOrchestrationExecutor {
       }
 
       String serializedInput = this.dataConverter.serialize(input);
-      OrchestratorActions.CreateSubOrchestrationAction.Builder createSubOrchestrationActionBuilder =
-          OrchestratorActions.CreateSubOrchestrationAction
+      OrchestratorActions.CreateChildWorkflowAction.Builder createSubOrchestrationActionBuilder =
+          OrchestratorActions.CreateChildWorkflowAction
           .newBuilder().setName(name);
       if (serializedInput != null) {
         createSubOrchestrationActionBuilder.setInput(StringValue.of(serializedInput));
@@ -535,10 +535,10 @@ public final class TaskOrchestrationExecutor {
 
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
-        OrchestratorActions.OrchestratorAction.Builder actionBuilder = OrchestratorActions.OrchestratorAction
+        OrchestratorActions.WorkflowAction.Builder actionBuilder = OrchestratorActions.WorkflowAction
             .newBuilder()
             .setId(id)
-            .setCreateSubOrchestration(createSubOrchestrationActionBuilder);
+            .setCreateChildWorkflow(createSubOrchestrationActionBuilder);
 
         // Set router on the OrchestratorAction for cross-app routing
         if (hasSourceAppId()) {
@@ -641,7 +641,7 @@ public final class TaskOrchestrationExecutor {
       // The history shows that this orchestrator created a durable task in a previous execution.
       // We can therefore remove it from the map of pending actions. If we can't find the pending
       // action, then we assume a non-deterministic code violation in the orchestrator.
-      OrchestratorActions.OrchestratorAction taskAction = this.pendingActions.remove(taskId);
+      OrchestratorActions.WorkflowAction taskAction = this.pendingActions.remove(taskId);
       if (taskAction == null) {
         String message = String.format(
             "Non-deterministic orchestrator detected: a history event scheduling an activity task with sequence "
@@ -797,7 +797,7 @@ public final class TaskOrchestrationExecutor {
 
     private CompletableTask<Void> createInstantTimer(String name, int id, Instant fireAt) {
       Timestamp ts = DataConverter.getTimestampFromInstant(fireAt);
-      this.pendingActions.put(id, OrchestratorActions.OrchestratorAction.newBuilder()
+      this.pendingActions.put(id, OrchestratorActions.WorkflowAction.newBuilder()
           .setId(id)
           .setCreateTimer(OrchestratorActions.CreateTimerAction.newBuilder()
               .setName(name).setFireAt(ts))
@@ -825,7 +825,7 @@ public final class TaskOrchestrationExecutor {
       // The history shows that this orchestrator created a durable timer in a previous execution.
       // We can therefore remove it from the map of pending actions. If we can't find the pending
       // action, then we assume a non-deterministic code violation in the orchestrator.
-      OrchestratorActions.OrchestratorAction timerAction = this.pendingActions.remove(timerEventId);
+      OrchestratorActions.WorkflowAction timerAction = this.pendingActions.remove(timerEventId);
       if (timerAction == null) {
         String message = String.format(
             "Non-deterministic orchestrator detected: a history event creating a timer with ID %d and "
@@ -860,9 +860,9 @@ public final class TaskOrchestrationExecutor {
 
     private void handleSubOrchestrationCreated(HistoryEvents.HistoryEvent e) {
       int taskId = e.getEventId();
-      HistoryEvents.SubOrchestrationInstanceCreatedEvent subOrchestrationInstanceCreated =
-          e.getSubOrchestrationInstanceCreated();
-      OrchestratorActions.OrchestratorAction taskAction = this.pendingActions.remove(taskId);
+      HistoryEvents.ChildWorkflowInstanceCreatedEvent subOrchestrationInstanceCreated =
+          e.getChildWorkflowInstanceCreated();
+      OrchestratorActions.WorkflowAction taskAction = this.pendingActions.remove(taskId);
       if (taskAction == null) {
         String message = String.format(
             "Non-deterministic orchestrator detected: a history event scheduling an sub-orchestration task "
@@ -876,8 +876,8 @@ public final class TaskOrchestrationExecutor {
     }
 
     private void handleSubOrchestrationCompleted(HistoryEvents.HistoryEvent e) {
-      HistoryEvents.SubOrchestrationInstanceCompletedEvent subOrchestrationInstanceCompletedEvent =
-          e.getSubOrchestrationInstanceCompleted();
+      HistoryEvents.ChildWorkflowInstanceCompletedEvent subOrchestrationInstanceCompletedEvent =
+          e.getChildWorkflowInstanceCompleted();
       int taskId = subOrchestrationInstanceCompletedEvent.getTaskScheduledId();
       TaskRecord<?> record = this.openTasks.remove(taskId);
       if (record == null) {
@@ -908,8 +908,8 @@ public final class TaskOrchestrationExecutor {
     }
 
     private void handleSubOrchestrationFailed(HistoryEvents.HistoryEvent e) {
-      HistoryEvents.SubOrchestrationInstanceFailedEvent subOrchestrationInstanceFailedEvent =
-          e.getSubOrchestrationInstanceFailed();
+      HistoryEvents.ChildWorkflowInstanceFailedEvent subOrchestrationInstanceFailedEvent =
+          e.getChildWorkflowInstanceFailed();
       int taskId = subOrchestrationInstanceFailedEvent.getTaskScheduledId();
       TaskRecord<?> record = this.openTasks.remove(taskId);
       if (record == null) {
@@ -965,9 +965,9 @@ public final class TaskOrchestrationExecutor {
       Helpers.throwIfOrchestratorComplete(this.isComplete);
 
 
-      OrchestratorActions.CompleteOrchestrationAction.Builder builder = OrchestratorActions.CompleteOrchestrationAction
+      OrchestratorActions.CompleteWorkflowAction.Builder builder = OrchestratorActions.CompleteWorkflowAction
           .newBuilder();
-      builder.setOrchestrationStatus(runtimeStatus);
+      builder.setWorkflowStatus(runtimeStatus);
 
       if (rawOutput != null) {
         builder.setResult(StringValue.of(rawOutput));
@@ -986,10 +986,10 @@ public final class TaskOrchestrationExecutor {
       }
 
       int id = this.sequenceNumber++;
-      OrchestratorActions.OrchestratorAction.Builder actionBuilder = OrchestratorActions.OrchestratorAction
+      OrchestratorActions.WorkflowAction.Builder actionBuilder = OrchestratorActions.WorkflowAction
           .newBuilder()
           .setId(id)
-          .setCompleteOrchestration(builder.build());
+          .setCompleteWorkflow(builder.build());
 
       // Add router to completion action for cross-app routing back to parent
       if (hasSourceAppId()) {
@@ -1003,7 +1003,7 @@ public final class TaskOrchestrationExecutor {
       this.isComplete = true;
     }
 
-    private void addCarryoverEvents(OrchestratorActions.CompleteOrchestrationAction.Builder builder) {
+    private void addCarryoverEvents(OrchestratorActions.CompleteWorkflowAction.Builder builder) {
       // Add historyEvent in the unprocessedEvents buffer
       // Add historyEvent in the new event list that haven't been added to the buffer.
       // We don't check the event in the pass event list to avoid duplicated events.
@@ -1040,20 +1040,20 @@ public final class TaskOrchestrationExecutor {
       } else {
         this.logger.fine(() -> this.instanceId + ": Processing event: " + e.getEventTypeCase());
         switch (e.getEventTypeCase()) {
-          case ORCHESTRATORSTARTED:
+          case WORKFLOWSTARTED:
             Instant instant = DataConverter.getInstantFromTimestamp(e.getTimestamp());
             this.setCurrentInstant(instant);
 
-            if (StringUtils.isNotEmpty(e.getOrchestratorStarted().getVersion().getName())) {
-              this.orchestratorVersionName = e.getOrchestratorStarted().getVersion().getName();
+            if (StringUtils.isNotEmpty(e.getWorkflowStarted().getVersion().getName())) {
+              this.orchestratorVersionName = e.getWorkflowStarted().getVersion().getName();
             }
-            for (var patch : e.getOrchestratorStarted().getVersion().getPatchesList()) {
+            for (var patch : e.getWorkflowStarted().getVersion().getPatchesList()) {
               this.historyPatches.put(patch, true);
             }
 
             this.logger.fine(() -> this.instanceId + ": Workflow orchestrator started");
             break;
-          case ORCHESTRATORCOMPLETED:
+          case WORKFLOWCOMPLETED:
             // No action needed
             this.logger.fine(() -> this.instanceId + ": Workflow orchestrator completed");
             break;
@@ -1061,7 +1061,7 @@ public final class TaskOrchestrationExecutor {
             HistoryEvents.ExecutionStartedEvent executionStarted = e.getExecutionStarted();
             this.setName(executionStarted.getName());
             this.setInput(executionStarted.getInput().getValue());
-            this.setInstanceId(executionStarted.getOrchestrationInstance().getInstanceId());
+            this.setInstanceId(executionStarted.getWorkflowInstance().getInstanceId());
             this.logger.fine(() -> this.instanceId + ": Workflow execution started");
             // For cross-app suborchestrations, if the router has a target, use that as our appID
             // since that's where we're actually executing
@@ -1122,13 +1122,13 @@ public final class TaskOrchestrationExecutor {
           case TIMERFIRED:
             this.handleTimerFired(e);
             break;
-          case SUBORCHESTRATIONINSTANCECREATED:
+          case CHILDWORKFLOWINSTANCECREATED:
             this.handleSubOrchestrationCreated(e);
             break;
-          case SUBORCHESTRATIONINSTANCECOMPLETED:
+          case CHILDWORKFLOWINSTANCECOMPLETED:
             this.handleSubOrchestrationCompleted(e);
             break;
-          case SUBORCHESTRATIONINSTANCEFAILED:
+          case CHILDWORKFLOWINSTANCEFAILED:
             this.handleSubOrchestrationFailed(e);
             break;
           case EVENTRAISED:
@@ -1149,14 +1149,14 @@ public final class TaskOrchestrationExecutor {
     public void setVersionNotRegistered() {
       this.pendingActions.clear();
 
-      OrchestratorActions.CompleteOrchestrationAction.Builder builder = OrchestratorActions.CompleteOrchestrationAction
+      OrchestratorActions.CompleteWorkflowAction.Builder builder = OrchestratorActions.CompleteWorkflowAction
           .newBuilder();
-      builder.setOrchestrationStatus(Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_STALLED);
+      builder.setWorkflowStatus(Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_STALLED);
 
       int id = this.sequenceNumber++;
-      OrchestratorActions.OrchestratorAction action = OrchestratorActions.OrchestratorAction.newBuilder()
+      OrchestratorActions.WorkflowAction action = OrchestratorActions.WorkflowAction.newBuilder()
           .setId(id)
-          .setCompleteOrchestration(builder.build())
+          .setCompleteWorkflow(builder.build())
           .build();
       this.pendingActions.put(id, action);
 
