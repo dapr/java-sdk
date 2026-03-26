@@ -28,6 +28,7 @@ import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.awaitility.Awaitility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -43,9 +44,12 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.dapr.it.springboot4.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -93,63 +97,63 @@ public class DaprJobsIT {
 
   @Test
   public void testJobScheduleCreationWithDueTime() {
+    String jobName = randomJobName();
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             .withZone(ZoneOffset.UTC);
 
-    Instant currentTime = Instant.now();
-    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime).setOverwrite(true)).block();
+    Instant currentTime = newDueTime();
+    daprClient.scheduleJob(new ScheduleJobRequest(jobName, currentTime).setOverwrite(true)).block();
 
-    GetJobResponse getJobResponse =
-        daprClient.getJob(new GetJobRequest("Job")).block();
+    GetJobResponse getJobResponse = waitForJob(jobName);
 
-    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
 
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
-    assertEquals("Job", getJobResponse.getName());
+    assertEquals(jobName, getJobResponse.getName());
   }
 
   @Test
   public void testJobScheduleCreationWithSchedule() {
+    String jobName = randomJobName();
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             .withZone(ZoneOffset.UTC);
 
-    Instant currentTime = Instant.now();
-    daprClient.scheduleJob(new ScheduleJobRequest("Job", JobSchedule.hourly())
+    Instant currentTime = newDueTime();
+    daprClient.scheduleJob(new ScheduleJobRequest(jobName, JobSchedule.hourly())
         .setDueTime(currentTime).setOverwrite(true)).block();
 
-    GetJobResponse getJobResponse =
-        daprClient.getJob(new GetJobRequest("Job")).block();
+    GetJobResponse getJobResponse = waitForJob(jobName);
 
-    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
 
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
-    assertEquals("Job", getJobResponse.getName());
+    assertEquals(jobName, getJobResponse.getName());
   }
 
   @Test
   public void testJobScheduleCreationWithAllParameters() {
-    Instant currentTime = Instant.now();
+    String jobName = randomJobName();
+    Instant currentTime = newDueTime();
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             .withZone(ZoneOffset.UTC);
 
     String cronExpression = "2 * 3 * * FRI";
 
-    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+    daprClient.scheduleJob(new ScheduleJobRequest(jobName, currentTime)
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
         .setOverwrite(true)
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
-    GetJobResponse getJobResponse =
-        daprClient.getJob(new GetJobRequest("Job")).block();
+    GetJobResponse getJobResponse = waitForJob(jobName);
 
-    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
 
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals("2 * 3 * * FRI", getJobResponse.getSchedule().getExpression());
-    assertEquals("Job", getJobResponse.getName());
+    assertEquals(jobName, getJobResponse.getName());
     assertEquals(Integer.valueOf(3), getJobResponse.getRepeats());
     assertEquals("Job data", new String(getJobResponse.getData()));
     assertEquals(iso8601Formatter.format(currentTime.plus(2, ChronoUnit.HOURS)),
@@ -158,36 +162,37 @@ public class DaprJobsIT {
 
   @Test
   public void testJobScheduleCreationWithDropFailurePolicy() {
-    Instant currentTime = Instant.now();
+    String jobName = randomJobName();
+    Instant currentTime = newDueTime();
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         .withZone(ZoneOffset.UTC);
 
     String cronExpression = "2 * 3 * * FRI";
 
-    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+    daprClient.scheduleJob(new ScheduleJobRequest(jobName, currentTime)
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
             .setFailurePolicy(new DropFailurePolicy())
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
-    GetJobResponse getJobResponse =
-        daprClient.getJob(new GetJobRequest("Job")).block();
+    GetJobResponse getJobResponse = waitForJob(jobName);
 
-    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
 
     assertEquals(FailurePolicyType.DROP, getJobResponse.getFailurePolicy().getFailurePolicyType());
   }
 
   @Test
   public void testJobScheduleCreationWithConstantFailurePolicy() {
-    Instant currentTime = Instant.now();
+    String jobName = randomJobName();
+    Instant currentTime = newDueTime();
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         .withZone(ZoneOffset.UTC);
 
     String cronExpression = "2 * 3 * * FRI";
 
-    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+    daprClient.scheduleJob(new ScheduleJobRequest(jobName, currentTime)
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
@@ -195,10 +200,9 @@ public class DaprJobsIT {
             .setDurationBetweenRetries(Duration.of(10, ChronoUnit.SECONDS)))
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
-    GetJobResponse getJobResponse =
-        daprClient.getJob(new GetJobRequest("Job")).block();
+    GetJobResponse getJobResponse = waitForJob(jobName);
 
-    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
+    daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
 
     ConstantFailurePolicy jobFailurePolicyConstant = (ConstantFailurePolicy) getJobResponse.getFailurePolicy();
     assertEquals(FailurePolicyType.CONSTANT, getJobResponse.getFailurePolicy().getFailurePolicyType());
@@ -209,17 +213,40 @@ public class DaprJobsIT {
 
   @Test
   public void testDeleteJobRequest() {
-    Instant currentTime = Instant.now();
+    String jobName = randomJobName();
+    Instant currentTime = newDueTime();
 
     String cronExpression = "2 * 3 * * FRI";
 
-    daprClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+    daprClient.scheduleJob(new ScheduleJobRequest(jobName, currentTime)
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
         .setOverwrite(true)
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
-    daprClient.deleteJob(new DeleteJobRequest("Job")).block();
+    waitForJob(jobName);
+    daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
+  }
+
+  private String randomJobName() {
+    return "job-" + UUID.randomUUID();
+  }
+
+  private Instant newDueTime() {
+    return Instant.now().plus(1, ChronoUnit.MINUTES);
+  }
+
+  private GetJobResponse waitForJob(String jobName) {
+    AtomicReference<GetJobResponse> responseRef = new AtomicReference<>();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofMillis(200))
+        .untilAsserted(() -> {
+          GetJobResponse response = daprClient.getJob(new GetJobRequest(jobName)).block();
+          assertNotNull(response);
+          responseRef.set(response);
+        });
+    return responseRef.get();
   }
 }

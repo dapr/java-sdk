@@ -18,10 +18,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -53,6 +55,12 @@ public class InputBindingController {
     return messagesReceived;
   }
 
+  @PostMapping(path = "/messages/clear")
+  public void clearMessages() {
+    messagesReceived.clear();
+    initialized.set(false);
+  }
+
   @GetMapping(path = "/")
   public String hello() {
     return "hello";
@@ -60,6 +68,13 @@ public class InputBindingController {
 
   @GetMapping(path = "/health")
   public void health() {
+  }
+
+  @GetMapping(path = "/github404")
+  public ResponseEntity<Map<String, String>> github404() {
+    return ResponseEntity.status(404).body(Map.of(
+        "message", "Not Found",
+        "documentation_url", "https://docs.github.com/rest"));
   }
 
   @GetMapping(path = "/initialized")

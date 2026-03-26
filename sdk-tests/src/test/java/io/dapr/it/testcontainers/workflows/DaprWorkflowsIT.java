@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.workflows;
 
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -57,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("testcontainers")
 public class DaprWorkflowsIT {
 
-  private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Network DAPR_NETWORK = TestContainerNetworks.WORKFLOWS_NETWORK;
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)

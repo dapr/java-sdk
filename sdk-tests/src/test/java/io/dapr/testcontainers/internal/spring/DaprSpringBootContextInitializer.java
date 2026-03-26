@@ -39,6 +39,7 @@ public class DaprSpringBootContextInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
   private static final String PROPERTY_SOURCE_NAME = "daprTestcontainersProperties";
+  private static final String CURRENT_TEST_CLASS_PROPERTY = "dapr.testcontainers.current-test-class";
 
   @Override
   public void initialize(ConfigurableApplicationContext applicationContext) {
@@ -59,11 +60,17 @@ public class DaprSpringBootContextInitializer
   }
 
   private DaprContainer findContainer() {
-    // Return the first container in the registry
-    // In a test scenario, there should only be one test class running at a time
-    return DaprSpringBootExtension.CONTAINER_REGISTRY.values().stream()
-        .findFirst()
-        .orElse(null);
+    String currentTestClass = System.getProperty(CURRENT_TEST_CLASS_PROPERTY);
+    if (currentTestClass != null) {
+      return DaprSpringBootExtension.CONTAINER_REGISTRY.entrySet().stream()
+          .filter(entry -> entry.getKey().getName().equals(currentTestClass))
+          .map(Map.Entry::getValue)
+          .findFirst()
+          .orElse(null);
+    }
+
+    // Fallback for unexpected bootstrap order.
+    return DaprSpringBootExtension.CONTAINER_REGISTRY.values().stream().findFirst().orElse(null);
   }
 
   /**

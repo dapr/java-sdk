@@ -13,57 +13,95 @@ limitations under the License.
 
 package io.dapr.it.resiliency;
 
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
-import io.dapr.it.ToxiProxyRun;
+import io.dapr.it.testcontainers.TestContainerNetworks;
+
+import eu.rekawek.toxiproxy.Proxy;
+import eu.rekawek.toxiproxy.ToxiproxyClient;
+import eu.rekawek.toxiproxy.model.ToxicDirection;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.config.Properties;
+import io.dapr.it.testcontainers.DaprClientFactory;
+import io.dapr.testcontainers.DaprContainer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.ToxiproxyContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.TOXI_PROXY_IMAGE_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test SDK resiliency.
  */
-public class WaitForSidecarIT extends BaseIT {
+@Testcontainers
+public class WaitForSidecarIT {
 
   // Use a number large enough to make sure it will respect the entire timeout.
   private static final Duration LATENCY = Duration.ofSeconds(5);
 
-  private static final Duration JITTER = Duration.ofSeconds(0);
+  private static final Network NETWORK = TestContainerNetworks.GENERAL_NETWORK;
+  private static final String APP_ID = "wait-for-sidecar-it";
 
-  private static DaprRun daprRun;
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+      .withAppName(APP_ID)
+      .withNetwork(NETWORK)
+      .withNetworkAliases("dapr");
 
-  private static ToxiProxyRun toxiProxyRun;
+  @Container
+  private static final ToxiproxyContainer TOXIPROXY = new ToxiproxyContainer(TOXI_PROXY_IMAGE_TAG)
+      .withNetwork(NETWORK);
 
-  private static DaprRun daprNotRunning;
+  private static Proxy proxy;
+  private static String notRunningHttpEndpoint;
+  private static String notRunningGrpcEndpoint;
 
   @BeforeAll
   public static void init() throws Exception {
-    daprRun = startDaprApp(WaitForSidecarIT.class.getSimpleName(), 5000);
-    daprNotRunning = startDaprApp(WaitForSidecarIT.class.getSimpleName() + "NotRunning", 5000);
-    daprNotRunning.stop();
+    ToxiproxyClient toxiproxyClient = new ToxiproxyClient(TOXIPROXY.getHost(), TOXIPROXY.getControlPort());
+    proxy = toxiproxyClient.createProxy("dapr", "0.0.0.0:8666", "dapr:3500");
 
-    toxiProxyRun = new ToxiProxyRun(daprRun, LATENCY, JITTER);
-    toxiProxyRun.start();
+    DaprContainer notRunningContainer = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName(APP_ID + "-not-running");
+    notRunningContainer.start();
+    notRunningHttpEndpoint = notRunningContainer.getHttpEndpoint();
+    notRunningGrpcEndpoint = notRunningContainer.getGrpcEndpoint();
+    notRunningContainer.stop();
+  }
+
+  @BeforeEach
+  void beforeEach() throws Exception {
+    proxy.toxics().getAll().forEach(toxic -> {
+      try {
+        toxic.remove();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   @Test
   public void waitSucceeds() throws Exception {
-    try(var client = daprRun.newDaprClient()) {
+    try (var client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       client.waitForSidecar(5000).block();
     }
   }
 
   @Test
-  public void waitTimeout() {
+  public void waitTimeout() throws Exception {
     int timeoutInMillis = (int)LATENCY.minusMillis(100).toMillis();
     long started = System.currentTimeMillis();
+    applyLatencyToxic();
 
     assertThrows(RuntimeException.class, () -> {
-      try(var client = toxiProxyRun.newDaprClientBuilder().build()) {
+      try (var client = createToxiProxyClientBuilder().build()) {
         client.waitForSidecar(timeoutInMillis).block();
       }
     });
@@ -77,9 +115,10 @@ public class WaitForSidecarIT extends BaseIT {
   public void waitSlow() throws Exception {
     int timeoutInMillis = (int)LATENCY.plusMillis(100).toMillis();
     long started = System.currentTimeMillis();
+    applyLatencyToxic();
 
-    try(var client = toxiProxyRun.newDaprClientBuilder().build()) {
-        client.waitForSidecar(timeoutInMillis).block();
+    try (var client = createToxiProxyClientBuilder().build()) {
+      client.waitForSidecar(timeoutInMillis).block();
     }
 
     long duration = System.currentTimeMillis() - started;
@@ -95,7 +134,10 @@ public class WaitForSidecarIT extends BaseIT {
     long started = System.currentTimeMillis();
 
     assertThrows(RuntimeException.class, () -> {
-      try(var client = daprNotRunning.newDaprClientBuilder().build()) {
+      try (var client = new DaprClientBuilder()
+          .withPropertyOverride(Properties.HTTP_ENDPOINT, notRunningHttpEndpoint)
+          .withPropertyOverride(Properties.GRPC_ENDPOINT, notRunningGrpcEndpoint)
+          .build()) {
         client.waitForSidecar(timeoutMilliseconds).block();
       }
     });
@@ -103,5 +145,16 @@ public class WaitForSidecarIT extends BaseIT {
     long duration = System.currentTimeMillis() - started;
 
     assertThat(duration).isGreaterThanOrEqualTo(timeoutMilliseconds);
+  }
+
+  private static DaprClientBuilder createToxiProxyClientBuilder() {
+    String endpoint = "http://localhost:" + TOXIPROXY.getMappedPort(8666);
+    return new DaprClientBuilder()
+        .withPropertyOverride(Properties.HTTP_ENDPOINT, endpoint)
+        .withPropertyOverride(Properties.GRPC_ENDPOINT, endpoint);
+  }
+
+  private static void applyLatencyToxic() throws Exception {
+    proxy.toxics().latency("latency", ToxicDirection.DOWNSTREAM, LATENCY.toMillis()).setJitter(0L);
   }
 }

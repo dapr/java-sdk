@@ -13,127 +13,102 @@ limitations under the License.
 
 package io.dapr.it.secrets;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.it.testcontainers.TestContainerNetworks;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
-import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.AfterEach;
+import io.dapr.it.testcontainers.DaprClientFactory;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.Network;
+import org.testcontainers.images.builder.Transferable;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test Secrets Store APIs using local file.
- *
- * 1. create secret file locally:
+ * Test Secrets Store APIs backed by local file secret store.
  */
-public class SecretsClientIT extends BaseIT {
-
-  /**
-   * JSON Serializer to print output.
-   */
-  private static final ObjectMapper JSON_SERIALIZER = new ObjectMapper();
+@Testcontainers
+@Tag("testcontainers")
+public class SecretsClientIT {
 
   private static final String SECRETS_STORE_NAME = "localSecretStore";
+  private static final String SECRET_FILE_PATH = "/dapr-resources/secrets.json";
 
-  private static final String LOCAL_SECRET_FILE_PATH = "./components/secret.json";
+  private static final String KEY1 = "metrics";
+  private static final String KEY2 = "person";
+  private static final String SECRET_FILE_CONTENT = "{\n"
+      + "  \"" + KEY1 + "\": {\n"
+      + "    \"title\": \"The Metrics IV\",\n"
+      + "    \"year\": \"2020\"\n"
+      + "  },\n"
+      + "  \"" + KEY2 + "\": {\n"
+      + "    \"name\": \"Jon Doe\"\n"
+      + "  }\n"
+      + "}\n";
 
-  private static final String KEY1 = UUID.randomUUID().toString();
+  private static final Network NETWORK = TestContainerNetworks.STATE_NETWORK;
 
-  private static final String KYE2 = UUID.randomUUID().toString();
-
-  private static DaprRun daprRun;
-
-
-  private DaprClient daprClient;
-
-  private static File localSecretFile;
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+      .withNetwork(NETWORK)
+      .withAppName("secrets-it")
+      .withCopyToContainer(Transferable.of(SECRET_FILE_CONTENT), SECRET_FILE_PATH)
+      .withComponent(new Component(
+          SECRETS_STORE_NAME,
+          "secretstores.local.file",
+          "v1",
+          Map.of("secretsFile", SECRET_FILE_PATH, "multiValued", "true")));
 
   @BeforeAll
   public static void init() throws Exception {
-
-    localSecretFile = new File(LOCAL_SECRET_FILE_PATH);
-    boolean existed = localSecretFile.exists();
-    assertTrue(existed);
-    initSecretFile();
-
-    daprRun = startDaprApp(SecretsClientIT.class.getSimpleName(), 5000);
-  }
-
-  @BeforeEach
-  public void setup() {
-    this.daprClient = daprRun.newDaprClientBuilder().build();
-  }
-
-  @AfterEach
-  public void tearDown() throws Exception {
-    daprClient.close();
-    clearSecretFile();
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      client.waitForSidecar(10000).block();
+    }
   }
 
   @Test
   public void getSecret() throws Exception {
-    Map<String, String> data = daprClient.getSecret(SECRETS_STORE_NAME, KEY1).block();
-    assertEquals(2, data.size());
-    assertEquals("The Metrics IV", data.get("title"));
-    assertEquals("2020", data.get("year"));
+    try (DaprClient daprClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      Map<String, String> data = daprClient.getSecret(SECRETS_STORE_NAME, KEY1).block();
+      assertEquals(2, data.size());
+      assertEquals("The Metrics IV", data.get("title"));
+      assertEquals("2020", data.get("year"));
+    }
   }
 
   @Test
   public void getBulkSecret() throws Exception {
-    Map<String, Map<String, String>> data = daprClient.getBulkSecret(SECRETS_STORE_NAME).block();
-    // There can be other keys from other runs or test cases, so we are good with at least two.
-    assertTrue(data.size() >= 2);
-    assertEquals(2, data.get(KEY1).size());
-    assertEquals("The Metrics IV", data.get(KEY1).get("title"));
-    assertEquals("2020", data.get(KEY1).get("year"));
-    assertEquals(1, data.get(KYE2).size());
-    assertEquals("Jon Doe", data.get(KYE2).get("name"));
-  }
-
-  @Test
-  public void getSecretKeyNotFound() {
-    assertThrows(RuntimeException.class, () -> daprClient.getSecret(SECRETS_STORE_NAME, "unknownKey").block());
-  }
-
-  @Test
-  public void getSecretStoreNotFound() {
-    assertThrows(RuntimeException.class, () -> daprClient.getSecret("unknownStore", "unknownKey").block());
-  }
-
-  private static void initSecretFile() throws Exception {
-    Map<String, Object> key2 = new HashMap(){{
-      put("name", "Jon Doe");
-    }};
-    Map<String, Object> key1 = new HashMap(){{
-      put("title", "The Metrics IV");
-      put("year", "2020");
-    }};
-    Map<String, Map<String, Object>> secret = new HashMap<>(){{
-      put(KEY1, key1);
-      put(KYE2, key2);
-    }};
-    try (FileOutputStream fos = new FileOutputStream(localSecretFile)) {
-      JSON_SERIALIZER.writeValue(fos, secret);
+    try (DaprClient daprClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      Map<String, Map<String, String>> data = daprClient.getBulkSecret(SECRETS_STORE_NAME).block();
+      assertTrue(data.size() >= 2);
+      assertEquals(2, data.get(KEY1).size());
+      assertEquals("The Metrics IV", data.get(KEY1).get("title"));
+      assertEquals("2020", data.get(KEY1).get("year"));
+      assertEquals(1, data.get(KEY2).size());
+      assertEquals("Jon Doe", data.get(KEY2).get("name"));
     }
   }
 
-  private static void clearSecretFile() throws IOException {
-    try (FileOutputStream fos = new FileOutputStream(localSecretFile)) {
-      IOUtils.write("{}", fos);
+  @Test
+  public void getSecretKeyNotFound() throws Exception {
+    try (DaprClient daprClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      assertThrows(RuntimeException.class, () -> daprClient.getSecret(SECRETS_STORE_NAME, "unknownKey").block());
+    }
+  }
+
+  @Test
+  public void getSecretStoreNotFound() throws Exception {
+    try (DaprClient daprClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      assertThrows(RuntimeException.class, () -> daprClient.getSecret("unknownStore", "unknownKey").block());
     }
   }
 }

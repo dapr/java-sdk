@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>This extension is automatically registered when using {@link DaprSpringBootTest}.</p>
  */
 public class DaprSpringBootExtension implements BeforeAllCallback {
+  private static final String CURRENT_TEST_CLASS_PROPERTY = "dapr.testcontainers.current-test-class";
 
   /**
    * Registry of DaprContainers by test class. Used by {@link DaprSpringBootContextInitializer}
@@ -80,8 +81,10 @@ public class DaprSpringBootExtension implements BeforeAllCallback {
       );
     }
 
-    // Register container for the context initializer
+    // Keep a single active registration to avoid stale container lookups across test classes.
+    CONTAINER_REGISTRY.clear();
     CONTAINER_REGISTRY.put(testClass, container);
+    System.setProperty(CURRENT_TEST_CLASS_PROPERTY, testClass.getName());
 
     // Note: Testcontainers.exposeHostPorts() is NOT called here because of timing requirements.
     // It must be called in @BeforeEach, after the container starts to ensure proper Dapr-to-app communication.

@@ -14,36 +14,56 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.it.actors.services.springboot.DaprApplication;
 import io.dapr.it.actors.services.springboot.StatefulActor;
-import io.dapr.it.actors.services.springboot.StatefulActorService;
+import io.dapr.it.testcontainers.actors.TestDaprActorsConfiguration;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
+import io.dapr.testcontainers.internal.DaprSidecarContainer;
+import io.dapr.testcontainers.internal.spring.DaprSpringBootTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Map;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class ActorStateIT extends BaseIT {
+@DaprSpringBootTest(classes = {
+    DaprApplication.class,
+    TestDaprActorsConfiguration.class,
+    StatefulActorRuntimeRegistrationConfiguration.class
+})
+public class ActorStateIT {
 
-  private static Logger logger = LoggerFactory.getLogger(ActorStateIT.class);
+  private static final Logger logger = LoggerFactory.getLogger(ActorStateIT.class);
+
+  @DaprSidecarContainer
+  private static final DaprContainer DAPR_CONTAINER = DaprContainerFactory.createForSpringBootTest("actor-state-it")
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()));
+
+  @Autowired
+  private ActorClient actorClient;
+
+  @BeforeEach
+  void setUp() {
+    ActorTestBootstrap.exposeHostPortAndWaitForActorType(DAPR_CONTAINER, "StatefulActorTest");
+  }
 
   @Test
   public void writeReadState() throws Exception {
-    logger.debug("Starting actor runtime ...");
-    // The call below will fail if service cannot start successfully.
-    DaprRun run = startDaprApp(
-      this.getClass().getSimpleName(),
-      StatefulActorService.SUCCESS_MESSAGE,
-      StatefulActorService.class,
-      true,
-      60000);
-
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
     byte[] bytes = new byte[] { 0x1 };
@@ -52,12 +72,9 @@ public class ActorStateIT extends BaseIT {
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient()));
+        new ActorProxyBuilder(actorType, ActorProxy.class, actorClient);
     ActorProxy proxy = proxyBuilder.build(actorId);
 
-    // waiting for actor to be activated
-    Thread.sleep(5000);
-    
     // Validate conditional read works.
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not present yet ... ");
@@ -123,49 +140,31 @@ public class ActorStateIT extends BaseIT {
       assertArrayEquals(bytes, result);
     }, 5000);
 
-    logger.debug("Waiting, so actor can be deactivated ...");
+    // Wait for actor idle timeout + scan interval so cached actor gets deactivated.
     Thread.sleep(10000);
-
-    logger.debug("Stopping service ...");
-    run.stop();
-
-    logger.debug("Starting service ...");
-    DaprRun run2 = startDaprApp(
-        this.getClass().getSimpleName(),
-        StatefulActorService.SUCCESS_MESSAGE,
-        StatefulActorService.class,
-        true,
-        60000);
-
-    // Need new proxy builder because the proxy builder holds the channel.
-    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run2.newActorClient()));
-    ActorProxy newProxy = proxyBuilder.build(actorId);
-
-    // waiting for actor to be activated
-    Thread.sleep(2000);  
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not cached ... ");
-      String result = newProxy.invokeMethod("readMessage", String.class).block();
+      String result = proxy.invokeMethod("readMessage", String.class).block();
       assertEquals(message, result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readData where data is not cached ... ");
-      StatefulActor.MyData result = newProxy.invokeMethod("readData", StatefulActor.MyData.class).block();
+      StatefulActor.MyData result = proxy.invokeMethod("readData", StatefulActor.MyData.class).block();
       assertEquals(mydata.value, result.value);
     }, 5000);
     logger.debug("Finished testing actor string state.");
 
     callWithRetry(() -> {
       logger.debug("Invoking readName where empty content is not cached ... ");
-      String result = newProxy.invokeMethod("readName", String.class).block();
+      String result = proxy.invokeMethod("readName", String.class).block();
       assertEquals("", result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readBytes where content is not cached ... ");
-      byte[] result = newProxy.invokeMethod("readBytes", byte[].class).block();
+      byte[] result = proxy.invokeMethod("readBytes", byte[].class).block();
       assertArrayEquals(bytes, result);
     }, 5000);
   }

@@ -19,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import static io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry;
+
 @Configuration
 public class OpenTelemetryConfig {
 
@@ -28,7 +30,7 @@ public class OpenTelemetryConfig {
 
   @Bean
   public OpenTelemetry initOpenTelemetry() throws InterruptedException {
-    return io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry(SERVICE_NAME);
+    return createOpenTelemetry(SERVICE_NAME);
   }
 
   @Bean
