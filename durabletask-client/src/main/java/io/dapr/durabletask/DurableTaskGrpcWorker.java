@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
+import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
 import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
@@ -279,7 +280,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
       return Context.current();
     }
 
-    OrchestratorService.TraceContext traceContext = activityRequest.getParentTraceContext();
+    Orchestration.TraceContext traceContext = activityRequest.getParentTraceContext();
     String traceParent = traceContext.getTraceParent();
 
     if (traceParent.isEmpty()) {
