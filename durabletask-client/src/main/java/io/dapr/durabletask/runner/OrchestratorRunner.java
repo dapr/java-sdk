@@ -16,6 +16,7 @@ package io.dapr.durabletask.runner;
 import com.google.protobuf.StringValue;
 import io.dapr.durabletask.TaskOrchestrationExecutor;
 import io.dapr.durabletask.TaskOrchestratorResult;
+import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
 import io.grpc.StatusRuntimeException;
@@ -58,7 +59,7 @@ public class OrchestratorRunner extends DurableRunner {
         orchestratorRequest.getPastEventsList(),
         orchestratorRequest.getNewEventsList());
 
-    var versionBuilder = OrchestratorService.OrchestrationVersion.newBuilder();
+    var versionBuilder = Orchestration.OrchestrationVersion.newBuilder();
 
     if (StringUtils.isNotEmpty(taskOrchestratorResult.getVersion())) {
       versionBuilder.setName(taskOrchestratorResult.getVersion());

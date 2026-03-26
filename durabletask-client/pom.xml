@@ -110,15 +110,54 @@
         <version>${download-maven-plugin.version}</version>
         <executions>
           <execution>
-            <id>getDaprProto</id>
+            <id>getOrchestratorServiceProto</id>
             <phase>initialize</phase>
             <goals>
               <goal>wget</goal>
             </goals>
             <configuration>
               <skipCache>true</skipCache>
-              <url>${durabletask.proto.url}</url>
+              <url>${durabletask.proto.baseurl}/orchestrator_service.proto</url>
               <outputFileName>orchestrator_service.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getOrchestrationProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${durabletask.proto.baseurl}/orchestration.proto</url>
+              <outputFileName>orchestration.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getHistoryEventsProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${durabletask.proto.baseurl}/history_events.proto</url>
+              <outputFileName>history_events.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getOrchestratorActionsProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${durabletask.proto.baseurl}/orchestrator_actions.proto</url>
+              <outputFileName>orchestrator_actions.proto</outputFileName>
               <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
           </execution>
