@@ -77,7 +77,7 @@ public class ActivityRunner extends DurableRunner {
         .setParent(parentContext)
         .setSpanKind(SpanKind.INTERNAL)
         .setAttribute("durabletask.task.instance_id",
-            activityRequest.getOrchestrationInstance().getInstanceId())
+            activityRequest.getWorkflowInstance().getInstanceId())
         .setAttribute("durabletask.task.id", activityRequest.getTaskId())
         .setAttribute("durabletask.activity.name", activityRequest.getName())
         .startSpan();
@@ -123,7 +123,7 @@ public class ActivityRunner extends DurableRunner {
 
     OrchestratorService.ActivityResponse.Builder responseBuilder = OrchestratorService.ActivityResponse
         .newBuilder()
-        .setInstanceId(activityRequest.getOrchestrationInstance().getInstanceId())
+        .setInstanceId(activityRequest.getWorkflowInstance().getInstanceId())
         .setTaskId(activityRequest.getTaskId())
         .setCompletionToken(workItem.getCompletionToken());
 

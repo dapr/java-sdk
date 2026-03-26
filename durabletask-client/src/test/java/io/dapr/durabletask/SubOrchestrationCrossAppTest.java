@@ -44,7 +44,7 @@ class SubOrchestrationCrossAppTest {
     return HistoryEvents.HistoryEvent.newBuilder()
         .setEventId(-1)
         .setTimestamp(Timestamp.newBuilder().setSeconds(1000).build())
-        .setOrchestratorStarted(HistoryEvents.OrchestratorStartedEvent.newBuilder().build())
+        .setWorkflowStarted(HistoryEvents.WorkflowStartedEvent.newBuilder().build())
         .build();
   }
 
@@ -56,8 +56,8 @@ class SubOrchestrationCrossAppTest {
     HistoryEvents.ExecutionStartedEvent.Builder esBuilder = HistoryEvents.ExecutionStartedEvent
         .newBuilder()
         .setName(name)
-        .setOrchestrationInstance(
-            Orchestration.OrchestrationInstance.newBuilder().setInstanceId(instanceId).build())
+        .setWorkflowInstance(
+            Orchestration.WorkflowInstance.newBuilder().setInstanceId(instanceId).build())
         .setInput(StringValue.of(input));
 
     HistoryEvents.HistoryEvent.Builder builder = HistoryEvents.HistoryEvent.newBuilder()
@@ -79,7 +79,7 @@ class SubOrchestrationCrossAppTest {
     return HistoryEvents.HistoryEvent.newBuilder()
         .setEventId(-1)
         .setTimestamp(Timestamp.newBuilder().setSeconds(1000).build())
-        .setOrchestratorCompleted(HistoryEvents.OrchestratorCompletedEvent.newBuilder().build())
+        .setWorkflowCompleted(HistoryEvents.WorkflowCompletedEvent.newBuilder().build())
         .build();
   }
 
@@ -145,14 +145,14 @@ class SubOrchestrationCrossAppTest {
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
     // There should be a CreateSubOrchestration action
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorActions.OrchestratorAction action = actions.get(0);
-    assertTrue(action.hasCreateSubOrchestration());
+    OrchestratorActions.WorkflowAction action = actions.get(0);
+    assertTrue(action.hasCreateChildWorkflow());
 
     // Verify the CreateSubOrchestrationAction has the router
-    OrchestratorActions.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
+    OrchestratorActions.CreateChildWorkflowAction createSub = action.getCreateChildWorkflow();
     assertEquals(subOrchestratorName, createSub.getName());
     assertEquals("child-instance-1", createSub.getInstanceId());
     assertTrue(createSub.hasRouter());
@@ -192,14 +192,14 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorActions.OrchestratorAction action = actions.get(0);
-    assertTrue(action.hasCreateSubOrchestration());
+    OrchestratorActions.WorkflowAction action = actions.get(0);
+    assertTrue(action.hasCreateChildWorkflow());
 
     // Router should have source only, no target
-    OrchestratorActions.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
+    OrchestratorActions.CreateChildWorkflowAction createSub = action.getCreateChildWorkflow();
     assertTrue(createSub.hasRouter());
     assertEquals(sourceAppId, createSub.getRouter().getSourceAppID());
     assertFalse(createSub.getRouter().hasTargetAppID());
@@ -232,14 +232,14 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorActions.OrchestratorAction action = actions.get(0);
-    assertTrue(action.hasCreateSubOrchestration());
+    OrchestratorActions.WorkflowAction action = actions.get(0);
+    assertTrue(action.hasCreateChildWorkflow());
 
     // No router should be set when appId is null
-    OrchestratorActions.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
+    OrchestratorActions.CreateChildWorkflowAction createSub = action.getCreateChildWorkflow();
     assertFalse(createSub.hasRouter());
     assertFalse(action.hasRouter());
   }
@@ -365,13 +365,13 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorActions.OrchestratorAction action = actions.get(0);
-    assertTrue(action.hasCompleteOrchestration());
+    OrchestratorActions.WorkflowAction action = actions.get(0);
+    assertTrue(action.hasCompleteWorkflow());
     assertEquals(Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_COMPLETED,
-        action.getCompleteOrchestration().getOrchestrationStatus());
+        action.getCompleteWorkflow().getWorkflowStatus());
 
     // The completion action should have a router with source appId
     assertTrue(action.hasRouter());
@@ -398,11 +398,11 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorActions.OrchestratorAction action = actions.get(0);
-    assertTrue(action.hasCompleteOrchestration());
+    OrchestratorActions.WorkflowAction action = actions.get(0);
+    assertTrue(action.hasCompleteWorkflow());
 
     // No router should be set
     assertFalse(action.hasRouter());
@@ -435,11 +435,11 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorActions.OrchestratorAction action = actions.get(0);
-    assertTrue(action.hasCompleteOrchestration());
+    OrchestratorActions.WorkflowAction action = actions.get(0);
+    assertTrue(action.hasCompleteWorkflow());
 
     // The router source should be the target app (since that's where we're executing)
     assertTrue(action.hasRouter());
@@ -478,14 +478,14 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     // Should have 1 action: CreateSubOrchestration
     assertEquals(1, actions.size());
 
-    OrchestratorActions.OrchestratorAction subAction = actions.get(0);
-    assertTrue(subAction.hasCreateSubOrchestration());
+    OrchestratorActions.WorkflowAction subAction = actions.get(0);
+    assertTrue(subAction.hasCreateChildWorkflow());
 
-    OrchestratorActions.CreateSubOrchestrationAction createSub = subAction.getCreateSubOrchestration();
+    OrchestratorActions.CreateChildWorkflowAction createSub = subAction.getCreateChildWorkflow();
     assertEquals(subOrchestratorName, createSub.getName());
     assertEquals("child-id-1", createSub.getInstanceId());
 
@@ -520,14 +520,14 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorActions.OrchestratorAction action = actions.get(0);
-    assertTrue(action.hasCreateSubOrchestration());
+    OrchestratorActions.WorkflowAction action = actions.get(0);
+    assertTrue(action.hasCreateChildWorkflow());
 
     // No router should be set when appId is empty
-    assertFalse(action.getCreateSubOrchestration().hasRouter());
+    assertFalse(action.getCreateChildWorkflow().hasRouter());
     assertFalse(action.hasRouter());
   }
 
@@ -563,13 +563,13 @@ class SubOrchestrationCrossAppTest {
 
     // With RetriableTask the first attempt creates the action; we should still see
     // the sub-orchestration action with cross-app routing
-    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
     assertTrue(actions.size() >= 1);
 
-    OrchestratorActions.OrchestratorAction action = actions.get(0);
-    assertTrue(action.hasCreateSubOrchestration());
+    OrchestratorActions.WorkflowAction action = actions.get(0);
+    assertTrue(action.hasCreateChildWorkflow());
 
-    OrchestratorActions.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
+    OrchestratorActions.CreateChildWorkflowAction createSub = action.getCreateChildWorkflow();
     assertTrue(createSub.hasRouter());
     assertEquals(sourceAppId, createSub.getRouter().getSourceAppID());
     assertEquals(targetAppId, createSub.getRouter().getTargetAppID());

@@ -21,7 +21,7 @@ import java.util.List;
 
 public final class TaskOrchestratorResult {
 
-  private final Collection<OrchestratorActions.OrchestratorAction> actions;
+  private final Collection<OrchestratorActions.WorkflowAction> actions;
 
   private final String customStatus;
 
@@ -37,7 +37,7 @@ public final class TaskOrchestratorResult {
    * @param version      the orchestrator version
    * @param patches      the patches to apply
    */
-  public TaskOrchestratorResult(Collection<OrchestratorActions.OrchestratorAction> actions,
+  public TaskOrchestratorResult(Collection<OrchestratorActions.WorkflowAction> actions,
                                 String customStatus, String version, List<String> patches) {
     this.actions = Collections.unmodifiableCollection(actions);
     this.customStatus = customStatus;
@@ -45,7 +45,7 @@ public final class TaskOrchestratorResult {
     this.patches = patches;
   }
 
-  public Collection<OrchestratorActions.OrchestratorAction> getActions() {
+  public Collection<OrchestratorActions.WorkflowAction> getActions() {
     return this.actions;
   }
 
