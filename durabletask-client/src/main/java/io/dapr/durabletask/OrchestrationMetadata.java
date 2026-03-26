@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
+import io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationState;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
-import io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationState;
 
 import java.time.Instant;
 
