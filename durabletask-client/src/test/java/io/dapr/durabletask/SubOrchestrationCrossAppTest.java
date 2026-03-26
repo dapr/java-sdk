@@ -15,7 +15,9 @@ package io.dapr.durabletask;
 
 import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
-import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents;
+import io.dapr.durabletask.implementation.protobuf.Orchestration;
+import io.dapr.durabletask.implementation.protobuf.OrchestratorActions;
 import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
 import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import org.junit.jupiter.api.Test;
@@ -38,27 +40,27 @@ class SubOrchestrationCrossAppTest {
   /**
    * Helper to build an OrchestratorStarted history event.
    */
-  private static OrchestratorService.HistoryEvent orchestratorStarted() {
-    return OrchestratorService.HistoryEvent.newBuilder()
+  private static HistoryEvents.HistoryEvent orchestratorStarted() {
+    return HistoryEvents.HistoryEvent.newBuilder()
         .setEventId(-1)
         .setTimestamp(Timestamp.newBuilder().setSeconds(1000).build())
-        .setOrchestratorStarted(OrchestratorService.OrchestratorStartedEvent.newBuilder().build())
+        .setOrchestratorStarted(HistoryEvents.OrchestratorStartedEvent.newBuilder().build())
         .build();
   }
 
   /**
    * Helper to build an ExecutionStarted history event with a router.
    */
-  private static OrchestratorService.HistoryEvent executionStarted(
-      String name, String instanceId, String input, OrchestratorService.TaskRouter router) {
-    OrchestratorService.ExecutionStartedEvent.Builder esBuilder = OrchestratorService.ExecutionStartedEvent
+  private static HistoryEvents.HistoryEvent executionStarted(
+      String name, String instanceId, String input, Orchestration.TaskRouter router) {
+    HistoryEvents.ExecutionStartedEvent.Builder esBuilder = HistoryEvents.ExecutionStartedEvent
         .newBuilder()
         .setName(name)
         .setOrchestrationInstance(
-            OrchestratorService.OrchestrationInstance.newBuilder().setInstanceId(instanceId).build())
+            Orchestration.OrchestrationInstance.newBuilder().setInstanceId(instanceId).build())
         .setInput(StringValue.of(input));
 
-    OrchestratorService.HistoryEvent.Builder builder = OrchestratorService.HistoryEvent.newBuilder()
+    HistoryEvents.HistoryEvent.Builder builder = HistoryEvents.HistoryEvent.newBuilder()
         .setEventId(-1)
         .setTimestamp(Timestamp.newBuilder().setSeconds(1000).build())
         .setExecutionStarted(esBuilder.build());
@@ -73,11 +75,11 @@ class SubOrchestrationCrossAppTest {
   /**
    * Helper to build an OrchestratorCompleted history event.
    */
-  private static OrchestratorService.HistoryEvent orchestratorCompleted() {
-    return OrchestratorService.HistoryEvent.newBuilder()
+  private static HistoryEvents.HistoryEvent orchestratorCompleted() {
+    return HistoryEvents.HistoryEvent.newBuilder()
         .setEventId(-1)
         .setTimestamp(Timestamp.newBuilder().setSeconds(1000).build())
-        .setOrchestratorCompleted(OrchestratorService.OrchestratorCompletedEvent.newBuilder().build())
+        .setOrchestratorCompleted(HistoryEvents.OrchestratorCompletedEvent.newBuilder().build())
         .build();
   }
 
@@ -130,11 +132,11 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, sourceAppId);
 
-    OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+    Orchestration.TaskRouter router = Orchestration.TaskRouter.newBuilder()
         .setSourceAppID(sourceAppId)
         .build();
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "parent-instance", "\"hello\"", router),
         orchestratorCompleted()
@@ -143,14 +145,14 @@ class SubOrchestrationCrossAppTest {
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
     // There should be a CreateSubOrchestration action
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorService.OrchestratorAction action = actions.get(0);
+    OrchestratorActions.OrchestratorAction action = actions.get(0);
     assertTrue(action.hasCreateSubOrchestration());
 
     // Verify the CreateSubOrchestrationAction has the router
-    OrchestratorService.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
+    OrchestratorActions.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
     assertEquals(subOrchestratorName, createSub.getName());
     assertEquals("child-instance-1", createSub.getInstanceId());
     assertTrue(createSub.hasRouter());
@@ -178,11 +180,11 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, sourceAppId);
 
-    OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+    Orchestration.TaskRouter router = Orchestration.TaskRouter.newBuilder()
         .setSourceAppID(sourceAppId)
         .build();
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "parent-instance", "\"hello\"", router),
         orchestratorCompleted()
@@ -190,14 +192,14 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorService.OrchestratorAction action = actions.get(0);
+    OrchestratorActions.OrchestratorAction action = actions.get(0);
     assertTrue(action.hasCreateSubOrchestration());
 
     // Router should have source only, no target
-    OrchestratorService.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
+    OrchestratorActions.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
     assertTrue(createSub.hasRouter());
     assertEquals(sourceAppId, createSub.getRouter().getSourceAppID());
     assertFalse(createSub.getRouter().hasTargetAppID());
@@ -222,7 +224,7 @@ class SubOrchestrationCrossAppTest {
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, null);
 
     // ExecutionStarted without a router
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "parent-instance", "\"hello\"", null),
         orchestratorCompleted()
@@ -230,14 +232,14 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorService.OrchestratorAction action = actions.get(0);
+    OrchestratorActions.OrchestratorAction action = actions.get(0);
     assertTrue(action.hasCreateSubOrchestration());
 
     // No router should be set when appId is null
-    OrchestratorService.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
+    OrchestratorActions.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
     assertFalse(createSub.hasRouter());
     assertFalse(action.hasRouter());
   }
@@ -263,12 +265,12 @@ class SubOrchestrationCrossAppTest {
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, sourceAppId);
 
     // Router with BOTH source and target (cross-app suborchestration scenario)
-    OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+    Orchestration.TaskRouter router = Orchestration.TaskRouter.newBuilder()
         .setSourceAppID(sourceAppId)
         .setTargetAppID(targetAppId)
         .build();
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "sub-instance-1", "\"data\"", router),
         orchestratorCompleted()
@@ -294,11 +296,11 @@ class SubOrchestrationCrossAppTest {
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, sourceAppId);
 
     // Router with source only (normal, single-app scenario)
-    OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+    Orchestration.TaskRouter router = Orchestration.TaskRouter.newBuilder()
         .setSourceAppID(sourceAppId)
         .build();
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "instance-1", "\"data\"", router),
         orchestratorCompleted()
@@ -323,7 +325,7 @@ class SubOrchestrationCrossAppTest {
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, null);
 
     // No router on the event
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "instance-1", "\"data\"", null),
         orchestratorCompleted()
@@ -351,11 +353,11 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, appId);
 
-    OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+    Orchestration.TaskRouter router = Orchestration.TaskRouter.newBuilder()
         .setSourceAppID(appId)
         .build();
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "instance-1", "\"input\"", router),
         orchestratorCompleted()
@@ -363,12 +365,12 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorService.OrchestratorAction action = actions.get(0);
+    OrchestratorActions.OrchestratorAction action = actions.get(0);
     assertTrue(action.hasCompleteOrchestration());
-    assertEquals(OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_COMPLETED,
+    assertEquals(Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_COMPLETED,
         action.getCompleteOrchestration().getOrchestrationStatus());
 
     // The completion action should have a router with source appId
@@ -388,7 +390,7 @@ class SubOrchestrationCrossAppTest {
     // Executor with null appId
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, null);
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "instance-1", "\"input\"", null),
         orchestratorCompleted()
@@ -396,10 +398,10 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorService.OrchestratorAction action = actions.get(0);
+    OrchestratorActions.OrchestratorAction action = actions.get(0);
     assertTrue(action.hasCompleteOrchestration());
 
     // No router should be set
@@ -420,12 +422,12 @@ class SubOrchestrationCrossAppTest {
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, parentAppId);
 
     // Router has both source and target (cross-app suborchestration)
-    OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+    Orchestration.TaskRouter router = Orchestration.TaskRouter.newBuilder()
         .setSourceAppID(parentAppId)
         .setTargetAppID(targetAppId)
         .build();
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "sub-instance-1", "\"input\"", router),
         orchestratorCompleted()
@@ -433,10 +435,10 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorService.OrchestratorAction action = actions.get(0);
+    OrchestratorActions.OrchestratorAction action = actions.get(0);
     assertTrue(action.hasCompleteOrchestration());
 
     // The router source should be the target app (since that's where we're executing)
@@ -464,11 +466,11 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, sourceAppId);
 
-    OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+    Orchestration.TaskRouter router = Orchestration.TaskRouter.newBuilder()
         .setSourceAppID(sourceAppId)
         .build();
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "parent-instance", "\"start\"", router),
         orchestratorCompleted()
@@ -476,14 +478,14 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     // Should have 1 action: CreateSubOrchestration
     assertEquals(1, actions.size());
 
-    OrchestratorService.OrchestratorAction subAction = actions.get(0);
+    OrchestratorActions.OrchestratorAction subAction = actions.get(0);
     assertTrue(subAction.hasCreateSubOrchestration());
 
-    OrchestratorService.CreateSubOrchestrationAction createSub = subAction.getCreateSubOrchestration();
+    OrchestratorActions.CreateSubOrchestrationAction createSub = subAction.getCreateSubOrchestration();
     assertEquals(subOrchestratorName, createSub.getName());
     assertEquals("child-id-1", createSub.getInstanceId());
 
@@ -510,7 +512,7 @@ class SubOrchestrationCrossAppTest {
     // Executor created with empty appId
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, "");
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "parent-instance", "\"hello\"", null),
         orchestratorCompleted()
@@ -518,10 +520,10 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents);
 
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     assertEquals(1, actions.size());
 
-    OrchestratorService.OrchestratorAction action = actions.get(0);
+    OrchestratorActions.OrchestratorAction action = actions.get(0);
     assertTrue(action.hasCreateSubOrchestration());
 
     // No router should be set when appId is empty
@@ -547,11 +549,11 @@ class SubOrchestrationCrossAppTest {
 
     TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration, sourceAppId);
 
-    OrchestratorService.TaskRouter router = OrchestratorService.TaskRouter.newBuilder()
+    Orchestration.TaskRouter router = Orchestration.TaskRouter.newBuilder()
         .setSourceAppID(sourceAppId)
         .build();
 
-    List<OrchestratorService.HistoryEvent> newEvents = List.of(
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
         orchestratorStarted(),
         executionStarted(orchestratorName, "parent-instance", "\"hello\"", router),
         orchestratorCompleted()
@@ -561,13 +563,13 @@ class SubOrchestrationCrossAppTest {
 
     // With RetriableTask the first attempt creates the action; we should still see
     // the sub-orchestration action with cross-app routing
-    List<OrchestratorService.OrchestratorAction> actions = new ArrayList<>(result.getActions());
+    List<OrchestratorActions.OrchestratorAction> actions = new ArrayList<>(result.getActions());
     assertTrue(actions.size() >= 1);
 
-    OrchestratorService.OrchestratorAction action = actions.get(0);
+    OrchestratorActions.OrchestratorAction action = actions.get(0);
     assertTrue(action.hasCreateSubOrchestration());
 
-    OrchestratorService.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
+    OrchestratorActions.CreateSubOrchestrationAction createSub = action.getCreateSubOrchestration();
     assertTrue(createSub.hasRouter());
     assertEquals(sourceAppId, createSub.getRouter().getSourceAppID());
     assertEquals(targetAppId, createSub.getRouter().getTargetAppID());
