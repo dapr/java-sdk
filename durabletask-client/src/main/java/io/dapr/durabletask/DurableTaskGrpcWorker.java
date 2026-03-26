@@ -180,8 +180,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
           OrchestratorService.WorkItem workItem = workItemStream.next();
           OrchestratorService.WorkItem.RequestCase requestType = workItem.getRequestCase();
 
-          if (requestType == OrchestratorService.WorkItem.RequestCase.ORCHESTRATORREQUEST) {
-            OrchestratorService.OrchestratorRequest orchestratorRequest = workItem.getOrchestratorRequest();
+          if (requestType == OrchestratorService.WorkItem.RequestCase.WORKFLOWREQUEST) {
+            OrchestratorService.WorkflowRequest orchestratorRequest = workItem.getWorkflowRequest();
             logger.log(Level.FINEST,
                 String.format("Processing orchestrator request for instance: {0}",
                     orchestratorRequest.getInstanceId()));
@@ -193,7 +193,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
             logger.log(Level.INFO,
                 String.format("Processing activity request: %s for instance: %s, gRPC thread context: %s",
                     activityRequest.getName(),
-                    activityRequest.getOrchestrationInstance().getInstanceId(),
+                    activityRequest.getWorkflowInstance().getInstanceId(),
                     Context.current()));
 
             this.workerPool.submit(new ActivityRunner(workItem, taskActivityExecutor, sidecarClient, tracer));
