@@ -44,6 +44,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("deprecation")
 public class DaprRuntimeTest {
 
   protected static final JsonFactory JSON_FACTORY = new JsonFactory();

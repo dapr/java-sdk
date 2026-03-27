@@ -19,6 +19,7 @@ import java.util.UUID;
 import static io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry;
 import static io.dapr.it.tracing.OpenTelemetry.getReactorContext;
 
+@SuppressWarnings("deprecation")
 public class TracingIT extends BaseIT {
 
     /**

@@ -13,20 +13,21 @@ limitations under the License.
 
 package io.dapr.examples.tracing;
 
-import io.dapr.client.DaprClient;
-import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.config.Properties;
 import io.dapr.examples.OpenTelemetryInterceptor;
-import io.dapr.utils.TypeRef;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.context.Context;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import static io.dapr.examples.OpenTelemetryConfig.getReactorContext;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 /**
  * SpringBoot Controller to handle service invocation.
@@ -38,11 +39,7 @@ public class TracingDemoMiddleServiceController {
 
   private static final String INVOKE_APP_ID = "tracingdemo";
 
-  /**
-   * Dapr client.
-   */
-  @Autowired
-  private DaprClient client;
+  private static final HttpClient httpClient = HttpClient.newHttpClient();
 
   /**
    * Handles the 'echo' method invocation, by proxying a call into another service.
@@ -55,10 +52,14 @@ public class TracingDemoMiddleServiceController {
   public Mono<byte[]> echo(
       @RequestAttribute(name = "opentelemetry-context") Context context,
       @RequestBody(required = false) String body) {
-    InvokeMethodRequest request = new InvokeMethodRequest(INVOKE_APP_ID, "echo")
-        .setBody(body)
-        .setHttpExtension(HttpExtension.POST);
-    return client.invokeMethod(request, TypeRef.get(byte[].class)).contextWrite(getReactorContext(context));
+    return Mono.fromFuture(() -> {
+      HttpRequest.Builder builder = HttpRequest.newBuilder()
+          .uri(URI.create(buildInvokeUrl("echo")))
+          .POST(HttpRequest.BodyPublishers.ofString(body != null ? body : ""));
+      injectTraceContext(builder, context);
+      addDaprApiToken(builder);
+      return httpClient.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
+    }).map(HttpResponse::body);
   }
 
   /**
@@ -69,9 +70,32 @@ public class TracingDemoMiddleServiceController {
    */
   @PostMapping(path = "/proxy_sleep")
   public Mono<Void> sleep(@RequestAttribute(name = "opentelemetry-context") Context context) {
-    InvokeMethodRequest request = new InvokeMethodRequest(INVOKE_APP_ID, "sleep")
-        .setHttpExtension(HttpExtension.POST);
-    return client.invokeMethod(request, TypeRef.get(byte[].class)).contextWrite(getReactorContext(context)).then();
+    return Mono.fromFuture(() -> {
+      HttpRequest.Builder builder = HttpRequest.newBuilder()
+          .uri(URI.create(buildInvokeUrl("sleep")))
+          .POST(HttpRequest.BodyPublishers.noBody());
+      injectTraceContext(builder, context);
+      addDaprApiToken(builder);
+      return httpClient.sendAsync(builder.build(), HttpResponse.BodyHandlers.discarding());
+    }).then();
+  }
+
+  private static String buildInvokeUrl(String method) {
+    int port = Properties.HTTP_PORT.get();
+    return "http://localhost:" + port + "/v1.0/invoke/" + INVOKE_APP_ID + "/method/" + method;
+  }
+
+  private static void injectTraceContext(HttpRequest.Builder builder, Context context) {
+    TextMapSetter<HttpRequest.Builder> setter = HttpRequest.Builder::header;
+    GlobalOpenTelemetry.getPropagators().getTextMapPropagator()
+        .inject(context, builder, setter);
+  }
+
+  private static void addDaprApiToken(HttpRequest.Builder builder) {
+    String token = Properties.API_TOKEN.get();
+    if (token != null) {
+      builder.header("dapr-api-token", token);
+    }
   }
 
 }
