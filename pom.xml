@@ -82,6 +82,7 @@
     <opentelemetry-bom.version>2.1.0</opentelemetry-bom.version>
     <kotlin.version>2.1.0</kotlin.version>
     <rest-assured.version>5.5.1</rest-assured.version>
+    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.132 (CVE-2026-33871, CVE-2026-33870) -->
     <netty.version>4.1.132.Final</netty.version>
   </properties>
 
