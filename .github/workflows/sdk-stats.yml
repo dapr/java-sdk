@@ -1,0 +1,78 @@
+name: Java SDK Maven Stats
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 9am UTC
+  workflow_dispatch:
+
+env:
+  GROUP_ID: io.dapr
+  ARTIFACT_ID: dapr-sdk
+
+jobs:
+  stats:
+    name: Fetch Maven Central Stats
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch download stats (OSSRH)
+        env:
+          OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
+          OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
+        run: |
+          BASE="https://oss.sonatype.org/service/local/stats"
+
+          # Set up netrc for credential-safe curl (avoids exposing tokens in process args)
+          NETRC_FILE=$(mktemp)
+          chmod 600 "$NETRC_FILE"
+          echo "machine oss.sonatype.org login ${OSSRH_USER_TOKEN} password ${OSSRH_PWD_TOKEN}" > "$NETRC_FILE"
+          trap 'rm -f "$NETRC_FILE"' EXIT
+
+          echo "## 📦 Download Stats for \`${GROUP_ID}:${ARTIFACT_ID}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # ── 1. Monthly timeline (last 12 months, all versions combined) ────
+          echo "### 📅 Monthly Downloads (last 12 months)" >> "$GITHUB_STEP_SUMMARY"
+
+          if ! TIMELINE=$(curl -sf --netrc-file "$NETRC_FILE" \
+            "${BASE}/timeline?p=maven&t=raw&g=${GROUP_ID}&a=${ARTIFACT_ID}&v=&from=&nom=12"); then
+            echo "> ⚠️ Could not fetch stats. Check \`OSSRH_USER_TOKEN\` / \`OSSRH_PWD_TOKEN\` secrets." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if [ -z "$TIMELINE" ]; then
+            echo "> ⚠️ Empty response from OSSRH. Check \`OSSRH_USER_TOKEN\` / \`OSSRH_PWD_TOKEN\` secrets." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "| Month | Downloads |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "$TIMELINE" | xmllint --xpath '//data/timelineRecord' - 2>/dev/null | \
+            grep -oP '(?<=<n>)[^<]+|(?<=<count>)[^<]+' | \
+            paste - - | \
+            awk '{gsub(/[^a-zA-Z0-9._\-]/, "", $1); gsub(/[^0-9]/, "", $2); print "| "$1" | "$2" |"}' >> "$GITHUB_STEP_SUMMARY"
+
+          TOTAL=$(echo "$TIMELINE" | xmllint --xpath 'sum(//data/timelineRecord/count)' - 2>/dev/null)
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Total: ${TOTAL} downloads**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # ── 2. Per-version breakdown ───────────────────────────────────────
+          echo "### 🔢 Downloads by Version" >> "$GITHUB_STEP_SUMMARY"
+
+          if ! ALL_VER=$(curl -sf --netrc-file "$NETRC_FILE" \
+            "${BASE}/allversions?p=maven&t=raw&g=${GROUP_ID}&a=${ARTIFACT_ID}&from=&nom=12"); then
+            echo "> ⚠️ Could not fetch per-version stats." >> "$GITHUB_STEP_SUMMARY"
+          elif [ -z "$ALL_VER" ]; then
+            echo "> ⚠️ Empty response for per-version stats." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Version | Downloads |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+            echo "$ALL_VER" | xmllint --xpath '//data/timelineRecord' - 2>/dev/null | \
+              grep -oP '(?<=<n>)[^<]+|(?<=<count>)[^<]+' | \
+              paste - - | \
+              sort -t$'\t' -k2 -rn | \
+              awk '{gsub(/[^a-zA-Z0-9._\-]/, "", $1); gsub(/[^0-9]/, "", $2); print "| "$1" | "$2" |"}' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
