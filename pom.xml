@@ -49,8 +49,8 @@
     <snakeyaml.version>2.0</snakeyaml.version>
     <testcontainers.version>1.21.3</testcontainers.version>
     <!-- Do NOT UPGRADE spring.version without checking springboot.version alignment -->
-    <springboot.version>3.4.10</springboot.version>
-    <springframework.version>6.2.11</springframework.version>
+    <springboot.version>3.4.13</springboot.version>
+    <springframework.version>6.2.17</springframework.version>
     <!-- Do NOT UPGRADE springframework.version without checking springboot.version alignment -->
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <assertj.version>3.27.3</assertj.version>
