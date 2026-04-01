@@ -49,10 +49,13 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ env.JDK_VER }}
-      - name: Switch to iptables-legacy
+      - name: Switch to iptables-legacy and restart Docker
         run: |
           sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
           sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+          sudo systemctl restart docker
+          sudo iptables -L DOCKER-ISOLATION-STAGE-1 -n 2>/dev/null || true
+          sudo iptables -L DOCKER-ISOLATION-STAGE-2 -n 2>/dev/null || true
       - name: Install Stable Docker
         id: setup_docker
         uses: docker/setup-docker-action@v4
