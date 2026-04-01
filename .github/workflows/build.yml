@@ -45,18 +45,18 @@ jobs:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
-    - name: Switch to iptables-legacy and restart Docker
+    - name: Switch to iptables-legacy
       run: |
         sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
         sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
-        sudo systemctl restart docker
-        sudo iptables -L DOCKER-ISOLATION-STAGE-1 -n 2>/dev/null || true
-        sudo iptables -L DOCKER-ISOLATION-STAGE-2 -n 2>/dev/null || true
     - name: Install Stable Docker
       id: setup_docker
       uses: docker/setup-docker-action@v4
-    - name: Check Docker version
-      run: docker version
+    - name: Restart Docker to recreate iptables chains
+      run: |
+        sudo systemctl restart docker
+        docker version
+        sudo iptables -L -n | grep -A2 DOCKER || true
     - uses: actions/checkout@v4
     - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v4
