@@ -45,19 +45,9 @@ jobs:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
-    - name: Switch to iptables-legacy
-      run: |
-        sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
-        sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
-    - name: Install Stable Docker
-      id: setup_docker
-      uses: docker/setup-docker-action@v4
-    - name: Restart Docker to recreate iptables chains
-      run: |
-        sudo systemctl restart docker
-        docker version
-        sudo iptables -L -n | grep -A2 DOCKER || true
     - uses: actions/checkout@v4
+    - name: Check Docker version
+      run: docker version
     - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v4
       with:
@@ -125,8 +115,6 @@ jobs:
       run: ./mvnw compile -B -q
     - name: Unit tests
       run: ./mvnw test # making it temporarily verbose.
-      env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Codecov
       uses: codecov/codecov-action@v5.4.2
     - name: Install jars
@@ -134,8 +122,6 @@ jobs:
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -Pintegration-tests verify
-      env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Upload test report for sdk
       uses: actions/upload-artifact@v4
       with:
