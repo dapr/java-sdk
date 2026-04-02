@@ -212,6 +212,11 @@
       <artifactId>toxiproxy</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>rabbitmq</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
