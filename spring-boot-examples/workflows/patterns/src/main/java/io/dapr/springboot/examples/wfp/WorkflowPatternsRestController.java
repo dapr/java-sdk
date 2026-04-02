@@ -15,6 +15,7 @@ package io.dapr.springboot.examples.wfp;
 
 import io.dapr.spring.workflows.config.EnableDaprWorkflows;
 import io.dapr.springboot.examples.wfp.chain.ChainWorkflow;
+import io.dapr.springboot.examples.wfp.compensation.BookTripWorkflow;
 import io.dapr.springboot.examples.wfp.child.ParentWorkflow;
 import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
 import io.dapr.springboot.examples.wfp.continueasnew.ContinueAsNewWorkflow;
@@ -189,6 +190,19 @@ public class WorkflowPatternsRestController {
     WorkflowState workflowInstanceStatus = daprWorkflowClient
             .waitForWorkflowCompletion(instanceId, null, true);
     return workflowInstanceStatus.readOutputAs(Decision.class);
+  }
+
+  /**
+   * Run Compensation Demo Workflow (Book Trip with Saga pattern).
+   * @return the output of the BookTripWorkflow execution
+   */
+  @PostMapping("wfp/compensation")
+  public String compensation() throws TimeoutException {
+    String instanceId = daprWorkflowClient.scheduleNewWorkflow(BookTripWorkflow.class);
+    logger.info("Workflow instance " + instanceId + " started");
+    return daprWorkflowClient
+            .waitForWorkflowCompletion(instanceId, Duration.ofSeconds(30), true)
+            .readOutputAs(String.class);
   }
 
   @PostMapping("wfp/durationtimer")
