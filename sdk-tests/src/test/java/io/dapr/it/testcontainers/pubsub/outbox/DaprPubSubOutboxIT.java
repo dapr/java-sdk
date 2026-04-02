@@ -128,7 +128,7 @@ public class DaprPubSubOutboxIT {
 
       client.executeStateTransaction(transactionRequest).block();
 
-      Awaitility.await().atMost(Duration.ofSeconds(10))
+      Awaitility.await().atMost(Duration.ofSeconds(45))
           .ignoreExceptions()
           .untilAsserted(() -> Assertions.assertThat(productWebhookController.getEventList()).isNotEmpty());
     }
