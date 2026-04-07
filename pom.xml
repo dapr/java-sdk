@@ -42,7 +42,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <jackson.version>2.18.6</jackson.version>
+    <jackson.version>2.21.2</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.fail>true</spotbugs.fail>
     <spotbugs.exclude.filter.file>${maven.multiModuleProjectDirectory}/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
@@ -52,10 +52,7 @@
     <junit-bom.version>5.11.4</junit-bom.version>
     <snakeyaml.version>2.0</snakeyaml.version>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <!-- Do NOT UPGRADE spring.version without checking springboot.version alignment -->
-    <springboot.version>3.4.10</springboot.version>
-    <springframework.version>6.2.11</springframework.version>
-    <!-- Do NOT UPGRADE springframework.version without checking springboot.version alignment -->
+    <springboot.version>3.5.12</springboot.version>
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <assertj.version>3.27.7</assertj.version>
     <opentelemetry.version>1.41.0</opentelemetry.version>
@@ -84,6 +81,8 @@
     <rest-assured.version>5.5.1</rest-assured.version>
     <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.132 (CVE-2026-33871, CVE-2026-33870) -->
     <netty.version>4.1.132.Final</netty.version>
+    <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
+    <commons-compress.version>1.26.0</commons-compress.version>
   </properties>
 
   <distributionManagement>
@@ -162,6 +161,20 @@
         <version>${opentelemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <!-- ====================================================================== -->
+      <!-- Security overrides - Transitive dependency version fixes for CVEs   -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.17.2</version>
       </dependency>
 
       <!-- ====================================================================== -->
