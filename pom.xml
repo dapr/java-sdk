@@ -173,6 +173,11 @@
         <artifactId>commons-compress</artifactId>
         <version>${commons-compress.version}</version>
       </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.17.2</version>
+      </dependency>
 
       <!-- ====================================================================== -->
       <!-- Direct dependencies - Only versions not managed by BOMs above         -->
