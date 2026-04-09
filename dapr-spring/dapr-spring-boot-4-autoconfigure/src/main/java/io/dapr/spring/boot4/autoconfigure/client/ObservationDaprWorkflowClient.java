@@ -1,0 +1,295 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package io.dapr.spring.boot4.autoconfigure.client;
+
+import io.dapr.config.Properties;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.client.DaprWorkflowClient;
+import io.dapr.workflows.client.NewWorkflowOptions;
+import io.dapr.workflows.client.WorkflowState;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+
+import javax.annotation.Nullable;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.TimeoutException;
+
+/**
+ * A {@link DaprWorkflowClient} subclass that creates Micrometer Observation spans (bridged to
+ * OpenTelemetry) for each non-deprecated method call.
+ *
+ * <p>Because this class extends {@link DaprWorkflowClient}, consumers can keep injecting
+ * {@code DaprWorkflowClient} without any code changes. Deprecated methods fall through to the
+ * parent implementation without any observation.
+ *
+ * <p><b>Constructor note:</b> calling {@code super(properties)} eagerly creates a gRPC
+ * {@code ManagedChannel}, but the actual TCP connection is established lazily on the first RPC call,
+ * so construction succeeds even when the Dapr sidecar is not yet available.
+ */
+public class ObservationDaprWorkflowClient extends DaprWorkflowClient {
+
+  private final ObservationRegistry observationRegistry;
+
+  /**
+   * Creates a new {@code ObservationDaprWorkflowClient}.
+   *
+   * @param properties          connection properties for the underlying gRPC channel
+   * @param observationRegistry the Micrometer {@link ObservationRegistry} used to create spans
+   */
+  public ObservationDaprWorkflowClient(Properties properties,
+                                        ObservationRegistry observationRegistry) {
+    super(properties);
+    this.observationRegistry = Objects.requireNonNull(observationRegistry,
+        "observationRegistry must not be null");
+  }
+
+  // -------------------------------------------------------------------------
+  // Internal helpers
+  // -------------------------------------------------------------------------
+
+  private Observation observation(String name) {
+    return Observation.createNotStarted(name, observationRegistry);
+  }
+
+  // -------------------------------------------------------------------------
+  // scheduleNewWorkflow — only String-based "leaf" overloads are overridden.
+  // Class<T>-based overloads in the parent delegate to this.scheduleNewWorkflow(String, ...)
+  // via dynamic dispatch, so they naturally pick up these observations.
+  // -------------------------------------------------------------------------
+
+  @Override
+  public <T extends Workflow> String scheduleNewWorkflow(String name) {
+    Observation obs = observation("dapr.workflow.schedule")
+        .highCardinalityKeyValue("dapr.workflow.name", name)
+        .start();
+    try {
+      return super.scheduleNewWorkflow(name);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  @Override
+  public <T extends Workflow> String scheduleNewWorkflow(String name, Object input) {
+    Observation obs = observation("dapr.workflow.schedule")
+        .highCardinalityKeyValue("dapr.workflow.name", name)
+        .start();
+    try {
+      return super.scheduleNewWorkflow(name, input);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  @Override
+  public <T extends Workflow> String scheduleNewWorkflow(String name, Object input,
+                                                          String instanceId) {
+    Observation obs = observation("dapr.workflow.schedule")
+        .highCardinalityKeyValue("dapr.workflow.name", name)
+        .highCardinalityKeyValue("dapr.workflow.instance_id",
+            instanceId != null ? instanceId : "")
+        .start();
+    try {
+      return super.scheduleNewWorkflow(name, input, instanceId);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  @Override
+  public <T extends Workflow> String scheduleNewWorkflow(String name,
+                                                          NewWorkflowOptions options) {
+    String instanceId = options != null && options.getInstanceId() != null
+        ? options.getInstanceId() : "";
+    Observation obs = observation("dapr.workflow.schedule")
+        .highCardinalityKeyValue("dapr.workflow.name", name)
+        .highCardinalityKeyValue("dapr.workflow.instance_id", instanceId)
+        .start();
+    try {
+      return super.scheduleNewWorkflow(name, options);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Lifecycle operations
+  // -------------------------------------------------------------------------
+
+  @Override
+  public void suspendWorkflow(String workflowInstanceId, @Nullable String reason) {
+    Observation obs = observation("dapr.workflow.suspend")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", workflowInstanceId)
+        .start();
+    try {
+      super.suspendWorkflow(workflowInstanceId, reason);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  @Override
+  public void resumeWorkflow(String workflowInstanceId, @Nullable String reason) {
+    Observation obs = observation("dapr.workflow.resume")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", workflowInstanceId)
+        .start();
+    try {
+      super.resumeWorkflow(workflowInstanceId, reason);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  @Override
+  public void terminateWorkflow(String workflowInstanceId, @Nullable Object output) {
+    Observation obs = observation("dapr.workflow.terminate")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", workflowInstanceId)
+        .start();
+    try {
+      super.terminateWorkflow(workflowInstanceId, output);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // State queries
+  // -------------------------------------------------------------------------
+
+  @Override
+  @Nullable
+  public WorkflowState getWorkflowState(String instanceId, boolean getInputsAndOutputs) {
+    Observation obs = observation("dapr.workflow.get_state")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", instanceId)
+        .start();
+    try {
+      return super.getWorkflowState(instanceId, getInputsAndOutputs);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Waiting
+  // -------------------------------------------------------------------------
+
+  @Override
+  @Nullable
+  public WorkflowState waitForWorkflowStart(String instanceId, Duration timeout,
+                                             boolean getInputsAndOutputs) throws TimeoutException {
+    Observation obs = observation("dapr.workflow.wait_start")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", instanceId)
+        .start();
+    try {
+      return super.waitForWorkflowStart(instanceId, timeout, getInputsAndOutputs);
+    } catch (TimeoutException e) {
+      obs.error(e);
+      throw e;
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  @Override
+  @Nullable
+  public WorkflowState waitForWorkflowCompletion(String instanceId, Duration timeout,
+                                                  boolean getInputsAndOutputs)
+      throws TimeoutException {
+    Observation obs = observation("dapr.workflow.wait_completion")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", instanceId)
+        .start();
+    try {
+      return super.waitForWorkflowCompletion(instanceId, timeout, getInputsAndOutputs);
+    } catch (TimeoutException e) {
+      obs.error(e);
+      throw e;
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Events
+  // -------------------------------------------------------------------------
+
+  @Override
+  public void raiseEvent(String workflowInstanceId, String eventName, Object eventPayload) {
+    Observation obs = observation("dapr.workflow.raise_event")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", workflowInstanceId)
+        .highCardinalityKeyValue("dapr.workflow.event_name", eventName)
+        .start();
+    try {
+      super.raiseEvent(workflowInstanceId, eventName, eventPayload);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Cleanup
+  // -------------------------------------------------------------------------
+
+  @Override
+  public boolean purgeWorkflow(String workflowInstanceId) {
+    Observation obs = observation("dapr.workflow.purge")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", workflowInstanceId)
+        .start();
+    try {
+      return super.purgeWorkflow(workflowInstanceId);
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
+  // Deprecated methods (getInstanceState, waitForInstanceStart, waitForInstanceCompletion,
+  // purgeInstance) are intentionally not overridden — they fall through to the parent
+  // implementation without any observation.
+}

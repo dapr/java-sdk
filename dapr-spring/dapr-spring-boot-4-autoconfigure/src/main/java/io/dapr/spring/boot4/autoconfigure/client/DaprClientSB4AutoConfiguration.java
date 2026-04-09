@@ -24,6 +24,7 @@ import io.dapr.spring.boot.properties.client.DaprClientProperties;
 import io.dapr.spring.boot.properties.client.DaprConnectionDetails;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -91,14 +92,25 @@ public class DaprClientSB4AutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  DaprClient daprClient(DaprClientBuilder daprClientBuilder) {
-    return daprClientBuilder.build();
+  DaprClient daprClient(DaprClientBuilder daprClientBuilder,
+                        ObjectProvider<ObservationRegistry> observationRegistryProvider) {
+    DaprClient client = daprClientBuilder.build();
+    ObservationRegistry registry = observationRegistryProvider.getIfAvailable();
+    if (registry != null && !registry.isNoop()) {
+      return new ObservationDaprClient(client, registry);
+    }
+    return client;
   }
 
   @Bean
   @ConditionalOnMissingBean
-  DaprWorkflowClient daprWorkflowClient(DaprConnectionDetails daprConnectionDetails) {
+  DaprWorkflowClient daprWorkflowClient(DaprConnectionDetails daprConnectionDetails,
+                                         ObjectProvider<ObservationRegistry> observationRegistryProvider) {
     Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+    ObservationRegistry registry = observationRegistryProvider.getIfAvailable();
+    if (registry != null && !registry.isNoop()) {
+      return new ObservationDaprWorkflowClient(properties, registry);
+    }
     return new DaprWorkflowClient(properties);
   }
 
