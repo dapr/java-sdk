@@ -59,31 +59,43 @@ For the full list of available APIs, see the [Dapr API reference](https://docs.d
 If using [SDKMAN!](https://sdkman.io), execute `sdk env install` to install the required JDK.
 
 ### Importing Dapr's Java SDK
+
+#### Using the BOM (recommended)
+
+Import `dapr-sdk-bom` to manage all Dapr SDK versions and security-patched transitive dependencies in one place. This ensures your project inherits fixes for CVEs in transitive dependencies like Netty and Jackson.
+
 For a Maven project, add the following to your `pom.xml` file:
 ```xml
 <project>
   ...
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-bom</artifactId>
+        <version>1.18.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
-    ...
-     <!-- Dapr's core SDK with all features, except Actors. -->
+    <!-- Dapr's core SDK with all features, except Actors. -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.17.2</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.17.2</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.17.2</version>
     </dependency>
-    ...
   </dependencies>
   ...
 </project>
@@ -91,15 +103,55 @@ For a Maven project, add the following to your `pom.xml` file:
 
 For a Gradle project, add the following to your `build.gradle` file:
 
-```
+```groovy
 dependencies {
-...
+    // Import the BOM
+    implementation platform('io.dapr:dapr-sdk-bom:1.18.0')
+
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.17.2')
+    implementation 'io.dapr:dapr-sdk'
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.17.2')
+    implementation 'io.dapr:dapr-sdk-actors'
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.17.2')
+    implementation 'io.dapr:dapr-sdk-springboot'
+}
+```
+
+#### Without the BOM
+
+If you prefer to manage versions manually, specify the version on each dependency:
+
+For Maven:
+```xml
+<project>
+  ...
+  <dependencies>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk</artifactId>
+      <version>1.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-actors</artifactId>
+      <version>1.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-springboot</artifactId>
+      <version>1.17.2</version>
+    </dependency>
+  </dependencies>
+  ...
+</project>
+```
+
+For Gradle:
+```groovy
+dependencies {
+    implementation 'io.dapr:dapr-sdk:1.17.2'
+    implementation 'io.dapr:dapr-sdk-actors:1.17.2'
+    implementation 'io.dapr:dapr-sdk-springboot:1.17.2'
 }
 ```
 
