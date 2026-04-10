@@ -727,6 +727,7 @@
   </scm>
 
   <modules>
+    <module>sdk-bom</module>
     <module>sdk-autogen</module>
     <module>sdk</module>
     <module>sdk-actors</module>

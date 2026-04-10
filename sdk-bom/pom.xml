@@ -1,0 +1,182 @@
+<project
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.dapr</groupId>
+  <artifactId>dapr-sdk-bom</artifactId>
+  <version>1.18.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>dapr-sdk-bom</name>
+  <description>Dapr SDK Bill of Materials (BOM). Import this POM to manage versions
+    of all Dapr SDK modules and their security-critical transitive dependencies.</description>
+  <url>https://dapr.io</url>
+
+  <licenses>
+    <license>
+      <name>Apache License Version 2.0</name>
+      <url>https://opensource.org/licenses/Apache-2.0</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Dapr</name>
+      <email>daprweb@microsoft.com</email>
+      <organization>Dapr</organization>
+      <organizationUrl>https://dapr.io</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>https://github.com/dapr/java-sdk</url>
+    <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <properties>
+    <dapr.sdk.version>1.18.0-SNAPSHOT</dapr.sdk.version>
+    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.132 (CVE-2026-33871, CVE-2026-33870) -->
+    <netty.version>4.1.132.Final</netty.version>
+    <jackson.version>2.21.2</jackson.version>
+    <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
+    <commons-compress.version>1.26.0</commons-compress.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- ====================================================================== -->
+      <!-- Dapr SDK modules                                                       -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-autogen</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-actors</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-workflows</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-springboot</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>testcontainers-dapr</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>durabletask-client</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+
+      <!-- ====================================================================== -->
+      <!-- Dapr Spring modules                                                    -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-data</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-6-data</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-messaging</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-workflows</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-properties</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-autoconfigure</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-autoconfigure</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-tests</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-starter</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-starter</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-starter-test</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-starter-test</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+
+      <!-- ====================================================================== -->
+      <!-- Security overrides - Transitive dependency version fixes for CVEs      -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.17.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>
