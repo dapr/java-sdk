@@ -18,6 +18,7 @@
   <description>SDK extension for Spring and Spring Boot</description>
 
   <modules>
+    <module>dapr-spring-bom</module>
     <module>dapr-spring-data</module>
     <module>dapr-spring-6-data</module>
     <module>dapr-spring-messaging</module>
