@@ -59,47 +59,143 @@ For the full list of available APIs, see the [Dapr API reference](https://docs.d
 If using [SDKMAN!](https://sdkman.io), execute `sdk env install` to install the required JDK.
 
 ### Importing Dapr's Java SDK
-For a Maven project, add the following to your `pom.xml` file:
+
+#### Using a BOM (recommended)
+
+Two BOMs are published:
+
+- **`io.dapr:dapr-sdk-bom`** — core SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`, `dapr-sdk-autogen`, `durabletask-client`, `testcontainers-dapr`) plus security-patched transitive dependencies (Netty, Jackson, commons-compress, commons-codec).
+- **`io.dapr.spring:dapr-spring-bom`** — Spring-specific modules (`dapr-sdk-springboot`, `dapr-spring-*`). Imports `dapr-sdk-bom` transitively, so Spring users only need this single BOM.
+
+Pick the one that matches your project. Importing a BOM ensures you inherit security fixes for transitive dependencies like the Netty CVEs.
+
+##### Core (non-Spring) projects
+
+For Maven:
 ```xml
 <project>
   ...
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-bom</artifactId>
+        <version>1.18.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
-    ...
-     <!-- Dapr's core SDK with all features, except Actors. -->
+    <!-- Dapr's core SDK with all features, except Actors. -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.17.2</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.17.2</version>
     </dependency>
-    <!-- Dapr's SDK integration with SpringBoot (optional). -->
-    <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.17.2</version>
-    </dependency>
-    ...
   </dependencies>
   ...
 </project>
 ```
 
-For a Gradle project, add the following to your `build.gradle` file:
-
-```
+For Gradle:
+```groovy
 dependencies {
-...
+    implementation platform('io.dapr:dapr-sdk-bom:1.18.0')
+
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.17.2')
+    implementation 'io.dapr:dapr-sdk'
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.17.2')
-    // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.17.2')
+    implementation 'io.dapr:dapr-sdk-actors'
+}
+```
+
+##### Spring Boot projects
+
+For Maven:
+```xml
+<project>
+  ...
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-bom</artifactId>
+        <version>1.18.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- Dapr's SDK integration with Spring Boot. -->
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-springboot</artifactId>
+    </dependency>
+    <!-- Optional Spring Boot starter. -->
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-starter</artifactId>
+    </dependency>
+  </dependencies>
+  ...
+</project>
+```
+
+For Gradle:
+```groovy
+dependencies {
+    implementation platform('io.dapr.spring:dapr-spring-bom:1.18.0')
+
+    // Dapr's SDK integration with Spring Boot.
+    implementation 'io.dapr:dapr-sdk-springboot'
+    // Optional Spring Boot starter.
+    implementation 'io.dapr.spring:dapr-spring-boot-starter'
+}
+```
+
+#### Without the BOM
+
+If you prefer to manage versions manually, specify the version on each dependency:
+
+For Maven:
+```xml
+<project>
+  ...
+  <dependencies>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk</artifactId>
+      <version>1.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-actors</artifactId>
+      <version>1.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-springboot</artifactId>
+      <version>1.17.2</version>
+    </dependency>
+  </dependencies>
+  ...
+</project>
+```
+
+For Gradle:
+```groovy
+dependencies {
+    implementation 'io.dapr:dapr-sdk:1.17.2'
+    implementation 'io.dapr:dapr-sdk-actors:1.17.2'
+    implementation 'io.dapr:dapr-sdk-springboot:1.17.2'
 }
 ```
 

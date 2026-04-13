@@ -1,0 +1,168 @@
+<project
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.dapr</groupId>
+  <artifactId>dapr-sdk-bom</artifactId>
+  <version>1.18.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>dapr-sdk-bom</name>
+  <description>Dapr SDK Bill of Materials (BOM) for the core SDK modules. Import this POM
+    to manage versions of dapr-sdk, dapr-sdk-actors, dapr-sdk-workflows, and their
+    security-critical transitive dependencies. Spring users should also import
+    dapr-spring-bom for the Spring-specific modules.</description>
+  <url>https://dapr.io</url>
+
+  <licenses>
+    <license>
+      <name>Apache License Version 2.0</name>
+      <url>https://opensource.org/licenses/Apache-2.0</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Dapr</name>
+      <email>daprweb@microsoft.com</email>
+      <organization>Dapr</organization>
+      <organizationUrl>https://dapr.io</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>https://github.com/dapr/java-sdk</url>
+    <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <properties>
+    <gpg.skip>true</gpg.skip>
+    <dapr.sdk.version>1.18.0-SNAPSHOT</dapr.sdk.version>
+    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.132 (CVE-2026-33871, CVE-2026-33870) -->
+    <netty.version>4.1.132.Final</netty.version>
+    <jackson.version>2.21.2</jackson.version>
+    <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
+    <commons-compress.version>1.26.0</commons-compress.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.12.1</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.7.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://ossrh-staging-api.central.sonatype.com</nexusUrl>
+          <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+            <configuration>
+              <gpgArguments>
+                <arg>--batch</arg>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- ====================================================================== -->
+      <!-- Dapr SDK modules                                                       -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-autogen</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-actors</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-workflows</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>testcontainers-dapr</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>durabletask-client</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+
+      <!-- ====================================================================== -->
+      <!-- Security overrides - Transitive dependency version fixes for CVEs      -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.17.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>

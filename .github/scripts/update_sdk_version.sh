@@ -12,6 +12,11 @@ mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -DprocessDependencies=true
 mvn versions:set-property -Dproperty=dapr.sdk.alpha.version -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION
 mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SDK_VERSION
 mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SDK_VERSION -f sdk-tests/pom.xml
+# BOMs are standalone (no parent), so versions:set skips them — update explicitly.
+mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -f sdk-bom/pom.xml
+mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SDK_VERSION -f sdk-bom/pom.xml
+mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -f dapr-spring/dapr-spring-bom/pom.xml
+mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SDK_VERSION -f dapr-spring/dapr-spring-bom/pom.xml
 mvn versions:set-property -Dproperty=dapr.sdk.alpha.version -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f sdk-tests/pom.xml
 
 
