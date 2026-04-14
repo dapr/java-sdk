@@ -171,7 +171,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
         this.dataConverter,
         logger);
 
-    while (true) {
+    while (!this.isNormalShutdown && !Thread.currentThread().isInterrupted()) {
       try {
         OrchestratorService.GetWorkItemsRequest getWorkItemsRequest = OrchestratorService.GetWorkItemsRequest
             .newBuilder().build();
@@ -210,6 +210,9 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
               this.getSidecarAddress());
         } else if (e.getStatus().getCode() == Status.Code.CANCELLED) {
           logger.log(Level.INFO, "Durable Task worker has disconnected from {0}.", this.getSidecarAddress());
+          if (this.isNormalShutdown) {
+            break;
+          }
         } else {
           logger.log(Level.WARNING,
               String.format("Unexpected failure connecting to %s", this.getSidecarAddress()), e);
@@ -219,6 +222,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
         try {
           Thread.sleep(5000);
         } catch (InterruptedException ex) {
+          Thread.currentThread().interrupt();
           break;
         }
       }
