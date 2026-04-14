@@ -13,15 +13,15 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Unit tests for DurableTaskGrpcWorker shutdown behavior.
@@ -52,11 +52,10 @@ public class DurableTaskGrpcWorkerShutdownTest {
     // Wait for the worker thread to finish — the join is bounded so the
     // test doesn't hang if the fix regresses.
     Thread workerThread = getWorkerThread(worker);
-    if (workerThread != null) {
-      workerThread.join(Duration.ofSeconds(3).toMillis());
-      assertFalse(workerThread.isAlive(),
-          "Worker thread should have terminated after close()");
-    }
+    assertNotNull(workerThread, "Worker thread should be accessible via reflection");
+    workerThread.join(Duration.ofSeconds(3).toMillis());
+    assertFalse(workerThread.isAlive(),
+        "Worker thread should have terminated after close()");
 
     Duration elapsed = Duration.between(before, Instant.now());
     assertTrue(elapsed.toMillis() < 3000,
@@ -112,6 +111,8 @@ public class DurableTaskGrpcWorkerShutdownTest {
 
     assertFalse(blockingThread.isAlive(),
         "startAndBlock() thread should have exited after interrupt");
+    assertTrue(blockingThread.isInterrupted(),
+        "Interrupt status should be preserved after startAndBlock() exits");
 
     worker.close();
   }
@@ -122,7 +123,8 @@ public class DurableTaskGrpcWorkerShutdownTest {
       f.setAccessible(true);
       return (Thread) f.get(worker);
     } catch (Exception e) {
-      return null;
+      fail("Failed to access workerThread field via reflection: " + e.getMessage());
+      return null; // unreachable
     }
   }
 }

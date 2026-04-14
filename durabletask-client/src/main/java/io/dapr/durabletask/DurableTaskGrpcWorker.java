@@ -64,7 +64,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient;
   private final boolean isExecutorServiceManaged;
   private volatile boolean isNormalShutdown = false;
-  private Thread workerThread;
+  private volatile Thread workerThread;
 
   DurableTaskGrpcWorker(DurableTaskGrpcWorkerBuilder builder) {
     this.orchestrationFactories = builder.orchestrationFactories;
@@ -178,6 +178,9 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
             .newBuilder().build();
         Iterator<OrchestratorService.WorkItem> workItemStream = this.sidecarClient.getWorkItems(getWorkItemsRequest);
         while (workItemStream.hasNext()) {
+          if (this.isNormalShutdown || Thread.currentThread().isInterrupted()) {
+            break;
+          }
           OrchestratorService.WorkItem workItem = workItemStream.next();
           OrchestratorService.WorkItem.RequestCase requestType = workItem.getRequestCase();
 
@@ -211,9 +214,6 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
               this.getSidecarAddress());
         } else if (e.getStatus().getCode() == Status.Code.CANCELLED) {
           logger.log(Level.INFO, "Durable Task worker has disconnected from {0}.", this.getSidecarAddress());
-          if (this.isNormalShutdown) {
-            break;
-          }
         } else {
           logger.log(Level.WARNING,
               String.format("Unexpected failure connecting to %s", this.getSidecarAddress()), e);
