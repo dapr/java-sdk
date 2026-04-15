@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.spring.boot.autoconfigure.client;
+package io.dapr.spring.observation.client;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.BulkPublishRequest;
@@ -46,8 +46,11 @@ import io.grpc.Channel;
 import io.grpc.stub.AbstractStub;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.util.List;
 import java.util.Map;
@@ -86,19 +89,51 @@ public class ObservationDaprClient implements DaprClient {
   private <T> Mono<T> observe(Observation obs, Supplier<Mono<T>> monoSupplier) {
     return Mono.defer(() -> {
       obs.start();
+      // Open a scope so the Micrometer-OTel bridge makes the new span current in the
+      // OTel thread-local; capture its W3C traceparent immediately, then close the scope.
+      // The captured context is written into the Reactor context so the downstream gRPC
+      // call (inside DaprClientImpl.deferContextual) uses this span as its parent.
+      SpanContext spanCtx;
+      try (Observation.Scope ignored = obs.openScope()) {
+        spanCtx = Span.current().getSpanContext();
+      }
       return monoSupplier.get()
           .doOnError(obs::error)
-          .doFinally(signal -> obs.stop());
+          .doFinally(signal -> obs.stop())
+          .contextWrite(ctx -> enrichWithSpanContext(ctx, spanCtx));
     });
   }
 
   private <T> Flux<T> observeFlux(Observation obs, Supplier<Flux<T>> fluxSupplier) {
     return Flux.defer(() -> {
       obs.start();
+      SpanContext spanCtx;
+      try (Observation.Scope ignored = obs.openScope()) {
+        spanCtx = Span.current().getSpanContext();
+      }
       return fluxSupplier.get()
           .doOnError(obs::error)
-          .doFinally(signal -> obs.stop());
+          .doFinally(signal -> obs.stop())
+          .contextWrite(ctx -> enrichWithSpanContext(ctx, spanCtx));
     });
+  }
+
+  /**
+   * Enriches the Reactor {@link Context} with W3C {@code traceparent} (and optionally
+   * {@code tracestate}) extracted from the given OTel {@link SpanContext}.
+   * This bridges the Micrometer Observation span into the string-keyed Reactor context that
+   * {@link io.dapr.client.DaprClientImpl} reads to populate gRPC metadata headers.
+   */
+  private static Context enrichWithSpanContext(Context ctx, SpanContext spanCtx) {
+    if (spanCtx == null || !spanCtx.isValid()) {
+      return ctx;
+    }
+    ctx = ctx.put("traceparent", TraceContextFormat.formatW3cTraceparent(spanCtx));
+    String traceState = TraceContextFormat.formatTraceState(spanCtx);
+    if (!traceState.isEmpty()) {
+      ctx = ctx.put("tracestate", traceState);
+    }
+    return ctx;
   }
 
   private static String safe(String value) {

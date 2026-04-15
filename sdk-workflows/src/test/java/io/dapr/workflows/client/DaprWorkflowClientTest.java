@@ -60,7 +60,9 @@ public class DaprWorkflowClientTest {
   public static void beforeAll() {
     constructor =
         Constructor.class.cast(Arrays.stream(DaprWorkflowClient.class.getDeclaredConstructors())
-            .filter(c -> c.getParameters().length == 2).map(c -> {
+            .filter(c -> c.getParameters().length == 2
+                && c.getParameterTypes()[0] == DurableTaskClient.class)
+            .map(c -> {
               c.setAccessible(true);
               return c;
             }).findFirst().get());

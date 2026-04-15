@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.spring.boot.autoconfigure.client;
+package io.dapr.spring.observation.client;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.DeleteStateRequest;
