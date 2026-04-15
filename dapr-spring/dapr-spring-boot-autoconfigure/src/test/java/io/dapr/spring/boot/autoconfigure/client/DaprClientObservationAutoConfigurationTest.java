@@ -15,6 +15,8 @@ package io.dapr.spring.boot.autoconfigure.client;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.spring.observation.client.ObservationDaprClient;
+import io.dapr.spring.observation.client.ObservationDaprWorkflowClient;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
