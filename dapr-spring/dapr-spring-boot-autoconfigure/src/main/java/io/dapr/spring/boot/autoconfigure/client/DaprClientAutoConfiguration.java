@@ -21,6 +21,8 @@ import io.dapr.config.Properties;
 import io.dapr.spring.boot.properties.client.ClientPropertiesDaprConnectionDetails;
 import io.dapr.spring.boot.properties.client.DaprClientProperties;
 import io.dapr.spring.boot.properties.client.DaprConnectionDetails;
+import io.dapr.spring.observation.client.ObservationDaprClient;
+import io.dapr.spring.observation.client.ObservationDaprWorkflowClient;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import io.micrometer.observation.ObservationRegistry;

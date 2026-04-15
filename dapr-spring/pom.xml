@@ -24,6 +24,7 @@
     <module>dapr-spring-messaging</module>
     <module>dapr-spring-workflows</module>
     <module>dapr-spring-boot-properties</module>
+    <module>dapr-spring-boot-observation</module>
     <module>dapr-spring-boot-autoconfigure</module>
     <module>dapr-spring-boot-4-autoconfigure</module>
     <module>dapr-spring-boot-tests</module>
@@ -74,6 +75,11 @@
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-properties</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-observation</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

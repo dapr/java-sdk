@@ -59,6 +59,10 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-observation</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-observation-test</artifactId>
       <scope>test</scope>
