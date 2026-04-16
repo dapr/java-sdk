@@ -12,9 +12,10 @@
     </parent>
     <groupId>io.dapr.quarkus</groupId>
     <artifactId>dapr-quarkus-agentic-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
 
     <packaging>pom</packaging>
-    <name>Dapr Quarkus Agentic  - Parent</name>
+    <name>Dapr Quarkus Agentic - Parent</name>
 
     <modules>
         <module>runtime</module>
@@ -30,6 +31,8 @@
         <quarkus.version>3.31.2</quarkus.version>
         <quarkus-dapr.version>2.5.0</quarkus-dapr.version>
         <quarkus-langchain4j.version>1.7.1</quarkus-langchain4j.version>
+        <!-- Pin to a released SDK version so quarkus modules can release independently -->
+        <dapr.sdk.version>1.18.0-SNAPSHOT</dapr.sdk.version>
     </properties>
 
     <dependencyManagement>
@@ -40,6 +43,13 @@
                 <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Pin dapr-sdk-workflows so quarkus modules don't inherit the
+                 root POM's version. Update this when targeting a new SDK release. -->
+            <dependency>
+                <groupId>io.dapr</groupId>
+                <artifactId>dapr-sdk-workflows</artifactId>
+                <version>${dapr.sdk.version}</version>
             </dependency>
             <!-- Override the root POM's commons-io 2.14.0 which is too old for
                  commons-compress 1.28.0 (pulled by quarkus-core-deployment).

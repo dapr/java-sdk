@@ -1,0 +1,55 @@
+name: Quarkus Agentic Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      rel_version:
+        description: 'Release version (examples: 0.1.0, 0.2.0-rc-1, 0.2.0-SNAPSHOT)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Creates quarkus release tag
+    runs-on: ubuntu-latest
+    env:
+      JDK_VER: '17'
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.DAPR_BOT_TOKEN }}
+          persist-credentials: false
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JDK_VER }}
+      - name: Update quarkus version and tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
+        run: |
+          set -ue
+          REL_VERSION="${{ inputs.rel_version }}"
+
+          git config user.email "daprweb@microsoft.com"
+          git config user.name "Dapr Bot"
+          git remote set-url origin https://x-access-token:${{ secrets.DAPR_BOT_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git
+
+          # Update version in all quarkus pom.xml files
+          cd quarkus
+          ../mvnw versions:set -DnewVersion=$REL_VERSION -DprocessDependencies=true
+          cd ..
+
+          if [[ "$REL_VERSION" == *-SNAPSHOT ]]; then
+            git commit -s -m "Update quarkus version to ${REL_VERSION}" -a
+            git push origin master
+            echo "Updated master with quarkus version ${REL_VERSION}."
+          else
+            git commit -s -m "Release quarkus-v${REL_VERSION}" -a
+            git tag "quarkus-v${REL_VERSION}"
+            git push origin master
+            git push origin "quarkus-v${REL_VERSION}"
+            echo "Tagged and pushed quarkus-v${REL_VERSION}."
+          fi
