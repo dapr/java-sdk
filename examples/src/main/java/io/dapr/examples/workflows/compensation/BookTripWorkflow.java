@@ -26,25 +26,25 @@ public class BookTripWorkflow implements Workflow {
 
             try {
                 // Book flight
-                compensationHelper.addCompensation("CancelFlight", () ->
-                    ctx.callActivity(CancelFlightActivity.class.getName(), null, String.class));
                 String flightResult = ctx.callActivity(
                     BookFlightActivity.class.getName(), null, String.class).await();
                 ctx.getLogger().info("Flight booking completed: {}", flightResult);
+                compensationHelper.addCompensation("CancelFlight", () ->
+                    ctx.callActivity(CancelFlightActivity.class.getName(), null, String.class).await());
 
                 // Book hotel
-                compensationHelper.addCompensation("CancelHotel", () ->
-                    ctx.callActivity(CancelHotelActivity.class.getName(), null, String.class));
                 String hotelResult = ctx.callActivity(
                     BookHotelActivity.class.getName(), null, String.class).await();
                 ctx.getLogger().info("Hotel booking completed: {}", hotelResult);
+                compensationHelper.addCompensation("CancelHotel", () ->
+                    ctx.callActivity(CancelHotelActivity.class.getName(), null, String.class).await());
 
                 // Book car
-                compensationHelper.addCompensation("CancelCar", () ->
-                    ctx.callActivity(CancelCarActivity.class.getName(), null, String.class));
                 String carResult = ctx.callActivity(
                     BookCarActivity.class.getName(), null, String.class).await();
                 ctx.getLogger().info("Car booking completed: {}", carResult);
+                compensationHelper.addCompensation("CancelCar", () ->
+                    ctx.callActivity(CancelCarActivity.class.getName(), null, String.class).await());
 
                 String result = String.format("%s, %s, %s", flightResult, hotelResult, carResult);
                 ctx.getLogger().info("Trip booked successfully: {}", result);
