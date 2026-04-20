@@ -151,8 +151,8 @@ public class PubSubStreamIT extends BaseIT {
 
       Set<String> messages = Collections.synchronizedSet(new HashSet<>());
 
-      // subscribeToEvents now returns Flux<T> directly (raw data)
-      var disposable = previewClient.subscribeToEvents(PUBSUB_NAME, TOPIC_NAME_FLUX, TypeRef.STRING)
+      // subscribeToTopic returns Flux<T> directly (raw data)
+      var disposable = previewClient.subscribeToTopic(PUBSUB_NAME, TOPIC_NAME_FLUX, TypeRef.STRING)
           .doOnNext(rawMessage -> {
             // rawMessage is String directly
             if (rawMessage.contains(runId)) {
@@ -196,7 +196,7 @@ public class PubSubStreamIT extends BaseIT {
       Set<String> messageIds = Collections.synchronizedSet(new HashSet<>());
 
       // Use TypeRef<CloudEvent<String>> to receive full CloudEvent with metadata
-      var disposable = previewClient.subscribeToEvents(PUBSUB_NAME, TOPIC_NAME_CLOUDEVENT, new TypeRef<CloudEvent<String>>(){})
+      var disposable = previewClient.subscribeToTopic(PUBSUB_NAME, TOPIC_NAME_CLOUDEVENT, new TypeRef<CloudEvent<String>>(){})
           .doOnNext(cloudEvent -> {
             if (cloudEvent.getData() != null && cloudEvent.getData().contains(runId)) {
               messageIds.add(cloudEvent.getId());
@@ -241,8 +241,8 @@ public class PubSubStreamIT extends BaseIT {
       Set<String> messages = Collections.synchronizedSet(new HashSet<>());
       Map<String, String> metadata = Map.of("rawPayload", "true");
 
-      // Use subscribeToEvents with rawPayload metadata
-      var disposable = previewClient.subscribeToEvents(PUBSUB_NAME, TOPIC_NAME_RAWPAYLOAD, TypeRef.STRING, metadata)
+      // Use subscribeToTopic with rawPayload metadata
+      var disposable = previewClient.subscribeToTopic(PUBSUB_NAME, TOPIC_NAME_RAWPAYLOAD, TypeRef.STRING, metadata)
           .doOnNext(rawMessage -> {
             if (rawMessage.contains(runId)) {
               messages.add(rawMessage);

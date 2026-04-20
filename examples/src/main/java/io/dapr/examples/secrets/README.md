@@ -18,10 +18,10 @@ Visit [this](https://github.com/dapr/components-contrib/tree/master/secretstores
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-  * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-  * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-  * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+  * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+  * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+  * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -116,8 +116,8 @@ Execute the following script in order to run the example:
 <!-- STEP
 name: Validate normal run
 expected_stdout_lines:
-  - '== APP == {"redisPassword":"root123"}'
-  - '== APP == {"randomKey":"value"}'
+  - '{"redisPassword":"root123"}'
+  - '{"randomKey":"value"}'
 background: true
 sleep: 5
 -->
@@ -131,8 +131,8 @@ dapr run --resources-path ./components/secrets --app-id secrets1 -- java -jar ta
 Once running, the program should print the output as follows:
 
 ```
-== APP == {"redisPassword":"root123"}
-== APP == {"randomKey":"value"}
+{"redisPassword":"root123"}
+{"randomKey":"value"}
 ```
 
 To close the app either press `CTRL+C` or run
@@ -169,8 +169,8 @@ Execute the following script in order to run this example with additional secret
 <!-- STEP
 name: Validate error on querying random secret
 expected_stdout_lines:
-  - '== APP == {"redisPassword":"root123"}'
-  - '== APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "localSecretStore"'
+  - '{"redisPassword":"root123"}'
+  - 'PERMISSION_DENIED: access denied by policy to get "randomKey" from "localSecretStore"'
 background: true
 sleep: 5
 -->
@@ -184,8 +184,8 @@ dapr run --resources-path ./components/secrets --config ./src/main/java/io/dapr/
 Once running, the program should print the output as follows:
 
 ```
-== APP == {"redisPassword":"root123"}
-== APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "localSecretStore"
+{"redisPassword":"root123"}
+PERMISSION_DENIED: access denied by policy to get "randomKey" from "localSecretStore"
 ``` 
 
 To close the app either press `CTRL+C` or run

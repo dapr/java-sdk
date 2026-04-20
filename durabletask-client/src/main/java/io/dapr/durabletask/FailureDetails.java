@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.durabletask;
 
 import com.google.protobuf.StringValue;
-import io.dapr.durabletask.implementation.protobuf.OrchestratorService.TaskFailureDetails;
+import io.dapr.durabletask.implementation.protobuf.Orchestration.TaskFailureDetails;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -124,7 +124,13 @@ public final class FailureDetails {
     }
   }
 
-  static String getFullStackTrace(Throwable e) {
+  /**
+   * Gets the full stack trace of the specified exception.
+   *
+   * @param e the exception
+   * @return the full stack trace of the exception
+   */
+  public static String getFullStackTrace(Throwable e) {
     StackTraceElement[] elements = e.getStackTrace();
 
     // Plan for 256 characters per stack frame (which is likely on the high-end)

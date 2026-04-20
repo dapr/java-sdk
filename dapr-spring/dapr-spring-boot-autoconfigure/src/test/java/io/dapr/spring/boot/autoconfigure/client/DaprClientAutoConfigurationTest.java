@@ -15,6 +15,7 @@ package io.dapr.spring.boot.autoconfigure.client;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.spring.boot.properties.client.DaprConnectionDetails;
 import io.dapr.config.Properties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

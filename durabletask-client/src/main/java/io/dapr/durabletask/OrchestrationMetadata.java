@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
+import io.dapr.durabletask.implementation.protobuf.Orchestration.WorkflowState;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
-import io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationState;
 
 import java.time.Instant;
 
@@ -45,11 +45,11 @@ public final class OrchestrationMetadata {
       OrchestratorService.GetInstanceResponse fetchResponse,
       DataConverter dataConverter,
       boolean requestedInputsAndOutputs) {
-    this(fetchResponse.getOrchestrationState(), dataConverter, requestedInputsAndOutputs);
+    this(fetchResponse.getWorkflowState(), dataConverter, requestedInputsAndOutputs);
   }
 
   OrchestrationMetadata(
-      OrchestrationState state,
+      WorkflowState state,
       DataConverter dataConverter,
       boolean requestedInputsAndOutputs) {
     this.dataConverter = dataConverter;
@@ -57,7 +57,7 @@ public final class OrchestrationMetadata {
 
     this.name = state.getName();
     this.instanceId = state.getInstanceId();
-    this.runtimeStatus = OrchestrationRuntimeStatus.fromProtobuf(state.getOrchestrationStatus());
+    this.runtimeStatus = OrchestrationRuntimeStatus.fromProtobuf(state.getWorkflowStatus());
     this.createdAt = DataConverter.getInstantFromTimestamp(state.getCreatedTimestamp());
     this.lastUpdatedAt = DataConverter.getInstantFromTimestamp(state.getLastUpdatedTimestamp());
     this.serializedInput = state.getInput().getValue();
@@ -226,7 +226,7 @@ public final class OrchestrationMetadata {
   private <T> T readPayloadAs(Class<T> type, String payload) {
     if (!this.requestedInputsAndOutputs) {
       throw new IllegalStateException("This method can only be used when instance metadata is fetched with the option "
-         + "to include input and output data.");
+          + "to include input and output data.");
     }
 
     // Note that the Java gRPC implementation converts null protobuf strings into empty Java strings

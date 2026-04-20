@@ -13,6 +13,10 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteJobRequest;
@@ -92,6 +96,77 @@ public interface DaprClient extends AutoCloseable {
   Mono<Void> publishEvent(PublishEventRequest request);
 
   /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param request {@link BulkPublishRequest} object.
+   * @return A Mono of {@link BulkPublishResponse} object.
+   * @param <T> The type of events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the {@link List} of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 List<T> events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the varargs of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 T... events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the {@link List} of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 Map<String,String> requestMetadata, List<T> events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the varargs of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 Map<String,String> requestMetadata, T... events);
+
+  /**
    * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
@@ -103,7 +178,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, Object data, HttpExtension httpExtension,
                            Map<String, String> metadata, TypeRef<T> type);
 
@@ -119,7 +197,10 @@ public interface DaprClient extends AutoCloseable {
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                            Map<String, String> metadata, Class<T> clazz);
 
@@ -134,7 +215,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                            TypeRef<T> type);
 
@@ -149,7 +233,10 @@ public interface DaprClient extends AutoCloseable {
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                            Class<T> clazz);
 
@@ -164,7 +251,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata,
                            TypeRef<T> type);
 
@@ -179,7 +269,10 @@ public interface DaprClient extends AutoCloseable {
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata,
                            Class<T> clazz);
 
@@ -193,7 +286,10 @@ public interface DaprClient extends AutoCloseable {
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @return A Mono Plan of type Void.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   Mono<Void> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
                           Map<String, String> metadata);
 
@@ -206,7 +302,10 @@ public interface DaprClient extends AutoCloseable {
    * @param httpExtension Additional fields that are needed if the receiving app is listening on
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @return A Mono Plan of type Void.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   Mono<Void> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension);
 
   /**
@@ -218,7 +317,10 @@ public interface DaprClient extends AutoCloseable {
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @return A Mono Plan of type Void.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   Mono<Void> invokeMethod(String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata);
 
   /**
@@ -231,7 +333,10 @@ public interface DaprClient extends AutoCloseable {
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @return A Mono Plan of type byte[].
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   Mono<byte[]> invokeMethod(String appId, String methodName, byte[] request, HttpExtension httpExtension,
                             Map<String, String> metadata);
 
@@ -242,7 +347,10 @@ public interface DaprClient extends AutoCloseable {
    * @param type                 The Type needed as return for the call.
    * @param <T>                  The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
+   *
+   * @deprecated It is recommended to use language-native HTTP clients or gRPC clients for service invocation instead.
    */
+  @Deprecated
   <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type);
 
   /**

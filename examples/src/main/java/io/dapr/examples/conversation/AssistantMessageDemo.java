@@ -108,9 +108,10 @@ public class AssistantMessageDemo {
       // Process and display the response
       if (response != null && response.getOutputs() != null && !response.getOutputs().isEmpty()) {
         ConversationResultAlpha2 result = response.getOutputs().get(0);
+        UsageUtils.printUsage(result);
+
         if (result.getChoices() != null && !result.getChoices().isEmpty()) {
           ConversationResultChoices choice = result.getChoices().get(0);
-
           if (choice.getMessage() != null && choice.getMessage().getContent() != null) {
             System.out.printf("Assistant Response: %s%n", choice.getMessage().getContent());
           }

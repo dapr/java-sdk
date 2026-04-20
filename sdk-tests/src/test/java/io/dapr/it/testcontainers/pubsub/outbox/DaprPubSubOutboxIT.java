@@ -21,6 +21,7 @@ import io.dapr.it.testcontainers.DaprClientFactory;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,7 +36,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -62,7 +62,6 @@ public class DaprPubSubOutboxIT {
   private static final Network DAPR_NETWORK = Network.newNetwork();
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
-  private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port.*";
 
   private static final String PUBSUB_APP_ID = "pubsub-dapr-app";
   private static final String PUBSUB_NAME = "pubsub";
@@ -107,7 +106,7 @@ public class DaprPubSubOutboxIT {
 
   @BeforeEach
   public void beforeEach() {
-    Wait.forLogMessage(APP_FOUND_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
+    DaprWait.forSubscription(PUBSUB_NAME, TOPIC_PRODUCT_CREATED).waitUntilReady(DAPR_CONTAINER);
   }
 
   @Test

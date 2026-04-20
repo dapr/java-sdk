@@ -13,16 +13,16 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
-import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+import io.dapr.durabletask.implementation.protobuf.Orchestration;
 
-import static io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_CANCELED;
-import static io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_COMPLETED;
-import static io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_CONTINUED_AS_NEW;
-import static io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_FAILED;
-import static io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_PENDING;
-import static io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_RUNNING;
-import static io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_SUSPENDED;
-import static io.dapr.durabletask.implementation.protobuf.OrchestratorService.OrchestrationStatus.ORCHESTRATION_STATUS_TERMINATED;
+import static io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_CANCELED;
+import static io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_COMPLETED;
+import static io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_CONTINUED_AS_NEW;
+import static io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_FAILED;
+import static io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_PENDING;
+import static io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_RUNNING;
+import static io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_SUSPENDED;
+import static io.dapr.durabletask.implementation.protobuf.Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_TERMINATED;
 
 /**
  * Enum describing the runtime status of the orchestration.
@@ -68,9 +68,14 @@ public enum OrchestrationRuntimeStatus {
   /**
    * The orchestration is in a suspended state.
    */
-  SUSPENDED;
+  SUSPENDED,
 
-  static OrchestrationRuntimeStatus fromProtobuf(OrchestratorService.OrchestrationStatus status) {
+  /**
+   * The orchestration is in a stalled state.
+   */
+  STALLED;
+
+  static OrchestrationRuntimeStatus fromProtobuf(Orchestration.OrchestrationStatus status) {
     switch (status) {
       case ORCHESTRATION_STATUS_RUNNING:
         return RUNNING;
@@ -88,12 +93,14 @@ public enum OrchestrationRuntimeStatus {
         return PENDING;
       case ORCHESTRATION_STATUS_SUSPENDED:
         return SUSPENDED;
+      case ORCHESTRATION_STATUS_STALLED:
+        return STALLED;
       default:
         throw new IllegalArgumentException(String.format("Unknown status value: %s", status));
     }
   }
 
-  static OrchestratorService.OrchestrationStatus toProtobuf(OrchestrationRuntimeStatus status) {
+  static Orchestration.OrchestrationStatus toProtobuf(OrchestrationRuntimeStatus status) {
     switch (status) {
       case RUNNING:
         return ORCHESTRATION_STATUS_RUNNING;

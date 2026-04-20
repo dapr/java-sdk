@@ -48,6 +48,10 @@ public final class HttpExtension {
    */
   public static final HttpExtension DELETE = new HttpExtension(DaprHttp.HttpMethods.DELETE);
   /**
+   * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#PATCH} Verb with empty queryString.
+   */
+  public static final HttpExtension PATCH = new HttpExtension(DaprHttp.HttpMethods.PATCH);
+  /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#HEAD} Verb with empty queryString.
    */
   public static final HttpExtension HEAD = new HttpExtension(DaprHttp.HttpMethods.HEAD);

@@ -16,7 +16,7 @@ package io.dapr.it.state;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprStateProtos;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -36,12 +36,12 @@ public class HelloWorldClientIT extends BaseIT {
 
       String key = "mykey";
       {
-        DaprProtos.GetStateRequest req = DaprProtos.GetStateRequest
+        DaprStateProtos.GetStateRequest req = DaprStateProtos.GetStateRequest
             .newBuilder()
             .setStoreName(STATE_STORE_NAME)
             .setKey(key)
             .build();
-        DaprProtos.GetStateResponse response = stub.getState(req);
+        DaprStateProtos.GetStateResponse response = stub.getState(req);
         String value = response.getData().toStringUtf8();
         System.out.println("Got: " + value);
         Assertions.assertEquals("Hello World", value);
@@ -49,7 +49,7 @@ public class HelloWorldClientIT extends BaseIT {
 
       // Then, delete it.
       {
-        DaprProtos.DeleteStateRequest req = DaprProtos.DeleteStateRequest
+        DaprStateProtos.DeleteStateRequest req = DaprStateProtos.DeleteStateRequest
             .newBuilder()
             .setStoreName(STATE_STORE_NAME)
             .setKey(key)
@@ -59,12 +59,12 @@ public class HelloWorldClientIT extends BaseIT {
       }
 
       {
-        DaprProtos.GetStateRequest req = DaprProtos.GetStateRequest
+        DaprStateProtos.GetStateRequest req = DaprStateProtos.GetStateRequest
             .newBuilder()
             .setStoreName(STATE_STORE_NAME)
             .setKey(key)
             .build();
-        DaprProtos.GetStateResponse response = stub.getState(req);
+        DaprStateProtos.GetStateResponse response = stub.getState(req);
         String value = response.getData().toStringUtf8();
         System.out.println("Got: " + value);
         Assertions.assertEquals("", value);

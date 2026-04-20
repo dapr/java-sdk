@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.durabletask;
 
 import io.grpc.Channel;
+import io.opentelemetry.api.trace.Tracer;
 
 /**
  * Builder class for constructing new {@link DurableTaskClient} objects that communicate with a sidecar process
@@ -27,6 +28,7 @@ public final class DurableTaskGrpcClientBuilder {
   String tlsCertPath;
   String tlsKeyPath;
   boolean insecure;
+  Tracer tracer;
 
   /**
    * Sets the {@link DataConverter} to use for converting serializable data payloads.
@@ -54,6 +56,17 @@ public final class DurableTaskGrpcClientBuilder {
    */
   public DurableTaskGrpcClientBuilder grpcChannel(Channel channel) {
     this.channel = channel;
+    return this;
+  }
+
+  /**
+   * Sets the Tracer object to be used by DurableTaskClient to emit traces.
+   *
+   * @param tracer to  be used by the DurableTaskClient
+   * @return this builder object
+   */
+  public DurableTaskGrpcClientBuilder tracer(Tracer tracer) {
+    this.tracer = tracer;
     return this;
   }
 

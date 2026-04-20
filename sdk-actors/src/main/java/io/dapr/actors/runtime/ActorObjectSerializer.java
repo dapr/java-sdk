@@ -16,7 +16,9 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.dapr.client.ObjectSerializer;
+import io.dapr.client.domain.FailurePolicy;
 import io.dapr.utils.DurationUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -32,6 +34,11 @@ public class ActorObjectSerializer extends ObjectSerializer {
    * Shared Json Factory as per Jackson's documentation.
    */
   private static final JsonFactory JSON_FACTORY = new JsonFactory();
+
+  static {
+    // Configure OBJECT_MAPPER to handle Java 8 time types
+    OBJECT_MAPPER.registerModule(new JavaTimeModule());
+  }
 
   /**
    * {@inheritDoc}
@@ -99,12 +106,20 @@ public class ActorObjectSerializer extends ObjectSerializer {
   private byte[] serialize(ActorReminderParams reminder) throws IOException {
     try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
+      generator.setCodec(OBJECT_MAPPER);
       generator.writeStartObject();
       generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(reminder.getDueTime()));
       generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(reminder.getPeriod()));
       if (reminder.getData() != null) {
         generator.writeBinaryField("data", reminder.getData());
       }
+
+      // serialize failure policy
+      if (reminder.getFailurePolicy() != null) {
+        generator.writeObjectField("failurePolicy", reminder.getFailurePolicy());
+      }
+
+
       generator.writeEndObject();
       generator.close();
       writer.flush();
@@ -243,7 +258,15 @@ public class ActorObjectSerializer extends ObjectSerializer {
     Duration period = extractDurationOrNull(node, "period");
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
-    return new ActorReminderParams(data, dueTime, period);
+    // Handle failure policy if present
+    JsonNode failurePolicyNode = node.get("failurePolicy");
+    FailurePolicy failurePolicy = null;
+    if (failurePolicyNode != null) {
+      failurePolicy = OBJECT_MAPPER.treeToValue(failurePolicyNode, FailurePolicy.class);
+    }
+
+
+    return new ActorReminderParams(data, dueTime, period, failurePolicy);
   }
 
   /**

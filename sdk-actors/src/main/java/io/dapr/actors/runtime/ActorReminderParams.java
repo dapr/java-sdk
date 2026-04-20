@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
+import io.dapr.client.domain.FailurePolicy;
+
 import java.time.Duration;
 
 /**
@@ -41,6 +43,11 @@ final class ActorReminderParams {
   private final Duration period;
 
   /**
+   * Failure Policy.
+   */
+  private FailurePolicy failurePolicy;
+
+  /**
    * Instantiates a new instance for the params of a reminder.
    *
    * @param data    Data to be passed in as part of the reminder trigger.
@@ -53,6 +60,18 @@ final class ActorReminderParams {
     this.data = data;
     this.dueTime = dueTime;
     this.period = period;
+  }
+
+  /**
+   * Instantiates a new instance for the params of a reminder.
+   *
+   * @param data    Data to be passed in as part of the reminder trigger.
+   * @param dueTime Time the reminder is due for the 1st time.
+   * @param period  Interval between triggers.
+   */
+  ActorReminderParams(byte[] data, Duration dueTime, Duration period, FailurePolicy failurePolicy) {
+    this(data, dueTime, period);
+    this.failurePolicy = failurePolicy;
   }
 
   /**
@@ -108,5 +127,14 @@ final class ActorReminderParams {
             "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, MIN_TIME_PERIOD);
       throw new IllegalArgumentException(message);
     }
+  }
+
+  /**
+   * Gets the failure policy.
+   *
+   * @return the failure policy
+   */
+  public FailurePolicy getFailurePolicy() {
+    return failurePolicy;
   }
 }

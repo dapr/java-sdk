@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.examples.pubsub;
 
+import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
@@ -53,8 +53,8 @@ public class CloudEventBulkPublisher {
    * @throws Exception any exception
    */
   public static void main(String[] args) throws Exception {
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
-      System.out.println("Using preview client...");
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
+      System.out.println("Using Dapr client...");
       List<BulkPublishEntry<CloudEvent<Map<String, String>>>> entries = new ArrayList<>();
       for (int i = 0; i < NUM_MESSAGES; i++) {
         CloudEvent<Map<String, String>> cloudEvent = new CloudEvent<>();

@@ -274,6 +274,36 @@ public class DaprHttpTest {
   }
 
   @Test
+  public void invokePatchMethod() throws IOException {
+    byte[] content = serializer.serialize(EXPECTED_RESULT);
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
+    Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
+        "PATCH",
+        "v1.0/state".split("/"),
+        null,
+        "",
+        null,
+        Context.empty()
+    );
+    DaprHttp.Response response = mono.block();
+    String body = serializer.deserialize(response.getBody(), String.class);
+
+    verify(httpClient).sendAsync(requestCaptor.capture(), any());
+
+    HttpRequest request = requestCaptor.getValue();
+
+    assertEquals(EXPECTED_RESULT, body);
+    assertEquals("PATCH", request.method());
+    assertEquals("http://" + sidecarIp + ":3500/v1.0/state", request.uri().toString());
+  }
+
+  @Test
   public void invokeHeadMethod() {
     MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_OK);
     CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);

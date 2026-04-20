@@ -19,7 +19,8 @@ import com.google.rpc.ResourceInfo;
 import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprPubsubProtos;
+import io.dapr.v1.DaprStateProtos;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,7 +83,7 @@ public class DaprExceptionTest {
 
         doAnswer((Answer<Void>) invocation -> {
             throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument", status);
-        }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+        }).when(daprStub).publishEvent(any(DaprPubsubProtos.PublishEventRequest.class), any());
 
         DaprErrorDetails expectedStatusDetails = new DaprErrorDetails(status);
 
@@ -109,7 +110,7 @@ public class DaprExceptionTest {
 
         doAnswer((Answer<Void>) invocation -> {
             throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument", status);
-        }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
+        }).when(daprStub).getState(any(DaprStateProtos.GetStateRequest.class), any());
 
         DaprErrorDetails expectedStatusDetails = new DaprErrorDetails(status);
 

@@ -59,6 +59,18 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
+   * Protected constructor for DaprWorkflowClient that allows subclasses to inject additional
+   * gRPC {@link ClientInterceptor}s onto the channel (e.g. for tracing).
+   * The {@link ApiTokenClientInterceptor} is always prepended before the additional ones.
+   *
+   * @param properties            Properties for the GRPC Channel.
+   * @param additionalInterceptors extra interceptors appended after the API-token interceptor.
+   */
+  protected DaprWorkflowClient(Properties properties, ClientInterceptor... additionalInterceptors) {
+    this(buildChannelWithAdditional(properties, additionalInterceptors));
+  }
+
+  /**
    * Private Constructor that passes a created DurableTaskClient and the new GRPC channel.
    *
    * @param grpcChannel ManagedChannel for GRPC channel.
@@ -86,7 +98,18 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the randomly-generated instance ID for new Workflow instance.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName());
+    return this.scheduleNewWorkflow(clazz.getCanonicalName());
+  }
+
+  /**
+   * Schedules a new workflow using DurableTask client.
+   *
+   * @param <T>   any Workflow type
+   * @param name Workflow name
+   * @return the randomly-generated instance ID for new Workflow instance.
+   */
+  public <T extends Workflow> String scheduleNewWorkflow(String name) {
+    return this.innerClient.scheduleNewOrchestrationInstance(name);
   }
 
   /**
@@ -98,7 +121,19 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the randomly-generated instance ID for new Workflow instance.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input);
+    return this.scheduleNewWorkflow(clazz.getCanonicalName(), input);
+  }
+
+  /**
+   * Schedules a new workflow using DurableTask client.
+   *
+   * @param <T>   any Workflow type
+   * @param name Workflow name
+   * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
+   * @return the randomly-generated instance ID for new Workflow instance.
+   */
+  public <T extends Workflow> String scheduleNewWorkflow(String name, Object input) {
+    return this.innerClient.scheduleNewOrchestrationInstance(name, input);
   }
 
   /**
@@ -111,7 +146,20 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the <code>instanceId</code> parameter value.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
+    return this.scheduleNewWorkflow(clazz.getCanonicalName(), input, instanceId);
+  }
+
+  /**
+   * Schedules a new workflow using DurableTask client.
+   *
+   * @param <T>        any Workflow type
+   * @param name       Workflow name
+   * @param input      the input to pass to the scheduled orchestration instance. Must be serializable.
+   * @param instanceId the unique ID of the orchestration instance to schedule
+   * @return the <code>instanceId</code> parameter value.
+   */
+  public <T extends Workflow> String scheduleNewWorkflow(String name, Object input, String instanceId) {
+    return this.innerClient.scheduleNewOrchestrationInstance(name, input, instanceId);
   }
 
   /**
@@ -123,9 +171,20 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the <code>instanceId</code> parameter value.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOptions options) {
-    NewOrchestrationInstanceOptions orchestrationInstanceOptions = fromNewWorkflowOptions(options);
+    return this.scheduleNewWorkflow(clazz.getCanonicalName(), options);
+  }
 
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(),
+  /**
+   * Schedules a new workflow with a specified set of options for execution.
+   *
+   * @param <T>     any Workflow type
+   * @param name   name of the workflow to schedule
+   * @param options the options for the new workflow, including input, instance ID, etc.
+   * @return the <code>instanceId</code> parameter value.
+   */
+  public <T extends Workflow> String scheduleNewWorkflow(String name, NewWorkflowOptions options) {
+    NewOrchestrationInstanceOptions orchestrationInstanceOptions = fromNewWorkflowOptions(options);
+    return this.innerClient.scheduleNewOrchestrationInstance(name,
         orchestrationInstanceOptions);
   }
 
@@ -365,6 +424,20 @@ public class DaprWorkflowClient implements AutoCloseable {
         this.grpcChannel = null;
       }
     }
+  }
+
+  /**
+   * Builds a {@link ManagedChannel} that includes the API-token interceptor plus any extras.
+   */
+  private static ManagedChannel buildChannelWithAdditional(
+      Properties properties, ClientInterceptor... extra) {
+    if (extra == null || extra.length == 0) {
+      return NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties));
+    }
+    ClientInterceptor[] interceptors = new ClientInterceptor[1 + extra.length];
+    interceptors[0] = new ApiTokenClientInterceptor(properties);
+    System.arraycopy(extra, 0, interceptors, 1, extra.length);
+    return NetworkUtils.buildGrpcManagedChannel(properties, interceptors);
   }
 
   /**

@@ -16,10 +16,11 @@ package io.dapr.durabletask;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactories;
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 
 import java.time.Duration;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.logging.Logger;
 
 /**
@@ -126,16 +127,16 @@ public final class OrchestrationRunner {
       throw new IllegalArgumentException("orchestration must not be null");
     }
 
-    OrchestratorService.OrchestratorRequest orchestratorRequest;
+    OrchestratorService.WorkflowRequest orchestratorRequest;
     try {
-      orchestratorRequest = OrchestratorService.OrchestratorRequest.parseFrom(orchestratorRequestBytes);
+      orchestratorRequest = OrchestratorService.WorkflowRequest.parseFrom(orchestratorRequestBytes);
     } catch (InvalidProtocolBufferException e) {
       throw new IllegalArgumentException("triggerStateProtoBytes was not valid protobuf", e);
     }
 
     // Register the passed orchestration as the default ("*") orchestration
-    HashMap<String, TaskOrchestrationFactory> orchestrationFactories = new HashMap<>();
-    orchestrationFactories.put("*", new TaskOrchestrationFactory() {
+    TaskOrchestrationFactories orchestrationFactories = new TaskOrchestrationFactories();
+    orchestrationFactories.addOrchestration(new TaskOrchestrationFactory() {
       @Override
       public String getName() {
         return "*";
@@ -144,6 +145,16 @@ public final class OrchestrationRunner {
       @Override
       public TaskOrchestration create() {
         return orchestration;
+      }
+
+      @Override
+      public String getVersionName() {
+        return "";
+      }
+
+      @Override
+      public Boolean isLatestVersion() {
+        return false;
       }
     });
 
@@ -159,7 +170,7 @@ public final class OrchestrationRunner {
         orchestratorRequest.getPastEventsList(),
         orchestratorRequest.getNewEventsList());
 
-    OrchestratorService.OrchestratorResponse response = OrchestratorService.OrchestratorResponse.newBuilder()
+    OrchestratorService.WorkflowResponse response = OrchestratorService.WorkflowResponse.newBuilder()
         .setInstanceId(orchestratorRequest.getInstanceId())
         .addAllActions(taskOrchestratorResult.getActions())
         .setCustomStatus(StringValue.of(taskOrchestratorResult.getCustomStatus()))

@@ -509,4 +509,4 @@ i.d.s.e.w.s.PerformTaskActivity          : Completing activity...
 ## Testing workflow executions
 
 Workflow execution can be tested using Testcontainers and you can find all the tests for the patterns covered in this 
-application [here](test/java/io/dapr/springboot/examples/wfp/TestWorkflowPatternsApplication.java).
+application [here](src/test/java/io/dapr/springboot/examples/wfp/TestWorkflowPatternsApplication.java).

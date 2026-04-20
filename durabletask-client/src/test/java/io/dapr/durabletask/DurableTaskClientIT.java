@@ -12,13 +12,11 @@ limitations under the License.
 */
 package io.dapr.durabletask;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -42,11 +40,13 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * These integration tests are designed to exercise the core, high-level features of
@@ -118,11 +118,11 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(2, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[1];
+      long[] millisElapsed = new long[1];
       for (int i = 0; i < timestamps.length() - 1; i++) {
-        secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+        millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
       }
-      assertEquals(3, secondsElapsed[0]);
+      assertEquals(3000, millisElapsed[0], 50);
 
     }
   }
@@ -163,19 +163,17 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(3, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[timestamps.length()];
+      long[] millisElapsed = new long[timestamps.length()];
       for (int i = 0; i < timestamps.length() - 1; i++) {
         if (timestamps.get(i + 1) != null && timestamps.get(i) != null) {
-          secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+          millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
         } else {
-          secondsElapsed[i] = -1;
+          millisElapsed[i] = -1;
         }
       }
-      assertEquals(2, secondsElapsed[0]);
-      assertEquals(2, secondsElapsed[1]);
-      assertEquals(-1, secondsElapsed[2]);
-
-
+      assertEquals(2000, millisElapsed[0], 50);
+      assertEquals(2000, millisElapsed[1], 50);
+      assertEquals(-1, millisElapsed[2]);
     }
   }
 
@@ -195,7 +193,6 @@ public class DurableTaskClientIT extends IntegrationTestBase {
                     timestamps.set(counter.get(), LocalDateTime.now());
                     counter.incrementAndGet();
                   }
-
                 }
               }
             })
@@ -218,18 +215,20 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(4, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[timestamps.length()];
+      long[] millisElapsed = new long[timestamps.length()];
       for (int i = 0; i < timestamps.length() - 1; i++) {
         if (timestamps.get(i + 1) != null && timestamps.get(i) != null) {
-          secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+          millisElapsed[i] =
+              java.time.Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
         } else {
-          secondsElapsed[i] = -1;
+          millisElapsed[i] = -1;
         }
       }
-      assertEquals(2, secondsElapsed[0]);
-      assertEquals(2, secondsElapsed[1]);
-      assertEquals(2, secondsElapsed[2]);
-      assertEquals(0, secondsElapsed[3]);
+
+      assertEquals(2000, millisElapsed[0], 50);
+      assertEquals(2000, millisElapsed[1], 50);
+      assertEquals(2000, millisElapsed[2], 50);
+      assertEquals(0, millisElapsed[3]);
 
 
     }
@@ -269,13 +268,13 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertEquals(4, counter.get());
 
       // Verify that each timer is the expected length
-      int[] secondsElapsed = new int[3];
+      long[] millisElapsed = new long[3];
       for (int i = 0; i < timestamps.length() - 1; i++) {
-        secondsElapsed[i] = timestamps.get(i + 1).getSecond() - timestamps.get(i).getSecond();
+        millisElapsed[i] = Duration.between(timestamps.get(i), timestamps.get(i + 1)).toMillis();
       }
-      assertEquals(secondsElapsed[0], 3);
-      assertEquals(secondsElapsed[1], 3);
-      assertEquals(secondsElapsed[2], 1);
+      assertEquals(3000, millisElapsed[0], 50);
+      assertEquals(3000, millisElapsed[1], 50);
+      assertEquals(1000, millisElapsed[2], 50);
     }
   }
 
@@ -590,6 +589,138 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertNotNull(instance);
       assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
       assertEquals(15, instance.readOutputAs(int.class));
+    }
+  }
+
+  @Test
+  void subOrchestrationWithActivity() throws TimeoutException {
+    final String parentOrchestratorName = "ParentOrchestrator";
+    final String childOrchestratorName = "ChildOrchestrator";
+    final String activityName = "PlusOne";
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(parentOrchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              int childResult = ctx.callSubOrchestrator(childOrchestratorName, input, int.class).await();
+              ctx.complete(childResult);
+            })
+            .addOrchestrator(childOrchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              int result = ctx.callActivity(activityName, input, int.class).await();
+              ctx.complete(result);
+            })
+            .addActivity(activityName, ctx -> ctx.getInput(int.class) + 1)
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(parentOrchestratorName, 10);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(instance);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+      assertEquals(11, instance.readOutputAs(int.class));
+    }
+  }
+
+  @Test
+  void subOrchestrationChain() throws TimeoutException {
+    final String orchestratorName = "ChainOrchestrator";
+    final String leafOrchestratorName = "LeafOrchestrator";
+    final String activityName = "Double";
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(orchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              // Chain: parent calls child which calls leaf
+              int result = ctx.callSubOrchestrator(leafOrchestratorName, input, int.class).await();
+              // Call activity after sub-orchestration completes
+              result = ctx.callActivity(activityName, result, int.class).await();
+              ctx.complete(result);
+            })
+            .addOrchestrator(leafOrchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              int result = ctx.callActivity(activityName, input, int.class).await();
+              ctx.complete(result);
+            })
+            .addActivity(activityName, ctx -> ctx.getInput(int.class) * 2)
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      // input=3 -> leaf doubles to 6 -> parent doubles to 12
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName, 3);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(instance);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+      assertEquals(12, instance.readOutputAs(int.class));
+    }
+  }
+
+  @Test
+  void subOrchestrationFanOut() throws TimeoutException {
+    final String parentOrchestratorName = "FanOutParent";
+    final String childOrchestratorName = "FanOutChild";
+    final String activityName = "Square";
+    final int childCount = 5;
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(parentOrchestratorName, ctx -> {
+              // Fan out: launch multiple sub-orchestrations in parallel
+              List<Task<Integer>> tasks = IntStream.range(1, childCount + 1)
+                      .mapToObj(i -> ctx.callSubOrchestrator(childOrchestratorName, i, int.class))
+                      .collect(Collectors.toList());
+
+              List<Integer> results = ctx.allOf(tasks).await();
+              int sum = results.stream().mapToInt(Integer::intValue).sum();
+              ctx.complete(sum);
+            })
+            .addOrchestrator(childOrchestratorName, ctx -> {
+              int input = ctx.getInput(int.class);
+              int result = ctx.callActivity(activityName, input, int.class).await();
+              ctx.complete(result);
+            })
+            .addActivity(activityName, ctx -> {
+              int val = ctx.getInput(int.class);
+              return val * val;
+            })
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(parentOrchestratorName, 0);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(instance);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+      // 1^2 + 2^2 + 3^2 + 4^2 + 5^2 = 1 + 4 + 9 + 16 + 25 = 55
+      assertEquals(55, instance.readOutputAs(int.class));
+    }
+  }
+
+  @Test
+  void subOrchestrationWithInstanceId() throws TimeoutException {
+    final String parentOrchestratorName = "ParentWithInstanceId";
+    final String childOrchestratorName = "ChildWithInstanceId";
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(parentOrchestratorName, ctx -> {
+              String childInstanceId = ctx.getInstanceId() + ":child";
+              String result = ctx.callSubOrchestrator(
+                      childOrchestratorName, "hello", childInstanceId, String.class).await();
+              ctx.complete(result);
+            })
+            .addOrchestrator(childOrchestratorName, ctx -> {
+              String input = ctx.getInput(String.class);
+              ctx.complete(input + " world");
+            })
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(parentOrchestratorName, "test");
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(instance);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+      assertEquals("hello world", instance.readOutputAs(String.class));
     }
   }
 
@@ -966,188 +1097,6 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       assertNotNull(metadata);
       assertEquals(OrchestrationRuntimeStatus.COMPLETED, metadata.getRuntimeStatus());
       assertFalse(metadata.isCustomStatusFetched());
-    }
-  }
-
-  // due to clock drift, client/worker and sidecar time are not exactly synchronized, this test needs to accommodate for client vs backend timestamps difference
-  @Test
-  @Disabled("Test is disabled for investigation, fixing the test retry pattern exposed the failure")
-  void multiInstanceQuery() throws TimeoutException {
-    final String plusOne = "plusOne";
-    final String waitForEvent = "waitForEvent";
-    final DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
-    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
-            .addOrchestrator(plusOne, ctx -> {
-              int value = ctx.getInput(int.class);
-              for (int i = 0; i < 10; i++) {
-                value = ctx.callActivity(plusOne, value, int.class).await();
-              }
-              ctx.complete(value);
-            })
-            .addActivity(plusOne, ctx -> ctx.getInput(int.class) + 1)
-            .addOrchestrator(waitForEvent, ctx -> {
-              String name = ctx.getInput(String.class);
-              String output = ctx.waitForExternalEvent(name, String.class).await();
-              ctx.complete(output);
-            }).buildAndStart();
-
-    try (worker; client) {
-      Instant startTime = Instant.now();
-      String prefix = startTime.toString();
-
-      IntStream.range(0, 5).mapToObj(i -> {
-        String instanceId = String.format("%s.sequence.%d", prefix, i);
-        client.scheduleNewOrchestrationInstance(plusOne, 0, instanceId);
-        return instanceId;
-      }).collect(Collectors.toUnmodifiableList()).forEach(id -> {
-        try {
-          client.waitForInstanceCompletion(id, defaultTimeout, true);
-        } catch (TimeoutException e) {
-          e.printStackTrace();
-        }
-      });
-
-      try {
-        Thread.sleep(2000);
-      } catch (InterruptedException e) {
-      }
-
-      Instant sequencesFinishedTime = Instant.now();
-
-      IntStream.range(0, 5).mapToObj(i -> {
-        String instanceId = String.format("%s.waiter.%d", prefix, i);
-        client.scheduleNewOrchestrationInstance(waitForEvent, String.valueOf(i), instanceId);
-        return instanceId;
-      }).collect(Collectors.toUnmodifiableList()).forEach(id -> {
-        try {
-          client.waitForInstanceStart(id, defaultTimeout);
-        } catch (TimeoutException e) {
-          e.printStackTrace();
-        }
-      });
-
-      // Create one query object and reuse it for multiple queries
-      OrchestrationStatusQuery query = new OrchestrationStatusQuery();
-      OrchestrationStatusQueryResult result = null;
-
-      // Return all instances
-      result = client.queryInstances(query);
-      assertEquals(10, result.getOrchestrationState().size());
-
-      // Test CreatedTimeTo filter
-      query.setCreatedTimeTo(startTime.minus(Duration.ofSeconds(1)));
-      result = client.queryInstances(query);
-      assertTrue(result.getOrchestrationState().isEmpty(),
-              "Result should be empty but found " + result.getOrchestrationState().size() + " instances: " +
-                      "Start time: " + startTime + ", " +
-                      result.getOrchestrationState().stream()
-                              .map(state -> String.format("\nID: %s, Status: %s, Created: %s",
-                                      state.getInstanceId(),
-                                      state.getRuntimeStatus(),
-                                      state.getCreatedAt()))
-                              .collect(Collectors.joining(", ")));
-
-      query.setCreatedTimeTo(sequencesFinishedTime);
-      result = client.queryInstances(query);
-      // Verify all returned instances contain "sequence" in their IDs
-      assertEquals(5, result.getOrchestrationState().stream()
-                      .filter(state -> state.getInstanceId().contains("sequence"))
-                      .count(),
-              "Expected exactly 5 instances with 'sequence' in their IDs");
-
-      query.setCreatedTimeTo(Instant.now().plus(Duration.ofSeconds(1)));
-      result = client.queryInstances(query);
-      assertEquals(10, result.getOrchestrationState().size());
-
-      // Test CreatedTimeFrom filter
-      query.setCreatedTimeFrom(Instant.now().plus(Duration.ofSeconds(1)));
-      result = client.queryInstances(query);
-      assertTrue(result.getOrchestrationState().isEmpty());
-
-      query.setCreatedTimeFrom(sequencesFinishedTime.minus(Duration.ofSeconds(5)));
-      result = client.queryInstances(query);
-      assertEquals(5, result.getOrchestrationState().stream()
-                      .filter(state -> state.getInstanceId().contains("sequence"))
-                      .count(),
-              "Expected exactly 5 instances with 'sequence' in their IDs");
-
-      query.setCreatedTimeFrom(startTime.minus(Duration.ofSeconds(1)));
-      result = client.queryInstances(query);
-      assertEquals(10, result.getOrchestrationState().size());
-
-      // Test RuntimeStatus filter
-      HashSet<OrchestrationRuntimeStatus> statusFilters = Stream.of(
-              OrchestrationRuntimeStatus.PENDING,
-              OrchestrationRuntimeStatus.FAILED,
-              OrchestrationRuntimeStatus.TERMINATED
-      ).collect(Collectors.toCollection(HashSet::new));
-
-      query.setRuntimeStatusList(new ArrayList<>(statusFilters));
-      result = client.queryInstances(query);
-      assertTrue(result.getOrchestrationState().isEmpty());
-
-      statusFilters.add(OrchestrationRuntimeStatus.RUNNING);
-      query.setRuntimeStatusList(new ArrayList<>(statusFilters));
-      result = client.queryInstances(query);
-      assertEquals(5, result.getOrchestrationState().size());
-
-      statusFilters.add(OrchestrationRuntimeStatus.COMPLETED);
-      query.setRuntimeStatusList(new ArrayList<>(statusFilters));
-      result = client.queryInstances(query);
-      assertEquals(10, result.getOrchestrationState().size());
-
-      statusFilters.remove(OrchestrationRuntimeStatus.RUNNING);
-      query.setRuntimeStatusList(new ArrayList<>(statusFilters));
-      result = client.queryInstances(query);
-      assertEquals(5, result.getOrchestrationState().size());
-
-      statusFilters.clear();
-      query.setRuntimeStatusList(new ArrayList<>(statusFilters));
-      result = client.queryInstances(query);
-      assertEquals(10, result.getOrchestrationState().size());
-
-      // Test InstanceIdPrefix
-      query.setInstanceIdPrefix("Foo");
-      result = client.queryInstances(query);
-      assertTrue(result.getOrchestrationState().isEmpty());
-
-      query.setInstanceIdPrefix(prefix);
-      result = client.queryInstances(query);
-      assertEquals(10, result.getOrchestrationState().size());
-
-      // Test PageSize and ContinuationToken
-      HashSet<String> instanceIds = new HashSet<>();
-      query.setMaxInstanceCount(0);
-      while (query.getMaxInstanceCount() < 10) {
-        query.setMaxInstanceCount(query.getMaxInstanceCount() + 1);
-        result = client.queryInstances(query);
-        int total = result.getOrchestrationState().size();
-        assertEquals(query.getMaxInstanceCount(), total);
-        result.getOrchestrationState().forEach(state -> assertTrue(instanceIds.add(state.getInstanceId())));
-        while (total < 10) {
-          query.setContinuationToken(result.getContinuationToken());
-          result = client.queryInstances(query);
-          int count = result.getOrchestrationState().size();
-          assertNotEquals(0, count);
-          assertTrue(count <= query.getMaxInstanceCount());
-          total += count;
-          assertTrue(total <= 10);
-          result.getOrchestrationState().forEach(state -> assertTrue(instanceIds.add(state.getInstanceId())));
-        }
-        query.setContinuationToken(null);
-        instanceIds.clear();
-      }
-
-      // Test ShowInput
-      query.setFetchInputsAndOutputs(true);
-      query.setCreatedTimeFrom(sequencesFinishedTime);
-      result = client.queryInstances(query);
-      result.getOrchestrationState().forEach(state -> assertNotNull(state.readInputAs(String.class)));
-
-      query.setFetchInputsAndOutputs(false);
-      query.setCreatedTimeFrom(sequencesFinishedTime);
-      result = client.queryInstances(query);
-      result.getOrchestrationState().forEach(state -> assertThrows(IllegalStateException.class, () -> state.readInputAs(String.class)));
     }
   }
 

@@ -18,10 +18,10 @@ Visit [this](https://github.com/dapr/components-contrib/tree/master/bindings) li
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+    * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+    * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+    * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -130,10 +130,10 @@ Execute the following command to run the Input Binding example:
 <!-- STEP
 name: Run input binding
 expected_stdout_lines:
-  - '== APP == Received message through binding: {"message":"Message #0"}'
-  - '== APP == Received message through binding: "Message #1"'
-  - '== APP == Received message through binding: {"message":"Message #2"}'
-  - '== APP == Received message through binding: "Message #3"'
+  - 'Received message through binding: {"message":"Message #0"}'
+  - 'Received message through binding: "Message #1"'
+  - 'Received message through binding: {"message":"Message #2"}'
+  - 'Received message through binding: "Message #3"'
 background: true
 sleep: 10
 -->
@@ -200,10 +200,10 @@ Execute the following command to run the Output Binding example:
 <!-- STEP
 name: Run output binding
 expected_stdout_lines:
-  - '== APP == sending a class with message: Message #0'
-  - '== APP == sending a plain string: Message #1'
-  - '== APP == sending a class with message: Message #2'
-  - '== APP == sending a plain string: Message #3'
+  - 'sending a class with message: Message #0'
+  - 'sending a plain string: Message #1'
+  - 'sending a class with message: Message #2'
+  - 'sending a plain string: Message #3'
 background: true
 sleep: 30
 -->
@@ -217,13 +217,13 @@ dapr run --resources-path ./components/bindings --app-id outputbinding -- java -
 Once running, the OutputBindingExample should print the output as follows:
 
 ```txt
-== APP == sending a class with message: Message #0
+sending a class with message: Message #0
 
-== APP == sending a plain string: Message #1
+sending a plain string: Message #1
 
-== APP == sending a class with message: Message #2
+sending a class with message: Message #2
 
-== APP == sending a plain string: Message #3
+sending a plain string: Message #3
 ```
 
 Events have been sent.
@@ -231,13 +231,13 @@ Events have been sent.
 Once running, the InputBindingExample should print the output as follows:
 
 ```txt
-== APP == Received message through binding: {"message":"Message #0"}
+Received message through binding: {"message":"Message #0"}
 
-== APP == Received message through binding: "Message #1"
+Received message through binding: "Message #1"
 
-== APP == Received message through binding: {"message":"Message #2"}
+Received message through binding: {"message":"Message #2"}
 
-== APP == Received message through binding: "Message #3"
+Received message through binding: "Message #3"
 ```
 
 Events have been retrieved from the binding.

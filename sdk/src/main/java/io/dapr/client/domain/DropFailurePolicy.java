@@ -13,11 +13,14 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
+
 /**
  * A failure policy that drops the job upon failure without retrying.
  * This implementation of {@link FailurePolicy} immediately discards failed jobs
  * instead of retrying them.
  */
+@JsonTypeName("DROP")
 public class DropFailurePolicy implements FailurePolicy {
 
   /**

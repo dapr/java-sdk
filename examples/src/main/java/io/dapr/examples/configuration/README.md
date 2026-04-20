@@ -12,10 +12,10 @@ The Java SDK exposes several methods for this -
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+    * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+    * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+    * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -144,14 +144,14 @@ Use the following command to run this example-
 <!-- STEP
 name: Run ConfigurationClient example
 expected_stdout_lines:
-  - "== APP == Using Dapr client..."
-  - "== APP == *******trying to retrieve configurations for a list of keys********"
-  - "== APP == val1 : key ->myconfig1"
-  - "== APP == val2 : key ->myconfig2"
-  - "== APP == val3 : key ->myconfig3"
-  - "== APP == Subscribing to key: myconfig1"
-  - "== APP == subscription ID :"
-  - "== APP == subscribing to key myconfig1 is successful"
+  - "Using Dapr client..."
+  - "*******trying to retrieve configurations for a list of keys********"
+  - "val1 : key ->myconfig1"
+  - "val2 : key ->myconfig2"
+  - "val3 : key ->myconfig3"
+  - "Subscribing to key: myconfig1"
+  - "subscription ID :"
+  - "subscribing to key myconfig1 is successful"
 background: true
 output_match_mode: substring
 sleep: 10
@@ -165,14 +165,14 @@ dapr run --resources-path ./components/configuration --app-id configgrpc --log-l
 
 ### Sample output
 ```
-== APP == Using Dapr client...
-== APP == *******trying to retrieve configurations for a list of keys********
-== APP == val1 : key ->myconfig1
-== APP == val2 : key ->myconfig2
-== APP == val3 : key ->myconfig3
-== APP == Subscribing to key: myconfig1
-== APP == subscription ID : 82bb8e24-f69d-477a-9126-5ffaf995f498
-== APP == subscribing to key myconfig1 is successful
+Using Dapr client...
+*******trying to retrieve configurations for a list of keys********
+val1 : key ->myconfig1
+val2 : key ->myconfig2
+val3 : key ->myconfig3
+Subscribing to key: myconfig1
+subscription ID : 82bb8e24-f69d-477a-9126-5ffaf995f498
+subscribing to key myconfig1 is successful
 
 
 ```

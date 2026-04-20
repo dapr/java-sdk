@@ -16,6 +16,7 @@ package io.dapr.durabletask;
 /**
  * Exception that gets thrown when awaiting a {@link Task} for an activity or sub-orchestration that fails with an
  * unhandled exception.
+ *
  * <p>Detailed information associated with a particular task failure can be retrieved
  * using the {@link #getErrorDetails()} method.</p>
  */

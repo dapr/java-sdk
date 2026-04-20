@@ -19,6 +19,7 @@ import io.dapr.springboot.examples.producer.workflow.CustomerFollowupActivity;
 import io.dapr.springboot.examples.producer.workflow.CustomerWorkflow;
 import io.dapr.springboot.examples.producer.workflow.RegisterCustomerActivity;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.wait.strategy.DaprWait;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.AfterEach;
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -42,8 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         RegisterCustomerActivity.class, CustomerStore.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class ProducerAppIT {
-
-  private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
 
   @Autowired
   private TestSubscriberRestController controller;
@@ -62,10 +60,9 @@ class ProducerAppIT {
   @BeforeEach
   void setUp() {
     RestAssured.baseURI = "http://localhost:" + 8080;
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
-    // Ensure the subscriptions are registered
-    Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(daprContainer);
 
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    DaprWait.forSubscription("pubsub", "topic").waitUntilReady(daprContainer);
   }
 
   @AfterEach

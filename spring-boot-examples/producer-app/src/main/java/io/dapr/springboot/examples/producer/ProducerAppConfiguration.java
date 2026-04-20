@@ -15,8 +15,8 @@ package io.dapr.springboot.examples.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
-import io.dapr.spring.boot.autoconfigure.pubsub.DaprPubSubProperties;
-import io.dapr.spring.boot.autoconfigure.statestore.DaprStateStoreProperties;
+import io.dapr.spring.boot.properties.pubsub.DaprPubSubProperties;
+import io.dapr.spring.boot.properties.statestore.DaprStateStoreProperties;
 import io.dapr.spring.data.DaprKeyValueAdapterResolver;
 import io.dapr.spring.data.DaprKeyValueTemplate;
 import io.dapr.spring.data.KeyValueAdapterResolver;

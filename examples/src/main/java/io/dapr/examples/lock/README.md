@@ -12,10 +12,10 @@ The java SDK exposes several methods for this -
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+    * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+    * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+    * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -48,11 +48,11 @@ Use the following command to run this example-
 <!-- STEP
 name: Run DistributedLockGrpcClient example
 expected_stdout_lines:
-  - "== APP == Using preview client..."
-  - "== APP == *******trying to get a free distributed lock********"
-  - "== APP == Lock result -> SUCCESS"
-  - "== APP == *******unlock a distributed lock********"
-  - "== APP == Unlock result -> SUCCESS"
+  - "Using preview client..."
+  - "*******trying to get a free distributed lock********"
+  - "Lock result -> SUCCESS"
+  - "*******unlock a distributed lock********"
+  - "Unlock result -> SUCCESS"
 background: true
 sleep: 5
 -->
@@ -65,11 +65,11 @@ dapr run --resources-path ./components/lock --app-id lockgrpc --log-level debug 
 
 ### Sample output
 ```
-== APP == Using preview client...
-== APP == *******trying to get a free distributed lock********
-== APP == Lock result -> SUCCESS
-== APP == *******unlock a distributed lock********
-== APP == Unlock result -> SUCCESS
+Using preview client...
+*******trying to get a free distributed lock********
+Lock result -> SUCCESS
+*******unlock a distributed lock********
+Unlock result -> SUCCESS
 ```
 ### Cleanup
 

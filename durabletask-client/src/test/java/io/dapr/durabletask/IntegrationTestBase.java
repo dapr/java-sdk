@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
+import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import org.junit.jupiter.api.AfterEach;
 
 import java.time.Duration;
@@ -66,6 +67,16 @@ public class IntegrationTestBase {
         @Override
         public TaskOrchestration create() {
           return implementation;
+        }
+
+        @Override
+        public String getVersionName() {
+          return "";
+        }
+
+        @Override
+        public Boolean isLatestVersion() {
+          return false;
         }
       });
       return this;
