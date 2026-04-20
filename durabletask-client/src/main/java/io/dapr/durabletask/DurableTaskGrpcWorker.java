@@ -64,7 +64,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient;
   private final boolean isExecutorServiceManaged;
   private volatile boolean isNormalShutdown = false;
-  private Thread workerThread;
+  private volatile Thread workerThread;
 
   DurableTaskGrpcWorker(DurableTaskGrpcWorkerBuilder builder) {
     this.orchestrationFactories = builder.orchestrationFactories;
@@ -158,6 +158,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
    * interrupt signal.</p>
    */
   public void startAndBlock() {
+    this.workerThread = Thread.currentThread();
     logger.log(Level.INFO, "Durable Task worker is connecting to sidecar at {0}.", this.getSidecarAddress());
 
     TaskOrchestrationExecutor taskOrchestrationExecutor = new TaskOrchestrationExecutor(
@@ -171,12 +172,15 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
         this.dataConverter,
         logger);
 
-    while (true) {
+    while (!this.isNormalShutdown && !Thread.currentThread().isInterrupted()) {
       try {
         OrchestratorService.GetWorkItemsRequest getWorkItemsRequest = OrchestratorService.GetWorkItemsRequest
             .newBuilder().build();
         Iterator<OrchestratorService.WorkItem> workItemStream = this.sidecarClient.getWorkItems(getWorkItemsRequest);
         while (workItemStream.hasNext()) {
+          if (this.isNormalShutdown || Thread.currentThread().isInterrupted()) {
+            break;
+          }
           OrchestratorService.WorkItem workItem = workItemStream.next();
           OrchestratorService.WorkItem.RequestCase requestType = workItem.getRequestCase();
 
@@ -215,10 +219,15 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
               String.format("Unexpected failure connecting to %s", this.getSidecarAddress()), e);
         }
 
+        if (this.isNormalShutdown) {
+          break;
+        }
+
         // Retry after 5 seconds
         try {
           Thread.sleep(5000);
         } catch (InterruptedException ex) {
+          Thread.currentThread().interrupt();
           break;
         }
       }
