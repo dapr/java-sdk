@@ -605,7 +605,7 @@ class TimerOriginTest {
             workflowStarted(),
             executionStarted("Orch10"),
             eventRaised("myEvent", null),
-            taskScheduled(1, "A", "exec-A")),
+            taskScheduled(1, "A", null)),
         List.of(taskCompleted(1, "\"result\"")));
 
     List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());
@@ -705,10 +705,10 @@ class TimerOriginTest {
             workflowStarted(),
             executionStarted("Orch13"),
             eventRaised("A", null),
-            taskScheduled(1, "ActA", "exec-A"),
+            taskScheduled(1, "ActA", null),
             taskCompleted(1, "\"A-result\""),
             eventRaised("B", null),
-            taskScheduled(3, "ActB", "exec-B")),
+            taskScheduled(3, "ActB", null)),
         List.of(taskCompleted(3, "\"B-result\"")));
 
     List<OrchestratorActions.WorkflowAction> actions = new ArrayList<>(result.getActions());

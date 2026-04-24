@@ -69,6 +69,12 @@ public final class TaskOrchestrationExecutor {
   private static final Consumer<OrchestratorActions.CreateTimerAction.Builder> CREATE_TIMER_ORIGIN_SETTER =
       b -> b.setCreateTimer(HistoryEvents.TimerOriginCreateTimer.getDefaultInstance());
 
+  // True iff fireAt is exactly the indefinite-wait sentinel. Timestamp.equals compares
+  // seconds+nanos, so this preserves the required nanosecond-level fidelity.
+  private static boolean isSentinelFireAt(Timestamp fireAt) {
+    return fireAt != null && fireAt.equals(EXTERNAL_EVENT_INDEFINITE_FIRE_AT_TIMESTAMP);
+  }
+
   // Pending action is an optional (synthetic, indefinite) external-event timer iff all three hold:
   // (1) it is a CreateTimer action; (2) origin is ExternalEvent; (3) fireAt equals the sentinel.
   private static boolean isOptionalExternalEventTimerAction(OrchestratorActions.WorkflowAction action) {
@@ -76,22 +82,12 @@ public final class TaskOrchestrationExecutor {
       return false;
     }
     OrchestratorActions.CreateTimerAction ct = action.getCreateTimer();
-    if (!ct.hasExternalEvent() || !ct.hasFireAt()) {
-      return false;
-    }
-    Timestamp fa = ct.getFireAt();
-    return fa.getSeconds() == EXTERNAL_EVENT_INDEFINITE_FIRE_AT_TIMESTAMP.getSeconds()
-        && fa.getNanos() == EXTERNAL_EVENT_INDEFINITE_FIRE_AT_TIMESTAMP.getNanos();
+    return ct.hasExternalEvent() && ct.hasFireAt() && isSentinelFireAt(ct.getFireAt());
   }
 
   // History event is an optional external-event timer iff origin is ExternalEvent AND fireAt is sentinel.
   private static boolean isOptionalExternalEventTimerCreatedEvent(HistoryEvents.TimerCreatedEvent tc) {
-    if (tc == null || !tc.hasExternalEvent() || !tc.hasFireAt()) {
-      return false;
-    }
-    Timestamp fa = tc.getFireAt();
-    return fa.getSeconds() == EXTERNAL_EVENT_INDEFINITE_FIRE_AT_TIMESTAMP.getSeconds()
-        && fa.getNanos() == EXTERNAL_EVENT_INDEFINITE_FIRE_AT_TIMESTAMP.getNanos();
+    return tc != null && tc.hasExternalEvent() && tc.hasFireAt() && isSentinelFireAt(tc.getFireAt());
   }
 
   private final TaskOrchestrationFactories orchestrationFactories;
