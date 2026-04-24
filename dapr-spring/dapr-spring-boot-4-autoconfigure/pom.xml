@@ -16,13 +16,21 @@
   <packaging>jar</packaging>
 
   <properties>
-    <springboot4.version>4.0.2</springboot4.version>
-    <!-- Override JUnit version to align with Spring Boot 4.0.2 -->
+    <springboot4.version>4.0.5</springboot4.version>
+    <!-- Override JUnit version to align with Spring Boot 4.0.x -->
     <junit-bom.version>6.0.2</junit-bom.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <!-- Override Jackson 3.x for CVE SNYK-JAVA-TOOLSJACKSONCORE-15907550 (must precede SB BOM) -->
+      <dependency>
+        <groupId>tools.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>3.1.1</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
@@ -75,6 +83,20 @@
       <groupId>org.springframework.data</groupId>
       <artifactId>spring-data-keyvalue</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-observation</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-observation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-observation-test</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
