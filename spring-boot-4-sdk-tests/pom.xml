@@ -19,8 +19,8 @@
     <maven.deploy.skip>true</maven.deploy.skip>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
-    <springboot4.version>4.0.2</springboot4.version>
-    <!-- Override JUnit version to align with Spring Boot 4.0.2 -->
+    <springboot4.version>4.0.5</springboot4.version>
+    <!-- Override JUnit version to align with Spring Boot 4.x -->
     <junit-bom.version>6.0.2</junit-bom.version>
     <!-- The JaCoCo plugin was expecting coverage for this module, but since it's a test module
    and code coverage typically doesn't apply to tests, the coverage is set to 0. -->

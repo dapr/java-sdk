@@ -18,11 +18,13 @@
   <description>SDK extension for Spring and Spring Boot</description>
 
   <modules>
+    <module>dapr-spring-bom</module>
     <module>dapr-spring-data</module>
     <module>dapr-spring-6-data</module>
     <module>dapr-spring-messaging</module>
     <module>dapr-spring-workflows</module>
     <module>dapr-spring-boot-properties</module>
+    <module>dapr-spring-boot-observation</module>
     <module>dapr-spring-boot-autoconfigure</module>
     <module>dapr-spring-boot-4-autoconfigure</module>
     <module>dapr-spring-boot-tests</module>
@@ -33,9 +35,9 @@
   </modules>
 
   <properties>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
   </properties>
 
   <dependencyManagement>
@@ -73,6 +75,11 @@
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-properties</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-observation</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

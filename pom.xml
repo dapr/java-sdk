@@ -38,11 +38,11 @@
     <maven-site-plugin.version>3.12.1</maven-site-plugin.version>
     <maven-project-info-reports-plugin.version>3.7.0</maven-project-info-reports-plugin.version>
     <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <jackson.version>2.16.2</jackson.version>
+    <jackson.version>2.21.2</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.fail>true</spotbugs.fail>
     <spotbugs.exclude.filter.file>${maven.multiModuleProjectDirectory}/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
@@ -52,10 +52,7 @@
     <junit-bom.version>5.11.4</junit-bom.version>
     <snakeyaml.version>2.0</snakeyaml.version>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <!-- Do NOT UPGRADE spring.version without checking springboot.version alignment -->
-    <springboot.version>3.4.9</springboot.version>
-    <springframework.version>6.2.7</springframework.version>
-    <!-- Do NOT UPGRADE springframework.version without checking springboot.version alignment -->
+    <springboot.version>3.5.12</springboot.version>
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <assertj.version>3.27.7</assertj.version>
     <opentelemetry.version>1.41.0</opentelemetry.version>
@@ -82,6 +79,10 @@
     <opentelemetry-bom.version>2.1.0</opentelemetry-bom.version>
     <kotlin.version>2.1.0</kotlin.version>
     <rest-assured.version>5.5.1</rest-assured.version>
+    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.132 (CVE-2026-33871, CVE-2026-33870) -->
+    <netty.version>4.1.132.Final</netty.version>
+    <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
+    <commons-compress.version>1.26.0</commons-compress.version>
   </properties>
 
   <distributionManagement>
@@ -106,6 +107,13 @@
       <!-- BOMs - Import first to establish baseline dependency versions         -->
       <!-- ====================================================================== -->
       <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-bom</artifactId>
         <version>${grpc.version}</version>
@@ -113,16 +121,16 @@
         <scope>import</scope>
       </dependency>
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${springboot.version}</version>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -153,6 +161,20 @@
         <version>${opentelemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <!-- ====================================================================== -->
+      <!-- Security overrides - Transitive dependency version fixes for CVEs   -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.17.2</version>
       </dependency>
 
       <!-- ====================================================================== -->
@@ -705,6 +727,7 @@
   </scm>
 
   <modules>
+    <module>sdk-bom</module>
     <module>sdk-autogen</module>
     <module>sdk</module>
     <module>sdk-actors</module>
