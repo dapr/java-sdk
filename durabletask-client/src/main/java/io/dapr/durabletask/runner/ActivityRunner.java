@@ -16,6 +16,7 @@ package io.dapr.durabletask.runner;
 import com.google.protobuf.StringValue;
 import io.dapr.durabletask.FailureDetails;
 import io.dapr.durabletask.TaskActivityExecutor;
+import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
 import io.grpc.StatusRuntimeException;
@@ -76,7 +77,7 @@ public class ActivityRunner extends DurableRunner {
         .setParent(parentContext)
         .setSpanKind(SpanKind.INTERNAL)
         .setAttribute("durabletask.task.instance_id",
-            activityRequest.getOrchestrationInstance().getInstanceId())
+            activityRequest.getWorkflowInstance().getInstanceId())
         .setAttribute("durabletask.task.id", activityRequest.getTaskId())
         .setAttribute("durabletask.activity.name", activityRequest.getName())
         .startSpan();
@@ -102,7 +103,7 @@ public class ActivityRunner extends DurableRunner {
 
   private void executeActivity() throws Throwable {
     String output = null;
-    OrchestratorService.TaskFailureDetails failureDetails = null;
+    Orchestration.TaskFailureDetails failureDetails = null;
     Throwable failureException = null;
     try {
       output = taskActivityExecutor.execute(
@@ -112,7 +113,7 @@ public class ActivityRunner extends DurableRunner {
           activityRequest.getTaskId(),
           activityRequest.getParentTraceContext().getTraceParent());
     } catch (Throwable e) {
-      failureDetails = OrchestratorService.TaskFailureDetails.newBuilder()
+      failureDetails = Orchestration.TaskFailureDetails.newBuilder()
           .setErrorType(e.getClass().getName())
           .setErrorMessage(e.getMessage())
           .setStackTrace(StringValue.of(FailureDetails.getFullStackTrace(e)))
@@ -122,7 +123,7 @@ public class ActivityRunner extends DurableRunner {
 
     OrchestratorService.ActivityResponse.Builder responseBuilder = OrchestratorService.ActivityResponse
         .newBuilder()
-        .setInstanceId(activityRequest.getOrchestrationInstance().getInstanceId())
+        .setInstanceId(activityRequest.getWorkflowInstance().getInstanceId())
         .setTaskId(activityRequest.getTaskId())
         .setCompletionToken(workItem.getCompletionToken());
 
@@ -151,7 +152,7 @@ public class ActivityRunner extends DurableRunner {
       return Context.current();
     }
 
-    OrchestratorService.TraceContext traceContext = activityRequest.getParentTraceContext();
+    Orchestration.TraceContext traceContext = activityRequest.getParentTraceContext();
     String traceParent = traceContext.getTraceParent();
 
     if (traceParent.isEmpty()) {

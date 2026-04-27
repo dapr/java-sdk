@@ -59,6 +59,18 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
+   * Protected constructor for DaprWorkflowClient that allows subclasses to inject additional
+   * gRPC {@link ClientInterceptor}s onto the channel (e.g. for tracing).
+   * The {@link ApiTokenClientInterceptor} is always prepended before the additional ones.
+   *
+   * @param properties            Properties for the GRPC Channel.
+   * @param additionalInterceptors extra interceptors appended after the API-token interceptor.
+   */
+  protected DaprWorkflowClient(Properties properties, ClientInterceptor... additionalInterceptors) {
+    this(buildChannelWithAdditional(properties, additionalInterceptors));
+  }
+
+  /**
    * Private Constructor that passes a created DurableTaskClient and the new GRPC channel.
    *
    * @param grpcChannel ManagedChannel for GRPC channel.
@@ -412,6 +424,20 @@ public class DaprWorkflowClient implements AutoCloseable {
         this.grpcChannel = null;
       }
     }
+  }
+
+  /**
+   * Builds a {@link ManagedChannel} that includes the API-token interceptor plus any extras.
+   */
+  private static ManagedChannel buildChannelWithAdditional(
+      Properties properties, ClientInterceptor... extra) {
+    if (extra == null || extra.length == 0) {
+      return NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties));
+    }
+    ClientInterceptor[] interceptors = new ClientInterceptor[1 + extra.length];
+    interceptors[0] = new ApiTokenClientInterceptor(properties);
+    System.arraycopy(extra, 0, interceptors, 1, extra.length);
+    return NetworkUtils.buildGrpcManagedChannel(properties, interceptors);
   }
 
   /**

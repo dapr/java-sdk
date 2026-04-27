@@ -127,9 +127,9 @@ public final class OrchestrationRunner {
       throw new IllegalArgumentException("orchestration must not be null");
     }
 
-    OrchestratorService.OrchestratorRequest orchestratorRequest;
+    OrchestratorService.WorkflowRequest orchestratorRequest;
     try {
-      orchestratorRequest = OrchestratorService.OrchestratorRequest.parseFrom(orchestratorRequestBytes);
+      orchestratorRequest = OrchestratorService.WorkflowRequest.parseFrom(orchestratorRequestBytes);
     } catch (InvalidProtocolBufferException e) {
       throw new IllegalArgumentException("triggerStateProtoBytes was not valid protobuf", e);
     }
@@ -170,7 +170,7 @@ public final class OrchestrationRunner {
         orchestratorRequest.getPastEventsList(),
         orchestratorRequest.getNewEventsList());
 
-    OrchestratorService.OrchestratorResponse response = OrchestratorService.OrchestratorResponse.newBuilder()
+    OrchestratorService.WorkflowResponse response = OrchestratorService.WorkflowResponse.newBuilder()
         .setInstanceId(orchestratorRequest.getInstanceId())
         .addAllActions(taskOrchestratorResult.getActions())
         .setCustomStatus(StringValue.of(taskOrchestratorResult.getCustomStatus()))

@@ -54,6 +54,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("deprecation")
 public class DaprClientHttpTest {
 
   private final String EXPECTED_RESULT =

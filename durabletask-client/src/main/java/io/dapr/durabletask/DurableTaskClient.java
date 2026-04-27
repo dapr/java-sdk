@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.durabletask;
 
 import javax.annotation.Nullable;
+
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
@@ -234,32 +235,6 @@ public abstract class DurableTaskClient implements AutoCloseable {
    *                   This value must be serializable.
    */
   public abstract void terminate(String instanceId, @Nullable Object output);
-
-  /**
-   * Fetches orchestration instance metadata from the configured durable store using a status query filter.
-   *
-   * @param query filter criteria that determines which orchestrations to fetch data for.
-   * @return the result of the query operation, including instance metadata and possibly a continuation token
-   */
-  public abstract OrchestrationStatusQueryResult queryInstances(OrchestrationStatusQuery query);
-
-  /**
-   * Initializes the target task hub data store.
-   *
-   * <p>This is an administrative operation that only needs to be done once for the lifetime of the task hub.</p>
-   *
-   * @param recreateIfExists <code>true</code> to delete any existing task hub first; <code>false</code> to make this
-   *                         operation a no-op if the task hub data store already exists. Note that deleting a task
-   *                         hub will result in permanent data loss. Use this operation with care.
-   */
-  public abstract void createTaskHub(boolean recreateIfExists);
-
-  /**
-   * Permanently deletes the target task hub data store and any orchestration data it may contain.
-   *
-   * <p>This is an administrative operation that is irreversible. It should be used with great care.</p>
-   */
-  public abstract void deleteTaskHub();
 
   /**
    * Purges orchestration instance metadata from the durable store.

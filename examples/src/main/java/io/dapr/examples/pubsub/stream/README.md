@@ -10,10 +10,10 @@ This sample shows how the subscription to events no longer requires the applicat
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+    * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+    * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+    * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -119,8 +119,8 @@ Execute the following command to run the raw data Subscriber example:
 <!-- STEP
 name: Run Subscriber
 expected_stdout_lines:
-  - '== APP == Subscriber got: This is message #0'
-  - '== APP == Subscriber got: This is message #1'
+  - 'Subscriber got: This is message #0'
+  - 'Subscriber got: This is message #1'
 background: true
 sleep: 15
 timeout_seconds: 30
@@ -143,8 +143,8 @@ Once the subscriber is running, run the publisher in a new terminal to see the e
 <!-- STEP
 name: Run Publisher
 expected_stdout_lines:
-  - '== APP == Published message: This is message #0'
-  - '== APP == Published message: This is message #1'
+  - 'Published message: This is message #0'
+  - 'Published message: This is message #1'
 background: true
 sleep: 15
 timeout_seconds: 30

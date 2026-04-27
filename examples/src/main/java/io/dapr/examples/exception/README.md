@@ -5,10 +5,10 @@ This sample illustrates how to handle exceptions in Dapr.
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+    * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+    * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+    * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -64,10 +64,10 @@ public class Client {
 <!-- STEP
 name: Run exception example 
 expected_stdout_lines:
-  - '== APP == Error code: INVALID_ARGUMENT'
-  - '== APP == Error message: INVALID_ARGUMENT: pubsub unknown_pubsub is not found'
-  - '== APP == Reason: DAPR_PUBSUB_NOT_FOUND'
-  - '== APP == Error payload size: 116'
+  - 'Error code: INVALID_ARGUMENT'
+  - 'Error message: INVALID_ARGUMENT: pubsub unknown_pubsub is not found'
+  - 'Reason: DAPR_PUBSUB_NOT_FOUND'
+  - 'Error payload size: 116'
 background: true
 sleep: 5
 -->
@@ -81,13 +81,13 @@ dapr run --app-id exception-example -- java -jar target/dapr-java-sdk-examples-e
 Once running, the State Client Example should print the output as follows:
 
 ```txt
-== APP == Error code: ERR_PUBSUB_NOT_FOUND
+Error code: ERR_PUBSUB_NOT_FOUND
 
-== APP == Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found
+Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found
 
-== APP == Reason: DAPR_PUBSUB_NOT_FOUND
+Reason: DAPR_PUBSUB_NOT_FOUND
 
-== APP == Error payload size: 116
+Error payload size: 116
 ...
 
 ```

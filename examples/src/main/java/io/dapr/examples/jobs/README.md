@@ -12,10 +12,10 @@ The Java SDK exposes several methods for this -
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+    * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+    * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+    * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -96,8 +96,8 @@ Use the following command to run this example-
 <!-- STEP
 name: Run Demo Jobs Client example
 expected_stdout_lines:
-  - "== APP == Job Name: dapr-job-1"
-  - "== APP == Job Payload: Hello World!"
+  - "Job Name: dapr-job-1"
+  - "Job Payload: Hello World!"
 background: true
 output_match_mode: substring
 sleep: 10
@@ -115,8 +115,8 @@ java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.jobs.DemoJobsC
 
 ### Sample output
 ```
-== APP == Job Name: dapr-job-1
-== APP == Job Payload: Hello World!
+Job Name: dapr-job-1
+Job Payload: Hello World!
 ```
 ### Cleanup
 

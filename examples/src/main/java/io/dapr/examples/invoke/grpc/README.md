@@ -5,10 +5,10 @@ In this example, you will run a Grpc service and client using Dapr's invoke feat
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+    * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+    * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+    * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -77,8 +77,8 @@ Now run the service code:
 
 <!-- STEP
 name: Run demo service
-expected_stdout_lines:
-  - '== APP == INFO: greet to World'
+expected_stderr_lines:
+  - 'INFO: greet to World'
 background: true
 sleep: 1
 -->
@@ -123,9 +123,9 @@ Finally, open a new command line terminal and run the client code to send some m
 
 <!-- STEP
 name: Run demo client
-expected_stdout_lines:
-  - '== APP == INFO: Will try to greet World ...'
-  - '== APP == INFO: Greeting: Hello World'
+expected_stderr_lines:
+  - 'INFO: Will try to greet World ...'
+  - 'INFO: Greeting: Hello World'
 background: true
 sleep: 10
 -->

@@ -15,10 +15,10 @@ This sample uses the Client provided in Dapr Java SDK invoking a remote method.
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
-* Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+* Java JDK 17 (or greater):
+    * [Microsoft JDK 17](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-17)
+    * [Oracle JDK 17](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK17)
+    * [OpenJDK 17](https://jdk.java.net/17/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -104,8 +104,8 @@ Use the following command to execute the demo service example:
 <!-- STEP
 name: Run demo service
 expected_stdout_lines: 
-  - '== APP == Server: "message one"'
-  - '== APP == Server: "message two"'
+  - 'Server: "message one"'
+  - 'Server: "message two"'
 background: true
 sleep: 5
 -->
@@ -152,9 +152,9 @@ Execute the follow script in order to run the InvokeClient example, passing two 
 <!-- STEP
 name: Run demo client
 expected_stdout_lines: 
-  - '== APP == "message one" received'
-  - '== APP == "message two" received'
-  - '== APP == Done'
+  - '"message one" received'
+  - '"message two" received'
+  - 'Done'
 background: true
 sleep: 5
 -->
@@ -168,11 +168,11 @@ dapr run --app-id invokeclient -- java -jar target/dapr-java-sdk-examples-exec.j
 Finally, the console for `invokeclient` should output:
 
 ```text
-== APP == "message one" received
+"message one" received
 
-== APP == "message two" received
+"message two" received
 
-== APP == Done
+Done
 
 ```
 

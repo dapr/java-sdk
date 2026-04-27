@@ -1,0 +1,185 @@
+<project
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.dapr.spring</groupId>
+  <artifactId>dapr-spring-bom</artifactId>
+  <version>1.18.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>dapr-spring-bom</name>
+  <description>Dapr Spring Bill of Materials (BOM). Import this POM to manage versions
+    of dapr-sdk-springboot and all dapr-spring-* modules. Imports dapr-sdk-bom
+    transitively, so Spring users only need this single BOM.</description>
+  <url>https://dapr.io</url>
+
+  <licenses>
+    <license>
+      <name>Apache License Version 2.0</name>
+      <url>https://opensource.org/licenses/Apache-2.0</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Dapr</name>
+      <email>daprweb@microsoft.com</email>
+      <organization>Dapr</organization>
+      <organizationUrl>https://dapr.io</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>https://github.com/dapr/java-sdk</url>
+    <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <properties>
+    <gpg.skip>true</gpg.skip>
+    <dapr.sdk.version>1.18.0-SNAPSHOT</dapr.sdk.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.12.1</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.7.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://ossrh-staging-api.central.sonatype.com</nexusUrl>
+          <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+            <configuration>
+              <gpgArguments>
+                <arg>--batch</arg>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- ====================================================================== -->
+      <!-- Import the core Dapr SDK BOM so Spring users get all SDK modules       -->
+      <!-- and security overrides via this single BOM.                            -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-bom</artifactId>
+        <version>${dapr.sdk.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- ====================================================================== -->
+      <!-- Spring integration module (groupId io.dapr)                            -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>dapr-sdk-springboot</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+
+      <!-- ====================================================================== -->
+      <!-- Dapr Spring modules (groupId io.dapr.spring)                           -->
+      <!-- ====================================================================== -->
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-data</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-6-data</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-messaging</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-workflows</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-properties</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-autoconfigure</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-autoconfigure</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-tests</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-starter</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-starter</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-starter-test</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-4-starter-test</artifactId>
+        <version>${dapr.sdk.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>

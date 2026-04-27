@@ -16,6 +16,7 @@ package io.dapr.durabletask.runner;
 import com.google.protobuf.StringValue;
 import io.dapr.durabletask.TaskOrchestrationExecutor;
 import io.dapr.durabletask.TaskOrchestratorResult;
+import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
 import io.grpc.StatusRuntimeException;
@@ -30,7 +31,7 @@ import java.util.logging.Logger;
 public class OrchestratorRunner extends DurableRunner {
   private static final Logger logger = Logger.getLogger(OrchestratorRunner.class.getPackage().getName());
 
-  private final OrchestratorService.OrchestratorRequest orchestratorRequest;
+  private final OrchestratorService.WorkflowRequest orchestratorRequest;
   private final TaskOrchestrationExecutor taskOrchestrationExecutor;
 
   /**
@@ -48,7 +49,7 @@ public class OrchestratorRunner extends DurableRunner {
       @Nullable Tracer tracer) {
 
     super(workItem, sidecarClient, tracer);
-    this.orchestratorRequest = workItem.getOrchestratorRequest();
+    this.orchestratorRequest = workItem.getWorkflowRequest();
     this.taskOrchestrationExecutor = taskOrchestrationExecutor;
   }
 
@@ -58,7 +59,7 @@ public class OrchestratorRunner extends DurableRunner {
         orchestratorRequest.getPastEventsList(),
         orchestratorRequest.getNewEventsList());
 
-    var versionBuilder = OrchestratorService.OrchestrationVersion.newBuilder();
+    var versionBuilder = Orchestration.WorkflowVersion.newBuilder();
 
     if (StringUtils.isNotEmpty(taskOrchestratorResult.getVersion())) {
       versionBuilder.setName(taskOrchestratorResult.getVersion());
@@ -68,7 +69,7 @@ public class OrchestratorRunner extends DurableRunner {
       versionBuilder.addAllPatches(taskOrchestratorResult.getPatches());
     }
 
-    OrchestratorService.OrchestratorResponse response = OrchestratorService.OrchestratorResponse.newBuilder()
+    OrchestratorService.WorkflowResponse response = OrchestratorService.WorkflowResponse.newBuilder()
         .setInstanceId(orchestratorRequest.getInstanceId())
         .addAllActions(taskOrchestratorResult.getActions())
         .setCustomStatus(StringValue.of(taskOrchestratorResult.getCustomStatus()))
