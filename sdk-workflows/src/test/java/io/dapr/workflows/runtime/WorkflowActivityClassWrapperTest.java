@@ -3,7 +3,7 @@ package io.dapr.workflows.runtime;
 import io.dapr.durabletask.TaskActivityContext;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;

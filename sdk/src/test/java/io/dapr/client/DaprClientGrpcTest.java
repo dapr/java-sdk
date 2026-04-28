@@ -59,7 +59,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -2596,7 +2595,7 @@ public class DaprClientGrpcTest {
 
     // Verify the second call has overwrite set to true
     DaprJobsProtos.ScheduleJobRequest secondActualRequest = captor.getAllValues().get(1);
-    Assert.assertTrue(secondActualRequest.getOverwrite());
+    Assertions.assertTrue(secondActualRequest.getOverwrite());
     assertEquals("testJob", secondActualRequest.getJob().getName());
   }
 
@@ -2729,8 +2728,8 @@ public class DaprClientGrpcTest {
     assertNull(response.getRepeats());
     assertNull(response.getTtl());
     assertEquals(job.getDueTime(), datetime);
-    Assert.assertTrue(job.hasFailurePolicy());
-    Assert.assertTrue(job.getFailurePolicy().hasDrop());
+    Assertions.assertTrue(job.hasFailurePolicy());
+    Assertions.assertTrue(job.getFailurePolicy().hasDrop());
   }
 
   @Test
@@ -2764,8 +2763,8 @@ public class DaprClientGrpcTest {
     assertNull(response.getRepeats());
     assertNull(response.getTtl());
     assertEquals(job.getDueTime(), datetime);
-    Assert.assertTrue(job.hasFailurePolicy());
-    Assert.assertTrue(job.getFailurePolicy().hasConstant());
+    Assertions.assertTrue(job.hasFailurePolicy());
+    Assertions.assertTrue(job.getFailurePolicy().hasConstant());
     assertEquals(2, job.getFailurePolicy().getConstant().getMaxRetries());
   }
 
@@ -2801,8 +2800,8 @@ public class DaprClientGrpcTest {
     assertNull(response.getRepeats());
     assertNull(response.getTtl());
     assertEquals(job.getDueTime(), datetime);
-    Assert.assertTrue(job.hasFailurePolicy());
-    Assert.assertTrue(job.getFailurePolicy().hasConstant());
+    Assertions.assertTrue(job.hasFailurePolicy());
+    Assertions.assertTrue(job.getFailurePolicy().hasConstant());
     assertEquals(5, job.getFailurePolicy().getConstant().getInterval().getNanos());
   }
 
@@ -2839,8 +2838,8 @@ public class DaprClientGrpcTest {
     assertNull(response.getRepeats());
     assertNull(response.getTtl());
     assertEquals(job.getDueTime(), datetime);
-    Assert.assertTrue(job.hasFailurePolicy());
-    Assert.assertTrue(job.getFailurePolicy().hasConstant());
+    Assertions.assertTrue(job.hasFailurePolicy());
+    Assertions.assertTrue(job.getFailurePolicy().hasConstant());
     assertEquals(10, job.getFailurePolicy().getConstant().getMaxRetries());
     assertEquals(5, job.getFailurePolicy().getConstant().getInterval().getNanos());
   }

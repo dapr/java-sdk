@@ -25,7 +25,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -58,7 +58,7 @@ public class DaprKeyValueRepositoryIT {
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
   @Container
-  private static final PostgreSQLContainer<?> POSTGRE_SQL_CONTAINER = new PostgreSQLContainer<>("postgres:16-alpine")
+  private static final PostgreSQLContainer POSTGRE_SQL_CONTAINER = new PostgreSQLContainer("postgres:16-alpine")
       .withNetworkAliases("postgres-repository")
       .withDatabaseName("dapr_db_repository")
       .withUsername("postgres")

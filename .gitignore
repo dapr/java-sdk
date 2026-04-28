@@ -51,3 +51,7 @@ hs_err_pid*
 
 # macOS
 .DS_Store
+
+# Claude Code / OMC
+.omc/
+.omx/
