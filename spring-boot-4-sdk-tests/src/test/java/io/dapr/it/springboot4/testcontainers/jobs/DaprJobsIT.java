@@ -45,7 +45,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
 import static io.dapr.it.springboot4.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
