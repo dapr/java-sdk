@@ -16,16 +16,14 @@ package io.dapr.springboot.examples.producer;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.Subscription;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.containers.RabbitMQContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.rabbitmq.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.Collections;
@@ -59,11 +57,6 @@ public class DaprTestContainersConfig {
         public void close() {
 
         }
-
-        @Override
-        public Statement apply(Statement base, Description description) {
-          return null;
-        }
       };
 
       List<com.github.dockerjava.api.model.Network> networks = DockerClientFactory.instance().client().listNetworksCmd()
@@ -92,8 +85,8 @@ public class DaprTestContainersConfig {
   }
 
   @Bean
-  public PostgreSQLContainer<?> postgreSQLContainer(Network daprNetwork) {
-    return new PostgreSQLContainer<>("postgres:16-alpine")
+  public PostgreSQLContainer postgreSQLContainer(Network daprNetwork) {
+    return new PostgreSQLContainer("postgres:16-alpine")
             .withNetworkAliases("postgres")
             .withDatabaseName("dapr_db_repository")
             .withUsername("postgres")
@@ -105,7 +98,7 @@ public class DaprTestContainersConfig {
 
   @Bean
   @ServiceConnection
-  public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer, RabbitMQContainer rabbitMQContainer) {
+  public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer postgreSQLContainer, RabbitMQContainer rabbitMQContainer) {
 
     Map<String, String> rabbitMqProperties = new HashMap<>();
     rabbitMqProperties.put("connectionString", "amqp://guest:guest@rabbitmq:5672");

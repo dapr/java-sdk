@@ -33,7 +33,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
@@ -76,7 +76,7 @@ public class PatchVersioningWorkflowsIT {
   private static final Map<String, String> STATE_STORE_PROPERTIES = createStateStoreProperties();
 
   @Container
-  private static final MySQLContainer<?> MY_SQL_CONTAINER = new CustomMySQLContainer<>("mysql:5.7.34")
+  private static final MySQLContainer MY_SQL_CONTAINER = new CustomMySQLContainer("mysql:5.7.34")
       .withNetworkAliases("mysql")
       .withDatabaseName("dapr_db")
       .withUsername("mysql")

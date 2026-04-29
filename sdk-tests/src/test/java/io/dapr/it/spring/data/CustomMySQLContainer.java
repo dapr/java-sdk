@@ -1,9 +1,9 @@
 package io.dapr.it.spring.data;
 
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-public class CustomMySQLContainer<SELF extends MySQLContainer<SELF>> extends MySQLContainer<SELF> {
+public class CustomMySQLContainer extends MySQLContainer {
 
   public CustomMySQLContainer(String dockerImageName) {
     super(DockerImageName.parse(dockerImageName));
