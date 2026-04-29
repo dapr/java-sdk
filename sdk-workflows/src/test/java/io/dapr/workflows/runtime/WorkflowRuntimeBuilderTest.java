@@ -20,7 +20,7 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
@@ -50,10 +50,10 @@ public class WorkflowRuntimeBuilderTest {
     assertDoesNotThrow(() -> b.registerWorkflow("NameWithClass", TestWorkflow.class));
 //    assertDoesNotThrow(() -> b.registerWorkflow(new TestWorkflowWithNameAndVersionIsLatest()));
 
-    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow("", new TestWorkflow(), null, null));
-    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow("", TestWorkflow.class, null, null));
-    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerActivity("", new TestActivity()));
-    Assert.assertThrows(IllegalArgumentException.class, () -> b.registerActivity("", TestActivity.class));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow("", new TestWorkflow(), null, null));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> b.registerWorkflow("", TestWorkflow.class, null, null));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> b.registerActivity("", new TestActivity()));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> b.registerActivity("", TestActivity.class));
   }
 
   public static class TestActivity implements WorkflowActivity {

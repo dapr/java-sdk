@@ -17,7 +17,6 @@ import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.NetworkUtils.GrpcEndpointSettings;
 import io.grpc.ManagedChannel;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -329,7 +328,7 @@ public class NetworkUtilsTest {
     try {
       var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue));
       NetworkUtils.GrpcEndpointSettings.parse(properties);
-      Assert.fail();
+      Assertions.fail();
     } catch (IllegalArgumentException e) {
       // Expected
     }

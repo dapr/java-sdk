@@ -37,7 +37,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
@@ -55,7 +55,7 @@ import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
@@ -81,7 +81,7 @@ public class FullVersioningWorkflowsIT {
   private static final Map<String, String> STATE_STORE_PROPERTIES = createStateStoreProperties();
 
   @Container
-  private static final MySQLContainer<?> MY_SQL_CONTAINER = new CustomMySQLContainer<>("mysql:5.7.34")
+  private static final MySQLContainer MY_SQL_CONTAINER = new CustomMySQLContainer("mysql:5.7.34")
       .withNetworkAliases("mysql")
       .withDatabaseName("dapr_db")
       .withUsername("mysql")
