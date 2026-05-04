@@ -161,6 +161,19 @@
               <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>getAttestationProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${durabletask.proto.baseurl}/attestation.proto</url>
+              <outputFileName>attestation.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
