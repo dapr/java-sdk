@@ -16,8 +16,7 @@ package io.quarkiverse.dapr.langchain4j.agent;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.quarkiverse.dapr.langchain4j.agent.workflow.AgentEvent;
 import io.quarkiverse.dapr.langchain4j.agent.workflow.AgentRunInput;
-import io.quarkiverse.dapr.langchain4j.agent.workflow.AgentRunWorkflow;
-import io.quarkiverse.dapr.langchain4j.workflow.WorkflowNameResolver;
+import io.quarkiverse.dapr.langchain4j.workflow.DaprAgentServiceUtil;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -73,11 +72,11 @@ public class AgentRunLifecycleManager {
       AgentRunContext runContext = new AgentRunContext(agentRunId);
       DaprAgentRunRegistry.register(agentRunId, runContext);
       workflowClient.scheduleNewWorkflow(
-          WorkflowNameResolver.resolve(AgentRunWorkflow.class),
+          DaprAgentServiceUtil.agentWorkflowName(name),
           new AgentRunInput(agentRunId, name, userMessage, systemMessage), agentRunId);
       DaprAgentContextHolder.set(agentRunId);
-      LOG.infof("[AgentRun:%s] AgentRunWorkflow started (lazy — standalone @Agent), agent=%s",
-          agentRunId, name);
+      LOG.infof("[AgentRun:%s] AgentRunWorkflow started — workflow=%s, agent=%s",
+          agentRunId, DaprAgentServiceUtil.agentWorkflowName(name), name);
     }
     return agentRunId;
   }
@@ -92,6 +91,14 @@ public class AgentRunLifecycleManager {
    * @return the active agent run ID
    */
   public String getOrActivate() {
+    DaprAgentMetadataHolder.AgentMetadata meta = DaprAgentMetadataHolder.get();
+    if (meta != null) {
+      return getOrActivate(meta.agentName(), meta.userMessage(), meta.systemMessage());
+    }
+    String resolved = AgentNameRegistry.resolveFromStack();
+    if (resolved != null) {
+      return getOrActivate(resolved, null, null);
+    }
     return getOrActivate(null, null, null);
   }
 

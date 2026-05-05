@@ -19,8 +19,7 @@ import dev.langchain4j.service.UserMessage;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.quarkiverse.dapr.langchain4j.agent.workflow.AgentEvent;
 import io.quarkiverse.dapr.langchain4j.agent.workflow.AgentRunInput;
-import io.quarkiverse.dapr.langchain4j.agent.workflow.AgentRunWorkflow;
-import io.quarkiverse.dapr.langchain4j.workflow.WorkflowNameResolver;
+import io.quarkiverse.dapr.langchain4j.workflow.DaprAgentServiceUtil;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
@@ -87,7 +86,7 @@ public class DaprAgentMethodInterceptor {
     AgentRunContext runContext = new AgentRunContext(agentRunId);
     DaprAgentRunRegistry.register(agentRunId, runContext);
     workflowClient.scheduleNewWorkflow(
-        WorkflowNameResolver.resolve(AgentRunWorkflow.class),
+        DaprAgentServiceUtil.agentWorkflowName(agentName),
         new AgentRunInput(agentRunId, agentName, userMessage, systemMessage), agentRunId);
     DaprAgentContextHolder.set(agentRunId);
 

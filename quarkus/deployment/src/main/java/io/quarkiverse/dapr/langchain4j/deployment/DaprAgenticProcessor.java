@@ -13,9 +13,9 @@ limitations under the License.
 
 package io.quarkiverse.dapr.langchain4j.deployment;
 
-import io.quarkiverse.dapr.deployment.items.WorkflowItemBuildItem;
 import io.quarkiverse.dapr.langchain4j.agent.AgentRunLifecycleManager;
 import io.quarkiverse.dapr.langchain4j.agent.DaprAgentMetadataHolder;
+import io.quarkiverse.dapr.langchain4j.workflow.DaprWorkflowRuntimeRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -23,6 +23,8 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
@@ -35,6 +37,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.RuntimeValue;
 import jakarta.annotation.Priority;
 import jakarta.decorator.Decorator;
 import jakarta.decorator.Delegate;
@@ -54,6 +57,7 @@ import org.jboss.logging.Logger;
 
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -139,6 +143,26 @@ public class DaprAgenticProcessor {
   private static final DotName ACTIVITY_METADATA_DOTNAME = DotName.createSimple(
       "io.quarkiverse.dapr.workflows.ActivityMetadata");
 
+  // Composite agent annotations → workflow class mapping
+  private static final DotName SEQUENCE_AGENT_ANNOTATION =
+      DotName.createSimple("dev.langchain4j.agentic.declarative.SequenceAgent");
+  private static final DotName PARALLEL_AGENT_ANNOTATION =
+      DotName.createSimple("dev.langchain4j.agentic.declarative.ParallelAgent");
+  private static final DotName LOOP_AGENT_ANNOTATION =
+      DotName.createSimple("dev.langchain4j.agentic.declarative.LoopAgent");
+  private static final DotName CONDITIONAL_AGENT_ANNOTATION =
+      DotName.createSimple("dev.langchain4j.agentic.declarative.ConditionalAgent");
+
+  private static final String ORCH_PKG =
+      "io.quarkiverse.dapr.langchain4j.workflow.orchestration.";
+
+  private static final Map<DotName, String> AGENT_ANNOTATION_TO_WORKFLOW = Map.of(
+      SEQUENCE_AGENT_ANNOTATION, ORCH_PKG + "SequentialOrchestrationWorkflow",
+      PARALLEL_AGENT_ANNOTATION, ORCH_PKG + "ParallelOrchestrationWorkflow",
+      LOOP_AGENT_ANNOTATION, ORCH_PKG + "LoopOrchestrationWorkflow",
+      CONDITIONAL_AGENT_ANNOTATION, ORCH_PKG + "ConditionalOrchestrationWorkflow"
+  );
+
   private static final String[] WORKFLOW_CLASSES = {
       "io.quarkiverse.dapr.langchain4j.workflow.orchestration.SequentialOrchestrationWorkflow",
       "io.quarkiverse.dapr.langchain4j.workflow.orchestration.ParallelOrchestrationWorkflow",
@@ -173,46 +197,97 @@ public class DaprAgenticProcessor {
   }
 
   /**
-   * Produce {@link WorkflowItemBuildItem} for each of our Workflow and WorkflowActivity
-   * classes.
+   * Register all workflows and activities using the Dapr Java SDK directly,
+   * bypassing quarkus-dapr's {@code WorkflowItemBuildItem} pipeline.
+   *
+   * <p>This gives full control over workflow naming: the same class can be
+   * registered under multiple names (e.g., {@code AgentRunWorkflow} as both
+   * {@code dapr.langchain4j.AgentRun.workflow} and
+   * {@code dapr.langchain4j.WeatherAssistant.workflow}).
    */
   @BuildStep
-  void registerWorkflowsAndActivities(CombinedIndexBuildItem combinedIndex,
-      BuildProducer<WorkflowItemBuildItem> workflowItems) {
+  @Record(ExecutionTime.RUNTIME_INIT)
+  void setupWorkflowRuntime(DaprWorkflowRuntimeRecorder recorder,
+      CombinedIndexBuildItem combinedIndex) {
+
+    @SuppressWarnings("rawtypes") RuntimeValue builder = recorder.createBuilder();
     IndexView index = combinedIndex.getIndex();
 
+    // Register generic workflows (from @WorkflowMetadata name)
     for (String className : WORKFLOW_CLASSES) {
       ClassInfo classInfo = index.getClassByName(DotName.createSimple(className));
-      if (classInfo != null) {
-        String regName = null;
-        String version = null;
-        Boolean isLatest = null;
-        AnnotationInstance meta = classInfo.annotation(WORKFLOW_METADATA_DOTNAME);
-        if (meta != null) {
-          regName = stringValueOrNull(meta, "name");
-          version = stringValueOrNull(meta, "version");
-          AnnotationValue isLatestVal = meta.value("isLatest");
-          if (isLatestVal != null) {
-            isLatest = isLatestVal.asBoolean();
-          }
+      if (classInfo == null) {
+        continue;
+      }
+      String regName = className;
+      AnnotationInstance meta = classInfo.annotation(WORKFLOW_METADATA_DOTNAME);
+      if (meta != null) {
+        String metaName = stringValueOrNull(meta, "name");
+        if (metaName != null) {
+          regName = metaName;
         }
-        workflowItems.produce(new WorkflowItemBuildItem(
-            classInfo, WorkflowItemBuildItem.Type.WORKFLOW, regName, version, isLatest));
+      }
+      recorder.registerWorkflow(builder, regName, className);
+    }
+
+    // Register activities (from @ActivityMetadata name)
+    for (String className : ACTIVITY_CLASSES) {
+      ClassInfo classInfo = index.getClassByName(DotName.createSimple(className));
+      if (classInfo == null) {
+        continue;
+      }
+      String regName = className;
+      AnnotationInstance meta = classInfo.annotation(ACTIVITY_METADATA_DOTNAME);
+      if (meta != null) {
+        String metaName = stringValueOrNull(meta, "name");
+        if (metaName != null) {
+          regName = metaName;
+        }
+      }
+      recorder.registerActivity(builder, regName, className);
+    }
+
+    // Register agent-specific workflow names for composite agents
+    for (Map.Entry<DotName, String> entry : AGENT_ANNOTATION_TO_WORKFLOW.entrySet()) {
+      DotName annotationName = entry.getKey();
+      String workflowClassName = entry.getValue();
+      for (AnnotationInstance ann : index.getAnnotations(annotationName)) {
+        AnnotationValue nameValue = ann.value("name");
+        if (nameValue == null || nameValue.asString().isEmpty()) {
+          continue;
+        }
+        String agentName = nameValue.asString();
+        String workflowName = "dapr.langchain4j."
+            + toTitleCase(agentName) + ".workflow";
+        LOG.infof("Registering workflow '%s' for @%s(name=\"%s\")",
+            workflowName, annotationName.local(), agentName);
+        recorder.registerWorkflow(builder, workflowName, workflowClassName);
       }
     }
 
-    for (String className : ACTIVITY_CLASSES) {
-      ClassInfo classInfo = index.getClassByName(DotName.createSimple(className));
-      if (classInfo != null) {
-        String regName = null;
-        AnnotationInstance meta = classInfo.annotation(ACTIVITY_METADATA_DOTNAME);
-        if (meta != null) {
-          regName = stringValueOrNull(meta, "name");
-        }
-        workflowItems.produce(new WorkflowItemBuildItem(
-            classInfo, WorkflowItemBuildItem.Type.WORKFLOW_ACTIVITY, regName, null, null));
+    // Register agent-specific workflow names for standalone @Agent
+    String agentRunClass =
+        "io.quarkiverse.dapr.langchain4j.agent.workflow.AgentRunWorkflow";
+    for (AnnotationInstance ann : index.getAnnotations(AGENT_ANNOTATION)) {
+      if (ann.target().kind() != AnnotationTarget.Kind.METHOD) {
+        continue;
       }
+      AnnotationValue nameValue = ann.value("name");
+      if (nameValue == null || nameValue.asString().isEmpty()) {
+        continue;
+      }
+      String agentName = nameValue.asString();
+      String interfaceName = ann.target().asMethod()
+          .declaringClass().name().toString();
+      String workflowName = "dapr.langchain4j."
+          + toTitleCase(agentName) + ".workflow";
+      LOG.infof("Registering workflow '%s' for @Agent(name=\"%s\")",
+          workflowName, agentName);
+      recorder.registerWorkflow(builder, workflowName, agentRunClass);
+      recorder.registerAgentName(interfaceName, agentName);
     }
+
+    recorder.startRuntime(builder);
   }
 
   /**
@@ -234,10 +309,10 @@ public class DaprAgenticProcessor {
         "io.quarkiverse.dapr.langchain4j.agent.DaprToolCallInterceptor"));
     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
         "io.quarkiverse.dapr.langchain4j.agent.DaprAgentMethodInterceptor"));
-    // CDI decorator that wraps ChatModel to route LLM calls through Dapr activities.
-    // A decorator is used instead of an interceptor because quarkus-langchain4j registers
-    // ChatModel as a synthetic bean, and Arc does not apply CDI interceptors to synthetic
-    // beans via AnnotationsTransformer -- but it DOES apply decorators at the type level.
+    // TODO: LLM call routing through Dapr activities.
+    // DaprChatModelWrapper (@Alternative) + DaprChatModelDecorator work for interception
+    // but cause workflow hangs with multi-event replay. Needs investigation with
+    // durable task replay unit tests. For now, only tool calls are backed by Dapr.
     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
         "io.quarkiverse.dapr.langchain4j.agent.DaprChatModelDecorator"));
   }
@@ -580,6 +655,22 @@ public class DaprAgenticProcessor {
   // -------------------------------------------------------------------------
   // Annotation metadata extraction helpers
   // -------------------------------------------------------------------------
+
+  private static String toTitleCase(String name) {
+    StringBuilder sb = new StringBuilder();
+    boolean capitalizeNext = true;
+    for (char c : name.toCharArray()) {
+      if (c == '-' || c == '_' || c == ' ') {
+        capitalizeNext = true;
+      } else if (capitalizeNext) {
+        sb.append(Character.toUpperCase(c));
+        capitalizeNext = false;
+      } else {
+        sb.append(c);
+      }
+    }
+    return sb.toString();
+  }
 
   private static String stringValueOrNull(AnnotationInstance annotation, String name) {
     AnnotationValue value = annotation.value(name);

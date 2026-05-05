@@ -35,4 +35,45 @@ public final class DaprAgentServiceUtil {
     }
     return name.replaceAll("[^a-zA-Z0-9_-]", "_");
   }
+
+  /**
+   * Converts an agent name to TitleCase for the workflow name convention.
+   * E.g., "travel-planner-agent" becomes "TravelPlannerAgent".
+   *
+   * @param name the hyphen/underscore/space-separated name
+   * @return the TitleCase version of the name
+   */
+  public static String toTitleCase(String name) {
+    StringBuilder sb = new StringBuilder();
+    boolean capitalizeNext = true;
+    for (char c : name.toCharArray()) {
+      if (c == '-' || c == '_' || c == ' ') {
+        capitalizeNext = true;
+      } else if (capitalizeNext) {
+        sb.append(Character.toUpperCase(c));
+        capitalizeNext = false;
+      } else {
+        sb.append(c);
+      }
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Returns the workflow name for an agent following the convention:
+   * {@code dapr.langchain4j.<TitleCaseName>.workflow}.
+   * Falls back to {@code dapr.langchain4j.AgentRun.workflow} if name is
+   * empty or "standalone".
+   *
+   * @param agentName the agent name (e.g., "weather-assistant")
+   * @return the Dapr workflow name (e.g., "dapr.langchain4j.WeatherAssistant.workflow")
+   */
+  public static String agentWorkflowName(String agentName) {
+    if (agentName == null || agentName.isEmpty() || "standalone".equals(agentName)) {
+      return WorkflowNameResolver.resolve(
+          io.quarkiverse.dapr.langchain4j.agent.workflow.AgentRunWorkflow.class);
+    }
+    return "dapr.langchain4j." + toTitleCase(agentName) + ".workflow";
+  }
+
 }
