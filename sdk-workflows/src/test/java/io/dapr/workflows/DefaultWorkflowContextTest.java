@@ -14,6 +14,8 @@ limitations under the License.
 package io.dapr.workflows;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.HistoryPropagationScope;
+import io.dapr.durabletask.PropagatedHistory;
 import io.dapr.durabletask.RetryContext;
 import io.dapr.durabletask.RetryHandler;
 import io.dapr.durabletask.Task;
@@ -32,6 +34,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -149,6 +152,11 @@ public class DefaultWorkflowContextTest {
       @Override
       public boolean isPatched(String patchName) {
         return false;
+      }
+
+      @Override
+      public Optional<PropagatedHistory> getPropagatedHistory() {
+        return Optional.empty();
       }
     };
     context = new DefaultWorkflowContext(mockInnerContext);
@@ -562,5 +570,41 @@ public class DefaultWorkflowContextTest {
             .callActivity(eq(expectedName), eq(expectedInput), captor.capture(), eq(String.class));
 
     assertEquals(Duration.ZERO, captor.getValue().getRetryPolicy().getMaxRetryInterval());
+  }
+
+  @Test
+  public void callActivityWithHistoryPropagationScope() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    WorkflowTaskOptions options = WorkflowTaskOptions.propagateLineage();
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callActivity(expectedName, expectedInput, options, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callActivity(eq(expectedName), eq(expectedInput), captor.capture(), eq(String.class));
+
+    assertEquals(HistoryPropagationScope.LINEAGE, captor.getValue().getHistoryPropagationScope());
+  }
+
+  @Test
+  public void getPropagatedHistoryDelegatesToInnerContext() {
+    PropagatedHistory mockHistory = mock(PropagatedHistory.class);
+    when(mockInnerContext.getPropagatedHistory()).thenReturn(Optional.of(mockHistory));
+
+    Optional<PropagatedHistory> result = context.getPropagatedHistory();
+
+    assertTrue(result.isPresent());
+    assertEquals(mockHistory, result.get());
+    verify(mockInnerContext, times(1)).getPropagatedHistory();
+  }
+
+  @Test
+  public void getPropagatedHistoryReturnsEmptyWhenNone() {
+    when(mockInnerContext.getPropagatedHistory()).thenReturn(Optional.empty());
+
+    Optional<PropagatedHistory> result = context.getPropagatedHistory();
+
+    assertTrue(result.isEmpty());
   }
 }

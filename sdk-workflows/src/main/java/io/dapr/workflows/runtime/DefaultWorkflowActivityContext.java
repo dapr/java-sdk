@@ -13,10 +13,13 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
+import io.dapr.durabletask.PropagatedHistory;
 import io.dapr.durabletask.TaskActivityContext;
 import io.dapr.workflows.WorkflowActivityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 /**
  * Wrapper for Durable Task Framework {@link TaskActivityContext}.
@@ -106,5 +109,10 @@ public class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   @Override
   public String getTaskExecutionId() {
     return this.innerContext.getTaskExecutionId();
+  }
+
+  @Override
+  public Optional<PropagatedHistory> getPropagatedHistory() {
+    return this.innerContext.getPropagatedHistory();
   }
 }
