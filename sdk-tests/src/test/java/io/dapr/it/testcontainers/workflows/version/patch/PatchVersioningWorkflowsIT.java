@@ -26,6 +26,7 @@ import io.dapr.testcontainers.DaprSchedulerContainer;
 import io.dapr.testcontainers.WorkflowDashboardContainer;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowState;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -221,6 +222,17 @@ public class PatchVersioningWorkflowsIT {
     return new DaprWorkflowClient(new Properties(overrides));
   }
 
-
+  // V2 containers are started manually inside the test and are not managed by @Container,
+  // so we must stop them explicitly to prevent the daprd V2 process from continuing to log
+  // placement/scheduler reconnect failures throughout subsequent tests.
+  @AfterAll
+  static void stopManuallyStartedContainers() {
+    if (workerV2.isRunning()) {
+      workerV2.stop();
+    }
+    if (DAPR_CONTAINER_V2.isRunning()) {
+      DAPR_CONTAINER_V2.stop();
+    }
+  }
 }
 
