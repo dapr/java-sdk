@@ -1,1 +1,1 @@
-io.quarkiverse.dapr.langchain4j.workflow.DaprWorkflowAgentsBuilder
+io.dapr.quarkus.langchain4j.workflow.DaprWorkflowAgentsBuilder
