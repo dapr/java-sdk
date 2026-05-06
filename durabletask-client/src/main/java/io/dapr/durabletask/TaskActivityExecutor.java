@@ -13,7 +13,11 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents;
+
+import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 public final class TaskActivityExecutor {
@@ -50,6 +54,24 @@ public final class TaskActivityExecutor {
    */
   public String execute(String taskName, String input,
                         String taskExecutionId, int taskId, String traceParent) throws Throwable {
+    return execute(taskName, input, taskExecutionId, taskId, traceParent, null);
+  }
+
+  /**
+   * Executes an activity task with optional propagated history.
+   *
+   * @param taskName           the name of the activity task to execute
+   * @param input              the serialized input payload for the activity task
+   * @param taskExecutionId    Unique ID for the task execution.
+   * @param taskId             Auto-incrementing ID for the task.
+   * @param traceParent        The traceparent header value.
+   * @param propagatedHistory  Propagated history from a parent workflow, or null.
+   * @return the serialized output payload for the activity task, or null if the activity task returned null.
+   * @throws Throwable if an unhandled exception occurs during activity task execution.
+   */
+  public String execute(String taskName, String input,
+                        String taskExecutionId, int taskId, String traceParent,
+                        @Nullable HistoryEvents.PropagatedHistory propagatedHistory) throws Throwable {
     TaskActivityFactory factory = this.activityFactories.get(taskName);
     if (factory == null) {
       throw new IllegalStateException(
@@ -62,8 +84,10 @@ public final class TaskActivityExecutor {
           String.format("The task factory '%s' returned a null TaskActivity object.", taskName));
     }
 
+    PropagatedHistory parsed = propagatedHistory != null
+        ? PropagatedHistory.fromProto(propagatedHistory) : null;
     TaskActivityContextImpl context = new TaskActivityContextImpl(
-        taskName, input, taskExecutionId, taskId, traceParent);
+        taskName, input, taskExecutionId, taskId, traceParent, parsed);
 
     // Unhandled exceptions are allowed to escape
     Object output = activity.run(context);
@@ -80,16 +104,19 @@ public final class TaskActivityExecutor {
     private final String taskExecutionId;
     private final int taskId;
     private final String traceParent;
+    private final PropagatedHistory propagatedHistory;
 
     private final DataConverter dataConverter = TaskActivityExecutor.this.dataConverter;
 
     public TaskActivityContextImpl(String activityName, String rawInput,
-                                   String taskExecutionId, int taskId, String traceParent) {
+                                   String taskExecutionId, int taskId, String traceParent,
+                                   @Nullable PropagatedHistory propagatedHistory) {
       this.name = activityName;
       this.rawInput = rawInput;
       this.taskExecutionId = taskExecutionId;
       this.taskId = taskId;
       this.traceParent = traceParent;
+      this.propagatedHistory = propagatedHistory;
     }
 
     @Override
@@ -119,6 +146,11 @@ public final class TaskActivityExecutor {
     @Override
     public String getTraceParent() {
       return this.traceParent;
+    }
+
+    @Override
+    public Optional<PropagatedHistory> getPropagatedHistory() {
+      return Optional.ofNullable(this.propagatedHistory);
     }
   }
 }

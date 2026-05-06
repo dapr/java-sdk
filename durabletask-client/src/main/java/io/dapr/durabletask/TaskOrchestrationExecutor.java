@@ -40,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -127,7 +128,23 @@ public final class TaskOrchestrationExecutor {
    */
   public TaskOrchestratorResult execute(List<HistoryEvents.HistoryEvent> pastEvents,
                                         List<HistoryEvents.HistoryEvent> newEvents) {
-    ContextImplTask context = new ContextImplTask(pastEvents, newEvents);
+    return execute(pastEvents, newEvents, null);
+  }
+
+  /**
+   * Executes the orchestration with the given past and new events, plus optional propagated history.
+   *
+   * @param pastEvents        list of past history events
+   * @param newEvents         list of new history events
+   * @param propagatedHistory propagated history from a parent workflow, or null
+   * @return the result of the orchestrator execution
+   */
+  public TaskOrchestratorResult execute(List<HistoryEvents.HistoryEvent> pastEvents,
+                                        List<HistoryEvents.HistoryEvent> newEvents,
+                                        @Nullable HistoryEvents.PropagatedHistory propagatedHistory) {
+    PropagatedHistory parsed = propagatedHistory != null
+        ? PropagatedHistory.fromProto(propagatedHistory) : null;
+    ContextImplTask context = new ContextImplTask(pastEvents, newEvents, parsed);
 
     boolean completed = false;
     try {
@@ -200,9 +217,13 @@ public final class TaskOrchestrationExecutor {
 
     private String versionName;
 
+    private final PropagatedHistory propagatedHistory;
+
     public ContextImplTask(List<HistoryEvents.HistoryEvent> pastEvents,
-                           List<HistoryEvents.HistoryEvent> newEvents) {
+                           List<HistoryEvents.HistoryEvent> newEvents,
+                           @Nullable PropagatedHistory propagatedHistory) {
       this.historyEventPlayer = new OrchestrationHistoryIterator(pastEvents, newEvents);
+      this.propagatedHistory = propagatedHistory;
     }
 
     @Override
@@ -243,6 +264,11 @@ public final class TaskOrchestrationExecutor {
     @Override
     public String getAppId() {
       return this.appId;
+    }
+
+    @Override
+    public Optional<PropagatedHistory> getPropagatedHistory() {
+      return Optional.ofNullable(this.propagatedHistory);
     }
 
     private void setAppId(String appId) {
@@ -404,6 +430,12 @@ public final class TaskOrchestrationExecutor {
         this.logger.fine(() -> String.format(
             "cross app routing detected: source=%s, target=%s",
             this.appId, targetAppId));
+      }
+
+      // Set history propagation scope if specified
+      if (options != null && options.hasHistoryPropagationScope()) {
+        scheduleTaskBuilder.setHistoryPropagationScope(
+            options.getHistoryPropagationScope().toProto());
       }
 
       TaskFactory<V> taskFactory = () -> {
@@ -575,6 +607,12 @@ public final class TaskOrchestrationExecutor {
         }
 
         createSubOrchestrationActionBuilder.setRouter(routerBuilder.build());
+      }
+
+      // Set history propagation scope if specified
+      if (options != null && options.hasHistoryPropagationScope()) {
+        createSubOrchestrationActionBuilder.setHistoryPropagationScope(
+            options.getHistoryPropagationScope().toProto());
       }
 
       TaskFactory<V> taskFactory = () -> {

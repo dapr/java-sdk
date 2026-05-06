@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.PropagatedHistory;
 import io.dapr.durabletask.RetryHandler;
 import io.dapr.durabletask.RetryPolicy;
 import io.dapr.durabletask.Task;
@@ -35,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class DefaultWorkflowContext implements WorkflowContext {
@@ -261,6 +263,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
             .retryPolicy(retryPolicy)
             .retryHandler(retryHandler)
             .appID(options.getAppId())
+            .historyPropagationScope(options.getHistoryPropagationScope())
             .build();
   }
 
@@ -325,5 +328,10 @@ public class DefaultWorkflowContext implements WorkflowContext {
 
   public boolean isPatched(String patchName) {
     return this.innerContext.isPatched(patchName);
+  }
+
+  @Override
+  public Optional<PropagatedHistory> getPropagatedHistory() {
+    return this.innerContext.getPropagatedHistory();
   }
 }
