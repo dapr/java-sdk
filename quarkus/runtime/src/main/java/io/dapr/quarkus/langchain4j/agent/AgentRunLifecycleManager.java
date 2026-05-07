@@ -116,11 +116,13 @@ public class AgentRunLifecycleManager {
    */
   public void triggerDone() {
     if (agentRunId != null) {
-      LOG.infof("[AgentRun:%s] @Agent method exited — sending done event to AgentRunWorkflow",
+      LOG.infof("[AgentRun:%s] PRE-triggerDone — about to send done event",
           agentRunId);
       try {
         workflowClient.raiseEvent(agentRunId, "agent-event",
             new AgentEvent("done", null, null, null));
+        LOG.infof("[AgentRun:%s] POST-triggerDone — done event sent",
+            agentRunId);
       } finally {
         DaprAgentRunRegistry.unregister(agentRunId);
         DaprAgentContextHolder.clear();

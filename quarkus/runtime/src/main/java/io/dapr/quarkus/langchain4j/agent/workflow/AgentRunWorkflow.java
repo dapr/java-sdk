@@ -70,45 +70,48 @@ public class AgentRunWorkflow implements Workflow {
 
       List<ToolCallOutput> toolCallOutputs = new ArrayList<>();
       List<LlmCallOutput> llmCallOutputs = new ArrayList<>();
+      int eventIndex = 0;
 
       while (true) {
-        // Wait for the next event from the agent thread or completion signal.
+        LOG.infof("[AgentRun:%s][iter:%d] Waiting for agent-event (replay=%s)",
+            agentRunId, eventIndex, ctx.isReplaying());
         AgentEvent event = ctx.waitForExternalEvent("agent-event", AgentEvent.class).await();
-
-        LOG.infof("[AgentRun:%s] Received event: type=%s, callId=%s, name=%s",
-            agentRunId, event.type(), event.toolCallId(), event.toolName());
+        LOG.infof("[AgentRun:%s][iter:%d] Received event: type=%s, callId=%s (replay=%s)",
+            agentRunId, eventIndex, event.type(), event.toolCallId(), ctx.isReplaying());
 
         if ("done".equals(event.type())) {
-          LOG.infof("[AgentRun:%s] AgentRunWorkflow completed — agent=%s, toolCalls=%d, llmCalls=%d",
-              agentRunId, agentName, toolCallOutputs.size(), llmCallOutputs.size());
+          LOG.infof("[AgentRun:%s][iter:%d] Done — agent=%s, toolCalls=%d, llmCalls=%d",
+              agentRunId, eventIndex, agentName, toolCallOutputs.size(), llmCallOutputs.size());
           break;
         }
 
         if ("tool-call".equals(event.type())) {
-          LOG.infof("[AgentRun:%s] Scheduling ToolCallActivity — tool=%s, args=%s",
-              agentRunId, event.toolName(), event.args());
+          LOG.infof("[AgentRun:%s][iter:%d] PRE-callActivity tool-call=%s (replay=%s)",
+              agentRunId, eventIndex, event.toolName(), ctx.isReplaying());
           ToolCallOutput toolOutput = ctx.callActivity(
               "tool-call",
               new ToolCallInput(agentRunId, event.toolCallId(), event.toolName(), event.args()),
               ToolCallOutput.class).await();
           toolCallOutputs.add(toolOutput);
-          LOG.infof("[AgentRun:%s] ToolCallActivity completed — tool=%s → %s",
-              agentRunId, event.toolName(), toolOutput.result());
+          LOG.infof("[AgentRun:%s][iter:%d] POST-callActivity tool-call=%s → %s",
+              agentRunId, eventIndex, event.toolName(), toolOutput.result());
           ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs));
         }
 
         if ("llm-call".equals(event.type())) {
-          LOG.infof("[AgentRun:%s] Scheduling LlmCallActivity — method=%s",
-              agentRunId, event.toolName());
+          LOG.infof("[AgentRun:%s][iter:%d] PRE-callActivity llm-call=%s (replay=%s)",
+              agentRunId, eventIndex, event.toolName(), ctx.isReplaying());
           LlmCallOutput llmOutput = ctx.callActivity(
               "llm-call",
               new LlmCallInput(agentRunId, event.toolCallId(), event.toolName(), event.args()),
               LlmCallOutput.class).await();
           llmCallOutputs.add(llmOutput);
-          LOG.infof("[AgentRun:%s] LlmCallActivity completed — method=%s, response=%s",
-              agentRunId, event.toolName(), llmOutput.response());
+          LOG.infof("[AgentRun:%s][iter:%d] POST-callActivity llm-call=%s → %s",
+              agentRunId, eventIndex, event.toolName(), llmOutput.response());
           ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs));
         }
+
+        eventIndex++;
       }
 
       // Set the final output so it is visible in the Dapr workflow dashboard.

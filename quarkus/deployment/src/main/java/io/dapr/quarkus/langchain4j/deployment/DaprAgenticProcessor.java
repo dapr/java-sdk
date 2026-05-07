@@ -309,10 +309,10 @@ public class DaprAgenticProcessor {
         "io.dapr.quarkus.langchain4j.agent.DaprToolCallInterceptor"));
     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
         "io.dapr.quarkus.langchain4j.agent.DaprAgentMethodInterceptor"));
-    // TODO: LLM call routing through Dapr activities.
-    // DaprChatModelWrapper (@Alternative) + DaprChatModelDecorator work for interception
-    // but cause workflow hangs with multi-event replay. Needs investigation with
-    // durable task replay unit tests. For now, only tool calls are backed by Dapr.
+    // @Alternative ChatModel wrapper + CDI decorator for routing LLM calls through Dapr.
+    // The wrapper provides a non-synthetic bean that the decorator can decorate.
+    additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
+        "io.dapr.quarkus.langchain4j.agent.DaprChatModelWrapper"));
     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
         "io.dapr.quarkus.langchain4j.agent.DaprChatModelDecorator"));
   }

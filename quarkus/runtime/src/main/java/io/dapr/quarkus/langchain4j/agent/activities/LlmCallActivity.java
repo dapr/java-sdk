@@ -80,19 +80,19 @@ public class LlmCallActivity implements WorkflowActivity {
               + " in agentRunId: " + input.agentRunId());
     }
 
-    LOG.infof("[AgentRun:%s][LlmCall:%s] Executing LLM call: %s",
-        input.agentRunId(), input.llmCallId(), pendingCall.method().getName());
+    LOG.infof("[AgentRun:%s][LlmCall:%s] PRE-invoke target=%s method=%s",
+        input.agentRunId(), input.llmCallId(),
+        pendingCall.target().getClass().getSimpleName(), pendingCall.method().getName());
 
-    // Set the flag so DaprChatModelDecorator passes through on this thread instead of routing.
     DaprToolCallInterceptor.IS_ACTIVITY_CALL.set(Boolean.TRUE);
     try {
-      // Invoke chat() on the stored DaprChatModelDecorator instance via reflection.
-      // IS_ACTIVITY_CALL is set, so the decorator calls delegate.chat() directly.
       Object result = pendingCall.method().invoke(pendingCall.target(), pendingCall.args());
+      LOG.infof("[AgentRun:%s][LlmCall:%s] POST-invoke — got result, completing future",
+          input.agentRunId(), input.llmCallId());
       String responseText = extractResponseText(result);
       runCtx.completeCall(input.llmCallId(), result);
-      LOG.infof("[AgentRun:%s][LlmCall:%s] LLM call completed: %s → %s",
-          input.agentRunId(), input.llmCallId(), pendingCall.method().getName(), responseText);
+      LOG.infof("[AgentRun:%s][LlmCall:%s] POST-completeCall — future resolved",
+          input.agentRunId(), input.llmCallId());
       return new LlmCallOutput(input.methodName(), input.prompt(), responseText);
     } catch (InvocationTargetException ite) {
       Throwable cause = ite.getCause() != null ? ite.getCause() : ite;

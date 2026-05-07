@@ -143,22 +143,22 @@ public class DaprChatModelDecorator implements ChatModel {
       // this decorator's chat() with IS_ACTIVITY_CALL set, which passes through
       // to delegate.chat(request) — the real LLM execution.
       Method chatMethod = ChatModel.class.getMethod("chat", ChatRequest.class);
-      CompletableFuture<Object> future = runCtx.registerCall(
+      final CompletableFuture<Object> future = runCtx.registerCall(
           llmCallId, this, chatMethod, new Object[]{request});
 
       // Extract the prompt for observability in the workflow history.
       String prompt = extractPrompt(request);
 
-      LOG.infof("[AgentRun:%s][LlmCall:%s] Routing LLM call through Dapr: chat()",
+      LOG.infof("[AgentRun:%s][LlmCall:%s] PRE-raiseEvent llm-call",
           agentRunId, llmCallId);
-
-      // Notify the AgentRunWorkflow that an LLM call is waiting.
-      // The prompt is passed as args so it is stored in the Dapr activity input.
       workflowClient.raiseEvent(agentRunId, "agent-event",
           new AgentEvent("llm-call", llmCallId, "chat", prompt));
-
-      // Block the agent thread until LlmCallActivity completes the LLM execution.
-      return (ChatResponse) future.join();
+      LOG.infof("[AgentRun:%s][LlmCall:%s] POST-raiseEvent — blocking on future.join()",
+          agentRunId, llmCallId);
+      ChatResponse response = (ChatResponse) future.join();
+      LOG.infof("[AgentRun:%s][LlmCall:%s] POST-join — LLM result received",
+          agentRunId, llmCallId);
+      return response;
 
     } catch (NoSuchMethodException ex) {
       LOG.warnf("[AgentRun:%s][LlmCall:%s] Could not find chat(ChatRequest) via reflection"
@@ -181,7 +181,7 @@ public class DaprChatModelDecorator implements ChatModel {
       // This provides the real agent name and annotation-level messages even when the
       // decorator's own getOrActivate() call failed and fell through to direct delegation.
       DaprAgentMetadataHolder.AgentMetadata metadata = DaprAgentMetadataHolder.get();
-      String agentName = "standalone";
+      String agentName = null;
       if (metadata != null) {
         agentName = metadata.agentName();
         if (userMessage == null) {
@@ -191,6 +191,12 @@ public class DaprChatModelDecorator implements ChatModel {
           systemMessage = metadata.systemMessage();
         }
         DaprAgentMetadataHolder.clear();
+      }
+      if (agentName == null || agentName.isBlank()) {
+        agentName = AgentNameRegistry.resolveFromStack();
+      }
+      if (agentName == null || agentName.isBlank()) {
+        agentName = "standalone";
       }
       String agentRunId = lifecycleManager.get().getOrActivate(agentName, userMessage, systemMessage);
       LOG.infof("[AgentRun:%s] Lazy activation triggered by first LLM call (agent=%s)",
