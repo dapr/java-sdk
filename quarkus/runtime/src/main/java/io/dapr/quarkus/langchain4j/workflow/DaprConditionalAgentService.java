@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 public class DaprConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> implements DaprAgentService {
 
   private final DaprWorkflowClient workflowClient;
+  private final Class<?> agentClass;
   private final Map<Integer, Predicate<AgenticScope>> daprConditions = new HashMap<>();
   private int agentCounter = 0;
 
@@ -47,6 +48,7 @@ public class DaprConditionalAgentService<T> extends ConditionalAgentServiceImpl<
   public DaprConditionalAgentService(Class<T> agentServiceClass, DaprWorkflowClient workflowClient) {
     super(agentServiceClass, resolveMethod(agentServiceClass));
     this.workflowClient = workflowClient;
+    this.agentClass = agentServiceClass;
   }
 
   private static <T> java.lang.reflect.Method resolveMethod(Class<T> agentServiceClass) {
@@ -119,15 +121,34 @@ public class DaprConditionalAgentService<T> extends ConditionalAgentServiceImpl<
    */
   @Override
   public T build() {
+    String agentName = resolveAgentName();
     return build(() -> {
       DaprWorkflowPlanner planner = new DaprWorkflowPlanner(
           ConditionalOrchestrationWorkflow.class,
-          "Conditional",
+          agentName,
           AgenticSystemTopology.ROUTER,
           workflowClient);
       planner.setConditions(daprConditions);
       return planner;
     });
+  }
+
+  private String resolveAgentName() {
+    // Scan methods for the agent annotation to get the name
+    for (java.lang.reflect.Method m : agentClass.getMethods()) {
+      for (java.lang.annotation.Annotation ann : m.getAnnotations()) {
+        try {
+          java.lang.reflect.Method nameMethod = ann.annotationType().getMethod("name");
+          String name = (String) nameMethod.invoke(ann);
+          if (name != null && !name.isBlank()) {
+            return name;
+          }
+        } catch (ReflectiveOperationException ignored) {
+          // not the right annotation
+        }
+      }
+    }
+    return "";
   }
 
   /**

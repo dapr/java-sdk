@@ -15,6 +15,7 @@ package io.dapr.quarkus.langchain4j.workflow.orchestration;
 
 import io.dapr.durabletask.Task;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentRunInput;
+import io.dapr.quarkus.langchain4j.workflow.DaprAgentServiceUtil;
 import io.dapr.quarkus.langchain4j.workflow.DaprPlannerRegistry;
 import io.dapr.quarkus.langchain4j.workflow.DaprWorkflowPlanner;
 import io.dapr.quarkus.langchain4j.workflow.DaprWorkflowPlanner.AgentMetadata;
@@ -52,8 +53,9 @@ public class ParallelOrchestrationWorkflow implements Workflow {
         AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
             metadata.userMessage(), metadata.systemMessage());
 
-        // Start AgentRunWorkflow as a child workflow for proper nesting
-        childWorkflows.add(ctx.callChildWorkflow("agent", agentInput, agentRunId, Void.class));
+        // Start AgentRunWorkflow as a child workflow with agent-specific name
+        String childName = DaprAgentServiceUtil.agentWorkflowName(metadata.agentName());
+        childWorkflows.add(ctx.callChildWorkflow(childName, agentInput, agentRunId, Void.class));
         // Submit agent to planner (non-blocking activity -- returns immediately)
         submitTasks.add(ctx.callActivity("agent-call",
             new AgentExecInput(input.plannerId(), i, agentRunId), Void.class));

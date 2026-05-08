@@ -30,6 +30,7 @@ import io.dapr.workflows.client.DaprWorkflowClient;
 public class DaprSequentialAgentService<T> extends SequentialAgentServiceImpl<T> implements DaprAgentService {
 
   private final DaprWorkflowClient workflowClient;
+  private final Class<?> agentClass;
 
   /**
    * Creates a new DaprSequentialAgentService.
@@ -40,6 +41,7 @@ public class DaprSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
   public DaprSequentialAgentService(Class<T> agentServiceClass, DaprWorkflowClient workflowClient) {
     super(agentServiceClass, resolveMethod(agentServiceClass));
     this.workflowClient = workflowClient;
+    this.agentClass = agentServiceClass;
   }
 
   private static <T> java.lang.reflect.Method resolveMethod(Class<T> agentServiceClass) {
@@ -56,11 +58,22 @@ public class DaprSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
 
   @Override
   public T build() {
+    String agentName = resolveAgentName();
     return build(() -> new DaprWorkflowPlanner(
         SequentialOrchestrationWorkflow.class,
-        "Sequential",
+        agentName,
         AgenticSystemTopology.SEQUENCE,
         workflowClient));
+  }
+
+  private String resolveAgentName() {
+    for (java.lang.reflect.Method m : agentClass.getMethods()) {
+      SequenceAgent ann = m.getAnnotation(SequenceAgent.class);
+      if (ann != null && !ann.name().isBlank()) {
+        return ann.name();
+      }
+    }
+    return "Sequential";
   }
 
   /**

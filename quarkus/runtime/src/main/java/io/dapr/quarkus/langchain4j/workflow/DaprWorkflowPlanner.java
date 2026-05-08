@@ -88,6 +88,7 @@ public class DaprWorkflowPlanner implements Planner {
   private final String description;
   private final AgenticSystemTopology topology;
   private final DaprWorkflowClient workflowClient;
+  private final String resolvedWorkflowName;
 
   private final BlockingQueue<AgentExchange> agentExchangeQueue = new LinkedBlockingQueue<>();
   private final ReentrantLock batchLock = new ReentrantLock();
@@ -127,6 +128,7 @@ public class DaprWorkflowPlanner implements Planner {
     this.description = description;
     this.topology = topology;
     this.workflowClient = workflowClient;
+    this.resolvedWorkflowName = DaprAgentServiceUtil.agentWorkflowName(description);
   }
 
   @Override
@@ -149,8 +151,7 @@ public class DaprWorkflowPlanner implements Planner {
         maxIterations,
         testExitAtLoopEnd);
 
-    workflowClient.scheduleNewWorkflow(
-        WorkflowNameResolver.resolve(workflowClass), input, plannerId);
+    workflowClient.scheduleNewWorkflow(resolvedWorkflowName, input, plannerId);
     return internalNextAction();
   }
 

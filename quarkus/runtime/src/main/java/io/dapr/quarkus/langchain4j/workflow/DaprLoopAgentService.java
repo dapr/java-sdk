@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 public class DaprLoopAgentService<T> extends LoopAgentServiceImpl<T> implements DaprAgentService {
 
   private final DaprWorkflowClient workflowClient;
+  private final Class<?> agentClass;
   private int daprMaxIterations = Integer.MAX_VALUE;
   private BiPredicate<AgenticScope, Integer> daprExitCondition;
   private boolean daprTestExitAtLoopEnd;
@@ -47,6 +48,7 @@ public class DaprLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
   public DaprLoopAgentService(Class<T> agentServiceClass, DaprWorkflowClient workflowClient) {
     super(agentServiceClass, resolveMethod(agentServiceClass));
     this.workflowClient = workflowClient;
+    this.agentClass = agentServiceClass;
   }
 
   private static <T> Method resolveMethod(Class<T> agentServiceClass) {
@@ -120,10 +122,11 @@ public class DaprLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
 
   @Override
   public T build() {
+    String agentName = resolveAgentName();
     return build(() -> {
       DaprWorkflowPlanner planner = new DaprWorkflowPlanner(
           LoopOrchestrationWorkflow.class,
-          "Loop",
+          agentName,
           AgenticSystemTopology.LOOP,
           workflowClient);
       planner.setMaxIterations(daprMaxIterations);
@@ -131,6 +134,24 @@ public class DaprLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
       planner.setTestExitAtLoopEnd(daprTestExitAtLoopEnd);
       return planner;
     });
+  }
+
+  private String resolveAgentName() {
+    // Scan methods for the agent annotation to get the name
+    for (java.lang.reflect.Method m : agentClass.getMethods()) {
+      for (java.lang.annotation.Annotation ann : m.getAnnotations()) {
+        try {
+          java.lang.reflect.Method nameMethod = ann.annotationType().getMethod("name");
+          String name = (String) nameMethod.invoke(ann);
+          if (name != null && !name.isBlank()) {
+            return name;
+          }
+        } catch (ReflectiveOperationException ignored) {
+          // not the right annotation
+        }
+      }
+    }
+    return "";
   }
 
   /**

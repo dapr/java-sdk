@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.quarkus.langchain4j.workflow.orchestration;
 
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentRunInput;
+import io.dapr.quarkus.langchain4j.workflow.DaprAgentServiceUtil;
 import io.dapr.quarkus.langchain4j.workflow.DaprPlannerRegistry;
 import io.dapr.quarkus.langchain4j.workflow.DaprWorkflowPlanner;
 import io.dapr.quarkus.langchain4j.workflow.DaprWorkflowPlanner.AgentMetadata;
@@ -44,8 +45,9 @@ public class SequentialOrchestrationWorkflow implements Workflow {
         AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
             metadata.userMessage(), metadata.systemMessage());
 
-        // Start AgentRunWorkflow as a child workflow for proper nesting
-        var childWorkflow = ctx.callChildWorkflow("agent", agentInput, agentRunId, Void.class);
+        // Start AgentRunWorkflow as a child workflow with agent-specific name
+        String childWorkflowName = DaprAgentServiceUtil.agentWorkflowName(metadata.agentName());
+        var childWorkflow = ctx.callChildWorkflow(childWorkflowName, agentInput, agentRunId, Void.class);
         // Submit agent to planner (non-blocking activity — returns immediately)
         ctx.callActivity("agent-call",
             new AgentExecInput(input.plannerId(), i, agentRunId), Void.class).await();

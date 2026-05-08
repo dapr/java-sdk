@@ -30,6 +30,7 @@ import io.dapr.workflows.client.DaprWorkflowClient;
 public class DaprParallelAgentService<T> extends ParallelAgentServiceImpl<T> implements DaprAgentService {
 
   private final DaprWorkflowClient workflowClient;
+  private final Class<?> agentClass;
 
   /**
    * Creates a new DaprParallelAgentService.
@@ -40,6 +41,7 @@ public class DaprParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
   public DaprParallelAgentService(Class<T> agentServiceClass, DaprWorkflowClient workflowClient) {
     super(agentServiceClass, resolveMethod(agentServiceClass));
     this.workflowClient = workflowClient;
+    this.agentClass = agentServiceClass;
   }
 
   private static <T> java.lang.reflect.Method resolveMethod(Class<T> agentServiceClass) {
@@ -56,11 +58,30 @@ public class DaprParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
 
   @Override
   public T build() {
+    String agentName = resolveAgentName();
     return build(() -> new DaprWorkflowPlanner(
         ParallelOrchestrationWorkflow.class,
-        "Parallel",
+        agentName,
         AgenticSystemTopology.PARALLEL,
         workflowClient));
+  }
+
+  private String resolveAgentName() {
+    // Scan methods for the agent annotation to get the name
+    for (java.lang.reflect.Method m : agentClass.getMethods()) {
+      for (java.lang.annotation.Annotation ann : m.getAnnotations()) {
+        try {
+          java.lang.reflect.Method nameMethod = ann.annotationType().getMethod("name");
+          String name = (String) nameMethod.invoke(ann);
+          if (name != null && !name.isBlank()) {
+            return name;
+          }
+        } catch (ReflectiveOperationException ignored) {
+          // not the right annotation
+        }
+      }
+    }
+    return "";
   }
 
   /**
