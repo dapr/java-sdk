@@ -45,9 +45,10 @@ public class SequentialOrchestrationWorkflow implements Workflow {
         AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
             metadata.userMessage(), metadata.systemMessage());
 
-        // Start AgentRunWorkflow as a child workflow with agent-specific name
-        String childWorkflowName = DaprAgentServiceUtil.agentWorkflowName(metadata.agentName());
-        var childWorkflow = ctx.callChildWorkflow(childWorkflowName, agentInput, agentRunId, Void.class);
+        // Start AgentRunWorkflow as child with agent-specific .agent-run name
+        var childWorkflow = ctx.callChildWorkflow(
+            DaprAgentServiceUtil.agentRunName(metadata.agentName()),
+            agentInput, agentRunId, Void.class);
         // Submit agent to planner (non-blocking activity — returns immediately)
         ctx.callActivity("agent-call",
             new AgentExecInput(input.plannerId(), i, agentRunId), Void.class).await();

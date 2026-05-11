@@ -50,8 +50,8 @@ public class ConditionalOrchestrationWorkflow implements Workflow {
           AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
               metadata.userMessage(), metadata.systemMessage());
 
-          String childName = DaprAgentServiceUtil.agentWorkflowName(metadata.agentName());
-          var childWorkflow = ctx.callChildWorkflow(childName, agentInput, agentRunId, Void.class);
+          var childWorkflow = ctx.callChildWorkflow(
+              DaprAgentServiceUtil.agentRunName(metadata.agentName()), agentInput, agentRunId, Void.class);
           // Submit agent to planner (non-blocking activity — returns immediately)
           ctx.callActivity("agent-call",
               new AgentExecInput(input.plannerId(), i, agentRunId), Void.class).await();

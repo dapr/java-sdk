@@ -287,6 +287,32 @@ public class DaprAgenticProcessor {
       recorder.registerAgentName(interfaceName, agentName);
     }
 
+    // Register AgentRunWorkflow under *.agent-run names for ALL agents
+    // (both standalone and composite). Used by orchestration workflows for
+    // child workflows — avoids conflicts with orchestration *.workflow names.
+    for (Map.Entry<DotName, String> entry : AGENT_ANNOTATION_TO_WORKFLOW.entrySet()) {
+      for (AnnotationInstance ann : index.getAnnotations(entry.getKey())) {
+        AnnotationValue nameValue = ann.value("name");
+        if (nameValue == null || nameValue.asString().isEmpty()) {
+          continue;
+        }
+        String runName = "dapr.langchain4j."
+            + toTitleCase(nameValue.asString()) + ".agent-run";
+        recorder.registerWorkflow(builder, runName, agentRunClass);
+      }
+    }
+    for (AnnotationInstance ann : index.getAnnotations(AGENT_ANNOTATION)) {
+      if (ann.target().kind() != AnnotationTarget.Kind.METHOD) {
+        continue;
+      }
+      AnnotationValue nameValue = ann.value("name");
+      if (nameValue != null && !nameValue.asString().isEmpty()) {
+        String runName = "dapr.langchain4j."
+            + toTitleCase(nameValue.asString()) + ".agent-run";
+        recorder.registerWorkflow(builder, runName, agentRunClass);
+      }
+    }
+
     recorder.startRuntime(builder);
   }
 

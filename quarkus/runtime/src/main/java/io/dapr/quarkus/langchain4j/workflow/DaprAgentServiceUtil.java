@@ -76,4 +76,20 @@ public final class DaprAgentServiceUtil {
     return "dapr.langchain4j." + toTitleCase(agentName) + ".workflow";
   }
 
+  /**
+   * Returns the child AgentRunWorkflow name for an agent.
+   * Uses {@code .agent-run} suffix to avoid conflicts with orchestration
+   * workflow names (which use {@code .workflow} suffix).
+   *
+   * @param agentName the agent name (e.g., "weather-assistant")
+   * @return the child workflow name (e.g., "dapr.langchain4j.WeatherAssistant.agent-run")
+   */
+  public static String agentRunName(String agentName) {
+    if (agentName == null || agentName.isEmpty()) {
+      return WorkflowNameResolver.resolve(
+          io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow.class);
+    }
+    return "dapr.langchain4j." + toTitleCase(agentName) + ".agent-run";
+  }
+
 }

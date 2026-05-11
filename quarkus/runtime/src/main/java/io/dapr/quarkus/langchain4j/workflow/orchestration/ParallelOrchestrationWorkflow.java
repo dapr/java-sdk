@@ -54,8 +54,8 @@ public class ParallelOrchestrationWorkflow implements Workflow {
             metadata.userMessage(), metadata.systemMessage());
 
         // Start AgentRunWorkflow as a child workflow with agent-specific name
-        String childName = DaprAgentServiceUtil.agentWorkflowName(metadata.agentName());
-        childWorkflows.add(ctx.callChildWorkflow(childName, agentInput, agentRunId, Void.class));
+        childWorkflows.add(ctx.callChildWorkflow(
+              DaprAgentServiceUtil.agentRunName(metadata.agentName()), agentInput, agentRunId, Void.class));
         // Submit agent to planner (non-blocking activity -- returns immediately)
         submitTasks.add(ctx.callActivity("agent-call",
             new AgentExecInput(input.plannerId(), i, agentRunId), Void.class));
