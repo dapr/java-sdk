@@ -33,7 +33,6 @@ import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -567,7 +566,6 @@ public class PubSubIT extends BaseIT {
   }
 
   @Test
-  @Disabled("disable untilt new 1.18.0-rc-3 is released")
   public void testPubSubBulkSubscribe() throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
             this.getClass().getSimpleName(),
@@ -576,17 +574,20 @@ public class PubSubIT extends BaseIT {
             true,
             60000));
 
-    String runHash = generateRandomHash(5);
-    System.out.println("Run hash: " + runHash);
     // Send a batch of messages on one topic.
-    sendMessages(daprRun, 18,runHash+"-a");
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d on topic %s", i, BULK_SUB_TOPIC_NAME);
+        // Publishing messages
+        client.publishEvent(PUBSUB_NAME, BULK_SUB_TOPIC_NAME, message).block();
+        System.out.printf("Published message: '%s' to topic '%s' pubSub_name '%s'\n",
+            message, BULK_SUB_TOPIC_NAME, PUBSUB_NAME);
+      }
+    }
 
     // Sleeps for five seconds to give subscriber a chance to receive messages.
     Thread.sleep(5000);
 
-    sendMessages(daprRun, 10, runHash+"-b");
-
-    Thread.sleep(11000);
     final String appId = daprRun.getAppName();
     try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
@@ -603,17 +604,13 @@ public class PubSubIT extends BaseIT {
                 clazz).block();
 
         assertNotNull(messages);
-        // There should be a single bulk response.
-       // assertEquals(3, messages.size());
-
         BulkSubscribeAppResponse response = OBJECT_MAPPER.convertValue(messages.get(0), BulkSubscribeAppResponse.class);
-        assertEquals(10, response.getStatuses().size());
 
-        response = OBJECT_MAPPER.convertValue(messages.get(1), BulkSubscribeAppResponse.class);
-        assertEquals(10, response.getStatuses().size());
+        // There should be a single bulk response.
+        assertEquals(1, messages.size());
 
-        response = OBJECT_MAPPER.convertValue(messages.get(2), BulkSubscribeAppResponse.class);
-        assertEquals(8, response.getStatuses().size());
+        // The bulk response should contain NUM_MESSAGES entries.
+        assertEquals(NUM_MESSAGES, response.getStatuses().size());
 
         // All the entries should be SUCCESS.
         for (BulkSubscribeAppResponseEntry entry : response.getStatuses()) {
@@ -623,28 +620,6 @@ public class PubSubIT extends BaseIT {
     }
 
     daprRun.stop();
-  }
-
-  private static String generateRandomHash(int length) {
-    String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    Random random = new Random();
-    StringBuilder sb = new StringBuilder(length);
-    for (int i = 0; i < length; i++) {
-      sb.append(chars.charAt(random.nextInt(chars.length())));
-    }
-    return sb.toString();
-  }
-
-  private static void sendMessages(DaprRun daprRun, int numMessages, String prefix) throws Exception {
-    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
-      for (int i = 0; i < numMessages; i++) {
-        String message = String.format("This is message %s-#%d on topic %s", prefix, i, BULK_SUB_TOPIC_NAME);
-        // Publishing messages
-        client.publishEvent(PUBSUB_NAME, BULK_SUB_TOPIC_NAME, message).block();
-        System.out.printf("Published message: '%s' to topic '%s' pubSub_name '%s'\n",
-                message, BULK_SUB_TOPIC_NAME, PUBSUB_NAME);
-      }
-    }
   }
 
   @Test
