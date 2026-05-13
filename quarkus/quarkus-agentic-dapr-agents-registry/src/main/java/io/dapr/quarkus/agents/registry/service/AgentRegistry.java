@@ -112,14 +112,15 @@ public class AgentRegistry {
     }
     interfacesToScan.addAll(subAgentClasses);
 
-    // Scan all collected interfaces for @Agent methods
+    // Scan all collected interfaces for @Agent and composite agent methods
     int registered = 0;
     int failed = 0;
     for (Class<?> iface : interfacesToScan) {
       LOG.debugf("Scanning interface: %s", iface.getName());
       List<AgentMetadataSchema> agents = scanForAgents(iface, appId);
+      agents.addAll(scanForCompositeAgents(iface, appId));
       if (!agents.isEmpty()) {
-        LOG.debugf("Found %d @Agent method(s) on interface %s", agents.size(), iface.getName());
+        LOG.debugf("Found %d agent(s) on interface %s", agents.size(), iface.getName());
       }
       for (AgentMetadataSchema schema : agents) {
         try {
@@ -203,13 +204,15 @@ public class AgentRegistry {
         }
       }
 
+      String agentType = resolveAgentType(type, method);
+
       AgentMetadataSchema schema = AgentMetadataSchema.builder()
           .schemaVersion("0.11.1")
           .name(name)
           .registeredAt(Instant.now().toString())
           .agent(AgentMetadata.builder()
               .appId(appId)
-              .type("standalone")
+              .type(agentType)
               .goal(goal)
               .systemPrompt(systemPrompt)
               .framework("langchain4j")
@@ -219,6 +222,99 @@ public class AgentRegistry {
       result.add(schema);
     }
     return result;
+  }
+
+  /**
+   * Resolves the agent type based on annotations on the method and declaring interface.
+   * Returns "Agent", "SequenceAgent", "ParallelAgent", "LoopAgent", or "ConditionalAgent".
+   *
+   * @param type   the declaring interface
+   * @param method the annotated method
+   * @return the agent type string
+   */
+  private static final String[] COMPOSITE_ANNOTATIONS = {
+      "dev.langchain4j.agentic.declarative.SequenceAgent",
+      "dev.langchain4j.agentic.declarative.ParallelAgent",
+      "dev.langchain4j.agentic.declarative.LoopAgent",
+      "dev.langchain4j.agentic.declarative.ConditionalAgent"
+  };
+
+  /**
+   * Scans an interface for composite agent annotations (@SequenceAgent, @ParallelAgent, etc.)
+   * and creates metadata entries for them.
+   *
+   * @param type  the interface to scan
+   * @param appId the application ID
+   * @return list of agent metadata schemas for composite agents
+   */
+  static List<AgentMetadataSchema> scanForCompositeAgents(Class<?> type, String appId) {
+    List<AgentMetadataSchema> result = new ArrayList<>();
+    for (Method method : type.getDeclaredMethods()) {
+      for (Annotation ann : method.getDeclaredAnnotations()) {
+        String annFqcn = ann.annotationType().getName();
+        final String annSimple = ann.annotationType().getSimpleName();
+        boolean isComposite = false;
+        for (String expected : COMPOSITE_ANNOTATIONS) {
+          if (expected.equals(annFqcn)) {
+            isComposite = true;
+            break;
+          }
+        }
+        if (!isComposite) {
+          continue;
+        }
+
+        String name = invokeStringMethod(ann, "name");
+        if (name == null || name.isBlank()) {
+          name = type.getSimpleName() + "." + method.getName();
+        }
+        String description = invokeStringMethod(ann, "description");
+
+        AgentMetadataSchema schema = AgentMetadataSchema.builder()
+            .schemaVersion("0.11.1")
+            .name(name)
+            .registeredAt(Instant.now().toString())
+            .agent(AgentMetadata.builder()
+                .appId(appId)
+                .type(annSimple)
+                .goal(description)
+                .framework("langchain4j")
+                .build())
+            .build();
+        result.add(schema);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Resolves the agent type by checking the declaring interface for composite
+   * agent annotations. Falls back to "Agent" for standalone agents.
+   *
+   * @param type   the declaring interface
+   * @param method the annotated method
+   * @return the agent type string
+   */
+  private static String resolveAgentType(Class<?> type, Method method) {
+    // Check all methods on the declaring interface for composite annotations
+    for (Method m : type.getDeclaredMethods()) {
+      for (Annotation ann : m.getDeclaredAnnotations()) {
+        String annName = ann.annotationType().getSimpleName();
+        switch (annName) {
+          case "SequenceAgent":
+            return "SequenceAgent";
+          case "ParallelAgent":
+            return "ParallelAgent";
+          case "LoopAgent":
+            return "LoopAgent";
+          case "ConditionalAgent":
+            return "ConditionalAgent";
+          default:
+            break;
+        }
+      }
+    }
+    return "Agent";
   }
 
   /**
