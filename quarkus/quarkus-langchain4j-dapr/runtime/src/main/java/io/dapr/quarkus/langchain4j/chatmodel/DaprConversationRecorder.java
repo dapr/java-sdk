@@ -17,7 +17,9 @@ import dev.langchain4j.model.chat.ChatModel;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import org.jboss.logging.Logger;
 
 import java.util.function.Function;
 
@@ -27,18 +29,32 @@ import java.util.function.Function;
 @Recorder
 public class DaprConversationRecorder {
 
+  private static final Logger LOG = Logger.getLogger(DaprConversationRecorder.class);
+
+  private final RuntimeValue<DaprConversationConfig> config;
+
+  /**
+   * Creates the recorder with runtime configuration.
+   *
+   * @param config the runtime configuration wrapped as RuntimeValue
+   */
+  public DaprConversationRecorder(RuntimeValue<DaprConversationConfig> config) {
+    this.config = config;
+  }
+
   /**
    * Returns a function that creates a {@link DaprConversationChatModel}.
    *
-   * @param componentName the Dapr conversation component name
-   * @param temperature   the temperature for generation
    * @return a function that creates the ChatModel from CDI context
    */
-  public Function<SyntheticCreationalContext<ChatModel>, ChatModel> chatModel(
-      String componentName, double temperature) {
+  public Function<SyntheticCreationalContext<ChatModel>, ChatModel> chatModel() {
     return ctx -> {
-      DaprPreviewClient client = ctx.getInjectedReference(DaprPreviewClient.class);
-      return new DaprConversationChatModel(client, componentName, temperature);
+      DaprConversationConfig cfg = config.getValue();
+      DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient();
+      LOG.infof("DaprConversationChatModel created — component=%s, temperature=%.1f",
+          cfg.componentName(), cfg.temperature());
+      return new DaprConversationChatModel(
+          client, cfg.componentName(), cfg.temperature());
     };
   }
 }

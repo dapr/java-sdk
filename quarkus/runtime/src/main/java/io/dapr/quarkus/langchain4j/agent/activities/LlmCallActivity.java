@@ -15,6 +15,7 @@ package io.dapr.quarkus.langchain4j.agent.activities;
 
 import io.dapr.quarkus.langchain4j.agent.AgentRunContext;
 import io.dapr.quarkus.langchain4j.agent.DaprAgentRunRegistry;
+import io.dapr.quarkus.langchain4j.agent.DaprChatModelWrapper;
 import io.dapr.quarkus.langchain4j.agent.DaprToolCallInterceptor;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
@@ -93,7 +94,9 @@ public class LlmCallActivity implements WorkflowActivity {
       runCtx.completeCall(input.llmCallId(), result);
       LOG.infof("[AgentRun:%s][LlmCall:%s] POST-completeCall — future resolved",
           input.agentRunId(), input.llmCallId());
-      return new LlmCallOutput(input.methodName(), input.prompt(), responseText);
+      // Resolve the actual ChatModel class name for observability
+      String chatModelClass = resolveChatModelClass(pendingCall.target());
+      return new LlmCallOutput(input.methodName(), input.prompt(), responseText, chatModelClass);
     } catch (InvocationTargetException ite) {
       Throwable cause = ite.getCause() != null ? ite.getCause() : ite;
       LOG.errorf("[AgentRun:%s][LlmCall:%s] LLM call failed: %s — %s",
@@ -130,5 +133,20 @@ public class LlmCallActivity implements WorkflowActivity {
       // Not a ChatResponse or missing expected methods — fall through.
     }
     return String.valueOf(result);
+  }
+
+  /**
+   * Resolves the actual ChatModel provider name from the CDI container.
+   * Skips the Dapr wrapper/decorator beans to find the underlying provider
+   * (e.g., "DaprConversationChatModel", "OllamaChatModel").
+   */
+  private String resolveChatModelClass(Object target) {
+    try {
+      DaprChatModelWrapper wrapper = io.quarkus.arc.Arc.container()
+          .instance(DaprChatModelWrapper.class).get();
+      return wrapper.getDelegateClassName();
+    } catch (Exception ignored) {
+      return "unknown";
+    }
   }
 }

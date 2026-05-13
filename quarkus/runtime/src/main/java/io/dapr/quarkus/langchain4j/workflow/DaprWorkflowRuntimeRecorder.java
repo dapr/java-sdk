@@ -98,6 +98,16 @@ public class DaprWorkflowRuntimeRecorder {
    *
    * @param builder the builder runtime value
    */
+  /**
+   * Sets the ChatModel provider name for observability.
+   *
+   * @param providerName the provider name (e.g., "dapr-conversation", "ollama")
+   */
+  public void setChatModelProvider(String providerName) {
+    io.dapr.quarkus.langchain4j.agent.ChatModelProviderName.set(providerName);
+    LOG.infof("ChatModel provider: %s", providerName);
+  }
+
   public void startRuntime(RuntimeValue<WorkflowRuntimeBuilder> builder) {
     WorkflowRuntime runtime = builder.getValue().build();
     runtime.start(false);

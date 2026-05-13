@@ -1,5 +1,6 @@
 name: Quarkus LangChain4j Dapr Conversation
 description: LangChain4j ChatModel backed by Dapr Conversation API
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
     - langchain4j

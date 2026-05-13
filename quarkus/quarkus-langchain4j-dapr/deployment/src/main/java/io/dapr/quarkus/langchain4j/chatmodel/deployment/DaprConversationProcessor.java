@@ -49,7 +49,6 @@ public class DaprConversationProcessor {
   @BuildStep
   @Record(ExecutionTime.RUNTIME_INIT)
   void generateBeans(DaprConversationRecorder recorder,
-      DaprConversationConfig config,
       List<SelectedChatModelProviderBuildItem> selectedProviders,
       BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
@@ -64,9 +63,7 @@ public class DaprConversationProcessor {
               .setRuntimeInit()
               .defaultBean()
               .unremovable()
-              .createWith(recorder.chatModel(
-                  config.componentName(),
-                  config.temperature()));
+              .createWith(recorder.chatModel());
 
       syntheticBeans.produce(configurator.done());
     }
