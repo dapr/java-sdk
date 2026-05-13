@@ -21,6 +21,7 @@
         <module>runtime</module>
         <module>deployment</module>
         <module>quarkus-agentic-dapr-agents-registry</module>
+        <module>quarkus-langchain4j-dapr</module>
         <module>examples</module>
     </modules>
 

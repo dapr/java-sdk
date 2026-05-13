@@ -1,0 +1,10 @@
+name: Quarkus LangChain4j Dapr Conversation
+description: LangChain4j ChatModel backed by Dapr Conversation API
+metadata:
+  keywords:
+    - langchain4j
+    - dapr
+    - conversation
+    - llm
+  categories:
+    - "AI"
