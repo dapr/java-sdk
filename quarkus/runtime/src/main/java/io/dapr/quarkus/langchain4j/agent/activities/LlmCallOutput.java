@@ -25,5 +25,6 @@ package io.dapr.quarkus.langchain4j.agent.activities;
  * @param response    AI response text extracted from {@code ChatResponse.aiMessage().text()};
  *                    this is the exact text the model returned to the agent
  */
-public record LlmCallOutput(String methodName, String prompt, String response) {
+public record LlmCallOutput(String methodName, String prompt, String response,
+    String chatModelClass) {
 }

@@ -41,6 +41,16 @@ public class DaprChatModelWrapper implements ChatModel {
   private static final Logger LOG = Logger.getLogger(DaprChatModelWrapper.class);
 
   private volatile ChatModel delegate;
+  private volatile String delegateClassName = "unknown";
+
+  /**
+   * Returns the simple class name of the underlying ChatModel provider.
+   *
+   * @return the provider class name (e.g., "DaprConversationChatModel")
+   */
+  public String getDelegateClassName() {
+    return delegateClassName;
+  }
 
   @Inject
   @SuppressWarnings("unchecked")
@@ -52,8 +62,18 @@ public class DaprChatModelWrapper implements ChatModel {
             (jakarta.enterprise.inject.spi.Bean<ChatModel>) bean);
         this.delegate = (ChatModel) beanManager.getReference(
             bean, ChatModel.class, ctx);
+        // Read the configured provider name from application config
+        try {
+          this.delegateClassName = org.eclipse.microprofile.config.ConfigProvider
+              .getConfig().getOptionalValue(
+                  "quarkus.langchain4j.chat-model.provider", String.class)
+              .orElse("unknown");
+        } catch (Exception e) {
+          this.delegateClassName = "unknown";
+        }
+        ChatModelProviderName.set(this.delegateClassName);
         LOG.infof("DaprChatModelWrapper initialized — delegate: %s",
-            bean.getBeanClass().getName());
+            delegateClassName);
         return;
       }
     }
