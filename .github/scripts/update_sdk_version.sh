@@ -15,6 +15,8 @@ mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SD
 # BOMs are standalone (no parent), so versions:set skips them — update explicitly.
 mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -f sdk-bom/pom.xml
 mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SDK_VERSION -f sdk-bom/pom.xml
+# Install dapr-sdk-bom locally so dapr-spring-bom's import can resolve when loaded with -f (no reactor).
+mvn install -N -DskipTests -f sdk-bom/pom.xml
 mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION -f dapr-spring/dapr-spring-bom/pom.xml
 mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SDK_VERSION -f dapr-spring/dapr-spring-bom/pom.xml
 mvn versions:set-property -Dproperty=dapr.sdk.alpha.version -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f sdk-tests/pom.xml
