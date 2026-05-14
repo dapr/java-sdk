@@ -10,7 +10,12 @@ Visit [this](https://docs.dapr.io/developing-applications/building-blocks/servic
  
 ## Remote invocation using a native HTTP client
 
-This sample uses a native Java `HttpClient` to invoke a method on another Dapr-enabled application via the Dapr sidecar. The previous SDK-provided `DaprClient.invokeMethod` wrappers are deprecated; calling the sidecar directly is the recommended approach.
+This sample invokes a method on another Dapr-enabled application via the Dapr sidecar using `java.net.http.HttpClient`. The previous SDK-provided `DaprClient.invokeMethod` wrappers are deprecated; calling the sidecar directly is the recommended approach.
+
+Two equivalent approaches are demonstrated:
+
+1. `DaprClient.invokeHttpClient(appId)` — an SDK-provided wrapper that returns a pre-configured `HttpClient` bound to the sidecar's `/v1.0/invoke/<app-id>/method/` prefix, with the `dapr-api-token` header attached when configured.
+2. A raw `java.net.http.HttpClient` sending the request to the sidecar's base URL with a `dapr-app-id` header identifying the target app — no SDK helper required.
 
 ## Pre-requisites
 
@@ -121,10 +126,10 @@ Once running, the ExposerService is now ready to be invoked by Dapr.
 
 ### Running the InvokeClient sample
 
-The Invoke client sample uses a native Java `HttpClient` to call the remote method through the Dapr sidecar. The Dapr sidecar accepts two equivalent URL forms for service invocation; this sample demonstrates both for each message:
+The Invoke client sample calls the remote method through the Dapr sidecar using two equivalent approaches:
 
-1. Sending the request to the sidecar's base URL with a `dapr-app-id` header identifying the target app.
-2. Sending the request to the sidecar's `/v1.0/invoke/<app-id>/method/<method>` path.
+1. `DaprClient.invokeHttpClient(appId)` — an SDK-provided wrapper around `java.net.http.HttpClient` pre-bound to `/v1.0/invoke/<app-id>/method/`.
+2. A raw `java.net.http.HttpClient` against the sidecar's base URL with a `dapr-app-id` header.
 
 In `InvokeClient.java` file, you will find the `InvokeClient` class and the `main` method. See the code snippet below:
 
@@ -135,32 +140,34 @@ public class InvokeClient {
   private static final String METHOD = "say";
 
   public static void main(String[] args) throws Exception {
-    int port = Properties.HTTP_PORT.get();
-    String sidecarBase = "http://localhost:" + port;
+    try (DaprClient daprClient = new DaprClientBuilder().build()) {
+      DaprInvokeHttpClient invoker = daprClient.invokeHttpClient(SERVICE_APP_ID);
 
-    HttpClient httpClient = HttpClient.newHttpClient();
+      int port = Properties.HTTP_PORT.get();
+      String sidecarBase = "http://localhost:" + port;
+      HttpClient rawHttpClient = HttpClient.newHttpClient();
 
-    for (String message : args) {
-      // Form 1: dapr-app-id header against the sidecar's base URL.
-      HttpRequest headerRequest = HttpRequest.newBuilder()
-          .uri(URI.create(sidecarBase + "/" + METHOD))
-          .header("Content-Type", "application/json")
-          .header("dapr-app-id", SERVICE_APP_ID)
-          .POST(HttpRequest.BodyPublishers.ofString(message))
-          .build();
-      HttpResponse<byte[]> headerResponse =
-          httpClient.send(headerRequest, HttpResponse.BodyHandlers.ofByteArray());
-      System.out.println(new String(headerResponse.body()));
+      for (String message : args) {
+        // Form 1: SDK helper — paths resolve against /v1.0/invoke/<app-id>/method/.
+        HttpRequest sdkRequest = invoker.newRequestBuilder(METHOD)
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(message))
+            .build();
+        HttpResponse<byte[]> sdkResponse =
+            invoker.send(sdkRequest, HttpResponse.BodyHandlers.ofByteArray());
+        System.out.println(new String(sdkResponse.body()));
 
-      // Form 2: sidecar invoke path.
-      HttpRequest pathRequest = HttpRequest.newBuilder()
-          .uri(URI.create(sidecarBase + "/v1.0/invoke/" + SERVICE_APP_ID + "/method/" + METHOD))
-          .header("Content-Type", "application/json")
-          .POST(HttpRequest.BodyPublishers.ofString(message))
-          .build();
-      HttpResponse<byte[]> pathResponse =
-          httpClient.send(pathRequest, HttpResponse.BodyHandlers.ofByteArray());
-      System.out.println(new String(pathResponse.body()));
+        // Form 2: raw HttpClient + dapr-app-id header against the sidecar's base URL.
+        HttpRequest headerRequest = HttpRequest.newBuilder()
+            .uri(URI.create(sidecarBase + "/" + METHOD))
+            .header("Content-Type", "application/json")
+            .header("dapr-app-id", SERVICE_APP_ID)
+            .POST(HttpRequest.BodyPublishers.ofString(message))
+            .build();
+        HttpResponse<byte[]> headerResponse =
+            rawHttpClient.send(headerRequest, HttpResponse.BodyHandlers.ofByteArray());
+        System.out.println(new String(headerResponse.body()));
+      }
     }
 
     System.out.println("Done");
@@ -168,7 +175,7 @@ public class InvokeClient {
 }
 ```
 
-The `dapr-app-id` header (Form 1) routes the request to the target app named by `SERVICE_APP_ID`. The `/v1.0/invoke/<app-id>/method/<method>` path (Form 2) achieves the same routing through the sidecar API directly. Both forms call the remote `say` method and print its response.
+Form 1 uses `DaprClient.invokeHttpClient(SERVICE_APP_ID)` to obtain an HTTP client whose base URI already targets the desired app via the sidecar's invoke API. Form 2 sends the request directly to the sidecar's base URL and uses the `dapr-app-id` header to identify the target app. Both forms call the remote `say` method and print its response.
 
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 
