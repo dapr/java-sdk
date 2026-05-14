@@ -22,7 +22,7 @@ jobs:
     env:
       JDK_VER: 17
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v5
       with:
