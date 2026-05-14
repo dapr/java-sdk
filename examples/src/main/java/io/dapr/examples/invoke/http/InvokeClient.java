@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.examples.invoke.http;
 
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprInvokeHttpClient;
 import io.dapr.config.Properties;
 
 import java.net.URI;
@@ -28,13 +31,14 @@ import java.net.http.HttpResponse;
  * dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar \
  *   io.dapr.examples.invoke.http.InvokeClient 'message one' 'message two'
  *
- * <p>This example demonstrates calling another Dapr-enabled application using a
- * native HTTP client. Two equivalent URL forms are supported by the Dapr sidecar:
+ * <p>This example demonstrates calling another Dapr-enabled application over HTTP.
+ * Two equivalent approaches are shown:
  * <ol>
- *   <li>Sending the request to the sidecar's base URL with a {@code dapr-app-id}
- *       header that identifies the target app.</li>
- *   <li>Sending the request to the sidecar's {@code /v1.0/invoke/&lt;app-id&gt;/method/&lt;method&gt;}
- *       path, with no extra header.</li>
+ *   <li>{@link DaprClient#invokeHttpClient(String)} — an SDK-provided {@link java.net.http.HttpClient}
+ *       wrapper pre-bound to the sidecar's {@code /v1.0/invoke/&lt;app-id&gt;/method/} prefix,
+ *       with the {@code dapr-api-token} header attached when configured.</li>
+ *   <li>A raw {@link java.net.http.HttpClient} sending the request to the sidecar's base URL
+ *       with a {@code dapr-app-id} header identifying the target app — no SDK helper required.</li>
  * </ol>
  */
 public class InvokeClient {
@@ -55,32 +59,34 @@ public class InvokeClient {
    * @param args Messages to be sent as request for the invoke API.
    */
   public static void main(String[] args) throws Exception {
-    int port = Properties.HTTP_PORT.get();
-    String sidecarBase = "http://localhost:" + port;
+    try (DaprClient daprClient = new DaprClientBuilder().build()) {
+      DaprInvokeHttpClient invoker = daprClient.invokeHttpClient(SERVICE_APP_ID);
 
-    HttpClient httpClient = HttpClient.newHttpClient();
+      int port = Properties.HTTP_PORT.get();
+      String sidecarBase = "http://localhost:" + port;
+      HttpClient rawHttpClient = HttpClient.newHttpClient();
 
-    for (String message : args) {
-      // Form 1: dapr-app-id header against the sidecar's base URL.
-      HttpRequest headerRequest = HttpRequest.newBuilder()
-          .uri(URI.create(sidecarBase + "/" + METHOD))
-          .header("Content-Type", "application/json")
-          .header("dapr-app-id", SERVICE_APP_ID)
-          .POST(HttpRequest.BodyPublishers.ofString(message))
-          .build();
-      HttpResponse<byte[]> headerResponse =
-          httpClient.send(headerRequest, HttpResponse.BodyHandlers.ofByteArray());
-      System.out.println(new String(headerResponse.body()));
+      for (String message : args) {
+        // Form 1: SDK helper — paths resolve against /v1.0/invoke/<app-id>/method/.
+        HttpRequest sdkRequest = invoker.newRequestBuilder(METHOD)
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(message))
+            .build();
+        HttpResponse<byte[]> sdkResponse =
+            invoker.send(sdkRequest, HttpResponse.BodyHandlers.ofByteArray());
+        System.out.println(new String(sdkResponse.body()));
 
-      // Form 2: sidecar invoke path.
-      HttpRequest pathRequest = HttpRequest.newBuilder()
-          .uri(URI.create(sidecarBase + "/v1.0/invoke/" + SERVICE_APP_ID + "/method/" + METHOD))
-          .header("Content-Type", "application/json")
-          .POST(HttpRequest.BodyPublishers.ofString(message))
-          .build();
-      HttpResponse<byte[]> pathResponse =
-          httpClient.send(pathRequest, HttpResponse.BodyHandlers.ofByteArray());
-      System.out.println(new String(pathResponse.body()));
+        // Form 2: raw HttpClient + dapr-app-id header against the sidecar's base URL.
+        HttpRequest headerRequest = HttpRequest.newBuilder()
+            .uri(URI.create(sidecarBase + "/" + METHOD))
+            .header("Content-Type", "application/json")
+            .header("dapr-app-id", SERVICE_APP_ID)
+            .POST(HttpRequest.BodyPublishers.ofString(message))
+            .build();
+        HttpResponse<byte[]> headerResponse =
+            rawHttpClient.send(headerRequest, HttpResponse.BodyHandlers.ofByteArray());
+        System.out.println(new String(headerResponse.body()));
+      }
     }
 
     // This is an example, so for simplicity we are just exiting here.

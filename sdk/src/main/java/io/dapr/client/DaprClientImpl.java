@@ -130,6 +130,7 @@ import reactor.util.retry.Retry;
 import javax.annotation.Nonnull;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -654,6 +655,20 @@ public class DaprClientImpl extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  @Override
+  public DaprInvokeHttpClient invokeHttpClient(String appId) {
+    if (appId == null || appId.trim().isEmpty()) {
+      throw new IllegalArgumentException("App Id cannot be null or empty.");
+    }
+    URI invokeBase = this.httpClient.getBaseUri()
+        .resolve("/" + DaprHttp.API_VERSION + "/invoke/" + appId + "/method/");
+    return new DaprInvokeHttpClient(
+        this.httpClient.getHttpClient(),
+        invokeBase,
+        this.httpClient.getDaprApiToken(),
+        this.httpClient.getReadTimeout());
   }
 
   private <T> Mono<T> getMonoForHttpResponse(TypeRef<T> type, DaprHttp.Response r) {
