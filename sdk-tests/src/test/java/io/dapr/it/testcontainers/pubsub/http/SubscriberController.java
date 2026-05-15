@@ -21,7 +21,6 @@ import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
 import io.dapr.client.domain.BulkSubscribeMessage;
 import io.dapr.client.domain.BulkSubscribeMessageEntry;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.it.pubsub.http.PubSubIT;
 import io.dapr.springboot.annotations.BulkSubscribe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +150,7 @@ public class SubscriberController {
 
   @Topic(name = "typedtestingtopic", pubsubName = "pubsub")
   @PostMapping(path = "/route1b")
-  public Mono<Void> handleMessageTyped(@RequestBody(required = false) CloudEvent<PubSubIT.MyObject> envelope) {
+  public Mono<Void> handleMessageTyped(@RequestBody(required = false) CloudEvent<MyObject> envelope) {
     return Mono.fromRunnable(() -> {
       try {
         String id = envelope.getData() == null ? "" : envelope.getData().getId();
@@ -208,7 +207,7 @@ public class SubscriberController {
 
   @Topic(name = "testinglongvalues", pubsubName = "pubsub")
   @PostMapping(path = "/testinglongvalues")
-  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConvertToLong> cloudEvent) {
+  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<ConvertToLong> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
         Long message = cloudEvent.getData().getValue();
