@@ -834,6 +834,97 @@ This pattern is particularly useful for:
 - Microservices architectures where activities are distributed across multiple services
 - Multi-tenant applications where activities are isolated by app ID
 
+### History Propagation Pattern
+
+Code Sample (single-app): [DemoHistoryPropagationWorkflow](./historypropagation/DemoHistoryPropagationWorkflow.java)
+
+The History Propagation pattern lets a parent workflow share its execution history with downstream sub-orchestrators and activities. The receiver reads the propagated history via `ctx.getPropagatedHistory()` and can inspect events, app IDs, instance IDs, and per-workflow chunks. There are two scopes:
+
+- `LINEAGE` — receiver gets the caller's events plus the full ancestor chain
+- `OWN_HISTORY` — receiver gets only the immediate caller's events (trust boundary; ancestors are dropped)
+
+The single-app demo runs a parent workflow that:
+
+1. Calls a child sub-orchestrator with `WorkflowTaskOptions.propagateLineage()`. The child reads `ctx.getPropagatedHistory()` and logs the chunks it received.
+2. Calls an audit activity with `WorkflowTaskOptions.propagateOwnHistory()`. The activity reads `ctx.getPropagatedHistory()` and logs the chunks it received.
+
+```java
+public class DemoHistoryPropagationWorkflow implements Workflow {
+  @Override
+  public WorkflowStub create() {
+    return ctx -> {
+      String input = ctx.getInput(String.class);
+
+      // Child workflow with LINEAGE - sees full ancestor chain.
+      String childResult = ctx.callChildWorkflow(
+          DemoFraudCheckChildWorkflow.class.getName(),
+          input,
+          null,
+          WorkflowTaskOptions.propagateLineage(),
+          String.class
+      ).await();
+
+      // Activity with OWN_HISTORY - sees only this workflow's events.
+      String auditResult = ctx.callActivity(
+          AuditActivity.class.getName(),
+          input,
+          WorkflowTaskOptions.propagateOwnHistory(),
+          String.class
+      ).await();
+
+      ctx.complete("processed: " + input + " | child=" + childResult + " | audit=" + auditResult);
+    };
+  }
+}
+```
+
+<!-- STEP
+name: Run History Propagation workflow worker
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Start workflow runtime'
+timeout_seconds: 30
+background: true
+-->
+Execute the following script to run DemoHistoryPropagationWorker:
+```sh
+dapr run --app-id historypropagationworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.historypropagation.DemoHistoryPropagationWorker 50001
+```
+<!-- END_STEP -->
+
+<!-- STEP
+name: Execute History Propagation workflow client
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Started history-propagation workflow with instance ID:'
+  - 'Starting parent workflow:'
+  - 'Starting child workflow:'
+  - 'Received propagated history (scope=LINEAGE'
+  - 'Auditing payment for: payment-1234'
+  - 'Audit received history (scope=OWN_HISTORY'
+  - 'completed with result: processed: payment-1234'
+timeout_seconds: 60
+-->
+Execute the following script to run DemoHistoryPropagationClient:
+```sh
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.historypropagation.DemoHistoryPropagationClient 50001
+dapr stop --app-id historypropagationworker
+```
+<!-- END_STEP -->
+
+#### Cross-app variant (documentation only)
+
+For chain-of-custody scenarios where each producer signs its own event bytes, the propagation crosses app boundaries. See [historypropagation/multiapp/](./historypropagation/multiapp/) for a parent workflow in `app1` that calls an audit activity in `app2` with `LINEAGE` scope by combining `appId` and `historyPropagationScope` on `WorkflowTaskOptions`:
+
+```java
+WorkflowTaskOptions options = new WorkflowTaskOptions(
+    null, null, "app2", HistoryPropagationScope.LINEAGE);
+```
+
+To run it manually you'd start `App1Worker` and `App2Worker` under separate `dapr run` commands (with distinct `--app-id` and `--dapr-grpc-port`) and then launch `MultiAppHistoryPropagationClient`. This variant is not auto-validated in CI because coordinating multiple parallel `dapr run` instances is not supported by the README-driven validator (same convention as the Multi-App Pattern above).
+
 ### Suspend/Resume Pattern
 
 Workflow instances can be suspended and resumed. This example shows how to use the suspend and resume commands.

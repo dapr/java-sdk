@@ -1,0 +1,45 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package io.dapr.examples.workflows.historypropagation;
+
+import io.dapr.examples.workflows.utils.PropertyUtils;
+import io.dapr.workflows.client.DaprWorkflowClient;
+import io.dapr.workflows.client.WorkflowState;
+
+import java.util.concurrent.TimeoutException;
+
+public class DemoHistoryPropagationClient {
+  /**
+   * The main method to start the client.
+   *
+   * @param args Input arguments (unused).
+   */
+  public static void main(String[] args) {
+    try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
+      String input = "payment-1234";
+      String instanceId = client.scheduleNewWorkflow(DemoHistoryPropagationWorkflow.class, input);
+      System.out.printf("Started history-propagation workflow with instance ID: %s%n", instanceId);
+
+      WorkflowState workflowState =
+          client.waitForWorkflowCompletion(instanceId, null, true);
+
+      String result = workflowState.readOutputAs(String.class);
+      System.out.printf("workflow instance with ID: %s completed with result: %s%n",
+          instanceId, result);
+
+    } catch (TimeoutException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
