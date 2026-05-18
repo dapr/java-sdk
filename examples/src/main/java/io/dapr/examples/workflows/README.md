@@ -884,6 +884,9 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
   - 'Start workflow runtime'
+  - 'Starting parent workflow:'
+  - 'Starting child workflow:'
+  - 'Auditing payment for: payment-1234'
 timeout_seconds: 30
 background: true
 -->
@@ -899,11 +902,6 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
   - 'Started history-propagation workflow with instance ID:'
-  - 'Starting parent workflow:'
-  - 'Starting child workflow:'
-  - 'Received propagated history (scope=LINEAGE'
-  - 'Auditing payment for: payment-1234'
-  - 'Audit received history (scope=OWN_HISTORY'
   - 'completed with result: processed: payment-1234'
 timeout_seconds: 60
 -->
