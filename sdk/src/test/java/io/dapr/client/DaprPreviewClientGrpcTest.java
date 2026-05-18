@@ -95,6 +95,7 @@ import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -946,6 +947,253 @@ public class DaprPreviewClientGrpcTest {
     // Verify metadata was passed to gRPC request
     assertNotNull(capturedMetadata.get());
     assertEquals("true", capturedMetadata.get().get("rawPayload"));
+  }
+
+  @Test
+  public void subscribeToEventsWithDeadLetterTopicTest() throws Exception {
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var deadLetterTopic = "topicName-DLQ";
+    var started = new Semaphore(0);
+    var capturedInitial = new AtomicReference<DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1>();
+    var gotInitial = new Semaphore(0);
+
+    doAnswer((Answer<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> observer =
+          (StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        observer.onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+        observer.onCompleted();
+      }).start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request) {
+          if (request.hasInitialRequest()) {
+            capturedInitial.set(request.getInitialRequest());
+            gotInitial.release();
+          }
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+        }
+
+        @Override
+        public void onCompleted() {
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    var subscription = previewClient.subscribeToEvents(
+        pubsubName,
+        topicName,
+        deadLetterTopic,
+        new SubscriptionListener<String>() {
+          @Override
+          public Mono<Status> onEvent(CloudEvent<String> event) {
+            return Mono.just(Status.SUCCESS);
+          }
+
+          @Override
+          public void onError(RuntimeException exception) {
+          }
+        },
+        TypeRef.STRING);
+
+    gotInitial.acquire();
+    subscription.close();
+
+    assertNotNull(capturedInitial.get());
+    assertEquals(pubsubName, capturedInitial.get().getPubsubName());
+    assertEquals(topicName, capturedInitial.get().getTopic());
+    assertTrue(capturedInitial.get().hasDeadLetterTopic());
+    assertEquals(deadLetterTopic, capturedInitial.get().getDeadLetterTopic());
+  }
+
+  @Test
+  public void subscribeToEventsWithoutDeadLetterTopicDoesNotSetFieldTest() throws Exception {
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var started = new Semaphore(0);
+    var capturedInitial = new AtomicReference<DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1>();
+    var gotInitial = new Semaphore(0);
+
+    doAnswer((Answer<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> observer =
+          (StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        observer.onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+        observer.onCompleted();
+      }).start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request) {
+          if (request.hasInitialRequest()) {
+            capturedInitial.set(request.getInitialRequest());
+            gotInitial.release();
+          }
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+        }
+
+        @Override
+        public void onCompleted() {
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    var subscription = previewClient.subscribeToEvents(
+        pubsubName,
+        topicName,
+        new SubscriptionListener<String>() {
+          @Override
+          public Mono<Status> onEvent(CloudEvent<String> event) {
+            return Mono.just(Status.SUCCESS);
+          }
+
+          @Override
+          public void onError(RuntimeException exception) {
+          }
+        },
+        TypeRef.STRING);
+
+    gotInitial.acquire();
+    subscription.close();
+
+    assertNotNull(capturedInitial.get());
+    assertFalse(capturedInitial.get().hasDeadLetterTopic());
+  }
+
+  @Test
+  public void subscribeToTopicWithDeadLetterTopicTest() throws Exception {
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var deadLetterTopic = "topicName-DLQ";
+    var started = new Semaphore(0);
+    var capturedInitial = new AtomicReference<DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1>();
+
+    doAnswer((Answer<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> observer =
+          (StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        observer.onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+        observer.onCompleted();
+      }).start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request) {
+          if (request.hasInitialRequest()) {
+            capturedInitial.set(request.getInitialRequest());
+          }
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+        }
+
+        @Override
+        public void onCompleted() {
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    var disposable = previewClient.subscribeToTopic(pubsubName, topicName, deadLetterTopic, TypeRef.STRING)
+        .subscribe();
+
+    // Wait briefly for the initial request to be captured, then dispose.
+    for (int i = 0; i < 50 && capturedInitial.get() == null; i++) {
+      Thread.sleep(20);
+    }
+    disposable.dispose();
+
+    assertNotNull(capturedInitial.get());
+    assertEquals(pubsubName, capturedInitial.get().getPubsubName());
+    assertEquals(topicName, capturedInitial.get().getTopic());
+    assertTrue(capturedInitial.get().hasDeadLetterTopic());
+    assertEquals(deadLetterTopic, capturedInitial.get().getDeadLetterTopic());
+  }
+
+  @Test
+  public void subscribeToTopicWithDeadLetterTopicAndMetadataTest() throws Exception {
+    var pubsubName = "pubsubName";
+    var topicName = "topicName";
+    var deadLetterTopic = "topicName-DLQ";
+    var started = new Semaphore(0);
+    var capturedInitial = new AtomicReference<DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1>();
+
+    doAnswer((Answer<StreamObserver<DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1> observer =
+          (StreamObserver<DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+
+      new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        observer.onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+        observer.onCompleted();
+      }).start();
+
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request) {
+          if (request.hasInitialRequest()) {
+            capturedInitial.set(request.getInitialRequest());
+          }
+          started.release();
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+        }
+
+        @Override
+        public void onCompleted() {
+        }
+      };
+    }).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+    Map<String, String> metadata = Map.of("rawPayload", "true");
+    var disposable = previewClient
+        .subscribeToTopic(pubsubName, topicName, deadLetterTopic, TypeRef.STRING, metadata)
+        .subscribe();
+
+    for (int i = 0; i < 50 && capturedInitial.get() == null; i++) {
+      Thread.sleep(20);
+    }
+    disposable.dispose();
+
+    assertNotNull(capturedInitial.get());
+    assertTrue(capturedInitial.get().hasDeadLetterTopic());
+    assertEquals(deadLetterTopic, capturedInitial.get().getDeadLetterTopic());
+    assertEquals("true", capturedInitial.get().getMetadataMap().get("rawPayload"));
   }
 
   @Test
