@@ -308,12 +308,10 @@ class HistoryPropagationTest {
         .build();
 
     HistoryEvents.PropagatedHistory propagatedHistoryProto = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(taskScheduled)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("payment-app")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(taskScheduled.toByteString())
             .setInstanceId("parent-instance-1")
             .setWorkflowName("ProcessPayment")
             .build())
@@ -340,7 +338,6 @@ class HistoryPropagationTest {
     assertEquals("payment-app", chunk.getAppId());
     assertEquals("ProcessPayment", chunk.getWorkflowName());
     assertEquals("parent-instance-1", chunk.getInstanceId());
-    assertEquals(0, chunk.getStartEventIndex());
     assertEquals(1, chunk.getEventCount());
   }
 
@@ -385,20 +382,16 @@ class HistoryPropagationTest {
         .build();
 
     HistoryEvents.PropagatedHistory proto = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(event1)
-        .addEvents(event2)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app1")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(event1.toByteString())
             .setInstanceId("inst1")
             .setWorkflowName("WF1")
             .build())
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app1")
-            .setStartEventIndex(1)
-            .setEventCount(1)
+            .addRawEvents(event2.toByteString())
             .setInstanceId("inst2")
             .setWorkflowName("WF2")
             .build())
@@ -425,20 +418,16 @@ class HistoryPropagationTest {
         .build();
 
     HistoryEvents.PropagatedHistory proto = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(event1)
-        .addEvents(event2)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app1")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(event1.toByteString())
             .setInstanceId("inst1")
             .setWorkflowName("ProcessPayment")
             .build())
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app2")
-            .setStartEventIndex(1)
-            .setEventCount(1)
+            .addRawEvents(event2.toByteString())
             .setInstanceId("inst2")
             .setWorkflowName("ProcessPayment")
             .build())
@@ -458,8 +447,6 @@ class HistoryPropagationTest {
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_OWN_HISTORY)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app1")
-            .setStartEventIndex(0)
-            .setEventCount(0)
             .setInstanceId("inst1")
             .setWorkflowName("WF1")
             .build())
@@ -490,21 +477,17 @@ class HistoryPropagationTest {
         .build();
 
     HistoryEvents.PropagatedHistory proto = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(event1)
-        .addEvents(event2)
-        .addEvents(event3)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app1")
-            .setStartEventIndex(0)
-            .setEventCount(2)
+            .addRawEvents(event1.toByteString())
+            .addRawEvents(event2.toByteString())
             .setInstanceId("inst1")
             .setWorkflowName("WF1")
             .build())
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app2")
-            .setStartEventIndex(2)
-            .setEventCount(1)
+            .addRawEvents(event3.toByteString())
             .setInstanceId("inst2")
             .setWorkflowName("WF2")
             .build())
@@ -536,20 +519,16 @@ class HistoryPropagationTest {
         .build();
 
     HistoryEvents.PropagatedHistory proto = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(event1)
-        .addEvents(event2)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app1")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(event1.toByteString())
             .setInstanceId("inst-abc")
             .setWorkflowName("WF1")
             .build())
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app1")
-            .setStartEventIndex(1)
-            .setEventCount(1)
+            .addRawEvents(event2.toByteString())
             .setInstanceId("inst-xyz")
             .setWorkflowName("WF2")
             .build())
@@ -571,12 +550,10 @@ class HistoryPropagationTest {
         .build();
 
     HistoryEvents.PropagatedHistory proto = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(event1)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_OWN_HISTORY)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("app1")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(event1.toByteString())
             .setInstanceId("inst1")
             .setWorkflowName("ProcessPayment")
             .build())

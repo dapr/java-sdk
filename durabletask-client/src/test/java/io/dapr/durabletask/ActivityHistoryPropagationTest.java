@@ -36,9 +36,19 @@ class ActivityHistoryPropagationTest {
     final Optional<PropagatedHistory>[] captured = new Optional[]{Optional.empty()};
 
     HashMap<String, TaskActivityFactory> factories = new HashMap<>();
-    factories.put("MyActivity", () -> ctx -> {
-      captured[0] = ctx.getPropagatedHistory();
-      return "done";
+    factories.put("MyActivity", new TaskActivityFactory() {
+      @Override
+      public String getName() {
+        return "MyActivity";
+      }
+
+      @Override
+      public TaskActivity create() {
+        return ctx -> {
+          captured[0] = ctx.getPropagatedHistory();
+          return "done";
+        };
+      }
     });
 
     TaskActivityExecutor executor = new TaskActivityExecutor(factories, new JacksonDataConverter(), logger);
@@ -50,12 +60,10 @@ class ActivityHistoryPropagationTest {
         .build();
 
     HistoryEvents.PropagatedHistory propagatedHistoryProto = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(event)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_OWN_HISTORY)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("parent-app")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(event.toByteString())
             .setInstanceId("parent-inst-1")
             .setWorkflowName("ProcessPayment")
             .build())
@@ -77,9 +85,19 @@ class ActivityHistoryPropagationTest {
     final Optional<PropagatedHistory>[] captured = new Optional[]{Optional.empty()};
 
     HashMap<String, TaskActivityFactory> factories = new HashMap<>();
-    factories.put("MyActivity", () -> ctx -> {
-      captured[0] = ctx.getPropagatedHistory();
-      return "done";
+    factories.put("MyActivity", new TaskActivityFactory() {
+      @Override
+      public String getName() {
+        return "MyActivity";
+      }
+
+      @Override
+      public TaskActivity create() {
+        return ctx -> {
+          captured[0] = ctx.getPropagatedHistory();
+          return "done";
+        };
+      }
     });
 
     TaskActivityExecutor executor = new TaskActivityExecutor(factories, new JacksonDataConverter(), logger);
@@ -94,9 +112,19 @@ class ActivityHistoryPropagationTest {
     final Optional<PropagatedHistory>[] captured = new Optional[]{Optional.empty()};
 
     HashMap<String, TaskActivityFactory> factories = new HashMap<>();
-    factories.put("MyActivity", () -> ctx -> {
-      captured[0] = ctx.getPropagatedHistory();
-      return "done";
+    factories.put("MyActivity", new TaskActivityFactory() {
+      @Override
+      public String getName() {
+        return "MyActivity";
+      }
+
+      @Override
+      public TaskActivity create() {
+        return ctx -> {
+          captured[0] = ctx.getPropagatedHistory();
+          return "done";
+        };
+      }
     });
 
     TaskActivityExecutor executor = new TaskActivityExecutor(factories, new JacksonDataConverter(), logger);
