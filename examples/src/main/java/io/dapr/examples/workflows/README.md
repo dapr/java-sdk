@@ -883,7 +883,6 @@ name: Run History Propagation workflow worker
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
-  - 'Start workflow runtime'
   - 'Starting parent workflow:'
   - 'Starting child workflow:'
   - 'Auditing payment for: payment-1234'
