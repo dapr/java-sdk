@@ -152,13 +152,11 @@ class HistoryPropagationIntegrationTest {
         .build();
 
     HistoryEvents.PropagatedHistory propagatedHistory = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(parentTaskScheduled)
-        .addEvents(parentTaskCompleted)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("payment-app")
-            .setStartEventIndex(0)
-            .setEventCount(2)
+            .addRawEvents(parentTaskScheduled.toByteString())
+            .addRawEvents(parentTaskCompleted.toByteString())
             .setInstanceId("parent-inst-1")
             .setWorkflowName("ProcessPayment")
             .build())
@@ -249,12 +247,10 @@ class HistoryPropagationIntegrationTest {
         .build();
 
     HistoryEvents.PropagatedHistory propagatedHistory = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(parentEvent)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_OWN_HISTORY)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("settlement-app")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(parentEvent.toByteString())
             .setInstanceId("parent-inst-2")
             .setWorkflowName("SettlePayment")
             .build())
@@ -332,12 +328,10 @@ class HistoryPropagationIntegrationTest {
         .build();
 
     HistoryEvents.PropagatedHistory propagatedHistoryProto = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(event)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("payment-app")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(event.toByteString())
             .setInstanceId("parent-inst-3")
             .setWorkflowName("ProcessPayment")
             .build())
@@ -347,9 +341,19 @@ class HistoryPropagationIntegrationTest {
     final Optional<PropagatedHistory>[] activityHistory = new Optional[]{Optional.empty()};
 
     HashMap<String, TaskActivityFactory> factories = new HashMap<>();
-    factories.put(activityName, () -> ctx -> {
-      activityHistory[0] = ctx.getPropagatedHistory();
-      return "settled";
+    factories.put(activityName, new TaskActivityFactory() {
+      @Override
+      public String getName() {
+        return activityName;
+      }
+
+      @Override
+      public TaskActivity create() {
+        return ctx -> {
+          activityHistory[0] = ctx.getPropagatedHistory();
+          return "settled";
+        };
+      }
     });
 
     TaskActivityExecutor activityExecutor = new TaskActivityExecutor(factories, new JacksonDataConverter(), logger);
@@ -409,21 +413,17 @@ class HistoryPropagationIntegrationTest {
         .build();
 
     HistoryEvents.PropagatedHistory propagatedHistory = HistoryEvents.PropagatedHistory.newBuilder()
-        .addEvents(gpEvent)
-        .addEvents(parentEvent)
-        .addEvents(parentEvent2)
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("gateway-app")
-            .setStartEventIndex(0)
-            .setEventCount(1)
+            .addRawEvents(gpEvent.toByteString())
             .setInstanceId("gp-inst-1")
             .setWorkflowName("GatewayWorkflow")
             .build())
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
             .setAppId("payment-app")
-            .setStartEventIndex(1)
-            .setEventCount(2)
+            .addRawEvents(parentEvent.toByteString())
+            .addRawEvents(parentEvent2.toByteString())
             .setInstanceId("parent-inst-1")
             .setWorkflowName("ProcessPayment")
             .build())

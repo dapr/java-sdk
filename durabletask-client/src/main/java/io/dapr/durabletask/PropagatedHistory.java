@@ -8,13 +8,12 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+limitations under the License.
+*/
 
 package io.dapr.durabletask;
 
 import io.dapr.durabletask.implementation.protobuf.HistoryEvents;
-import io.dapr.durabletask.implementation.protobuf.Orchestration;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,40 +28,34 @@ import java.util.stream.Collectors;
  * Provides query methods for inspecting ancestor execution history.
  */
 public final class PropagatedHistory {
-  private final List<HistoryEvents.HistoryEvent> events;
   private final HistoryPropagationScope scope;
   private final List<PropagatedHistoryChunk> chunks;
 
-  PropagatedHistory(List<HistoryEvents.HistoryEvent> events,
-                    HistoryPropagationScope scope,
-                    List<PropagatedHistoryChunk> chunks) {
-    this.events = Collections.unmodifiableList(new ArrayList<>(events));
+  PropagatedHistory(HistoryPropagationScope scope, List<PropagatedHistoryChunk> chunks) {
     this.scope = scope;
     this.chunks = Collections.unmodifiableList(new ArrayList<>(chunks));
   }
 
   static PropagatedHistory fromProto(HistoryEvents.PropagatedHistory proto) {
     List<PropagatedHistoryChunk> chunks = proto.getChunksList().stream()
-        .map(c -> new PropagatedHistoryChunk(
-            c.getAppId(),
-            c.getStartEventIndex(),
-            c.getEventCount(),
-            c.getInstanceId(),
-            c.getWorkflowName()))
+        .map(PropagatedHistoryChunk::fromProto)
         .collect(Collectors.toList());
-
     HistoryPropagationScope scope = HistoryPropagationScope.fromProto(proto.getScope());
-
-    return new PropagatedHistory(proto.getEventsList(), scope, chunks);
+    return new PropagatedHistory(scope, chunks);
   }
 
   /**
-   * Gets the raw history events that were propagated.
+   * Gets the raw history events that were propagated, flattened across all chunks
+   * in chunk order.
    *
    * @return an unmodifiable list of history events
    */
   public List<HistoryEvents.HistoryEvent> getEvents() {
-    return this.events;
+    List<HistoryEvents.HistoryEvent> all = new ArrayList<>();
+    for (PropagatedHistoryChunk chunk : this.chunks) {
+      all.addAll(chunk.getEvents());
+    }
+    return Collections.unmodifiableList(all);
   }
 
   /**
@@ -135,7 +128,7 @@ public final class PropagatedHistory {
     List<HistoryEvents.HistoryEvent> result = new ArrayList<>();
     for (PropagatedHistoryChunk chunk : this.chunks) {
       if (appId.equals(chunk.getAppId())) {
-        addEventsFromChunk(chunk, result);
+        result.addAll(chunk.getEvents());
       }
     }
     return result;
@@ -151,7 +144,7 @@ public final class PropagatedHistory {
     List<HistoryEvents.HistoryEvent> result = new ArrayList<>();
     for (PropagatedHistoryChunk chunk : this.chunks) {
       if (instanceId.equals(chunk.getInstanceId())) {
-        addEventsFromChunk(chunk, result);
+        result.addAll(chunk.getEvents());
       }
     }
     return result;
@@ -167,18 +160,9 @@ public final class PropagatedHistory {
     List<HistoryEvents.HistoryEvent> result = new ArrayList<>();
     for (PropagatedHistoryChunk chunk : this.chunks) {
       if (workflowName.equals(chunk.getWorkflowName())) {
-        addEventsFromChunk(chunk, result);
+        result.addAll(chunk.getEvents());
       }
     }
     return result;
-  }
-
-  private void addEventsFromChunk(PropagatedHistoryChunk chunk,
-                                  List<HistoryEvents.HistoryEvent> result) {
-    int start = chunk.getStartEventIndex();
-    int end = Math.min(start + chunk.getEventCount(), this.events.size());
-    for (int i = start; i < end; i++) {
-      result.add(this.events.get(i));
-    }
   }
 }
