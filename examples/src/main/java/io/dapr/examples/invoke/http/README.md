@@ -8,9 +8,14 @@ This sample includes:
 
 Visit [this](https://docs.dapr.io/developing-applications/building-blocks/service-invocation/service-invocation-overview/) link for more information about Dapr and service invocation.
  
-## Remote invocation using the Java-SDK
+## Remote invocation using a native HTTP client
 
-This sample uses the Client provided in Dapr Java SDK invoking a remote method. 
+This sample invokes a method on another Dapr-enabled application via the Dapr sidecar using `java.net.http.HttpClient`. The previous SDK-provided `DaprClient.invokeMethod` wrappers are deprecated; calling the sidecar directly is the recommended approach.
+
+Two equivalent approaches are demonstrated:
+
+1. `DaprClient.invokeHttpClient(appId)` — an SDK-provided wrapper that returns a pre-configured `HttpClient` bound to the sidecar's `/v1.0/invoke/<app-id>/method/` prefix, with the `dapr-api-token` header attached when configured.
+2. A raw `java.net.http.HttpClient` sending the request to the sidecar's base URL with a `dapr-app-id` header identifying the target app — no SDK helper required.
 
 ## Pre-requisites
 
@@ -121,39 +126,62 @@ Once running, the ExposerService is now ready to be invoked by Dapr.
 
 ### Running the InvokeClient sample
 
-The Invoke client sample uses the Dapr SDK for invoking the remote method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that [DaprClientBuilder](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprClientBuilder.java) can receive two optional serializers: `withObjectSerializer()` is for Dapr's sent and received objects, and `withStateSerializer()` is for objects to be persisted. It needs to know the method name to invoke as well as the application id for the remote application. This example, we stick to the [default serializer](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/serializer/DefaultObjectSerializer.java). In `InvokeClient.java` file, you will find the `InvokeClient` class and the `main` method. See the code snippet below:
+The Invoke client sample calls the remote method through the Dapr sidecar using two equivalent approaches:
+
+1. `DaprClient.invokeHttpClient(appId)` — an SDK-provided wrapper around `java.net.http.HttpClient` pre-bound to `/v1.0/invoke/<app-id>/method/`.
+2. A raw `java.net.http.HttpClient` against the sidecar's base URL with a `dapr-app-id` header.
+
+In `InvokeClient.java` file, you will find the `InvokeClient` class and the `main` method. See the code snippet below:
 
 ```java
 public class InvokeClient {
 
-private static final String SERVICE_APP_ID = "invokedemo";
-///...
-public static void main(String[] args) throws Exception {
-    try (DaprClient client = (new DaprClientBuilder()).build()) {
-      for (String message : args) {
-        byte[] response = client.invokeMethod(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,
-            byte[].class).block();
-        System.out.println(new String(response));
-      }
+  private static final String SERVICE_APP_ID = "invokedemo";
+  private static final String METHOD = "say";
 
-      // This is an example, so for simplicity we are just exiting here.
-      // Normally a dapr app would be a web service and not exit main.
-      System.out.println("Done");
+  public static void main(String[] args) throws Exception {
+    try (DaprClient daprClient = new DaprClientBuilder().build()) {
+      DaprInvokeHttpClient invoker = daprClient.invokeHttpClient(SERVICE_APP_ID);
+
+      int port = Properties.HTTP_PORT.get();
+      String sidecarBase = "http://localhost:" + port;
+      HttpClient rawHttpClient = HttpClient.newHttpClient();
+
+      for (String message : args) {
+        // Form 1: SDK helper — paths resolve against /v1.0/invoke/<app-id>/method/.
+        HttpRequest sdkRequest = invoker.newRequestBuilder(METHOD)
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(message))
+            .build();
+        HttpResponse<byte[]> sdkResponse =
+            invoker.send(sdkRequest, HttpResponse.BodyHandlers.ofByteArray());
+        System.out.println(new String(sdkResponse.body()));
+
+        // Form 2: raw HttpClient + dapr-app-id header against the sidecar's base URL.
+        HttpRequest headerRequest = HttpRequest.newBuilder()
+            .uri(URI.create(sidecarBase + "/" + METHOD))
+            .header("Content-Type", "application/json")
+            .header("dapr-app-id", SERVICE_APP_ID)
+            .POST(HttpRequest.BodyPublishers.ofString(message))
+            .build();
+        HttpResponse<byte[]> headerResponse =
+            rawHttpClient.send(headerRequest, HttpResponse.BodyHandlers.ofByteArray());
+        System.out.println(new String(headerResponse.body()));
+      }
     }
+
+    System.out.println("Done");
   }
-///...
 }
 ```
 
-The class knows the app id for the remote application. It uses the the static `Dapr.getInstance().invokeMethod` method to invoke the remote method defining the parameters: The verb, application id, method name, and proper data and metadata, as well as the type of the expected return type. The returned payload for this method invocation is plain text and not a [JSON String](https://www.w3schools.com/js/js_json_datatypes.asp), so we expect `byte[]` to get the raw response and not try to deserialize it.
- 
+Form 1 uses `DaprClient.invokeHttpClient(SERVICE_APP_ID)` to obtain an HTTP client whose base URI already targets the desired app via the sidecar's invoke API. Form 2 sends the request directly to the sidecar's base URL and uses the `dapr-app-id` header to identify the target app. Both forms call the remote `say` method and print its response.
+
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 
 <!-- STEP
 name: Run demo client
-expected_stdout_lines: 
-  - '"message one" received'
-  - '"message two" received'
+expected_stdout_lines:
   - 'Done'
 background: true
 sleep: 5
@@ -165,15 +193,14 @@ dapr run --app-id invokeclient -- java -jar target/dapr-java-sdk-examples-exec.j
 
 <!-- END_STEP -->
 
-Finally, the console for `invokeclient` should output:
+Finally, the console for `invokeclient` should output two timestamps per message — one from each URL form — followed by `Done`. The exact timestamps come from the `say` method on `DemoService`. For example:
 
 ```text
-"message one" received
-
-"message two" received
-
+2026-05-12 13:45:00.123
+2026-05-12 13:45:00.456
+2026-05-12 13:45:00.789
+2026-05-12 13:45:01.012
 Done
-
 ```
 
 For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java) Application implementation.

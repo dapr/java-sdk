@@ -185,6 +185,22 @@ public class DaprHttp implements AutoCloseable {
     this.httpClient = httpClient;
   }
 
+  URI getBaseUri() {
+    return uri;
+  }
+
+  String getDaprApiToken() {
+    return daprApiToken;
+  }
+
+  Duration getReadTimeout() {
+    return readTimeout;
+  }
+
+  HttpClient getHttpClient() {
+    return httpClient;
+  }
+
   /**
    * Invokes an API asynchronously without payload that returns a text payload.
    *

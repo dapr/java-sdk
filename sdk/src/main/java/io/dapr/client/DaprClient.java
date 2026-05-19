@@ -354,6 +354,19 @@ public interface DaprClient extends AutoCloseable {
   <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type);
 
   /**
+   * Creates an HTTP client pre-configured for Dapr service invocation against the given app id.
+   *
+   * <p>The returned client resolves relative paths against
+   * {@code {daprHttpEndpoint}/v1.0/invoke/{appId}/method/} and automatically attaches the
+   * {@code dapr-api-token} header when one is configured. It reuses the SDK's shared
+   * {@link java.net.http.HttpClient} instance.
+   *
+   * @param appId the application id to invoke.
+   * @return a {@link DaprInvokeHttpClient} bound to {@code appId}.
+   */
+  DaprInvokeHttpClient invokeHttpClient(String appId);
+
+  /**
    * Invokes a Binding operation.
    *
    * @param bindingName      The bindingName of the binding to call.

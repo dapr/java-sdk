@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.spring.observation.client;
 
 import io.dapr.client.DaprClient;
+import io.dapr.client.DaprInvokeHttpClient;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.ConfigurationItem;
@@ -332,6 +333,11 @@ public class ObservationDaprClient implements DaprClient {
   @Deprecated
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     return delegate.invokeMethod(invokeMethodRequest, type);
+  }
+
+  @Override
+  public DaprInvokeHttpClient invokeHttpClient(String appId) {
+    return delegate.invokeHttpClient(appId);
   }
 
   // -------------------------------------------------------------------------
