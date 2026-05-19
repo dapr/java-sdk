@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Dapr Authors
+ * Copyright 2026 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -92,8 +92,8 @@ public final class PropagatedHistory {
   }
 
   /**
-   * Gets the first workflow chunk matching the given workflow name.
-   * Returns the last match (most recent occurrence) if multiple exist.
+   * Gets the most recent workflow chunk matching the given workflow name.
+   * Returns the last match if multiple exist.
    *
    * @param name the workflow name to search for
    * @return an Optional containing the matching chunk, or empty if not found
