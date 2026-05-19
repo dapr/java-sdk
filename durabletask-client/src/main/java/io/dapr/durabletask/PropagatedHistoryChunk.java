@@ -22,8 +22,9 @@ import java.util.List;
 
 /**
  * Represents a chunk of propagated history events from a specific workflow instance.
- * Each chunk owns the raw event bytes its producer signed; receivers parse them
- * into typed history events on demand.
+ * Each chunk contains history events produced by the source workflow instance.
+ * When created from protobuf data, the raw event bytes are parsed eagerly into
+ * typed history events.
  */
 public final class PropagatedHistoryChunk {
   private final String appId;
