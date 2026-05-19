@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -630,4 +631,11 @@ public interface TaskOrchestrationContext {
    * Clears the orchestration's custom status.
    */
   void clearCustomStatus();
+
+  /**
+   * Gets the propagated history from a parent workflow, if any was propagated.
+   *
+   * @return an Optional containing the propagated history, or empty if none was propagated
+   */
+  Optional<PropagatedHistory> getPropagatedHistory();
 }
