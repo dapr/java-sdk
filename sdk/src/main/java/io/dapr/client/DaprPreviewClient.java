@@ -293,6 +293,25 @@ public interface DaprPreviewClient extends AutoCloseable {
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
 
   /**
+   * Subscribe to pubsub via streaming with a dead-letter topic.
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param deadLetterTopic Name of the dead-letter topic to forward failed messages to (null or empty to disable).
+   * @param listener Callback methods to process events.
+   * @param type Type for object deserialization.
+   * @param <T> Type of object deserialization.
+   * @return An active subscription.
+   * @deprecated Use {@link #subscribeToTopic(String, String, String, TypeRef)} instead for a more reactive approach.
+   */
+  @Deprecated
+  <T> Subscription subscribeToEvents(
+      String pubsubName,
+      String topic,
+      String deadLetterTopic,
+      SubscriptionListener<T> listener,
+      TypeRef<T> type);
+
+  /**
    * Subscribe to pubsub events via streaming using Project Reactor Flux.
    *
    * @param pubsubName Name of the pubsub component.
@@ -351,6 +370,36 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param <T> Type of the event payload.
    */
   <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux with a dead-letter topic.
+   *
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param deadLetterTopic Name of the dead-letter topic to forward failed messages to (null or empty to disable).
+   * @param type Type for object deserialization.
+   * @return A Flux of deserialized event payloads.
+   * @param <T> Type of the event payload.
+   */
+  <T> Flux<T> subscribeToTopic(String pubsubName, String topic, String deadLetterTopic, TypeRef<T> type);
+
+  /**
+   * Subscribe to pubsub events via streaming using Project Reactor Flux with metadata and dead-letter topic.
+   *
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param deadLetterTopic Name of the dead-letter topic to forward failed messages to (null or empty to disable).
+   * @param type Type for object deserialization.
+   * @param metadata Subscription metadata (e.g., {"rawPayload": "true"}).
+   * @return A Flux of deserialized event payloads.
+   * @param <T> Type of the event payload.
+   */
+  <T> Flux<T> subscribeToTopic(
+      String pubsubName,
+      String topic,
+      String deadLetterTopic,
+      TypeRef<T> type,
+      Map<String, String> metadata);
 
   /*
    * Converse with an LLM.
