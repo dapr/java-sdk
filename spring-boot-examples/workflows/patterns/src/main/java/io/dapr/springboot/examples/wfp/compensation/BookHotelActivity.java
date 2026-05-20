@@ -31,6 +31,8 @@ public class BookHotelActivity implements WorkflowActivity {
       Thread.sleep(2000);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      logger.warn("Activity '{}' was interrupted.", ctx.getName(), e);
+      throw new RuntimeException("Activity was interrupted", e);
     }
 
     String result = "Hotel booked successfully";
