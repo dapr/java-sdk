@@ -490,14 +490,29 @@ public class DaprClientImpl extends AbstractDaprClient {
   @Override
   public <T> Subscription subscribeToEvents(
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type) {
-    DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+    return subscribeToEvents(pubsubName, topic, null, listener, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Subscription subscribeToEvents(
+      String pubsubName,
+      String topic,
+      String deadLetterTopic,
+      SubscriptionListener<T> listener,
+      TypeRef<T> type) {
+    DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.Builder initialRequestBuilder =
         DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
-            .setPubsubName(pubsubName)
-            .build();
+            .setPubsubName(pubsubName);
+    if (deadLetterTopic != null && !deadLetterTopic.isEmpty()) {
+      initialRequestBuilder.setDeadLetterTopic(deadLetterTopic);
+    }
     DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request =
         DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
-            .setInitialRequest(initialRequest)
+            .setInitialRequest(initialRequestBuilder.build())
             .build();
     return buildSubscription(listener, type, request);
   }
@@ -525,7 +540,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type) {
-    return subscribeToTopic(pubsubName, topic, type, null);
+    return subscribeToTopic(pubsubName, topic, null, type, null);
   }
 
   /**
@@ -533,6 +548,27 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, TypeRef<T> type, Map<String, String> metadata) {
+    return subscribeToTopic(pubsubName, topic, null, type, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToTopic(String pubsubName, String topic, String deadLetterTopic, TypeRef<T> type) {
+    return subscribeToTopic(pubsubName, topic, deadLetterTopic, type, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Flux<T> subscribeToTopic(
+      String pubsubName,
+      String topic,
+      String deadLetterTopic,
+      TypeRef<T> type,
+      Map<String, String> metadata) {
     DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.Builder initialRequestBuilder =
         DaprPubsubProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
             .setTopic(topic)
@@ -540,6 +576,10 @@ public class DaprClientImpl extends AbstractDaprClient {
 
     if (metadata != null && !metadata.isEmpty()) {
       initialRequestBuilder.putAllMetadata(metadata);
+    }
+
+    if (deadLetterTopic != null && !deadLetterTopic.isEmpty()) {
+      initialRequestBuilder.setDeadLetterTopic(deadLetterTopic);
     }
 
     DaprPubsubProtos.SubscribeTopicEventsRequestAlpha1 request =
