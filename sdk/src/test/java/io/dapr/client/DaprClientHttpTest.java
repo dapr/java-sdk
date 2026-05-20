@@ -632,4 +632,46 @@ public class DaprClientHttpTest {
     daprClientHttp = buildDaprClient(daprHttp);
     daprClientHttp.close();
   }
+
+  @Test
+  public void invokeHttpClient_rejectsNullAppId() {
+    assertThrows(IllegalArgumentException.class, () -> daprClientHttp.invokeHttpClient(null));
+  }
+
+  @Test
+  public void invokeHttpClient_rejectsEmptyAppId() {
+    assertThrows(IllegalArgumentException.class, () -> daprClientHttp.invokeHttpClient(""));
+  }
+
+  @Test
+  public void invokeHttpClient_rejectsBlankAppId() {
+    assertThrows(IllegalArgumentException.class, () -> daprClientHttp.invokeHttpClient("   "));
+  }
+
+  @Test
+  public void invokeHttpClient_resolvesInvokeBaseUriForAppId() {
+    DaprInvokeHttpClient invoker = daprClientHttp.invokeHttpClient("orderprocessor");
+
+    assertEquals(
+        "http://" + sidecarIp + ":3000/v1.0/invoke/orderprocessor/method/",
+        invoker.baseUri().toString());
+  }
+
+  @Test
+  public void invokeHttpClient_reusesSharedHttpClient() {
+    DaprInvokeHttpClient invoker = daprClientHttp.invokeHttpClient("orderprocessor");
+
+    org.junit.jupiter.api.Assertions.assertSame(httpClient, invoker.httpClient());
+  }
+
+  @Test
+  public void invokeHttpClient_propagatesApiTokenAsHeader() {
+    DaprHttp tokenedDaprHttp = new DaprHttp(sidecarIp, 3000, "xyz", READ_TIMEOUT, httpClient);
+    DaprClient client = buildDaprClient(tokenedDaprHttp);
+
+    DaprInvokeHttpClient invoker = client.invokeHttpClient("orderprocessor");
+    HttpRequest request = invoker.newRequestBuilder("orders").GET().build();
+
+    assertEquals("xyz", request.headers().firstValue(Headers.DAPR_API_TOKEN).orElse(null));
+  }
 }

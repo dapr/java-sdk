@@ -14,13 +14,10 @@ limitations under the License.
 package io.dapr.spring.boot.autoconfigure.client;
 
 import io.dapr.client.DaprClient;
-import io.dapr.client.domain.DeleteStateRequest;
-import io.dapr.client.domain.GetSecretRequest;
-import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.DaprInvokeHttpClient;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.ScheduleJobRequest;
-import io.dapr.client.domain.State;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +30,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -376,6 +372,20 @@ class ObservationDaprClientTest {
         io.dapr.client.domain.HttpExtension.NONE, String.class).block();
 
     // Registry must be empty — no spans for deprecated methods
+    TestObservationRegistryAssert.assertThat(registry).doesNotHaveAnyObservation();
+  }
+
+  @Test
+  @DisplayName("invokeHttpClient delegates without creating a span")
+  void invokeHttpClientDelegatesWithoutSpan() {
+    DaprInvokeHttpClient stub = org.mockito.Mockito.mock(DaprInvokeHttpClient.class);
+    when(delegate.invokeHttpClient("orderprocessor")).thenReturn(stub);
+
+    DaprInvokeHttpClient result = client.invokeHttpClient("orderprocessor");
+
+    assertThat(result).isSameAs(stub);
+    verify(delegate).invokeHttpClient("orderprocessor");
+    // Synchronous factory — no Mono/Flux to observe, so no span is expected.
     TestObservationRegistryAssert.assertThat(registry).doesNotHaveAnyObservation();
   }
 }
