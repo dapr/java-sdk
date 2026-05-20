@@ -44,6 +44,20 @@ import java.util.concurrent.CompletableFuture;
  * HttpResponse<String> response = invoker.send(request, HttpResponse.BodyHandlers.ofString());
  * }</pre>
  *
+ * <p><b>Migrating from {@code DaprClient.invokeMethod}:</b> the deprecated
+ * {@code invokeMethod} APIs serialized request bodies through the configured
+ * {@link io.dapr.serializer.DaprObjectSerializer} (JSON by default), so a {@code String}
+ * payload was sent as a JSON string literal (e.g. {@code "hello"}). This client does
+ * <em>not</em> serialize bodies — callers supply raw
+ * {@link HttpRequest.BodyPublisher BodyPublisher}s. To preserve the previous JSON
+ * encoding, use {@link DaprBodyPublishers#json(Object)}:
+ * <pre>{@code
+ * HttpRequest request = invoker.newRequestBuilder("orders")
+ *     .header("Content-Type", "application/json")
+ *     .POST(DaprBodyPublishers.json(order))
+ *     .build();
+ * }</pre>
+ *
  * <p>This class is not {@link AutoCloseable}: the underlying {@link HttpClient} is
  * managed by the SDK and shared across all clients created from a single
  * {@link DaprClientBuilder}; closing the owning {@link DaprClient} releases it.

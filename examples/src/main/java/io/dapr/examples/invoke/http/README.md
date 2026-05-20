@@ -17,6 +17,15 @@ Two equivalent approaches are demonstrated:
 1. `DaprClient.invokeHttpClient(appId)` — an SDK-provided wrapper that returns a pre-configured `HttpClient` bound to the sidecar's `/v1.0/invoke/<app-id>/method/` prefix, with the `dapr-api-token` header attached when configured.
 2. A raw `java.net.http.HttpClient` sending the request to the sidecar's base URL with a `dapr-app-id` header identifying the target app — no SDK helper required.
 
+> **Migrating from `DaprClient.invokeMethod`:** the deprecated `invokeMethod` APIs serialized request bodies through the configured `DaprObjectSerializer` (JSON by default), so a `String` payload was sent as a JSON string literal — e.g. `"hello"` instead of `hello`. `invokeHttpClient` does **not** serialize bodies: callers supply raw `BodyPublisher`s exactly as with any `java.net.http.HttpClient`. To preserve the previous JSON encoding, use `DaprBodyPublishers.json(Object)`:
+>
+> ```java
+> HttpRequest request = invoker.newRequestBuilder("orders")
+>     .header("Content-Type", "application/json")
+>     .POST(DaprBodyPublishers.json(order))
+>     .build();
+> ```
+
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
@@ -109,8 +118,8 @@ Use the following command to execute the demo service example:
 <!-- STEP
 name: Run demo service
 expected_stdout_lines: 
-  - 'Server: "message one"'
-  - 'Server: "message two"'
+  - 'Server: message one'
+  - 'Server: message two'
 background: true
 sleep: 5
 -->
