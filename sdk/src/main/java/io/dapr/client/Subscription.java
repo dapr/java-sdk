@@ -88,6 +88,7 @@ public class Subscription<T> implements Closeable {
     });
 
     this.receiver = new Thread(() -> {
+      int reconnectAttempts = 0;
       while (running.get()) {
         var stream = asyncStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
           @Override
@@ -124,6 +125,7 @@ public class Subscription<T> implements Closeable {
           @Override
           public void onError(Throwable throwable) {
             listener.onError(DaprException.propagate(throwable));
+            receiverStateChange.release();
           }
 
           @Override
@@ -141,6 +143,17 @@ public class Subscription<T> implements Closeable {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           running.set(false);
+        }
+
+        if (running.get()) {
+          long backoffMs = Math.min(1000L * (1L << reconnectAttempts), 30000L);
+          try {
+            Thread.sleep(backoffMs);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            running.set(false);
+          }
+          reconnectAttempts++;
         }
       }
     });
