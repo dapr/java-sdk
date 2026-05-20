@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.examples.workflows.historypropagation.multiapp;
 
 import io.dapr.durabletask.PropagatedHistory;
-import io.dapr.durabletask.PropagatedHistoryChunk;
+import io.dapr.durabletask.WorkflowResult;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 
@@ -23,8 +23,9 @@ import java.util.Optional;
 /**
  * Activity running in app2 that audits propagated history received from app1.
  *
- * <p>The history's chunks each carry the producing app's signed raw event bytes,
- * so app2 can verify the chain of custody independently.</p>
+ * <p>Each contributing workflow's events arrive grouped under a {@link WorkflowResult}
+ * tagged with the producing app id, so app2 can verify the chain of custody
+ * independently.</p>
  */
 public class App2AuditActivity implements WorkflowActivity {
   @Override
@@ -36,12 +37,11 @@ public class App2AuditActivity implements WorkflowActivity {
     Optional<PropagatedHistory> historyOpt = ctx.getPropagatedHistory();
     if (historyOpt.isPresent()) {
       PropagatedHistory history = historyOpt.get();
-      logger.info("App2 received history (scope={}, chunks={}, apps={})",
+      logger.info("App2 received history (scope={}, workflows={}, apps={})",
           history.getScope(), history.getWorkflows().size(), history.getAppIDs());
-      for (PropagatedHistoryChunk chunk : history.getWorkflows()) {
-        logger.info("  chunk: app={} workflow={} instance={} events={}",
-            chunk.getAppId(), chunk.getWorkflowName(), chunk.getInstanceId(),
-            chunk.getEventCount());
+      for (WorkflowResult wf : history.getWorkflows()) {
+        logger.info("  workflow: app={} name={} instance={}",
+            wf.getAppId(), wf.getName(), wf.getInstanceId());
       }
     } else {
       logger.info("App2 received no propagated history");

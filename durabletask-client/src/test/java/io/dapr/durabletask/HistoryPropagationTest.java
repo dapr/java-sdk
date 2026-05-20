@@ -334,11 +334,11 @@ class HistoryPropagationTest {
     assertEquals("ValidateCard", history.getEvents().get(0).getTaskScheduled().getName());
 
     assertEquals(1, history.getWorkflows().size());
-    PropagatedHistoryChunk chunk = history.getWorkflows().get(0);
-    assertEquals("payment-app", chunk.getAppId());
-    assertEquals("ProcessPayment", chunk.getWorkflowName());
-    assertEquals("parent-instance-1", chunk.getInstanceId());
-    assertEquals(1, chunk.getEventCount());
+    WorkflowResult wf = history.getWorkflows().get(0);
+    assertEquals("payment-app", wf.getAppId());
+    assertEquals("ProcessPayment", wf.getName());
+    assertEquals("parent-instance-1", wf.getInstanceId());
+    assertTrue(wf.getLastActivityByName("ValidateCard").isPresent());
   }
 
   @Test
@@ -405,7 +405,7 @@ class HistoryPropagationTest {
   }
 
   @Test
-  void propagatedHistory_getWorkflowByName_returnsLastMatch() {
+  void propagatedHistory_getLastWorkflowByName_returnsLastMatch() {
     HistoryEvents.HistoryEvent event1 = HistoryEvents.HistoryEvent.newBuilder()
         .setEventId(0)
         .setTimestamp(Timestamp.newBuilder().setSeconds(1000).build())
@@ -435,14 +435,14 @@ class HistoryPropagationTest {
 
     PropagatedHistory history = PropagatedHistory.fromProto(proto);
 
-    Optional<PropagatedHistoryChunk> result = history.getWorkflowByName("ProcessPayment");
+    Optional<WorkflowResult> result = history.getLastWorkflowByName("ProcessPayment");
     assertTrue(result.isPresent());
     assertEquals("inst2", result.get().getInstanceId());
     assertEquals("app2", result.get().getAppId());
   }
 
   @Test
-  void propagatedHistory_getWorkflowByName_returnsEmptyForMissing() {
+  void propagatedHistory_getLastWorkflowByName_returnsEmptyForMissing() {
     HistoryEvents.PropagatedHistory proto = HistoryEvents.PropagatedHistory.newBuilder()
         .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_OWN_HISTORY)
         .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
@@ -454,7 +454,7 @@ class HistoryPropagationTest {
 
     PropagatedHistory history = PropagatedHistory.fromProto(proto);
 
-    Optional<PropagatedHistoryChunk> result = history.getWorkflowByName("NonExistent");
+    Optional<WorkflowResult> result = history.getLastWorkflowByName("NonExistent");
     assertFalse(result.isPresent());
   }
 
@@ -630,5 +630,219 @@ class HistoryPropagationTest {
 
     assertEquals(HistoryPropagationScope.NONE, options.getHistoryPropagationScope());
     assertFalse(options.hasHistoryPropagationScope());
+  }
+
+  // ==================================================================================
+  // Tests for WorkflowResult typed lookups
+  // ==================================================================================
+
+  private static HistoryEvents.HistoryEvent taskScheduled(int eventId, String name, String input) {
+    HistoryEvents.TaskScheduledEvent.Builder ts = HistoryEvents.TaskScheduledEvent.newBuilder()
+        .setName(name);
+    if (input != null) {
+      ts.setInput(StringValue.of(input));
+    }
+    return HistoryEvents.HistoryEvent.newBuilder()
+        .setEventId(eventId)
+        .setTimestamp(Timestamp.newBuilder().setSeconds(1000).build())
+        .setTaskScheduled(ts.build())
+        .build();
+  }
+
+  private static HistoryEvents.HistoryEvent taskCompleted(int scheduledId, String result) {
+    return HistoryEvents.HistoryEvent.newBuilder()
+        .setEventId(scheduledId + 100)
+        .setTimestamp(Timestamp.newBuilder().setSeconds(1001).build())
+        .setTaskCompleted(HistoryEvents.TaskCompletedEvent.newBuilder()
+            .setTaskScheduledId(scheduledId)
+            .setResult(StringValue.of(result))
+            .build())
+        .build();
+  }
+
+  private static HistoryEvents.HistoryEvent taskFailed(int scheduledId, String errorType) {
+    return HistoryEvents.HistoryEvent.newBuilder()
+        .setEventId(scheduledId + 200)
+        .setTimestamp(Timestamp.newBuilder().setSeconds(1002).build())
+        .setTaskFailed(HistoryEvents.TaskFailedEvent.newBuilder()
+            .setTaskScheduledId(scheduledId)
+            .setFailureDetails(Orchestration.TaskFailureDetails.newBuilder()
+                .setErrorType(errorType)
+                .build())
+            .build())
+        .build();
+  }
+
+  private static HistoryEvents.HistoryEvent childCreated(int eventId, String name) {
+    return HistoryEvents.HistoryEvent.newBuilder()
+        .setEventId(eventId)
+        .setTimestamp(Timestamp.newBuilder().setSeconds(1000).build())
+        .setChildWorkflowInstanceCreated(HistoryEvents.ChildWorkflowInstanceCreatedEvent.newBuilder()
+            .setName(name)
+            .build())
+        .build();
+  }
+
+  private static HistoryEvents.HistoryEvent childCompleted(int scheduledId, String result) {
+    return HistoryEvents.HistoryEvent.newBuilder()
+        .setEventId(scheduledId + 100)
+        .setTimestamp(Timestamp.newBuilder().setSeconds(1001).build())
+        .setChildWorkflowInstanceCompleted(HistoryEvents.ChildWorkflowInstanceCompletedEvent.newBuilder()
+            .setTaskScheduledId(scheduledId)
+            .setResult(StringValue.of(result))
+            .build())
+        .build();
+  }
+
+  private static HistoryEvents.HistoryEvent childFailed(int scheduledId, String errorType) {
+    return HistoryEvents.HistoryEvent.newBuilder()
+        .setEventId(scheduledId + 200)
+        .setTimestamp(Timestamp.newBuilder().setSeconds(1002).build())
+        .setChildWorkflowInstanceFailed(HistoryEvents.ChildWorkflowInstanceFailedEvent.newBuilder()
+            .setTaskScheduledId(scheduledId)
+            .setFailureDetails(Orchestration.TaskFailureDetails.newBuilder()
+                .setErrorType(errorType)
+                .build())
+            .build())
+        .build();
+  }
+
+  private static PropagatedHistory historyWithChunkEvents(String workflowName,
+      HistoryEvents.HistoryEvent... events) {
+    HistoryEvents.PropagatedHistoryChunk.Builder chunk = HistoryEvents.PropagatedHistoryChunk.newBuilder()
+        .setAppId("app1")
+        .setInstanceId("inst1")
+        .setWorkflowName(workflowName);
+    for (HistoryEvents.HistoryEvent e : events) {
+      chunk.addRawEvents(e.toByteString());
+    }
+    HistoryEvents.PropagatedHistory proto = HistoryEvents.PropagatedHistory.newBuilder()
+        .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
+        .addChunks(chunk.build())
+        .build();
+    return PropagatedHistory.fromProto(proto);
+  }
+
+  @Test
+  void workflowResult_getLastActivityByName_returnsCompletedResult() {
+    PropagatedHistory history = historyWithChunkEvents("ProcessPayment",
+        taskScheduled(1, "ValidateCard", "\"4111\""),
+        taskCompleted(1, "\"OK\""));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ProcessPayment").get();
+    Optional<ActivityResult> activity = wf.getLastActivityByName("ValidateCard");
+    assertTrue(activity.isPresent());
+    assertEquals("ValidateCard", activity.get().getName());
+    assertTrue(activity.get().isStarted());
+    assertTrue(activity.get().isCompleted());
+    assertFalse(activity.get().isFailed());
+    assertEquals("\"4111\"", activity.get().getInput().getValue());
+    assertEquals("\"OK\"", activity.get().getOutput().getValue());
+    assertNull(activity.get().getError());
+  }
+
+  @Test
+  void workflowResult_getLastActivityByName_returnsFailedResult() {
+    PropagatedHistory history = historyWithChunkEvents("ProcessPayment",
+        taskScheduled(1, "ValidateCard", null),
+        taskFailed(1, "ValidationError"));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ProcessPayment").get();
+    ActivityResult activity = wf.getLastActivityByName("ValidateCard").get();
+    assertTrue(activity.isStarted());
+    assertFalse(activity.isCompleted());
+    assertTrue(activity.isFailed());
+    assertEquals("ValidationError", activity.getError().getErrorType());
+  }
+
+  @Test
+  void workflowResult_getLastActivityByName_returnsStartedOnly() {
+    PropagatedHistory history = historyWithChunkEvents("ProcessPayment",
+        taskScheduled(1, "ValidateCard", null));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ProcessPayment").get();
+    ActivityResult activity = wf.getLastActivityByName("ValidateCard").get();
+    assertTrue(activity.isStarted());
+    assertFalse(activity.isCompleted());
+    assertFalse(activity.isFailed());
+  }
+
+  @Test
+  void workflowResult_getLastActivityByName_returnsEmptyForMissing() {
+    PropagatedHistory history = historyWithChunkEvents("ProcessPayment",
+        taskScheduled(1, "ValidateCard", null));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ProcessPayment").get();
+    assertFalse(wf.getLastActivityByName("NotThere").isPresent());
+  }
+
+  @Test
+  void workflowResult_getActivitiesByName_returnsAllInOrder() {
+    PropagatedHistory history = historyWithChunkEvents("ProcessPayment",
+        taskScheduled(1, "ValidateCard", "\"a\""),
+        taskCompleted(1, "\"first\""),
+        taskScheduled(2, "ValidateCard", "\"b\""),
+        taskCompleted(2, "\"second\""));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ProcessPayment").get();
+    List<ActivityResult> all = wf.getActivitiesByName("ValidateCard");
+    assertEquals(2, all.size());
+    assertEquals("\"first\"", all.get(0).getOutput().getValue());
+    assertEquals("\"second\"", all.get(1).getOutput().getValue());
+
+    // Last == last element of plural.
+    assertEquals("\"second\"", wf.getLastActivityByName("ValidateCard").get().getOutput().getValue());
+  }
+
+  @Test
+  void workflowResult_getLastChildWorkflowByName_returnsCompletedResult() {
+    PropagatedHistory history = historyWithChunkEvents("ParentFlow",
+        childCreated(1, "ChildFlow"),
+        childCompleted(1, "\"done\""));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ParentFlow").get();
+    Optional<ChildWorkflowResult> child = wf.getLastChildWorkflowByName("ChildFlow");
+    assertTrue(child.isPresent());
+    assertEquals("ChildFlow", child.get().getName());
+    assertTrue(child.get().isStarted());
+    assertTrue(child.get().isCompleted());
+    assertFalse(child.get().isFailed());
+    assertEquals("\"done\"", child.get().getOutput().getValue());
+  }
+
+  @Test
+  void workflowResult_getLastChildWorkflowByName_returnsFailedResult() {
+    PropagatedHistory history = historyWithChunkEvents("ParentFlow",
+        childCreated(1, "ChildFlow"),
+        childFailed(1, "ChildBoom"));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ParentFlow").get();
+    ChildWorkflowResult child = wf.getLastChildWorkflowByName("ChildFlow").get();
+    assertTrue(child.isFailed());
+    assertEquals("ChildBoom", child.getError().getErrorType());
+  }
+
+  @Test
+  void workflowResult_getChildWorkflowsByName_returnsAllInOrder() {
+    PropagatedHistory history = historyWithChunkEvents("ParentFlow",
+        childCreated(1, "ChildFlow"),
+        childCompleted(1, "\"first\""),
+        childCreated(2, "ChildFlow"),
+        childCompleted(2, "\"second\""));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ParentFlow").get();
+    List<ChildWorkflowResult> all = wf.getChildWorkflowsByName("ChildFlow");
+    assertEquals(2, all.size());
+    assertEquals("\"first\"", all.get(0).getOutput().getValue());
+    assertEquals("\"second\"", all.get(1).getOutput().getValue());
+  }
+
+  @Test
+  void workflowResult_getLastChildWorkflowByName_returnsEmptyForMissing() {
+    PropagatedHistory history = historyWithChunkEvents("ParentFlow",
+        childCreated(1, "ChildFlow"));
+
+    WorkflowResult wf = history.getLastWorkflowByName("ParentFlow").get();
+    assertFalse(wf.getLastChildWorkflowByName("NotThere").isPresent());
   }
 }

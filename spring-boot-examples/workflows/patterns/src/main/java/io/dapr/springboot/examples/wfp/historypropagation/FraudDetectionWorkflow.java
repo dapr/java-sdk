@@ -13,9 +13,9 @@
 
 package io.dapr.springboot.examples.wfp.historypropagation;
 
-import io.dapr.durabletask.HistoryPropagationScope;
+import io.dapr.durabletask.ActivityResult;
 import io.dapr.durabletask.PropagatedHistory;
-import io.dapr.durabletask.PropagatedHistoryChunk;
+import io.dapr.durabletask.WorkflowResult;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;
@@ -37,27 +37,27 @@ public class FraudDetectionWorkflow implements Workflow {
     return ctx -> {
       ctx.getLogger().info("Starting FraudDetection workflow: " + ctx.getInstanceId());
 
-      // Access propagated history from parent
       Optional<PropagatedHistory> historyOpt = ctx.getPropagatedHistory();
 
       if (historyOpt.isPresent()) {
         PropagatedHistory history = historyOpt.get();
         ctx.getLogger().info("Received propagated history with scope: " + history.getScope());
-        ctx.getLogger().info("History contains " + history.getEvents().size() + " events");
         ctx.getLogger().info("From apps: " + history.getAppIDs());
 
-        // Verify the parent workflow's card validation happened
-        Optional<PropagatedHistoryChunk> parentChunk =
-            history.getWorkflowByName("ProcessPaymentWorkflow");
-        if (parentChunk.isPresent()) {
-          ctx.getLogger().info("Found parent workflow chunk from app: " + parentChunk.get().getAppId()
-              + " with " + parentChunk.get().getEventCount() + " events");
+        // Verify the parent workflow's card validation happened, using the
+        // typed activity lookup rather than walking raw events.
+        Optional<WorkflowResult> parent = history.getLastWorkflowByName("ProcessPaymentWorkflow");
+        if (parent.isPresent()) {
+          ctx.getLogger().info("Found parent workflow from app: " + parent.get().getAppId());
+          Optional<ActivityResult> validate = parent.get().getLastActivityByName("ValidateCard");
+          validate.ifPresent(activity ->
+              ctx.getLogger().info("  ValidateCard: completed=" + activity.isCompleted()
+                  + " failed=" + activity.isFailed()));
         }
       } else {
         ctx.getLogger().info("No propagated history received");
       }
 
-      // Perform fraud check logic
       String input = ctx.getInput(String.class);
       String fraudCheckResult = ctx.callActivity(
           FraudCheckActivity.class.getName(),

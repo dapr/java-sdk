@@ -14,7 +14,7 @@
 package io.dapr.springboot.examples.wfp.historypropagation;
 
 import io.dapr.durabletask.PropagatedHistory;
-import io.dapr.durabletask.PropagatedHistoryChunk;
+import io.dapr.durabletask.WorkflowResult;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import org.springframework.stereotype.Component;
@@ -37,10 +37,10 @@ public class SettlePaymentActivity implements WorkflowActivity {
       PropagatedHistory history = historyOpt.get();
       ctx.getLogger().info("Settlement activity has propagated history (scope: "
           + history.getScope() + ")");
-      ctx.getLogger().info("Events from " + history.getWorkflows().size() + " workflow(s):");
-      for (PropagatedHistoryChunk chunk : history.getWorkflows()) {
-        ctx.getLogger().info("  - " + chunk.getWorkflowName() + " (" + chunk.getAppId()
-            + "): " + chunk.getEventCount() + " events");
+      ctx.getLogger().info("Contributing workflows: " + history.getWorkflows().size());
+      for (WorkflowResult wf : history.getWorkflows()) {
+        ctx.getLogger().info("  - " + wf.getName() + " (app=" + wf.getAppId()
+            + ", instance=" + wf.getInstanceId() + ")");
       }
     }
 

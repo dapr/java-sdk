@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.examples.workflows.historypropagation;
 
 import io.dapr.durabletask.PropagatedHistory;
-import io.dapr.durabletask.PropagatedHistoryChunk;
+import io.dapr.durabletask.WorkflowResult;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 
@@ -36,10 +36,10 @@ public class DemoFraudCheckChildWorkflow implements Workflow {
       if (historyOpt.isPresent()) {
         PropagatedHistory history = historyOpt.get();
         ctx.getLogger().info("Received propagated history (scope=" + history.getScope()
-            + ", events=" + history.getEvents().size() + ")");
-        for (PropagatedHistoryChunk chunk : history.getWorkflows()) {
-          ctx.getLogger().info("  chunk: workflow=" + chunk.getWorkflowName()
-              + " app=" + chunk.getAppId() + " events=" + chunk.getEventCount());
+            + ", workflows=" + history.getWorkflows().size() + ")");
+        for (WorkflowResult wf : history.getWorkflows()) {
+          ctx.getLogger().info("  ancestor: workflow=" + wf.getName()
+              + " app=" + wf.getAppId() + " instance=" + wf.getInstanceId());
         }
       } else {
         ctx.getLogger().info("No propagated history received");

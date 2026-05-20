@@ -187,10 +187,16 @@ class HistoryPropagationIntegrationTest {
     assertEquals(2, history.getEvents().size());
 
     // Verify child can query by workflow name
-    Optional<PropagatedHistoryChunk> parentChunk = history.getWorkflowByName("ProcessPayment");
-    assertTrue(parentChunk.isPresent());
-    assertEquals("payment-app", parentChunk.get().getAppId());
-    assertEquals("parent-inst-1", parentChunk.get().getInstanceId());
+    Optional<WorkflowResult> parentWf = history.getLastWorkflowByName("ProcessPayment");
+    assertTrue(parentWf.isPresent());
+    assertEquals("payment-app", parentWf.get().getAppId());
+    assertEquals("parent-inst-1", parentWf.get().getInstanceId());
+
+    // Typed activity lookup on the parent workflow
+    Optional<ActivityResult> validate = parentWf.get().getLastActivityByName("ValidateCard");
+    assertTrue(validate.isPresent());
+    assertTrue(validate.get().isCompleted());
+    assertEquals("\"valid\"", validate.get().getOutput().getValue());
 
     // Verify child can filter events by app ID
     List<HistoryEvents.HistoryEvent> paymentAppEvents = history.getEventsByAppID("payment-app");
@@ -280,7 +286,7 @@ class HistoryPropagationIntegrationTest {
 
     // Only one chunk from the immediate parent, no grandparent
     assertEquals(1, history.getWorkflows().size());
-    assertEquals("SettlePayment", history.getWorkflows().get(0).getWorkflowName());
+    assertEquals("SettlePayment", history.getWorkflows().get(0).getName());
     assertEquals(1, history.getEvents().size());
   }
 
@@ -366,7 +372,7 @@ class HistoryPropagationIntegrationTest {
     assertEquals(1, history.getEvents().size());
     assertEquals("ValidateCard", history.getEvents().get(0).getTaskScheduled().getName());
 
-    Optional<PropagatedHistoryChunk> wf = history.getWorkflowByName("ProcessPayment");
+    Optional<WorkflowResult> wf = history.getLastWorkflowByName("ProcessPayment");
     assertTrue(wf.isPresent());
     assertEquals("payment-app", wf.get().getAppId());
   }
@@ -452,15 +458,18 @@ class HistoryPropagationIntegrationTest {
     assertEquals("payment-app", appIds.get(1));
 
     // Query by workflow name
-    Optional<PropagatedHistoryChunk> gp = history.getWorkflowByName("GatewayWorkflow");
+    Optional<WorkflowResult> gp = history.getLastWorkflowByName("GatewayWorkflow");
     assertTrue(gp.isPresent());
     assertEquals("gateway-app", gp.get().getAppId());
-    assertEquals(1, gp.get().getEventCount());
+    assertTrue(gp.get().getLastActivityByName("InitiatePayment").isPresent());
 
-    Optional<PropagatedHistoryChunk> parent = history.getWorkflowByName("ProcessPayment");
+    Optional<WorkflowResult> parent = history.getLastWorkflowByName("ProcessPayment");
     assertTrue(parent.isPresent());
     assertEquals("payment-app", parent.get().getAppId());
-    assertEquals(2, parent.get().getEventCount());
+    Optional<ActivityResult> validate = parent.get().getLastActivityByName("ValidateCard");
+    assertTrue(validate.isPresent());
+    assertTrue(validate.get().isCompleted());
+    assertEquals("\"valid\"", validate.get().getOutput().getValue());
 
     // Query events by instance ID
     List<HistoryEvents.HistoryEvent> parentEvents = history.getEventsByInstanceID("parent-inst-1");

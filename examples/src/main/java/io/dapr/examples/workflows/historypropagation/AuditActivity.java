@@ -13,8 +13,9 @@ limitations under the License.
 
 package io.dapr.examples.workflows.historypropagation;
 
+import io.dapr.durabletask.ActivityResult;
 import io.dapr.durabletask.PropagatedHistory;
-import io.dapr.durabletask.PropagatedHistoryChunk;
+import io.dapr.durabletask.WorkflowResult;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 
@@ -35,10 +36,16 @@ public class AuditActivity implements WorkflowActivity {
     if (historyOpt.isPresent()) {
       PropagatedHistory history = historyOpt.get();
       ctx.getLogger().info("Audit received history (scope=" + history.getScope()
-          + ", chunks=" + history.getWorkflows().size() + ")");
-      for (PropagatedHistoryChunk chunk : history.getWorkflows()) {
-        ctx.getLogger().info("  chunk: workflow=" + chunk.getWorkflowName()
-            + " instance=" + chunk.getInstanceId() + " events=" + chunk.getEventCount());
+          + ", workflows=" + history.getWorkflows().size() + ")");
+
+      // Surface what the immediate caller did, using typed lookups instead of
+      // poking at raw history events.
+      for (WorkflowResult wf : history.getWorkflows()) {
+        Optional<ActivityResult> validate = wf.getLastActivityByName("ValidateCard");
+        validate.ifPresent(activity -> ctx.getLogger().info(
+            "  " + wf.getName() + " ran ValidateCard: completed=" + activity.isCompleted()
+                + " failed=" + activity.isFailed()
+                + (activity.getOutput() != null ? " output=" + activity.getOutput().getValue() : "")));
       }
     } else {
       ctx.getLogger().info("Audit received no propagated history");
