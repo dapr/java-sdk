@@ -133,4 +133,37 @@ class ActivityHistoryPropagationTest {
 
     assertFalse(captured[0].isPresent());
   }
+
+  @Test
+  void execute_withMalformedPropagatedHistory_throwsPropagatedHistoryException() {
+    HashMap<String, TaskActivityFactory> factories = new HashMap<>();
+    factories.put("MyActivity", new TaskActivityFactory() {
+      @Override
+      public String getName() {
+        return "MyActivity";
+      }
+
+      @Override
+      public TaskActivity create() {
+        return ctx -> "done";
+      }
+    });
+
+    TaskActivityExecutor executor = new TaskActivityExecutor(factories, new JacksonDataConverter(), logger);
+
+    HistoryEvents.PropagatedHistory malformed = HistoryEvents.PropagatedHistory.newBuilder()
+        .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_OWN_HISTORY)
+        .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
+            .setAppId("parent-app")
+            .addRawEvents(com.google.protobuf.ByteString.copyFromUtf8("not-a-valid-history-event"))
+            .setInstanceId("parent-1")
+            .setWorkflowName("ProcessPayment")
+            .build())
+        .build();
+
+    PropagatedHistoryException thrown = assertThrows(PropagatedHistoryException.class,
+        () -> executor.execute("MyActivity", "\"input\"", "exec-1", 0, "traceparent", malformed));
+    assertTrue(thrown.getMessage().contains("MyActivity"),
+        "Exception message should reference the activity name; was: " + thrown.getMessage());
+  }
 }

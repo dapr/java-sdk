@@ -84,8 +84,15 @@ public final class TaskActivityExecutor {
           String.format("The task factory '%s' returned a null TaskActivity object.", taskName));
     }
 
-    PropagatedHistory parsed = propagatedHistory != null
-        ? PropagatedHistory.fromProto(propagatedHistory) : null;
+    PropagatedHistory parsed = null;
+    if (propagatedHistory != null) {
+      try {
+        parsed = PropagatedHistory.fromProto(propagatedHistory);
+      } catch (PropagatedHistoryException e) {
+        throw new PropagatedHistoryException(
+            "Failed to parse propagated history for activity '" + taskName + "'", e);
+      }
+    }
     TaskActivityContextImpl context = new TaskActivityContextImpl(
         taskName, input, taskExecutionId, taskId, traceParent, parsed);
 

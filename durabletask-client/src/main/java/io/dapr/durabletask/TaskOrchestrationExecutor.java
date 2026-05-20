@@ -164,6 +164,9 @@ public final class TaskOrchestrationExecutor {
     } catch (ContinueAsNewInterruption continueAsNewInterruption) {
       logger.fine("The orchestrator has continued as new.");
       context.complete(null);
+    } catch (PropagatedHistoryException propagatedHistoryException) {
+      logger.warning("The orchestrator failed parsing propagated history: " + propagatedHistoryException);
+      context.fail(new FailureDetails(propagatedHistoryException));
     } catch (Exception e) {
       // The orchestrator threw an unhandled exception - fail it
       // TODO: What's the right way to log this?

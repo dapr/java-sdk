@@ -364,6 +364,41 @@ class HistoryPropagationTest {
     assertFalse(captured[0].isPresent());
   }
 
+  @Test
+  void execute_withMalformedPropagatedHistory_failsContextWithTypedException() {
+    final String orchestratorName = "ChildOrchestrator";
+    TaskOrchestration orchestration = ctx -> ctx.complete(null);
+
+    TaskOrchestrationExecutor executor = createExecutor(orchestratorName, orchestration);
+
+    // A chunk with rawEvents that aren't a valid HistoryEvent serialization
+    HistoryEvents.PropagatedHistory malformed = HistoryEvents.PropagatedHistory.newBuilder()
+        .setScope(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE)
+        .addChunks(HistoryEvents.PropagatedHistoryChunk.newBuilder()
+            .setAppId("payment-app")
+            .addRawEvents(com.google.protobuf.ByteString.copyFromUtf8("not-a-valid-history-event"))
+            .setInstanceId("parent-1")
+            .setWorkflowName("ProcessPayment")
+            .build())
+        .build();
+
+    List<HistoryEvents.HistoryEvent> newEvents = List.of(
+        orchestratorStarted(),
+        executionStarted(orchestratorName, "child-1", "\"input\""),
+        orchestratorCompleted()
+    );
+
+    TaskOrchestratorResult result = executor.execute(new ArrayList<>(), newEvents, malformed);
+
+    // The orchestrator should have failed via the typed PropagatedHistoryException
+    // catch path - i.e. a WorkflowCompleted action with FAILED status, not a normal complete.
+    boolean failed = result.getActions().stream()
+        .anyMatch(a -> a.hasCompleteWorkflow()
+            && a.getCompleteWorkflow().getWorkflowStatus()
+                == Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_FAILED);
+    assertTrue(failed, "Expected the orchestrator to fail when propagated history is malformed");
+  }
+
   // ==================================================================================
   // Tests for PropagatedHistory query methods
   // ==================================================================================
