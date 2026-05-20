@@ -47,7 +47,7 @@ public final class PropagatedHistoryChunk {
       try {
         parsed.add(HistoryEvents.HistoryEvent.parseFrom(proto.getRawEvents(i)));
       } catch (InvalidProtocolBufferException e) {
-        throw new IllegalArgumentException(
+        throw new PropagatedHistoryException(
             "Failed to parse raw event " + i + " in chunk for app " + proto.getAppId(), e);
       }
     }

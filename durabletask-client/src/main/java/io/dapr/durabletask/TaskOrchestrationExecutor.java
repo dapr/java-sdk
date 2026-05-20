@@ -142,12 +142,13 @@ public final class TaskOrchestrationExecutor {
   public TaskOrchestratorResult execute(List<HistoryEvents.HistoryEvent> pastEvents,
                                         List<HistoryEvents.HistoryEvent> newEvents,
                                         @Nullable HistoryEvents.PropagatedHistory propagatedHistory) {
-    PropagatedHistory parsed = propagatedHistory != null
-        ? PropagatedHistory.fromProto(propagatedHistory) : null;
-    ContextImplTask context = new ContextImplTask(pastEvents, newEvents, parsed);
+    ContextImplTask context = new ContextImplTask(pastEvents, newEvents, null);
 
     boolean completed = false;
     try {
+      if (propagatedHistory != null) {
+        context.propagatedHistory = PropagatedHistory.fromProto(propagatedHistory);
+      }
       // Play through the history events until either we've played through everything
       // or we receive a yield signal
       while (context.processNextEvent()) {
@@ -217,7 +218,7 @@ public final class TaskOrchestrationExecutor {
 
     private String versionName;
 
-    private final PropagatedHistory propagatedHistory;
+    private PropagatedHistory propagatedHistory;
 
     public ContextImplTask(List<HistoryEvents.HistoryEvent> pastEvents,
                            List<HistoryEvents.HistoryEvent> newEvents,
