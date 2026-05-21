@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.historypropagation;
 
-import io.dapr.durabletask.ActivityResult;
+import io.dapr.durabletask.ChildWorkflowResult;
 import io.dapr.durabletask.PropagatedHistory;
 import io.dapr.durabletask.WorkflowResult;
 import io.dapr.workflows.WorkflowActivity;
@@ -39,13 +39,16 @@ public class AuditActivity implements WorkflowActivity {
           + ", workflows=" + history.getWorkflows().size() + ")");
 
       // Surface what the immediate caller did, using typed lookups instead of
-      // poking at raw history events.
+      // poking at raw history events. The parent of this activity is
+      // DemoHistoryPropagationWorkflow, which invokes DemoFraudCheckChildWorkflow.
       for (WorkflowResult wf : history.getWorkflows()) {
-        Optional<ActivityResult> validate = wf.getLastActivityByName("ValidateCard");
-        validate.ifPresent(activity -> ctx.getLogger().info(
-            "  " + wf.getName() + " ran ValidateCard: completed=" + activity.isCompleted()
-                + " failed=" + activity.isFailed()
-                + (activity.getOutput() != null ? " output=" + activity.getOutput().getValue() : "")));
+        Optional<ChildWorkflowResult> child =
+            wf.getLastChildWorkflowByName(DemoFraudCheckChildWorkflow.class.getName());
+        child.ifPresent(c -> ctx.getLogger().info(
+            "  " + wf.getName() + " ran child " + c.getName()
+                + ": completed=" + c.isCompleted()
+                + " failed=" + c.isFailed()
+                + (c.getOutput() != null ? " output=" + c.getOutput().getValue() : "")));
       }
     } else {
       ctx.getLogger().info("Audit received no propagated history");

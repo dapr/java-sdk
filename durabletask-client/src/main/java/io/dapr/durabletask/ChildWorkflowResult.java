@@ -22,20 +22,17 @@ import io.dapr.durabletask.implementation.protobuf.Orchestration.TaskFailureDeta
  */
 public final class ChildWorkflowResult {
   private final String name;
-  private final boolean started;
   private final boolean completed;
   private final boolean failed;
   private final StringValue output;
   private final TaskFailureDetails error;
 
   ChildWorkflowResult(String name,
-                      boolean started,
                       boolean completed,
                       boolean failed,
                       StringValue output,
                       TaskFailureDetails error) {
     this.name = name;
-    this.started = started;
     this.completed = completed;
     this.failed = failed;
     this.output = output;
@@ -49,15 +46,6 @@ public final class ChildWorkflowResult {
    */
   public String getName() {
     return this.name;
-  }
-
-  /**
-   * Returns true if the child workflow was scheduled.
-   *
-   * @return whether the child workflow started
-   */
-  public boolean isStarted() {
-    return this.started;
   }
 
   /**

@@ -18,13 +18,11 @@ import io.dapr.durabletask.implementation.protobuf.Orchestration.TaskFailureDeta
 
 /**
  * Holds the status and data of a named activity invocation observed in
- * propagated workflow history. An activity is reported as {@code started}
- * once it was scheduled; {@code completed} or {@code failed} reflect the
- * terminal state of that scheduling.
+ * propagated workflow history. {@code completed} or {@code failed} reflect
+ * the terminal state of the scheduling.
  */
 public final class ActivityResult {
   private final String name;
-  private final boolean started;
   private final boolean completed;
   private final boolean failed;
   private final StringValue input;
@@ -32,14 +30,12 @@ public final class ActivityResult {
   private final TaskFailureDetails error;
 
   ActivityResult(String name,
-                 boolean started,
                  boolean completed,
                  boolean failed,
                  StringValue input,
                  StringValue output,
                  TaskFailureDetails error) {
     this.name = name;
-    this.started = started;
     this.completed = completed;
     this.failed = failed;
     this.input = input;
@@ -54,15 +50,6 @@ public final class ActivityResult {
    */
   public String getName() {
     return this.name;
-  }
-
-  /**
-   * Returns true if the activity was scheduled.
-   *
-   * @return whether the activity started
-   */
-  public boolean isStarted() {
-    return this.started;
   }
 
   /**

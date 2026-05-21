@@ -178,7 +178,6 @@ public final class WorkflowResult {
     }
     return new ActivityResult(
         ts.getName(),
-        true,
         completed,
         failed,
         ts.hasInput() ? ts.getInput() : null,
@@ -203,7 +202,7 @@ public final class WorkflowResult {
         error = e.getChildWorkflowInstanceFailed().getFailureDetails();
       }
     }
-    return new ChildWorkflowResult(name, true, completed, failed, output, error);
+    return new ChildWorkflowResult(name, completed, failed, output, error);
   }
 
   // Package-private accessor used by PropagatedHistory for raw-event filtering.

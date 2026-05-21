@@ -768,7 +768,6 @@ class HistoryPropagationTest {
     Optional<ActivityResult> activity = wf.getLastActivityByName("ValidateCard");
     assertTrue(activity.isPresent());
     assertEquals("ValidateCard", activity.get().getName());
-    assertTrue(activity.get().isStarted());
     assertTrue(activity.get().isCompleted());
     assertFalse(activity.get().isFailed());
     assertEquals("\"4111\"", activity.get().getInput().getValue());
@@ -784,7 +783,6 @@ class HistoryPropagationTest {
 
     WorkflowResult wf = history.getLastWorkflowByName("ProcessPayment").get();
     ActivityResult activity = wf.getLastActivityByName("ValidateCard").get();
-    assertTrue(activity.isStarted());
     assertFalse(activity.isCompleted());
     assertTrue(activity.isFailed());
     assertEquals("ValidationError", activity.getError().getErrorType());
@@ -797,7 +795,6 @@ class HistoryPropagationTest {
 
     WorkflowResult wf = history.getLastWorkflowByName("ProcessPayment").get();
     ActivityResult activity = wf.getLastActivityByName("ValidateCard").get();
-    assertTrue(activity.isStarted());
     assertFalse(activity.isCompleted());
     assertFalse(activity.isFailed());
   }
@@ -839,7 +836,6 @@ class HistoryPropagationTest {
     Optional<ChildWorkflowResult> child = wf.getLastChildWorkflowByName("ChildFlow");
     assertTrue(child.isPresent());
     assertEquals("ChildFlow", child.get().getName());
-    assertTrue(child.get().isStarted());
     assertTrue(child.get().isCompleted());
     assertFalse(child.get().isFailed());
     assertEquals("\"done\"", child.get().getOutput().getValue());

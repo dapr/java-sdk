@@ -46,10 +46,12 @@ public class FraudDetectionWorkflow implements Workflow {
 
         // Verify the parent workflow's card validation happened, using the
         // typed activity lookup rather than walking raw events.
-        Optional<WorkflowResult> parent = history.getLastWorkflowByName("ProcessPaymentWorkflow");
+        Optional<WorkflowResult> parent =
+            history.getLastWorkflowByName(ProcessPaymentWorkflow.class.getName());
         if (parent.isPresent()) {
           ctx.getLogger().info("Found parent workflow from app: " + parent.get().getAppId());
-          Optional<ActivityResult> validate = parent.get().getLastActivityByName("ValidateCard");
+          Optional<ActivityResult> validate =
+              parent.get().getLastActivityByName(ValidateCardActivity.class.getName());
           validate.ifPresent(activity ->
               ctx.getLogger().info("  ValidateCard: completed=" + activity.isCompleted()
                   + " failed=" + activity.isFailed()));
