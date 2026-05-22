@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Dapr Authors
+ * Copyright 2026 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,11 +20,14 @@ public final class TaskOptions {
   private final RetryPolicy retryPolicy;
   private final RetryHandler retryHandler;
   private final String appID;
+  private final HistoryPropagationScope historyPropagationScope;
 
-  private TaskOptions(RetryPolicy retryPolicy, RetryHandler retryHandler, String appID) {
+  private TaskOptions(RetryPolicy retryPolicy, RetryHandler retryHandler, String appID,
+                      HistoryPropagationScope historyPropagationScope) {
     this.retryPolicy = retryPolicy;
     this.retryHandler = retryHandler;
     this.appID = appID;
+    this.historyPropagationScope = historyPropagationScope;
   }
 
   /**
@@ -115,12 +118,27 @@ public final class TaskOptions {
   }
 
   /**
+   * Gets the configured {@link HistoryPropagationScope} value or {@code null} if none was configured.
+   *
+   * @return the configured history propagation scope
+   */
+  public HistoryPropagationScope getHistoryPropagationScope() {
+    return this.historyPropagationScope;
+  }
+
+  boolean hasHistoryPropagationScope() {
+    return this.historyPropagationScope != null
+        && this.historyPropagationScope != HistoryPropagationScope.NONE;
+  }
+
+  /**
    * Builder for creating {@code TaskOptions} instances.
    */
   public static final class Builder {
     private RetryPolicy retryPolicy;
     private RetryHandler retryHandler;
     private String appID;
+    private HistoryPropagationScope historyPropagationScope;
 
     private Builder() {
       // Private constructor -enforces using TaskOptions.builder()
@@ -160,12 +178,24 @@ public final class TaskOptions {
     }
 
     /**
+     * Sets the history propagation scope for the task.
+     *
+     * @param scope the propagation scope to use
+     * @return this builder instance for method chaining
+     */
+    public Builder historyPropagationScope(HistoryPropagationScope scope) {
+      this.historyPropagationScope = scope;
+      return this;
+    }
+
+    /**
      * Builds a new {@code TaskOptions} instance with the configured values.
      *
      * @return a new TaskOptions instance
      */
     public TaskOptions build() {
-      return new TaskOptions(this.retryPolicy, this.retryHandler, this.appID);
+      return new TaskOptions(this.retryPolicy, this.retryHandler, this.appID,
+          this.historyPropagationScope);
     }
   }
 }

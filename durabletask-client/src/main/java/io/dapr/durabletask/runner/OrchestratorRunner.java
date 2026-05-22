@@ -57,7 +57,9 @@ public class OrchestratorRunner extends DurableRunner {
   public void run() {
     TaskOrchestratorResult taskOrchestratorResult = taskOrchestrationExecutor.execute(
         orchestratorRequest.getPastEventsList(),
-        orchestratorRequest.getNewEventsList());
+        orchestratorRequest.getNewEventsList(),
+        orchestratorRequest.hasPropagatedHistory()
+            ? orchestratorRequest.getPropagatedHistory() : null);
 
     var versionBuilder = Orchestration.WorkflowVersion.newBuilder();
 
