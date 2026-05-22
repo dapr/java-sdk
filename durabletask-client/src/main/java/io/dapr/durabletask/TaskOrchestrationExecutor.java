@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Dapr Authors
+ * Copyright 2026 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -127,10 +128,27 @@ public final class TaskOrchestrationExecutor {
    */
   public TaskOrchestratorResult execute(List<HistoryEvents.HistoryEvent> pastEvents,
                                         List<HistoryEvents.HistoryEvent> newEvents) {
-    ContextImplTask context = new ContextImplTask(pastEvents, newEvents);
+    return execute(pastEvents, newEvents, null);
+  }
+
+  /**
+   * Executes the orchestration with the given past and new events, plus optional propagated history.
+   *
+   * @param pastEvents        list of past history events
+   * @param newEvents         list of new history events
+   * @param propagatedHistory propagated history from a parent workflow, or null
+   * @return the result of the orchestrator execution
+   */
+  public TaskOrchestratorResult execute(List<HistoryEvents.HistoryEvent> pastEvents,
+                                        List<HistoryEvents.HistoryEvent> newEvents,
+                                        @Nullable HistoryEvents.PropagatedHistory propagatedHistory) {
+    ContextImplTask context = new ContextImplTask(pastEvents, newEvents, null);
 
     boolean completed = false;
     try {
+      if (propagatedHistory != null) {
+        context.propagatedHistory = PropagatedHistory.fromProto(propagatedHistory);
+      }
       // Play through the history events until either we've played through everything
       // or we receive a yield signal
       while (context.processNextEvent()) {
@@ -146,6 +164,9 @@ public final class TaskOrchestrationExecutor {
     } catch (ContinueAsNewInterruption continueAsNewInterruption) {
       logger.fine("The orchestrator has continued as new.");
       context.complete(null);
+    } catch (PropagatedHistoryException propagatedHistoryException) {
+      logger.warning("The orchestrator failed parsing propagated history: " + propagatedHistoryException);
+      context.fail(new FailureDetails(propagatedHistoryException));
     } catch (Exception e) {
       // The orchestrator threw an unhandled exception - fail it
       // TODO: What's the right way to log this?
@@ -200,9 +221,13 @@ public final class TaskOrchestrationExecutor {
 
     private String versionName;
 
+    private PropagatedHistory propagatedHistory;
+
     public ContextImplTask(List<HistoryEvents.HistoryEvent> pastEvents,
-                           List<HistoryEvents.HistoryEvent> newEvents) {
+                           List<HistoryEvents.HistoryEvent> newEvents,
+                           @Nullable PropagatedHistory propagatedHistory) {
       this.historyEventPlayer = new OrchestrationHistoryIterator(pastEvents, newEvents);
+      this.propagatedHistory = propagatedHistory;
     }
 
     @Override
@@ -243,6 +268,11 @@ public final class TaskOrchestrationExecutor {
     @Override
     public String getAppId() {
       return this.appId;
+    }
+
+    @Override
+    public Optional<PropagatedHistory> getPropagatedHistory() {
+      return Optional.ofNullable(this.propagatedHistory);
     }
 
     private void setAppId(String appId) {
@@ -404,6 +434,12 @@ public final class TaskOrchestrationExecutor {
         this.logger.fine(() -> String.format(
             "cross app routing detected: source=%s, target=%s",
             this.appId, targetAppId));
+      }
+
+      // Set history propagation scope if specified
+      if (options != null && options.hasHistoryPropagationScope()) {
+        scheduleTaskBuilder.setHistoryPropagationScope(
+            options.getHistoryPropagationScope().toProto());
       }
 
       TaskFactory<V> taskFactory = () -> {
@@ -575,6 +611,12 @@ public final class TaskOrchestrationExecutor {
         }
 
         createSubOrchestrationActionBuilder.setRouter(routerBuilder.build());
+      }
+
+      // Set history propagation scope if specified
+      if (options != null && options.hasHistoryPropagationScope()) {
+        createSubOrchestrationActionBuilder.setHistoryPropagationScope(
+            options.getHistoryPropagationScope().toProto());
       }
 
       TaskFactory<V> taskFactory = () -> {
