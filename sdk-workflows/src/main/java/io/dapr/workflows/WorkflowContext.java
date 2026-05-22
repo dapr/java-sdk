@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.PropagatedHistory;
 import io.dapr.durabletask.Task;
 import io.dapr.durabletask.TaskCanceledException;
 import io.dapr.durabletask.TaskFailedException;
@@ -25,6 +26,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -539,4 +541,11 @@ public interface WorkflowContext {
    * @return true if already applied
    */
   boolean isPatched(String patchName);
+
+  /**
+   * Gets the propagated history from a parent workflow, if any was propagated.
+   *
+   * @return an Optional containing the propagated history, or empty if none was propagated
+   */
+  Optional<PropagatedHistory> getPropagatedHistory();
 }

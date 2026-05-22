@@ -111,7 +111,9 @@ public class ActivityRunner extends DurableRunner {
           activityRequest.getInput().getValue(),
           activityRequest.getTaskExecutionId(),
           activityRequest.getTaskId(),
-          activityRequest.getParentTraceContext().getTraceParent());
+          activityRequest.getParentTraceContext().getTraceParent(),
+          activityRequest.hasPropagatedHistory()
+              ? activityRequest.getPropagatedHistory() : null);
     } catch (Throwable e) {
       failureDetails = Orchestration.TaskFailureDetails.newBuilder()
           .setErrorType(e.getClass().getName())
