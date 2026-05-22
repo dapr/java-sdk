@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Dapr Authors
+ * Copyright 2026 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,8 @@ limitations under the License.
 */
 
 package io.dapr.durabletask;
+
+import java.util.Optional;
 
 /**
  * Interface that provides {@link TaskActivity} implementations with activity context, such as an activity's name and
@@ -53,4 +55,11 @@ public interface TaskActivityContext {
    * @return trace parent id
    */
   String getTraceParent();
+
+  /**
+   * Gets the propagated history from a parent workflow, if any was propagated.
+   *
+   * @return an Optional containing the propagated history, or empty if none was propagated
+   */
+  Optional<PropagatedHistory> getPropagatedHistory();
 }
