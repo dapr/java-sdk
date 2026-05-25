@@ -50,6 +50,31 @@ public class AppRun implements Stoppable {
     this.maxWaitMilliseconds = maxWaitMilliseconds;
   }
 
+  /**
+   * Overload used by {@link io.dapr.it.containers.BaseContainerIT} when the Dapr
+   * sidecar runs in a Testcontainer rather than via {@code dapr run}. The
+   * {@code DAPR_HTTP_PORT} / {@code DAPR_GRPC_PORT} env vars on the spawned
+   * app process point at the explicit override values (typically the
+   * DaprContainer's mapped host ports) instead of {@code ports.getHttpPort() /
+   * ports.getGrpcPort()}.
+   */
+  AppRun(DaprPorts ports,
+         String successMessage,
+         Class serviceClass,
+         int maxWaitMilliseconds,
+         Integer daprHttpPortOverride,
+         Integer daprGrpcPortOverride) {
+    this.command = new Command(
+            successMessage,
+            buildCommand(serviceClass, ports),
+            new HashMap<>() {{
+              put("DAPR_HTTP_PORT", daprHttpPortOverride.toString());
+              put("DAPR_GRPC_PORT", daprGrpcPortOverride.toString());
+            }});
+    this.ports = ports;
+    this.maxWaitMilliseconds = maxWaitMilliseconds;
+  }
+
   public void start() throws InterruptedException, IOException {
     long start = System.currentTimeMillis();
     // First, try to stop previous run (if left running).
