@@ -163,6 +163,16 @@ public abstract class BaseContainerIT {
     return client;
   }
 
+  /**
+   * ActorClient overload that injects HTTP headers (metadata) on actor calls.
+   * Used by ITs that need to override request-level headers like Content-Length.
+   */
+  protected static ActorClient newActorClient(DaprContainer dapr, Map<String, String> metadata) {
+    ActorClient client = new ActorClient(new Properties(daprOverrides(dapr)), metadata, null);
+    deferClose(client);
+    return client;
+  }
+
   private static Map<Property<?>, String> daprOverrides(DaprContainer dapr) {
     Map<Property<?>, String> overrides = new HashMap<>();
     overrides.put(Properties.HTTP_ENDPOINT, "http://127.0.0.1:" + dapr.getHttpPort());
