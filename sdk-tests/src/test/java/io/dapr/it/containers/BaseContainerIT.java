@@ -122,7 +122,13 @@ public abstract class BaseContainerIT {
 
     AppRun app = new AppRun(
         ports,
-        getServiceSuccessMessage(serviceClass),
+        // Empty success-message: the legacy "dapr initialized. Status: Running" string is
+        // emitted by daprd's stdout, which used to be merged into the subprocess output by
+        // the dapr CLI but is now isolated in the Docker container. Pass "" so Command.run()
+        // returns on Maven's first stdout line; AppRun.start() then waits for the app to
+        // actually bind its port via assertListeningOnPort, which is the real readiness
+        // signal in the containerized world.
+        "",
         serviceClass,
         60_000,
         dapr.getHttpPort(),
@@ -130,23 +136,6 @@ public abstract class BaseContainerIT {
     app.start();
     deferStop(app);
     return new DaprAndApp(dapr, app);
-  }
-
-  /**
-   * Best-effort lookup of a {@code public static final String SUCCESS_MESSAGE}
-   * on the service class, falling back to {@code "You're up and running!"}.
-   * Existing sdk-tests service classes follow this convention.
-   */
-  private static String getServiceSuccessMessage(Class<?> serviceClass) {
-    try {
-      Object value = serviceClass.getField("SUCCESS_MESSAGE").get(null);
-      if (value instanceof String) {
-        return (String) value;
-      }
-    } catch (NoSuchFieldException | IllegalAccessException ignored) {
-      // fall through
-    }
-    return "You're up and running!";
   }
 
   // ---------- DaprClient / ActorClient factories ----------
