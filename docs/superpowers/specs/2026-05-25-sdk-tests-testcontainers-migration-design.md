@@ -14,30 +14,31 @@ Today, 21 integration tests under [sdk-tests/src/test/java/io/dapr/it/](../../..
 - Makes hermetic, parallel test execution difficult.
 - Diverges from the newer [spring-boot-4-sdk-tests/](../../../spring-boot-4-sdk-tests/) module, which already uses Testcontainers via the [testcontainers-dapr/](../../../testcontainers-dapr/) library.
 
-This spec covers migrating **13 of those 21 ITs** to Testcontainers. The remaining 8 ITs either test sidecar lifecycle behavior (failover, recovery, slow startup) that Testcontainers' opaque lifecycle makes awkward, or use complex external topologies (Kafka bindings, ToxiProxy-mediated resiliency) that are easier to leave on `DaprRun`.
+This spec covers migrating **12 of those 21 ITs** to Testcontainers (13 files — TracingIT has separate grpc/http variants). The remaining 9 ITs either test sidecar lifecycle behavior (failover, recovery, slow startup, actor state across sidecar restart) that Testcontainers' opaque lifecycle makes awkward, or use complex external topologies (Kafka bindings, ToxiProxy-mediated resiliency) that are easier to leave on `DaprRun`.
 
 ## Goals
 
-- Migrate 13 ITs to use [`DaprContainer`](../../../testcontainers-dapr/src/main/java/io/dapr/testcontainers/DaprContainer.java) instead of `DaprRun`.
+- Migrate 12 ITs (13 files) to use [`DaprContainer`](../../../testcontainers-dapr/src/main/java/io/dapr/testcontainers/DaprContainer.java) instead of `DaprRun`.
 - Replace `BaseIT` extension with a new `BaseContainerIT` extension for migrated tests.
 - Containerize all backing services (Redis, Zipkin) used by migrated ITs.
-- Keep `BaseIT` / `DaprRun` / `AppRun` / `DaprPorts` infrastructure untouched for the 8 non-migrated ITs.
+- Keep `BaseIT` / `DaprRun` / `AppRun` / `DaprPorts` infrastructure untouched for the 9 non-migrated ITs.
 - Update CI ([`.github/workflows/build.yml`](../../../.github/workflows/build.yml)) to remove the no-longer-needed MongoDB step.
 - Land everything in a single PR.
 
 ## Non-Goals
 
-- Migrating these 8 ITs (out of scope; will stay on `DaprRun`):
+- Migrating these 9 ITs (out of scope; will stay on `DaprRun`):
   - [BindingIT.java](../../../sdk-tests/src/test/java/io/dapr/it/binding/http/BindingIT.java) — Kafka bindings topology
   - [ActorReminderFailoverIT.java](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorReminderFailoverIT.java) — sidecar restart mid-test
   - [ActorReminderRecoveryIT.java](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorReminderRecoveryIT.java) — sidecar restart mid-test
   - [ActorTimerRecoveryIT.java](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorTimerRecoveryIT.java) — sidecar restart mid-test
+  - [ActorStateIT.java](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorStateIT.java) — explicitly stops one sidecar and starts a second to verify actor state survives the restart ([line 130-138](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorStateIT.java#L130-L138))
   - [WaitForSidecarIT.java](../../../sdk-tests/src/test/java/io/dapr/it/resiliency/WaitForSidecarIT.java) — client starts before sidecar
   - [ActorSdkResiliencyIT.java](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorSdkResiliencyIT.java) — ToxiProxy between client and sidecar
   - The two [durabletask-client/](../../../durabletask-client/) ITs ([DurableTaskClientIT.java](../../../durabletask-client/src/test/java/io/dapr/durabletask/DurableTaskClientIT.java), [ErrorHandlingIT.java](../../../durabletask-client/src/test/java/io/dapr/durabletask/ErrorHandlingIT.java)) — separate module, separate effort.
 - Replacing `AppRun`. We keep the `mvn exec:java` subprocess pattern for the app side; only the Dapr sidecar is containerized.
 - Introducing MongoDB as a Testcontainer. The one Mongo-dependent test (`AbstractStateClientIT#saveAndQueryAndDeleteState`) gets `@Disabled` with a comment.
-- Migrating the `dapr/cli` install, `dapr init`, Kafka, or ToxiProxy steps out of CI — they remain for the 8 non-migrated ITs.
+- Migrating the `dapr/cli` install, `dapr init`, Kafka, or ToxiProxy steps out of CI — they remain for the 9 non-migrated ITs.
 
 ## Decisions
 
@@ -46,11 +47,13 @@ This spec covers migrating **13 of those 21 ITs** to Testcontainers. The remaini
 | D1 | Replace ITs in-place (not parallel suite) | Avoid running both old and new versions of the same logic; cleaner end-state. |
 | D2 | App stays in `mvn exec:java` subprocess via `AppRun` (Option A) | Lower-risk than rewriting the app harness; goal is removing `dapr run`, not `AppRun`. |
 | D3 | Containerize all backing services (Redis, Zipkin) via Testcontainers | Removes the host-local-Redis assumption; matches `DaprContainer`'s self-contained model. |
-| D4 | Single `BaseContainerIT` shared base class | Consistent surface area across 13 ITs; mirrors the role `BaseIT` plays today. |
-| D5 | Single PR for all 13 ITs + CI change | One cutover; matches user preference. |
+| D4 | Single `BaseContainerIT` shared base class providing only helpers and cleanup | Consistent surface area across 12 ITs; mirrors the role `BaseIT` plays today. |
+| D5 | Single PR for all 12 ITs + CI change | One cutover; matches user preference. |
 | D6 | Update [`.github/workflows/build.yml`](../../../.github/workflows/build.yml) in the same PR | Migration isn't useful unless CI exercises it; trim Mongo from compose-up step. |
 | D7 | Shared deps (Redis/Zipkin) via Testcontainers `withReuse(true)` + JVM singleton; per-class Dapr sidecar | Component config differs per test, so Dapr can't be shared. Deps are stateless enough to share. |
-| D8 | Keep `BaseIT` + `DaprRun` + `AppRun` + `DaprPorts` for the 8 non-migrated ITs | Smallest blast radius; no rename churn. |
+| D8 | Keep `BaseIT` + `DaprRun` + `AppRun` + `DaprPorts` for the 9 non-migrated ITs | Smallest blast radius; no rename churn. |
+| D9 | Per-class `@BeforeAll` lifecycle for all migrated ITs (semantic change from today's per-`@Test` pattern in 8 ITs: ApiIT, ActivationDeactivationIT, ActorTurnBasedConcurrencyIT, ActorMethodNameIT, MethodInvokeIT × 2, TracingIT × 2) | Per-method DaprContainer startup adds 3–5s × ~50 test methods = ~3–4 min CI regression. Audit per @Test confirms tests use unique keys/actor IDs and don't depend on fresh sidecar state. TracingIT mitigation: each @Test asserts on a unique trace ID rather than total span count. |
+| D10 | Each migrated IT subclass owns its own `private static DaprContainer dapr` (and `AppRun app` where needed); base class does NOT hold these as `protected static` | Avoids state bleed when Surefire forks share a JVM across IT classes; explicit ownership per IT. |
 
 ## Architecture
 
@@ -68,27 +71,28 @@ JVM-singleton holder for backing services that aren't Dapr.
 
 ### `BaseContainerIT`
 
-Abstract base class extended by all 13 migrated ITs. Public API:
+Abstract base class extended by all 12 migrated ITs. Per **D10**, the base class holds **no** `DaprContainer` or `AppRun` fields — each subclass owns its own statics. The base class provides only helpers and `@AfterAll` cleanup.
 
 ```java
 public abstract class BaseContainerIT {
-
-  protected static DaprContainer dapr;   // populated by subclass in @BeforeAll
-  protected static AppRun app;           // optional, only for ITs needing callback
 
   /** Pre-configured DaprContainer.Builder: shared network, log streaming,
    *  appChannelAddress=host.testcontainers.internal, image pinned via constant. */
   protected static DaprContainer.Builder daprBuilder(String appName);
 
   /** Spawns the service class via AppRun (mvn exec:java), exposes its port to
-   *  Testcontainers, returns the running AppRun. MUST be called BEFORE dapr.start(). */
+   *  Testcontainers, returns the running AppRun. MUST be called BEFORE starting
+   *  the DaprContainer that needs to call back into it. Caller owns the returned
+   *  AppRun (typically stored in a private static field). Also registers the
+   *  AppRun for @AfterAll cleanup via deferStop(). */
   protected static AppRun startApp(String appName, Class<?> serviceClass,
                                    AppRun.AppProtocol protocol) throws Exception;
 
-  protected static DaprClient newDaprClient();
-  protected static DaprClientBuilder newDaprClientBuilder();
-  protected static ActorClient newActorClient();
-  protected static ActorClient newActorClient(ResiliencyOptions opts);
+  /** DaprClient factories bound to the supplied DaprContainer. */
+  protected static DaprClient newDaprClient(DaprContainer dapr);
+  protected static DaprClientBuilder newDaprClientBuilder(DaprContainer dapr);
+  protected static ActorClient newActorClient(DaprContainer dapr);
+  protected static ActorClient newActorClient(DaprContainer dapr, ResiliencyOptions opts);
 
   /** Internal-network hostnames for use in DaprContainer Component metadata. */
   protected static String redisInternalHost();        // "redis:6379"
@@ -99,44 +103,91 @@ public abstract class BaseContainerIT {
   protected static Component redisPubSub(String name);
   protected static Component redisConfigStore(String name);
 
+  /** Register a resource for @AfterAll cleanup. */
   protected static <T extends AutoCloseable> T deferClose(T object);
+  protected static void deferStop(Stoppable stoppable);   // for AppRun, DaprContainer
 
   @AfterAll
-  static void cleanUp();   // drains deferred closes, stops app, stops dapr
+  static void cleanUp();   // drains deferStop queue then deferClose queue
+}
+```
+
+**Typical subclass shape (client-only IT — SecretsClientIT):**
+
+```java
+public class SecretsClientIT extends BaseContainerIT {
+  private static DaprContainer dapr;
+
+  @BeforeAll
+  static void init() {
+    dapr = daprBuilder("secrets-it")
+        .withComponent(new Component("localSecretStore", "secretstores.local.file", "v1",
+            Map.of("secretsFile", "/components/secret.json")))
+        .withCopyFileToContainer(MountableFile.forClasspathResource("secret.json"),
+            "/components/secret.json")
+        .build();
+    dapr.start();
+    deferStop(dapr);
+  }
+
+  @Test
+  void getSecret() {
+    try (DaprClient c = newDaprClient(dapr)) { /* ... */ }
+  }
+}
+```
+
+**Typical subclass shape (actor IT — needs callback):**
+
+```java
+public class ActorMethodNameIT extends BaseContainerIT {
+  private static DaprContainer dapr;
+  private static AppRun app;
+
+  @BeforeAll
+  static void init() throws Exception {
+    app = startApp("actor-method-name-it", ActorService.class, HTTP);  // also exposes host port + deferStop
+    dapr = daprBuilder("actor-method-name-it")
+        .withAppPort(app.getAppPort())
+        .withAppChannelAddress("host.testcontainers.internal")
+        .withComponent(redisStateStore("statestore"))
+        .build();
+    dapr.start();
+    deferStop(dapr);
+  }
 }
 ```
 
 ### Coexistence
 
-[`BaseIT.java`](../../../sdk-tests/src/test/java/io/dapr/it/BaseIT.java), [`DaprRun.java`](../../../sdk-tests/src/test/java/io/dapr/it/DaprRun.java), [`AppRun.java`](../../../sdk-tests/src/test/java/io/dapr/it/AppRun.java), [`DaprPorts.java`](../../../sdk-tests/src/test/java/io/dapr/it/DaprPorts.java), and [`DaprRunConfig.java`](../../../sdk-tests/src/test/java/io/dapr/it/DaprRunConfig.java) stay untouched. The 8 non-migrated ITs continue to extend `BaseIT`.
+[`BaseIT.java`](../../../sdk-tests/src/test/java/io/dapr/it/BaseIT.java), [`DaprRun.java`](../../../sdk-tests/src/test/java/io/dapr/it/DaprRun.java), [`AppRun.java`](../../../sdk-tests/src/test/java/io/dapr/it/AppRun.java), [`DaprPorts.java`](../../../sdk-tests/src/test/java/io/dapr/it/DaprPorts.java), and [`DaprRunConfig.java`](../../../sdk-tests/src/test/java/io/dapr/it/DaprRunConfig.java) stay untouched. The 9 non-migrated ITs continue to extend `BaseIT`.
 
-`AppRun` is consumed by **both** `BaseIT` (today) and `BaseContainerIT` (new). Its public API does not change. The only behavioral concern: when invoked from `BaseContainerIT`, the `DAPR_HTTP_PORT` / `DAPR_GRPC_PORT` env vars must point at the `DaprContainer`'s mapped ports rather than `DaprPorts`-allocated host ports. This is handled by an overload (or a builder variant) of `AppRun` that accepts explicit Dapr port overrides; `BaseContainerIT.startApp()` is the only caller of that overload.
+`AppRun` is consumed by **both** `BaseIT` (today) and `BaseContainerIT` (new). Its public API stays the same with one addition: a new constructor overload (or builder variant) accepting explicit `daprHttpPort` / `daprGrpcPort` overrides, so `BaseContainerIT.startApp()` can point the app subprocess at the `DaprContainer`'s mapped ports rather than at `DaprPorts`-allocated host ports. Existing callers from `BaseIT` are unaffected.
 
 ## Startup ordering & Dapr→app callback
 
 The Dapr sidecar, running in a container, can only reach the host JVM via `host.testcontainers.internal:<port>`. `Testcontainers.exposeHostPorts(port)` must be called **before** any container that needs to reach back is started.
 
-Per-IT-class lifecycle:
+Per-IT-class lifecycle (subclass owns the `dapr` and `app` static fields per **D10**):
 
 ```
-@BeforeAll:
+@BeforeAll (in subclass):
   1. SharedTestInfra.redis().start()       // idempotent
   2. (if app needed) app = startApp(appName, ServiceClass.class, HTTP)
        - AppRun spawns mvn exec:java with chosen free port
        - BaseContainerIT.startApp() calls Testcontainers.exposeHostPorts(port)
+       - BaseContainerIT.startApp() registers the AppRun via deferStop()
   3. dapr = daprBuilder(appName)
        .withAppPort(app.getAppPort())                              // skip if no app
        .withAppChannelAddress("host.testcontainers.internal")      // skip if no app
        .withComponent(redisStateStore("statestore"))
-       .withNetwork(SharedTestInfra.network())
-       .dependsOn(SharedTestInfra.redis())
        .build();
   4. dapr.start();          // DaprContainer waits for sidecar healthy
+  5. deferStop(dapr);
 
-@AfterAll:
-  - dapr.stop()
-  - app.stop()              // if started
-  - deferClose() drains
+@AfterAll (inherited from BaseContainerIT):
+  - drains deferStop queue (LIFO): stops dapr, then app
+  - drains deferClose queue
   - SharedTestInfra containers are NOT stopped (JVM shutdown hook via reuse=true)
 ```
 
@@ -148,24 +199,25 @@ Per-IT-class lifecycle:
 
 ## Per-IT Migration Matrix
 
-| # | IT | Components | App? | Notes |
-|---|---|---|---|---|
-| 1 | [SecretsClientIT](../../../sdk-tests/src/test/java/io/dapr/it/secrets/SecretsClientIT.java) | `secretstores.local.file` (mount `secret.json`) | No | Drop `BaseIT.startDaprApp`; use `MountableFile.forClasspathResource("secret.json")`. |
-| 2 | [ConfigurationClientIT](../../../sdk-tests/src/test/java/io/dapr/it/configuration/ConfigurationClientIT.java) | `configuration.redis` → shared Redis | No | Replace `redis-cli` seeding with Jedis pointed at `SharedTestInfra.redis().getMappedPort(6379)`. |
-| 3 | [AbstractStateClientIT](../../../sdk-tests/src/test/java/io/dapr/it/state/AbstractStateClientIT.java) | `state.redis` (actorStateStore=true) | No | `@Disabled` on `saveAndQueryAndDeleteState` (only Mongo-dependent test). |
-| 4 | [GRPCStateClientIT](../../../sdk-tests/src/test/java/io/dapr/it/state/GRPCStateClientIT.java) | inherits #3 | No | Just extends `BaseContainerIT` instead of `BaseIT`. |
-| 5 | [ApiIT](../../../sdk-tests/src/test/java/io/dapr/it/api/ApiIT.java) | none | No | Trivial: use `newDaprClient()`. |
-| 6 | [ActorStateIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorStateIT.java) | `state.redis` (actorStateStore=true) | Yes (`ActorService`) | `startApp()` + `withAppPort`; placement is built into `DaprContainer`. |
-| 7 | [ActivationDeactivationIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActivationDeactivationIT.java) | same as #6 | Yes | Same pattern. |
-| 8 | [ActorTurnBasedConcurrencyIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorTurnBasedConcurrencyIT.java) | same | Yes | Same pattern. |
-| 9 | [ActorExceptionIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorExceptionIT.java) | same | Yes | Same pattern. |
-| 10 | [ActorMethodNameIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorMethodNameIT.java) | same | Yes | Same pattern. |
-| 11 | [MethodInvokeIT (grpc)](../../../sdk-tests/src/test/java/io/dapr/it/methodinvoke/grpc/MethodInvokeIT.java) | none | Yes | Single app (invoked method host). Test JVM is caller. |
-| 12 | [MethodInvokeIT (http)](../../../sdk-tests/src/test/java/io/dapr/it/methodinvoke/http/MethodInvokeIT.java) | none | Yes | Same as #11 with HTTP. |
-| 13 | [TracingIT (grpc)](../../../sdk-tests/src/test/java/io/dapr/it/tracing/grpc/TracingIT.java) | tracing `Configuration` → shared Zipkin | Yes | Verify spans via Zipkin REST on mapped port. |
-| 14 | [TracingIT (http)](../../../sdk-tests/src/test/java/io/dapr/it/tracing/http/TracingIT.java) | same as #13 | Yes | Same as #13 with HTTP. |
+All migrated ITs use per-class `@BeforeAll` lifecycle per **D9**. The "Today's lifecycle" column is informational — where it says per-`@Test` or in-method, migration changes that to per-class and the implementer must verify tests are state-independent (use unique keys/actor IDs).
 
-(That's 14 rows because TracingIT has two protocol variants. Migration count = **13 ITs** if you count TracingIT as one logical IT; 14 if you count each file.)
+| # | IT | Components | App? | Today's lifecycle | Migration notes |
+|---|---|---|---|---|---|
+| 1 | [SecretsClientIT](../../../sdk-tests/src/test/java/io/dapr/it/secrets/SecretsClientIT.java) | `secretstores.local.file` (mount `secret.json`) | No | `@BeforeAll` | Drop `BaseIT.startDaprApp`; use `MountableFile.forClasspathResource("secret.json")`. |
+| 2 | [ConfigurationClientIT](../../../sdk-tests/src/test/java/io/dapr/it/configuration/ConfigurationClientIT.java) | `configuration.redis` → shared Redis | No | `@BeforeAll` | Replace `redis-cli` seeding with Jedis pointed at `SharedTestInfra.redis().getMappedPort(6379)`. |
+| 3 | [AbstractStateClientIT](../../../sdk-tests/src/test/java/io/dapr/it/state/AbstractStateClientIT.java) | `state.redis` (actorStateStore=true) | No | n/a (abstract) | `@Disabled` on `saveAndQueryAndDeleteState` (only Mongo-dependent test). |
+| 4 | [GRPCStateClientIT](../../../sdk-tests/src/test/java/io/dapr/it/state/GRPCStateClientIT.java) | inherits #3 | No | `@BeforeAll` | Just extends `BaseContainerIT` instead of `BaseIT`. |
+| 5 | [ApiIT](../../../sdk-tests/src/test/java/io/dapr/it/api/ApiIT.java) | none | No | in-method `startDaprApp` | Refactor to `@BeforeAll`; use `newDaprClient(dapr)`. |
+| 6 | [ActivationDeactivationIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActivationDeactivationIT.java) | `state.redis` (actorStateStore=true) | Yes (`StatefulActorService`) | in-method `startDaprApp` | Refactor to `@BeforeAll`; verify actor IDs are unique across tests. |
+| 7 | [ActorTurnBasedConcurrencyIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorTurnBasedConcurrencyIT.java) | same as #6 | Yes | in-method `startDaprApp` | Refactor to `@BeforeAll`; verify actor IDs are unique. |
+| 8 | [ActorExceptionIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorExceptionIT.java) | same | Yes | `@BeforeAll` | Same pattern as #6 but already class-scoped. |
+| 9 | [ActorMethodNameIT](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorMethodNameIT.java) | same | Yes | in-method `startDaprApp` | Refactor to `@BeforeAll`. |
+| 10 | [MethodInvokeIT (grpc)](../../../sdk-tests/src/test/java/io/dapr/it/methodinvoke/grpc/MethodInvokeIT.java) | none | Yes (single app: invoked-method host; test JVM is caller) | `@BeforeEach` | Refactor to `@BeforeAll`; tests already namespace by request payload, but verify. |
+| 11 | [MethodInvokeIT (http)](../../../sdk-tests/src/test/java/io/dapr/it/methodinvoke/http/MethodInvokeIT.java) | none | Yes (single app) | `@BeforeEach` | Same as #10 with HTTP protocol. |
+| 12 | [TracingIT (grpc)](../../../sdk-tests/src/test/java/io/dapr/it/tracing/grpc/TracingIT.java) | tracing `Configuration` → shared Zipkin | Yes | `@BeforeEach` | Refactor to `@BeforeAll`; **change assertion strategy** from "spans this test produced" to "query Zipkin by per-test unique trace ID". |
+| 13 | [TracingIT (http)](../../../sdk-tests/src/test/java/io/dapr/it/tracing/http/TracingIT.java) | same as #12 | Yes | `@BeforeEach` | Same as #12 with HTTP. |
+
+That's **13 files / 12 logical ITs** (TracingIT and MethodInvokeIT each have grpc + http variants in separate files; AbstractStateClientIT is an abstract parent of GRPCStateClientIT). The total IT count in `sdk-tests/src/test/java/io/dapr/it/` before this work is **22 files** (9 non-migrated + 13 migrated).
 
 ### Removed from migrated ITs
 
@@ -175,13 +227,13 @@ Per-IT-class lifecycle:
 
 ### Preserved YAMLs
 
-[sdk-tests/components/](../../../sdk-tests/components/) and [sdk-tests/configurations/](../../../sdk-tests/configurations/) stay on disk because the 8 non-migrated ITs still load them via `dapr run --components-path`.
+[sdk-tests/components/](../../../sdk-tests/components/) and [sdk-tests/configurations/](../../../sdk-tests/configurations/) stay on disk because the 9 non-migrated ITs still load them via `dapr run --components-path`.
 
 ## CI changes ([.github/workflows/build.yml](../../../.github/workflows/build.yml))
 
 | Step (line) | Disposition |
 |---|---|
-| Checkout/build dapr CLI (optional, conditional) | **Keep** — 8 ITs still use `dapr run`. |
+| Checkout/build dapr CLI (optional, conditional) | **Keep** — 9 ITs still use `dapr run`. |
 | `dapr uninstall --all` (164) | **Keep** — needed for legacy ITs. |
 | `dapr init --runtime-version $DAPR_RUNTIME_VER` (173) | **Keep** — needed for legacy ITs. |
 | Override `daprd` / placement (optional) | **Keep**. |
@@ -199,24 +251,25 @@ Docker is already available on `ubuntu-latest` GitHub runners; Testcontainers au
 | Risk | Mitigation |
 |---|---|
 | `host.testcontainers.internal` resolution differs on Linux vs. Docker Desktop vs. Colima | Testcontainers handles this transparently when `exposeHostPorts` is called; CI is Linux only, dev varies. Doc the requirement in spec + sdk-tests README. |
+| Switching 8 ITs from per-`@Test` to per-class lifecycle (**D9**) could surface state-bleed bugs | Per-IT audit during implementation: confirm tests use unique UUIDs/actor IDs for state isolation; for TracingIT, change assertion strategy to query Zipkin by per-test trace ID (instead of asserting total span count). If an IT cannot be made state-independent, fall back to per-method DaprContainer for just that IT. |
 | `AppRun` subprocess + DaprContainer combined startup is slower per IT than `dapr run` is today | Acceptable: Redis is shared via reuse, image pulls are cached. If wall-clock regresses badly we can revisit `EmbeddedAppServer` (Option B from brainstorming). |
 | `withReuse(true)` requires `~/.testcontainers.properties` opt-in for dev parity with CI | Document in sdk-tests README; CI runs with reuse disabled implicitly (per-job hosts). |
 | `AppRun` env-var port overrides change touch a shared file | Pure addition (new constructor overload); existing callers untouched. |
-| 13 new IT classes building/pulling DaprContainer on CI could lengthen cold runs by 30-60s | Acceptable trade for removing host Dapr CLI dependency. |
+| 12 new IT classes pulling DaprContainer on CI could lengthen cold runs by 30-60s | Acceptable trade for removing host Dapr CLI dependency. |
 
 ## Testing
 
 - Each migrated IT class runs locally via `cd sdk-tests && ../mvnw verify -Dit.test=<ClassName>`.
 - Full sdk-tests `verify` must pass locally and on CI.
-- The 8 non-migrated ITs must continue to pass unchanged.
+- The 9 non-migrated ITs must continue to pass unchanged.
 - New `BaseContainerIT` and `SharedTestInfra` are exercised exclusively by the migrated ITs; no additional unit tests for them.
 
 ## Open questions
 
-None at spec-approval time. Implementation plan will resolve concrete `DaprContainer` image tag, Redis image tag, Zipkin image tag, and `host.testcontainers.internal` wait strategy.
+None at spec-approval time. Implementation plan will resolve concrete `DaprContainer` image tag (default to whatever `spring-boot-4-sdk-tests` already uses), Redis image tag, Zipkin image tag, and `host.testcontainers.internal` wait strategy.
 
 ## Out of scope (future work)
 
-- Migrating the 8 non-migrated ITs (especially the actor lifecycle group) once `DaprContainer` exposes friendlier sidecar restart APIs.
+- Migrating the 9 non-migrated ITs (especially the actor lifecycle group: `ActorStateIT`, `ActorReminderFailoverIT`, `ActorReminderRecoveryIT`, `ActorTimerRecoveryIT`, `WaitForSidecarIT`) once `DaprContainer` exposes friendlier sidecar restart APIs.
 - Migrating the two [durabletask-client/](../../../durabletask-client/) ITs.
 - Replacing `AppRun` with an in-JVM `EmbeddedAppServer` to remove subprocess overhead.
