@@ -58,5 +58,19 @@ public final class SharedTestInfra {
     return REDIS_NETWORK_ALIAS + ":6379";
   }
 
-  // Zipkin accessor added in Task 8.
+  public static synchronized GenericContainer<?> zipkin() {
+    if (zipkin == null) {
+      zipkin = new GenericContainer<>(DockerImageName.parse("openzipkin/zipkin:latest"))
+          .withNetwork(network())
+          .withNetworkAliases(ZIPKIN_NETWORK_ALIAS)
+          .withExposedPorts(9411)
+          .withReuse(true);
+      zipkin.start();
+    }
+    return zipkin;
+  }
+
+  public static String zipkinInternalEndpoint() {
+    return "http://" + ZIPKIN_NETWORK_ALIAS + ":9411/api/v2/spans";
+  }
 }

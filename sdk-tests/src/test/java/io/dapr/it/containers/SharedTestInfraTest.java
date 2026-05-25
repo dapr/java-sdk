@@ -44,4 +44,18 @@ class SharedTestInfraTest {
     SharedTestInfra.redis();  // ensure started
     assertEquals("redis:6379", SharedTestInfra.redisInternalHost());
   }
+
+  @Test
+  void zipkinStartsAndIsReachable() {
+    GenericContainer<?> z = SharedTestInfra.zipkin();
+    assertTrue(z.isRunning());
+    assertNotNull(z.getMappedPort(9411));
+    assertEquals("zipkin", z.getNetworkAliases().get(0));
+  }
+
+  @Test
+  void zipkinInternalEndpointFormat() {
+    SharedTestInfra.zipkin();   // ensure started
+    assertEquals("http://zipkin:9411/api/v2/spans", SharedTestInfra.zipkinInternalEndpoint());
+  }
 }
