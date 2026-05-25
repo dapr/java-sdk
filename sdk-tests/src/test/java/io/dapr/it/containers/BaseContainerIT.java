@@ -93,11 +93,18 @@ public abstract class BaseContainerIT {
 
   /**
    * Two-phase startup for ITs that need an app callback. Allocates the app
-   * port, exposes it to Testcontainers, lets the caller build and start the
-   * DaprContainer (which now knows the appPort + appChannelAddress), then
-   * spawns the AppRun subprocess with the DaprContainer's mapped HTTP/gRPC
-   * ports. Returns both. Both are registered for {@code @AfterAll} cleanup
-   * via {@link #deferStop} (DaprContainer first, AppRun second — stopped LIFO).
+   * port, exposes it to Testcontainers, starts the AppRun subprocess so it
+   * has bound the host port, then lets the caller build and start the
+   * DaprContainer. Returns both. Both are registered for {@code @AfterAll}
+   * cleanup via {@link #deferStop} (DaprContainer first, AppRun second —
+   * stopped LIFO).
+   *
+   * <p>Order matters: starting daprd before the app causes daprd's
+   * application-channel probe to succeed against the Testcontainers SSH
+   * bridge before the JVM has actually bound the host port. Daprd then
+   * fetches {@code /dapr/config}, gets nothing, reports actor types {@code []}
+   * to placement, and never re-queries — so actor ITs hang at
+   * {@code waitForActorsReady}. Starting the app first avoids the race.
    *
    * @param appName       used both as the Dapr app id and the AppRun name
    * @param serviceClass  the class whose {@code main(String[])} the subprocess runs
@@ -116,15 +123,17 @@ public abstract class BaseContainerIT {
     DaprPorts ports = DaprPorts.build(true, true, true);
     int appPort = ports.getAppPort();
 
-    DaprContainer dapr = daprFactory.apply(appPort);
-    // dapr is started inside the factory.
-    deferStop(dapr);
-    // Expose the host port AFTER dapr.start() so Testcontainers' SSH bridge is set up
-    // while daprd is alive. spring-boot-4-sdk-tests does it this way and reliably
-    // discovers actors; exposing before container start has been observed to leave
-    // daprd unable to reach back to host.testcontainers.internal:<appPort>.
+    // Wire the SSH bridge before either side starts so daprd can resolve
+    // host.testcontainers.internal:appPort the moment its container boots.
     Testcontainers.exposeHostPorts(appPort);
 
+    // Start the app subprocess BEFORE daprd. AppRun.start() blocks on
+    // assertListeningOnPort, so by the time it returns the JVM has bound
+    // appPort and /dapr/config will respond with the registered actor types.
+    // DAPR_HTTP_PORT/DAPR_GRPC_PORT env vars are passed as 0 because the
+    // ITs that use this helper build their DaprClients via newDaprClient(dapr)
+    // (which reads dapr's mapped ports directly) — the test app processes
+    // themselves never read DAPR_*_PORT.
     AppRun app = new AppRun(
         ports,
         // Empty success-message: the legacy "dapr initialized. Status: Running" string is
@@ -136,10 +145,14 @@ public abstract class BaseContainerIT {
         "",
         serviceClass,
         60_000,
-        dapr.getHttpPort(),
-        dapr.getGrpcPort());
+        0,
+        0);
     app.start();
     deferStop(app);
+
+    DaprContainer dapr = daprFactory.apply(appPort);
+    // dapr is started inside the factory.
+    deferStop(dapr);
 
     // Daprd's HTTP healthz/outbound (the wait strategy on DaprContainer) returns 2xx as
     // soon as outbound connections are ready, but its gRPC server can be a beat behind.
