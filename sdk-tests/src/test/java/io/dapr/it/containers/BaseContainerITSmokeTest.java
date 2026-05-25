@@ -37,7 +37,7 @@ class BaseContainerITSmokeTest extends BaseContainerIT {
   }
 
   @Test
-  void canBuildAndUseDaprClient() {
+  void canBuildAndUseDaprClient() throws Exception {
     try (DaprClient client = newDaprClient(dapr)) {
       // waitForSidecar is a cheap healthcheck — it's fine if it returns immediately.
       client.waitForSidecar(5000).block();
