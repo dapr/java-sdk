@@ -76,7 +76,11 @@ public abstract class BaseContainerIT {
     return new DaprContainer(DAPR_IMAGE)
         .withAppName(appName)
         .withNetwork(SharedTestInfra.network())
-        .withDaprLogLevel(DaprLogLevel.INFO)
+        .withDaprLogLevel(DaprLogLevel.DEBUG)
+        // Stream daprd logs to stdout so CI surfaces app-discovery and component-load
+        // errors. Without this, the container's stdout is consumed by Testcontainers
+        // and we have no insight when actor registration or component init fails.
+        .withLogConsumer(frame -> System.out.print("[daprd] " + frame.getUtf8String()))
         // Reuses the placement sidecar container within this JVM (Testcontainers manages it);
         // orthogonal to SharedTestInfra's Redis `withReuse(true)`.
         .withReusablePlacement(true);
