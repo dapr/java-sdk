@@ -59,6 +59,7 @@ public abstract class BaseContainerIT {
   protected static final String PUBSUB_NAME = "messagebus";
   protected static final String CONFIG_STORE_NAME = "redisconfigstore";
 
+  // JUnit Jupiter runs @BeforeAll/@AfterAll single-threaded per class, so no synchronization needed.
   private static final Deque<Stoppable> TO_BE_STOPPED = new LinkedList<>();
   private static final Deque<AutoCloseable> TO_BE_CLOSED = new LinkedList<>();
 
@@ -75,6 +76,8 @@ public abstract class BaseContainerIT {
         .withAppName(appName)
         .withNetwork(SharedTestInfra.network())
         .withDaprLogLevel(DaprLogLevel.INFO)
+        // Reuses the placement sidecar container within this JVM (Testcontainers manages it);
+        // orthogonal to SharedTestInfra's Redis `withReuse(true)`.
         .withReusablePlacement(true);
   }
 
@@ -202,6 +205,11 @@ public abstract class BaseContainerIT {
     return object;
   }
 
+  /**
+   * Defer-stop a plain {@link Stoppable} (e.g., {@link AppRun}).
+   * Use the {@link #deferStop(org.testcontainers.containers.GenericContainer) GenericContainer overload}
+   * for Testcontainers — they aren't {@code Stoppable}.
+   */
   protected static void deferStop(Stoppable stoppable) {
     TO_BE_STOPPED.push(stoppable);
   }
