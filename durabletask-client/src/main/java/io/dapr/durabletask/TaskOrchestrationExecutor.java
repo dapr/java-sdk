@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Dapr Authors
+ * Copyright 2026 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,12 +33,14 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -53,6 +55,42 @@ import java.util.logging.Logger;
 public final class TaskOrchestrationExecutor {
 
   private static final String EMPTY_STRING = "";
+
+  // Sentinel fireAt used for synthetic "wait indefinitely" external-event timers.
+  // Recognized exactly (to the nanosecond) by every SDK and by the backend.
+  static final Instant EXTERNAL_EVENT_INDEFINITE_FIRE_AT =
+      Instant.parse("9999-12-31T23:59:59.999999999Z");
+  private static final Timestamp EXTERNAL_EVENT_INDEFINITE_FIRE_AT_TIMESTAMP =
+      Timestamp.newBuilder()
+          .setSeconds(EXTERNAL_EVENT_INDEFINITE_FIRE_AT.getEpochSecond())
+          .setNanos(EXTERNAL_EVENT_INDEFINITE_FIRE_AT.getNano())
+          .build();
+
+  // Applied to every CreateTimerAction built from the user-facing CreateTimer API.
+  private static final Consumer<OrchestratorActions.CreateTimerAction.Builder> CREATE_TIMER_ORIGIN_SETTER =
+      b -> b.setCreateTimer(HistoryEvents.TimerOriginCreateTimer.getDefaultInstance());
+
+  // True iff fireAt is exactly the indefinite-wait sentinel. Timestamp.equals compares
+  // seconds+nanos, so this preserves the required nanosecond-level fidelity.
+  private static boolean isSentinelFireAt(Timestamp fireAt) {
+    return fireAt != null && fireAt.equals(EXTERNAL_EVENT_INDEFINITE_FIRE_AT_TIMESTAMP);
+  }
+
+  // Pending action is an optional (synthetic, indefinite) external-event timer iff all three hold:
+  // (1) it is a CreateTimer action; (2) origin is ExternalEvent; (3) fireAt equals the sentinel.
+  private static boolean isOptionalExternalEventTimerAction(OrchestratorActions.WorkflowAction action) {
+    if (action == null || !action.hasCreateTimer()) {
+      return false;
+    }
+    OrchestratorActions.CreateTimerAction ct = action.getCreateTimer();
+    return ct.hasExternalEvent() && ct.hasFireAt() && isSentinelFireAt(ct.getFireAt());
+  }
+
+  // History event is an optional external-event timer iff origin is ExternalEvent AND fireAt is sentinel.
+  private static boolean isOptionalExternalEventTimerCreatedEvent(HistoryEvents.TimerCreatedEvent tc) {
+    return tc != null && tc.hasExternalEvent() && tc.hasFireAt() && isSentinelFireAt(tc.getFireAt());
+  }
+
   private final TaskOrchestrationFactories orchestrationFactories;
   private final DataConverter dataConverter;
   private final Logger logger;
@@ -90,10 +128,27 @@ public final class TaskOrchestrationExecutor {
    */
   public TaskOrchestratorResult execute(List<HistoryEvents.HistoryEvent> pastEvents,
                                         List<HistoryEvents.HistoryEvent> newEvents) {
-    ContextImplTask context = new ContextImplTask(pastEvents, newEvents);
+    return execute(pastEvents, newEvents, null);
+  }
+
+  /**
+   * Executes the orchestration with the given past and new events, plus optional propagated history.
+   *
+   * @param pastEvents        list of past history events
+   * @param newEvents         list of new history events
+   * @param propagatedHistory propagated history from a parent workflow, or null
+   * @return the result of the orchestrator execution
+   */
+  public TaskOrchestratorResult execute(List<HistoryEvents.HistoryEvent> pastEvents,
+                                        List<HistoryEvents.HistoryEvent> newEvents,
+                                        @Nullable HistoryEvents.PropagatedHistory propagatedHistory) {
+    ContextImplTask context = new ContextImplTask(pastEvents, newEvents, null);
 
     boolean completed = false;
     try {
+      if (propagatedHistory != null) {
+        context.propagatedHistory = PropagatedHistory.fromProto(propagatedHistory);
+      }
       // Play through the history events until either we've played through everything
       // or we receive a yield signal
       while (context.processNextEvent()) {
@@ -109,6 +164,9 @@ public final class TaskOrchestrationExecutor {
     } catch (ContinueAsNewInterruption continueAsNewInterruption) {
       logger.fine("The orchestrator has continued as new.");
       context.complete(null);
+    } catch (PropagatedHistoryException propagatedHistoryException) {
+      logger.warning("The orchestrator failed parsing propagated history: " + propagatedHistoryException);
+      context.fail(new FailureDetails(propagatedHistoryException));
     } catch (Exception e) {
       // The orchestrator threw an unhandled exception - fail it
       // TODO: What's the right way to log this?
@@ -163,9 +221,13 @@ public final class TaskOrchestrationExecutor {
 
     private String versionName;
 
+    private PropagatedHistory propagatedHistory;
+
     public ContextImplTask(List<HistoryEvents.HistoryEvent> pastEvents,
-                           List<HistoryEvents.HistoryEvent> newEvents) {
+                           List<HistoryEvents.HistoryEvent> newEvents,
+                           @Nullable PropagatedHistory propagatedHistory) {
       this.historyEventPlayer = new OrchestrationHistoryIterator(pastEvents, newEvents);
+      this.propagatedHistory = propagatedHistory;
     }
 
     @Override
@@ -206,6 +268,11 @@ public final class TaskOrchestrationExecutor {
     @Override
     public String getAppId() {
       return this.appId;
+    }
+
+    @Override
+    public Optional<PropagatedHistory> getPropagatedHistory() {
+      return Optional.ofNullable(this.propagatedHistory);
     }
 
     private void setAppId(String appId) {
@@ -348,8 +415,11 @@ public final class TaskOrchestrationExecutor {
       }
 
       String serializedInput = this.dataConverter.serialize(input);
+      // Stable taskExecutionId identifies the logical activity call (reused across
+      // every retry attempt and carried on retry-delay timers).
+      final String taskExecutionId = newUuid().toString();
       Builder scheduleTaskBuilder = OrchestratorActions.ScheduleTaskAction.newBuilder().setName(name)
-          .setTaskExecutionId(newUuid().toString());
+          .setTaskExecutionId(taskExecutionId);
       if (serializedInput != null) {
         scheduleTaskBuilder.setInput(StringValue.of(serializedInput));
       }
@@ -364,6 +434,12 @@ public final class TaskOrchestrationExecutor {
         this.logger.fine(() -> String.format(
             "cross app routing detected: source=%s, target=%s",
             this.appId, targetAppId));
+      }
+
+      // Set history propagation scope if specified
+      if (options != null && options.hasHistoryPropagationScope()) {
+        scheduleTaskBuilder.setHistoryPropagationScope(
+            options.getHistoryPropagationScope().toProto());
       }
 
       TaskFactory<V> taskFactory = () -> {
@@ -395,7 +471,11 @@ public final class TaskOrchestrationExecutor {
         return task;
       };
 
-      return this.createAppropriateTask(taskFactory, options);
+      Consumer<OrchestratorActions.CreateTimerAction.Builder> retryTimerOriginSetter = b -> b.setActivityRetry(
+          HistoryEvents.TimerOriginActivityRetry.newBuilder()
+              .setTaskExecutionId(taskExecutionId).build());
+
+      return this.createAppropriateTask(taskFactory, options, retryTimerOriginSetter);
     }
 
     @Override
@@ -533,6 +613,12 @@ public final class TaskOrchestrationExecutor {
         createSubOrchestrationActionBuilder.setRouter(routerBuilder.build());
       }
 
+      // Set history propagation scope if specified
+      if (options != null && options.hasHistoryPropagationScope()) {
+        createSubOrchestrationActionBuilder.setHistoryPropagationScope(
+            options.getHistoryPropagationScope().toProto());
+      }
+
       TaskFactory<V> taskFactory = () -> {
         int id = this.sequenceNumber++;
         OrchestratorActions.WorkflowAction.Builder actionBuilder = OrchestratorActions.WorkflowAction
@@ -567,13 +653,24 @@ public final class TaskOrchestrationExecutor {
         return task;
       };
 
-      return this.createAppropriateTask(taskFactory, options);
+      // First-child rule: capture the instance ID of the first scheduled child and
+      // reuse it on every retry-delay timer produced by this call.
+      final String firstChildInstanceId = instanceId;
+      Consumer<OrchestratorActions.CreateTimerAction.Builder> retryTimerOriginSetter = b -> b.setChildWorkflowRetry(
+          HistoryEvents.TimerOriginChildWorkflowRetry.newBuilder()
+              .setInstanceId(firstChildInstanceId).build());
+
+      return this.createAppropriateTask(taskFactory, options, retryTimerOriginSetter);
     }
 
-    private <V> Task<V> createAppropriateTask(TaskFactory<V> taskFactory, TaskOptions options) {
+    private <V> Task<V> createAppropriateTask(
+        TaskFactory<V> taskFactory,
+        TaskOptions options,
+        Consumer<OrchestratorActions.CreateTimerAction.Builder> retryTimerOriginSetter) {
       // Retry policies and retry handlers will cause us to return a RetriableTask<V>
       if (options != null && (options.hasRetryPolicy() || options.hasRetryHandler())) {
-        return new RetriableTask<V>(this, taskFactory, options.getRetryPolicy(), options.getRetryHandler());
+        return new RetriableTask<V>(this, taskFactory, options.getRetryPolicy(), options.getRetryHandler(),
+            retryTimerOriginSetter);
       } else {
         // Return a single vanilla task without any wrapper
         return taskFactory.create();
@@ -601,10 +698,10 @@ public final class TaskOrchestrationExecutor {
         }
       }
 
-      boolean hasTimeout = !Helpers.isInfiniteTimeout(timeout);
+      boolean isInfiniteTimeout = Helpers.isInfiniteTimeout(timeout);
 
       // Immediately cancel the task and return if the timeout is zero.
-      if (hasTimeout && timeout.isZero()) {
+      if (!isInfiniteTimeout && timeout.isZero()) {
         eventTask.cancel();
         return eventTask;
       }
@@ -614,20 +711,32 @@ public final class TaskOrchestrationExecutor {
       Queue<TaskRecord<?>> eventQueue = this.outstandingEvents.computeIfAbsent(name, k -> new LinkedList<>());
       eventQueue.add(record);
 
-      // If a non-infinite timeout is specified, schedule an internal durable timer.
-      // If the timer expires and the external event task hasn't yet completed, we'll cancel the task.
-      if (hasTimeout) {
-        this.createTimer(name, timeout).future.thenRun(() -> {
-          if (!eventTask.isDone()) {
-            // Book-keeping - remove the task record for the canceled task
-            eventQueue.removeIf(t -> t.task == eventTask);
-            if (eventQueue.isEmpty()) {
-              this.outstandingEvents.remove(name);
-            }
-
-            eventTask.cancel();
+      final String eventName = name;
+      Runnable onTimerFired = () -> {
+        if (!eventTask.isDone()) {
+          // Book-keeping - remove the task record for the canceled task
+          eventQueue.removeIf(t -> t.task == eventTask);
+          if (eventQueue.isEmpty()) {
+            this.outstandingEvents.remove(eventName);
           }
-        });
+
+          eventTask.cancel();
+        }
+      };
+
+      if (isInfiniteTimeout) {
+        // Indefinite wait: emit a synthetic "optional" CreateTimer with the sentinel
+        // fireAt so the backend has a record of this instance parked on a named event.
+        // This timer never fires in practice and may be dropped on replay of pre-upgrade
+        // histories that lack it (see dropOptionalExternalEventTimerAt).
+        this.createOptionalExternalEventTimer(name).future.thenRun(onTimerFired);
+      } else {
+        // Finite timeout: emit a regular timer chain annotated with ExternalEvent origin.
+        // If the timer expires and the external event task hasn't yet completed, we'll cancel the task.
+        Instant finalFireAt = this.currentInstant.plus(timeout);
+        new TimerTask(name, finalFireAt,
+            b -> b.setExternalEvent(HistoryEvents.TimerOriginExternalEvent.newBuilder()
+                .setName(eventName).build())).future.thenRun(onTimerFired);
       }
 
       return eventTask;
@@ -641,8 +750,15 @@ public final class TaskOrchestrationExecutor {
       // The history shows that this orchestrator created a durable task in a previous execution.
       // We can therefore remove it from the map of pending actions. If we can't find the pending
       // action, then we assume a non-deterministic code violation in the orchestrator.
-      OrchestratorActions.WorkflowAction taskAction = this.pendingActions.remove(taskId);
-      if (taskAction == null) {
+      OrchestratorActions.WorkflowAction taskAction = this.pendingActions.get(taskId);
+      if (taskAction == null || !taskAction.hasScheduleTask()) {
+        // Tolerate histories from before WaitForExternalEvent started emitting a synthetic
+        // timer for indefinite timeouts: drop the optional pending timer (if any) and retry.
+        if (this.dropOptionalExternalEventTimerAt(taskId)) {
+          taskAction = this.pendingActions.get(taskId);
+        }
+      }
+      if (taskAction == null || !taskAction.hasScheduleTask()) {
         String message = String.format(
             "Non-deterministic orchestrator detected: a history event scheduling an activity task with sequence "
                + "ID %d and name '%s' was replayed but the current orchestrator implementation didn't actually "
@@ -652,6 +768,7 @@ public final class TaskOrchestrationExecutor {
             taskScheduled.getName());
         throw new NonDeterministicOrchestratorException(message);
       }
+      this.pendingActions.remove(taskId);
     }
 
     @SuppressWarnings("unchecked")
@@ -792,15 +909,58 @@ public final class TaskOrchestrationExecutor {
     }
 
     private Task<Void> createTimer(String name, Instant finalFireAt) {
-      return new TimerTask(name, finalFireAt);
+      return new TimerTask(name, finalFireAt, CREATE_TIMER_ORIGIN_SETTER);
     }
 
-    private CompletableTask<Void> createInstantTimer(String name, int id, Instant fireAt) {
-      Timestamp ts = DataConverter.getTimestampFromInstant(fireAt);
+    // Used by RetriableTask to emit retry-delay timers with the appropriate origin
+    // (ActivityRetry or ChildWorkflowRetry).
+    private Task<Void> createRetryTimer(
+        String name,
+        Duration delay,
+        Consumer<OrchestratorActions.CreateTimerAction.Builder> originSetter) {
+      Instant finalFireAt = this.currentInstant.plus(delay);
+      return new TimerTask(name, finalFireAt, originSetter);
+    }
+
+    // Single-action optional (indefinite) external-event timer. The sentinel fireAt
+    // is recognized by the backend and by every SDK; this timer is never expected to fire.
+    private CompletableTask<Void> createOptionalExternalEventTimer(String eventName) {
+      int id = this.sequenceNumber++;
+      OrchestratorActions.CreateTimerAction timerAction = OrchestratorActions.CreateTimerAction.newBuilder()
+          .setName(eventName)
+          .setFireAt(EXTERNAL_EVENT_INDEFINITE_FIRE_AT_TIMESTAMP)
+          .setExternalEvent(HistoryEvents.TimerOriginExternalEvent.newBuilder().setName(eventName).build())
+          .build();
       this.pendingActions.put(id, OrchestratorActions.WorkflowAction.newBuilder()
           .setId(id)
-          .setCreateTimer(OrchestratorActions.CreateTimerAction.newBuilder()
-              .setName(name).setFireAt(ts))
+          .setCreateTimer(timerAction)
+          .build());
+
+      if (!this.isReplaying) {
+        logger.finer(() -> String.format(
+            "Creating optional indefinite external-event timer with id: %d, name: %s", id, eventName));
+      }
+
+      CompletableTask<Void> timerTask = new CompletableTask<>();
+      TaskRecord<Void> record = new TaskRecord<>(timerTask, "(timer)", Void.class);
+      this.openTasks.put(id, record);
+      return timerTask;
+    }
+
+    private CompletableTask<Void> createInstantTimer(
+        String name,
+        int id,
+        Instant fireAt,
+        Consumer<OrchestratorActions.CreateTimerAction.Builder> originSetter) {
+      Timestamp ts = DataConverter.getTimestampFromInstant(fireAt);
+      OrchestratorActions.CreateTimerAction.Builder ctBuilder = OrchestratorActions.CreateTimerAction
+          .newBuilder()
+          .setName(name)
+          .setFireAt(ts);
+      originSetter.accept(ctBuilder);
+      this.pendingActions.put(id, OrchestratorActions.WorkflowAction.newBuilder()
+          .setId(id)
+          .setCreateTimer(ctBuilder)
           .build());
 
       if (!this.isReplaying) {
@@ -813,6 +973,51 @@ public final class TaskOrchestrationExecutor {
       return timerTask;
     }
 
+    // Drops an optional external-event timer at sequence id {@code atId} and shifts
+    // every pending action / pending task with id > atId down by one. Returns true if
+    // an optional timer was removed. Lets replay tolerate pre-upgrade histories that
+    // lack the synthetic timer emitted by indefinite WaitForExternalEvent calls.
+    private boolean dropOptionalExternalEventTimerAt(int atId) {
+      OrchestratorActions.WorkflowAction action = this.pendingActions.get(atId);
+      if (!isOptionalExternalEventTimerAction(action)) {
+        return false;
+      }
+
+      this.pendingActions.remove(atId);
+      this.openTasks.remove(atId);
+
+      // Shift pending actions with id > atId down by one. Rebuild the LinkedHashMap
+      // so insertion order (used when emitting the actions list) stays consistent.
+      LinkedHashMap<Integer, OrchestratorActions.WorkflowAction> newPending = new LinkedHashMap<>();
+      for (Map.Entry<Integer, OrchestratorActions.WorkflowAction> entry : this.pendingActions.entrySet()) {
+        int id = entry.getKey();
+        OrchestratorActions.WorkflowAction act = entry.getValue();
+        if (id > atId) {
+          newPending.put(id - 1, act.toBuilder().setId(id - 1).build());
+        } else {
+          newPending.put(id, act);
+        }
+      }
+      this.pendingActions.clear();
+      this.pendingActions.putAll(newPending);
+
+      // Shift open tasks similarly (HashMap, order irrelevant).
+      List<Integer> taskIds = new ArrayList<>();
+      for (Integer id : this.openTasks.keySet()) {
+        if (id > atId) {
+          taskIds.add(id);
+        }
+      }
+      Collections.sort(taskIds);
+      for (Integer id : taskIds) {
+        TaskRecord<?> t = this.openTasks.remove(id);
+        this.openTasks.put(id - 1, t);
+      }
+
+      this.sequenceNumber--;
+      return true;
+    }
+
     private void handleTimerCreated(HistoryEvents.HistoryEvent e) {
       int timerEventId = e.getEventId();
       if (timerEventId == -100) {
@@ -822,11 +1027,22 @@ public final class TaskOrchestrationExecutor {
 
       HistoryEvents.TimerCreatedEvent timerCreatedEvent = e.getTimerCreated();
 
+      // Asymmetric case: pending action is an optional external-event timer but the
+      // incoming TimerCreated is something else (e.g. pre-patch code emitted a normal
+      // CreateTimer at this slot). Drop the optional timer and shift so the match
+      // succeeds on retry. If both sides are optional, fall through to normal matching.
+      OrchestratorActions.WorkflowAction pending = this.pendingActions.get(timerEventId);
+      if (pending != null
+          && isOptionalExternalEventTimerAction(pending)
+          && !isOptionalExternalEventTimerCreatedEvent(timerCreatedEvent)) {
+        this.dropOptionalExternalEventTimerAt(timerEventId);
+      }
+
       // The history shows that this orchestrator created a durable timer in a previous execution.
       // We can therefore remove it from the map of pending actions. If we can't find the pending
       // action, then we assume a non-deterministic code violation in the orchestrator.
       OrchestratorActions.WorkflowAction timerAction = this.pendingActions.remove(timerEventId);
-      if (timerAction == null) {
+      if (timerAction == null || !timerAction.hasCreateTimer()) {
         String message = String.format(
             "Non-deterministic orchestrator detected: a history event creating a timer with ID %d and "
                + "fire-at time %s was replayed but the current orchestrator implementation didn't actually create "
@@ -862,8 +1078,15 @@ public final class TaskOrchestrationExecutor {
       int taskId = e.getEventId();
       HistoryEvents.ChildWorkflowInstanceCreatedEvent subOrchestrationInstanceCreated =
           e.getChildWorkflowInstanceCreated();
-      OrchestratorActions.WorkflowAction taskAction = this.pendingActions.remove(taskId);
-      if (taskAction == null) {
+      OrchestratorActions.WorkflowAction taskAction = this.pendingActions.get(taskId);
+      if (taskAction == null || !taskAction.hasCreateChildWorkflow()) {
+        // Tolerate pre-upgrade histories that lack a synthetic optional timer emitted
+        // by indefinite WaitForExternalEvent calls.
+        if (this.dropOptionalExternalEventTimerAt(taskId)) {
+          taskAction = this.pendingActions.get(taskId);
+        }
+      }
+      if (taskAction == null || !taskAction.hasCreateChildWorkflow()) {
         String message = String.format(
             "Non-deterministic orchestrator detected: a history event scheduling an sub-orchestration task "
                + "with sequence ID %d and name '%s' was replayed but the current orchestrator implementation didn't "
@@ -873,6 +1096,7 @@ public final class TaskOrchestrationExecutor {
             subOrchestrationInstanceCreated.getName());
         throw new NonDeterministicOrchestratorException(message);
       }
+      this.pendingActions.remove(taskId);
     }
 
     private void handleSubOrchestrationCompleted(HistoryEvents.HistoryEvent e) {
@@ -1231,10 +1455,15 @@ public final class TaskOrchestrationExecutor {
 
     private class TimerTask extends CompletableTask<Void> {
       private Instant finalFireAt;
+      private final Consumer<OrchestratorActions.CreateTimerAction.Builder> originSetter;
       CompletableTask<Void> task;
 
-      public TimerTask(String name, Instant finalFireAt) {
+      public TimerTask(
+          String name,
+          Instant finalFireAt,
+          Consumer<OrchestratorActions.CreateTimerAction.Builder> originSetter) {
         super();
+        this.originSetter = originSetter;
         CompletableTask<Void> firstTimer = createTimerTask(name, finalFireAt);
         CompletableFuture<Void> timerChain = createTimerChain(name, finalFireAt, firstTimer.future);
         this.task = new CompletableTask<>(timerChain);
@@ -1265,9 +1494,9 @@ public final class TaskOrchestrationExecutor {
         Duration remainingTime = Duration.between(currentInstant, finalFireAt);
         if (remainingTime.compareTo(maximumTimerInterval) > 0) {
           Instant nextFireAt = currentInstant.plus(maximumTimerInterval);
-          nextTimer = createInstantTimer(name, sequenceNumber++, nextFireAt);
+          nextTimer = createInstantTimer(name, sequenceNumber++, nextFireAt, this.originSetter);
         } else {
-          nextTimer = createInstantTimer(name, sequenceNumber++, finalFireAt);
+          nextTimer = createInstantTimer(name, sequenceNumber++, finalFireAt, this.originSetter);
         }
         nextTimer.setParentTask(this);
         return nextTimer;
@@ -1324,6 +1553,7 @@ public final class TaskOrchestrationExecutor {
       private final TaskOrchestrationContext context;
       private final Instant firstAttempt;
       private final TaskFactory<V> taskFactory;
+      private final Consumer<OrchestratorActions.CreateTimerAction.Builder> retryTimerOriginSetter;
 
       private FailureDetails lastFailure;
       private Duration totalRetryTime;
@@ -1331,23 +1561,17 @@ public final class TaskOrchestrationExecutor {
       private int attemptNumber;
       private Task<V> childTask;
 
-      public RetriableTask(TaskOrchestrationContext context, TaskFactory<V> taskFactory, RetryPolicy policy) {
-        this(context, taskFactory, policy, null);
-      }
-
-      public RetriableTask(TaskOrchestrationContext context, TaskFactory<V> taskFactory, RetryHandler handler) {
-        this(context, taskFactory, null, handler);
-      }
-
-      private RetriableTask(
+      public RetriableTask(
           TaskOrchestrationContext context,
           TaskFactory<V> taskFactory,
-          @Nullable RetryPolicy retryPolicy,
-          @Nullable RetryHandler retryHandler) {
+          RetryPolicy policy,
+          RetryHandler handler,
+          Consumer<OrchestratorActions.CreateTimerAction.Builder> retryTimerOriginSetter) {
         this.context = context;
         this.taskFactory = taskFactory;
-        this.policy = retryPolicy;
-        this.handler = retryHandler;
+        this.policy = policy;
+        this.handler = handler;
+        this.retryTimerOriginSetter = retryTimerOriginSetter;
         this.firstAttempt = context.getCurrentInstant();
         this.totalRetryTime = Duration.ZERO;
         this.createChildTask(taskFactory);
@@ -1396,8 +1620,10 @@ public final class TaskOrchestrationExecutor {
 
         Duration delay = this.getNextDelay();
         if (!delay.isZero() && !delay.isNegative()) {
-          // Use a durable timer to create the delay between retries
-          this.context.createTimer(getName() + "-retry",delay).await();
+          // Use a durable timer to create the delay between retries, annotated with
+          // the appropriate retry origin (ActivityRetry or ChildWorkflowRetry).
+          ContextImplTask.this.createRetryTimer(getName() + "-retry", delay,
+              this.retryTimerOriginSetter).await();
         }
 
         this.totalRetryTime = Duration.between(this.startTime, this.context.getCurrentInstant());

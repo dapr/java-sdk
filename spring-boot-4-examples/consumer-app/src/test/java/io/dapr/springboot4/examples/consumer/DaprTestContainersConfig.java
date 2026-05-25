@@ -16,15 +16,13 @@ package io.dapr.springboot4.examples.consumer;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.RabbitMQContainer;
+import org.testcontainers.rabbitmq.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.HashMap;
@@ -41,11 +39,6 @@ public class DaprTestContainersConfig {
     boolean reuse = env.getProperty("reuse", Boolean.class, false);
     if (reuse) {
       Network defaultDaprNetwork = new Network() {
-        @Override
-        public Statement apply(Statement base, Description description) {
-          return null;
-        }
-
         @Override
         public String getId() {
           return "dapr-network";

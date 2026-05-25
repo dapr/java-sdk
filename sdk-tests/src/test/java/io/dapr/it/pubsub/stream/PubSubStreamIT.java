@@ -46,6 +46,8 @@ public class PubSubStreamIT extends BaseIT {
   private static final String TOPIC_NAME_FLUX = "stream-topic-flux";
   private static final String TOPIC_NAME_CLOUDEVENT = "stream-topic-cloudevent";
   private static final String TOPIC_NAME_RAWPAYLOAD = "stream-topic-rawpayload";
+  private static final String TOPIC_NAME_DLQ = "stream-topic-dlq";
+  private static final String TOPIC_NAME_DLQ_DEADLETTER = "stream-topic-dlq-deadletter";
   private static final String PUBSUB_NAME = "messagebus";
 
   private final List<DaprRun> runs = new ArrayList<>();
@@ -259,6 +261,79 @@ public class PubSubStreamIT extends BaseIT {
       }, 60000);
 
       disposable.dispose();
+    }
+  }
+
+  @Test
+  public void testPubSubDeadLetterTopic() throws Exception {
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName() + "-dlq",
+        60000));
+
+    var runId = UUID.randomUUID().toString();
+    try (DaprClient client = daprRun.newDaprClient();
+         DaprPreviewClient previewClient = daprRun.newDaprPreviewClient()) {
+
+      // Subscribe to the dead-letter topic first so we don't miss any messages.
+      Set<String> deadLetterMessageIds = Collections.synchronizedSet(new HashSet<>());
+      var deadLetterListener = new SubscriptionListener<String>() {
+        @Override
+        public Mono<Status> onEvent(CloudEvent<String> event) {
+          if (event.getData() != null && event.getData().contains(runId)) {
+            deadLetterMessageIds.add(event.getId());
+            System.out.println("Received dead-letter message ID: " + event.getId());
+          }
+          return Mono.just(Status.SUCCESS);
+        }
+
+        @Override
+        public void onError(RuntimeException exception) {
+          System.err.println("Dead-letter subscription error: " + exception.getMessage());
+        }
+      };
+
+      // Subscribe to the main topic with a listener that always DROPs, which should
+      // forward the messages to the dead-letter topic.
+      var mainListener = new SubscriptionListener<String>() {
+        @Override
+        public Mono<Status> onEvent(CloudEvent<String> event) {
+          if (event.getData() != null && event.getData().contains(runId)) {
+            System.out.println("Dropping message ID: " + event.getId());
+            return Mono.just(Status.DROP);
+          }
+          return Mono.just(Status.DROP);
+        }
+
+        @Override
+        public void onError(RuntimeException exception) {
+          System.err.println("Main subscription error: " + exception.getMessage());
+        }
+      };
+
+      try (var deadLetterSubscription = previewClient.subscribeToEvents(
+              PUBSUB_NAME, TOPIC_NAME_DLQ_DEADLETTER, deadLetterListener, TypeRef.STRING);
+           var mainSubscription = previewClient.subscribeToEvents(
+              PUBSUB_NAME, TOPIC_NAME_DLQ, TOPIC_NAME_DLQ_DEADLETTER, mainListener, TypeRef.STRING)) {
+
+        // Publish messages to the main topic.
+        for (int i = 0; i < NUM_MESSAGES; i++) {
+          String message = String.format("DLQ message #%d for run %s", i, runId);
+          client.publishEvent(PUBSUB_NAME, TOPIC_NAME_DLQ, message).block();
+        }
+
+        callWithRetry(() -> {
+          var count = deadLetterMessageIds.size();
+          System.out.println(
+              String.format("Got %d dead-letter messages out of %d for topic %s.",
+                  count, NUM_MESSAGES, TOPIC_NAME_DLQ_DEADLETTER));
+          assertEquals(NUM_MESSAGES, deadLetterMessageIds.size());
+        }, 120000);
+
+        mainSubscription.close();
+        mainSubscription.awaitTermination();
+        deadLetterSubscription.close();
+        deadLetterSubscription.awaitTermination();
+      }
     }
   }
 }

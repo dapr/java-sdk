@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-parent</artifactId>
-        <version>1.18.0-SNAPSHOT</version>
+        <version>1.19.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -34,7 +34,7 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <optional>true</optional>
         </dependency>
     </dependencies>

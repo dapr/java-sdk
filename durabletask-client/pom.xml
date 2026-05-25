@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.18.0-SNAPSHOT</version>
+    <version>1.19.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -158,6 +158,19 @@
               <skipCache>true</skipCache>
               <url>${durabletask.proto.baseurl}/orchestrator_actions.proto</url>
               <outputFileName>orchestrator_actions.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getAttestationProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${durabletask.proto.baseurl}/attestation.proto</url>
+              <outputFileName>attestation.proto</outputFileName>
               <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
           </execution>

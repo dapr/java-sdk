@@ -6,7 +6,7 @@
 
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-bom</artifactId>
-  <version>1.18.0-SNAPSHOT</version>
+  <version>1.19.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>dapr-sdk-bom</name>
   <description>Dapr SDK Bill of Materials (BOM) for the core SDK modules. Import this POM
@@ -46,7 +46,7 @@
 
   <properties>
     <gpg.skip>true</gpg.skip>
-    <dapr.sdk.version>1.18.0-SNAPSHOT</dapr.sdk.version>
+    <dapr.sdk.version>1.19.0-SNAPSHOT</dapr.sdk.version>
     <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.132 (CVE-2026-33871, CVE-2026-33870) -->
     <netty.version>4.1.132.Final</netty.version>
     <jackson.version>2.21.2</jackson.version>

@@ -15,8 +15,6 @@ package io.dapr.springboot4.examples.orchestrator;
 
 import com.redis.testcontainers.RedisContainer;
 import io.dapr.testcontainers.*;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -52,11 +50,6 @@ public class DaprTestContainersConfig {
         @Override
         public void close() {
 
-        }
-
-        @Override
-        public Statement apply(Statement base, Description description) {
-          return null;
         }
       };
 

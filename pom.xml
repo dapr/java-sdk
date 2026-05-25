@@ -7,7 +7,7 @@
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.18.0-SNAPSHOT</version>
+  <version>1.19.0-SNAPSHOT</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
@@ -16,9 +16,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <grpc.version>1.79.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.17.0/dapr/proto</dapr.proto.baseurl>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.18.0-rc.3/dapr/proto</dapr.proto.baseurl>
     <durabletask.proto.baseurl>https://raw.githubusercontent.com/dapr/durabletask-protobuf/main/protos</durabletask.proto.baseurl>
-    <dapr.sdk.version>1.18.0-SNAPSHOT</dapr.sdk.version>
+    <dapr.sdk.version>1.19.0-SNAPSHOT</dapr.sdk.version>
     <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.8.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
@@ -51,7 +51,7 @@
     <surefire.version>3.2.2</surefire.version>
     <junit-bom.version>5.11.4</junit-bom.version>
     <snakeyaml.version>2.0</snakeyaml.version>
-    <testcontainers.version>1.21.4</testcontainers.version>
+    <testcontainers.version>2.0.5</testcontainers.version>
     <springboot.version>3.5.12</springboot.version>
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <assertj.version>3.27.7</assertj.version>
@@ -70,10 +70,9 @@
     <system-rules.version>1.19.0</system-rules.version>
     <system-stubs.version>2.1.1</system-stubs.version>
     <mockito-inline.version>4.2.0</mockito-inline.version>
-    <junit-vintage-engine.version>5.7.0</junit-vintage-engine.version>
     <junit-platform-console.version>1.7.0</junit-platform-console.version>
     <reactor.version>3.5.12</reactor.version>
-    <testcontainers-redis.version>2.2.2</testcontainers-redis.version>
+    <testcontainers-redis.version>2.2.4</testcontainers-redis.version>
     <slf4j.version>2.0.9</slf4j.version>
     <mockito.version>3.11.2</mockito.version>
     <opentelemetry-bom.version>2.1.0</opentelemetry-bom.version>
@@ -188,33 +187,33 @@
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>junit-jupiter</artifactId>
+        <artifactId>testcontainers-junit-jupiter</artifactId>
         <version>${testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>kafka</artifactId>
+        <artifactId>testcontainers-kafka</artifactId>
         <version>${testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>postgresql</artifactId>
+        <artifactId>testcontainers-postgresql</artifactId>
         <version>${testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>rabbitmq</artifactId>
+        <artifactId>testcontainers-rabbitmq</artifactId>
         <version>${testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>toxiproxy</artifactId>
+        <artifactId>testcontainers-toxiproxy</artifactId>
         <version>${testcontainers.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>mysql</artifactId>
+        <artifactId>testcontainers-mysql</artifactId>
         <version>${testcontainers.version}</version>
         <scope>test</scope>
       </dependency>
@@ -400,11 +399,23 @@
         <groupId>com.redis</groupId>
         <artifactId>testcontainers-redis</artifactId>
         <version>${testcontainers-redis.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>io.github.microcks</groupId>
         <artifactId>microcks-testcontainers</artifactId>
         <version>${microcks.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>

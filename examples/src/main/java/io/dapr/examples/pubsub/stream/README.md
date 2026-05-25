@@ -108,6 +108,38 @@ client.subscribeToTopic(PUBSUB_NAME, topicName, TypeRef.STRING, Map.of("rawPaylo
     .blockLast();
 ```
 
+### Subscription with a Dead-Letter Topic
+
+For workloads that need to forward unprocessable messages to a dead-letter topic,
+use the listener-based `subscribeToEvents` overload that accepts a
+`deadLetterTopic` argument. When the listener returns `Status.DROP`, the Dapr
+runtime publishes the message to the configured dead-letter topic:
+
+```java
+var listener = new SubscriptionListener<String>() {
+  @Override
+  public Mono<Status> onEvent(CloudEvent<String> event) {
+    if (shouldRejectMessage(event)) {
+      return Mono.just(Status.DROP); // forwarded to deadLetterTopicName
+    }
+    return Mono.just(Status.SUCCESS);
+  }
+
+  @Override
+  public void onError(RuntimeException exception) {
+    System.out.println("Subscriber got exception: " + exception.getMessage());
+  }
+};
+
+try (var subscription = client.subscribeToEvents(
+        PUBSUB_NAME, topicName, deadLetterTopicName, listener, TypeRef.STRING)) {
+  subscription.awaitTermination();
+}
+```
+
+See [SubscriberWithDeadLetter.java](SubscriberWithDeadLetter.java) for a complete example
+that consumes the dead-letter topic in the same process.
+
 ### Subscription Lifecycle
 
 The examples use `blockLast()` to keep the subscriber running indefinitely. For production use cases requiring explicit subscription lifecycle control, you can use `.subscribe()` which returns a `Disposable` that can be disposed via `disposable.dispose()`.
@@ -136,6 +168,13 @@ Or run the CloudEvent Subscriber example:
 
 ```bash
 dapr run --resources-path ./components/pubsub --app-id subscriber -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.stream.SubscriberCloudEvent
+```
+
+Or run the dead-letter Subscriber example, which routes messages whose payload
+contains "fail" to a dead-letter topic and consumes both topics:
+
+```bash
+dapr run --resources-path ./components/pubsub --app-id subscriber -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.stream.SubscriberWithDeadLetter
 ```
 
 Once the subscriber is running, run the publisher in a new terminal to see the events in the subscriber's side:

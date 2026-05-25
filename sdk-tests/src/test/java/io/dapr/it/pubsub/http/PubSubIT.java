@@ -581,7 +581,7 @@ public class PubSubIT extends BaseIT {
         // Publishing messages
         client.publishEvent(PUBSUB_NAME, BULK_SUB_TOPIC_NAME, message).block();
         System.out.printf("Published message: '%s' to topic '%s' pubSub_name '%s'\n",
-                message, BULK_SUB_TOPIC_NAME, PUBSUB_NAME);
+            message, BULK_SUB_TOPIC_NAME, PUBSUB_NAME);
       }
     }
 
