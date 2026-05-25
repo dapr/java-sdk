@@ -62,14 +62,14 @@ public class AppRun implements Stoppable {
          String successMessage,
          Class serviceClass,
          int maxWaitMilliseconds,
-         Integer daprHttpPortOverride,
-         Integer daprGrpcPortOverride) {
+         int daprHttpPortOverride,
+         int daprGrpcPortOverride) {
     this.command = new Command(
             successMessage,
             buildCommand(serviceClass, ports),
             new HashMap<>() {{
-              put("DAPR_HTTP_PORT", daprHttpPortOverride.toString());
-              put("DAPR_GRPC_PORT", daprGrpcPortOverride.toString());
+              put("DAPR_HTTP_PORT", Integer.toString(daprHttpPortOverride));
+              put("DAPR_GRPC_PORT", Integer.toString(daprGrpcPortOverride));
             }});
     this.ports = ports;
     this.maxWaitMilliseconds = maxWaitMilliseconds;
