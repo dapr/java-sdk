@@ -55,6 +55,7 @@ public class ActorMethodNameIT extends BaseContainerIT {
     dapr = pair.dapr();
     app = pair.app();
     actorClient = newActorClient(dapr);
+    waitForActorsReady(dapr);
   }
 
   @Test

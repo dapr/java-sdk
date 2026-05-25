@@ -73,6 +73,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseContainerIT {
     dapr = pair.dapr();
     app = pair.app();
     actorClient = newActorClient(dapr);
+    waitForActorsReady(dapr);
   }
 
   @AfterEach

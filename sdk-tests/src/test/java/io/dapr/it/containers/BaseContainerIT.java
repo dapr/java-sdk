@@ -24,6 +24,7 @@ import io.dapr.it.Stoppable;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.AfterAll;
 import org.testcontainers.Testcontainers;
 
@@ -135,7 +136,26 @@ public abstract class BaseContainerIT {
         dapr.getGrpcPort());
     app.start();
     deferStop(app);
+
+    // Daprd's HTTP healthz/outbound (the wait strategy on DaprContainer) returns 2xx as
+    // soon as outbound connections are ready, but its gRPC server can be a beat behind.
+    // Tests that use the gRPC channel (method-invoke gRPC, tracing) hit "error reading
+    // server preface: EOF" if they call too soon. Prove the gRPC channel is responsive
+    // by issuing a waitForSidecar against a fresh DaprClient before returning.
+    try (DaprClient client = newDaprClient(dapr)) {
+      client.waitForSidecar(30_000).block();
+    }
     return new DaprAndApp(dapr, app);
+  }
+
+  /**
+   * Polls daprd's metadata endpoint until at least one actor is registered. Call from
+   * {@code @BeforeAll} of actor ITs after {@link #startAppAndAttach} returns: the app
+   * subprocess takes a moment to register its actor types with daprd, and tests will
+   * fail with "did not find address for actor" if invoked too early.
+   */
+  protected static void waitForActorsReady(DaprContainer dapr) {
+    DaprWait.forActors().waitUntilReady(dapr);
   }
 
   // ---------- DaprClient / ActorClient factories ----------

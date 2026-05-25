@@ -48,7 +48,9 @@ public class SecretsClientIT extends BaseContainerIT {
 
     dapr = daprBuilder("secrets-it")
         .withComponent(new Component(SECRETS_STORE_NAME, "secretstores.local.file", "v1", Map.of(
-            "secretsFile", CONTAINER_SECRET_PATH
+            "secretsFile", CONTAINER_SECRET_PATH,
+            "nestedSeparator", ":",
+            "multiValued", "true"
         )))
         .withCopyToContainer(Transferable.of(secretJson), CONTAINER_SECRET_PATH);
     dapr.start();
