@@ -153,6 +153,12 @@
       <artifactId>spring-data-keyvalue</artifactId>
     </dependency>
     <dependency>
+      <groupId>redis.clients</groupId>
+      <artifactId>jedis</artifactId>
+      <version>5.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
