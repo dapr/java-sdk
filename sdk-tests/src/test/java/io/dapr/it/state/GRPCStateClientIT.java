@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,9 +14,8 @@ limitations under the License.
 package io.dapr.it.state;
 
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
-import io.dapr.it.DaprRun;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,21 +29,23 @@ import static io.dapr.it.TestUtils.assertThrowsDaprException;
  */
 public class GRPCStateClientIT extends AbstractStateClientIT {
 
-  private static DaprRun daprRun;
-
+  private static DaprContainer dapr;
   private static DaprClient daprClient;
 
   @BeforeAll
-  public static void init() throws Exception {
-    daprRun = startDaprApp(GRPCStateClientIT.class.getSimpleName(), 5000);
-    daprClient = daprRun.newDaprClientBuilder().build();
+  public static void init() {
+    dapr = daprBuilder("grpc-state-it")
+        .withComponent(redisStateStore(STATE_STORE_NAME));
+    dapr.start();
+    deferStop(dapr);
+    daprClient = newDaprClient(dapr);
   }
 
   @AfterAll
   public static void tearDown() throws Exception {
     daprClient.close();
   }
-  
+
   @Override
   protected DaprClient buildDaprClient() {
     return daprClient;
