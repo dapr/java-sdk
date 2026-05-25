@@ -1,3 +1,16 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.it.methodinvoke.http;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -5,10 +18,11 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.it.AppRun;
 import io.dapr.it.MethodInvokeServiceProtos;
-import org.junit.jupiter.api.BeforeEach;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -24,76 +38,75 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("deprecation")
-public class MethodInvokeIT extends BaseIT {
+public class MethodInvokeIT extends BaseContainerIT {
 
-    //Number of messages to be sent: 10
+    private static final String APP_NAME = "methodinvoke-http-it";
     private static final int NUM_MESSAGES = 10;
 
-    /**
-     * Run of a Dapr application.
-     */
-    private DaprRun daprRun = null;
+    private static DaprContainer dapr;
+    private static AppRun app;
 
-    @BeforeEach
-    public void init() throws Exception {
-        daprRun = startDaprApp(
-          MethodInvokeIT.class.getSimpleName() + "http",
-          MethodInvokeService.SUCCESS_MESSAGE,
-          MethodInvokeService.class,
-          true,
-          30000);
-        daprRun.waitForAppHealth(20000);
+    @BeforeAll
+    public static void init() throws Exception {
+        var pair = startAppAndAttach(
+            APP_NAME,
+            MethodInvokeService.class,
+            AppRun.AppProtocol.HTTP,
+            appPort -> {
+                DaprContainer d = daprBuilder(APP_NAME)
+                    .withAppPort(appPort)
+                    .withAppChannelAddress("host.testcontainers.internal");
+                d.start();
+                return d;
+            });
+        dapr = pair.dapr();
+        app = pair.app();
     }
 
     @Test
     public void testInvoke() throws Exception {
-
-        // At this point, it is guaranteed that the service above is running and all ports being listened to.
-
-        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+        try (DaprClient client = newDaprClient(dapr)) {
             client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
-                //Publishing messages
-                client.invokeMethod(daprRun.getAppName(), "messages", message.getBytes(), HttpExtension.POST).block();
+                client.invokeMethod(APP_NAME, "messages", message.getBytes(), HttpExtension.POST).block();
                 System.out.println("Invoke method messages : " + message);
             }
 
-            Map<Integer, String> messages = client.invokeMethod(daprRun.getAppName(), "messages", null,
+            Map<Integer, String> messages = client.invokeMethod(APP_NAME, "messages", null,
                 HttpExtension.GET, Map.class).block();
             assertEquals(10, messages.size());
 
-            client.invokeMethod(daprRun.getAppName(), "messages/1", null, HttpExtension.DELETE).block();
+            client.invokeMethod(APP_NAME, "messages/1", null, HttpExtension.DELETE).block();
 
-            messages = client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            messages = client.invokeMethod(APP_NAME, "messages", null, HttpExtension.GET, Map.class).block();
             assertEquals(9, messages.size());
 
-            client.invokeMethod(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
-            messages = client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            client.invokeMethod(APP_NAME, "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
+            messages = client.invokeMethod(APP_NAME, "messages", null, HttpExtension.GET, Map.class).block();
             assertEquals("updated message", messages.get("2"));
         }
     }
 
     @Test
     public void testInvokeWithObjects() throws Exception {
-        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+        try (DaprClient client = newDaprClient(dapr)) {
             client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 Person person = new Person();
                 person.setName(String.format("Name %d", i));
                 person.setLastName(String.format("Last Name %d", i));
                 person.setBirthDate(new Date());
-                //Publishing messages
-                client.invokeMethod(daprRun.getAppName(), "persons", person, HttpExtension.POST).block();
+                client.invokeMethod(APP_NAME, "persons", person, HttpExtension.POST).block();
                 System.out.println("Invoke method persons with parameter : " + person);
             }
 
-            List<Person> persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            List<Person> persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null, HttpExtension.GET, Person[].class).block());
             assertEquals(10, persons.size());
 
-            client.invokeMethod(daprRun.getAppName(), "persons/1", null, HttpExtension.DELETE).block();
+            client.invokeMethod(APP_NAME, "persons/1", null, HttpExtension.DELETE).block();
 
-            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null, HttpExtension.GET, Person[].class).block());
             assertEquals(9, persons.size());
 
             Person person = new Person();
@@ -101,9 +114,9 @@ public class MethodInvokeIT extends BaseIT {
             person.setLastName("Smith");
             person.setBirthDate(Calendar.getInstance().getTime());
 
-            client.invokeMethod(daprRun.getAppName(), "persons/2", person, HttpExtension.PUT).block();
+            client.invokeMethod(APP_NAME, "persons/2", person, HttpExtension.PUT).block();
 
-            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null, HttpExtension.GET, Person[].class).block());
             Person resultPerson = persons.get(1);
             assertEquals("John", resultPerson.getName());
             assertEquals("Smith", resultPerson.getLastName());
@@ -112,11 +125,11 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeTimeout() throws Exception {
-        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+        try (DaprClient client = newDaprClient(dapr)) {
             client.waitForSidecar(10000).block();
             long started = System.currentTimeMillis();
             String message = assertThrows(IllegalStateException.class, () -> {
-                client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)
+                client.invokeMethod(APP_NAME, "sleep", 1, HttpExtension.POST)
                     .block(Duration.ofMillis(10));
             }).getMessage();
 
@@ -129,11 +142,11 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeException() throws Exception {
-        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+        try (DaprClient client = newDaprClient(dapr)) {
             client.waitForSidecar(10000).block();
             MethodInvokeServiceProtos.SleepRequest req = MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
             DaprException exception = assertThrows(DaprException.class, () ->
-                client.invokeMethod(daprRun.getAppName(), "sleep", -9, HttpExtension.POST).block());
+                client.invokeMethod(APP_NAME, "sleep", -9, HttpExtension.POST).block());
 
             // TODO(artursouza): change this to INTERNAL once runtime is fixed.
             assertEquals("UNKNOWN", exception.getErrorCode());
@@ -145,14 +158,14 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeQueryParamEncoding() throws Exception {
-        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+        try (DaprClient client = newDaprClient(dapr)) {
             client.waitForSidecar(10000).block();
 
             String uri = "abc/pqr";
             Map<String, List<String>> queryParams = Map.of("uri", List.of(uri));
             HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryParams, Map.of());
             JsonNode result = client.invokeMethod(
-                daprRun.getAppName(),
+                APP_NAME,
                 "/query",
                 null,
                 httpExtension,
