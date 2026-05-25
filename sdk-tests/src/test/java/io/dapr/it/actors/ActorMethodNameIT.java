@@ -58,7 +58,7 @@ public class ActorMethodNameIT extends BaseContainerIT {
   }
 
   @Test
-  public void actorMethodNameChange() {
+  public void actorMethodNameChange() throws Exception {
     logger.debug("Creating proxy builder");
     ActorProxyBuilder<MyActor> proxyBuilder =
         new ActorProxyBuilder("MyActorTest", MyActor.class, actorClient);

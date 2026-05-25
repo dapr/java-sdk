@@ -59,7 +59,7 @@ public class ActorExceptionIT extends BaseContainerIT {
   }
 
   @Test
-  public void exceptionTest() {
+  public void exceptionTest() throws Exception {
     ActorProxyBuilder<MyActor> proxyBuilder =
         new ActorProxyBuilder("MyActorTest", MyActor.class, actorClient);
     MyActor proxy = proxyBuilder.build(new ActorId("1"));
@@ -73,7 +73,7 @@ public class ActorExceptionIT extends BaseContainerIT {
   }
 
   @Test
-  public void exceptionDueToMetadataTest() {
+  public void exceptionDueToMetadataTest() throws Exception {
     // Setting this HTTP header via actor metadata will cause the Actor HTTP server to error.
     Map<String, String> metadata = Map.of("Content-Length", "9999");
     ActorClient metadataClient = newActorClient(dapr, metadata);

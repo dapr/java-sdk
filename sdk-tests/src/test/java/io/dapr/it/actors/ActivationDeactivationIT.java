@@ -62,7 +62,7 @@ public class ActivationDeactivationIT extends BaseContainerIT {
   }
 
   @Test
-  public void activateInvokeDeactivate() {
+  public void activateInvokeDeactivate() throws Exception {
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     logger.debug("Creating proxy builder");
     ActorProxyBuilder<DemoActor> proxyBuilder = new ActorProxyBuilder(DemoActor.class, actorClient);
