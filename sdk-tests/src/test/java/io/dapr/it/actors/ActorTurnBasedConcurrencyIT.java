@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,17 +14,20 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.actors.runtime.DaprClientHttpUtils;
-import io.dapr.config.Properties;
-import io.dapr.it.BaseIT;
+import io.dapr.it.AppRun;
 import io.dapr.it.actors.app.MyActorService;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
 import io.dapr.utils.Version;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,19 +42,38 @@ import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ActorTurnBasedConcurrencyIT extends BaseIT {
+public class ActorTurnBasedConcurrencyIT extends BaseContainerIT {
 
   private static final Logger logger = LoggerFactory.getLogger(ActorTurnBasedConcurrencyIT.class);
 
   private static final String TIMER_METHOD_NAME = "clock";
-
   private static final String REMINDER_METHOD_NAME = "receiveReminder";
-
   private static final String ACTOR_TYPE = "MyActorTest";
-
   private static final String REMINDER_NAME = UUID.randomUUID().toString();
-
   private static final String ACTOR_ID = "1";
+
+  private static DaprContainer dapr;
+  private static AppRun app;
+  private static ActorClient actorClient;
+
+  @BeforeAll
+  public static void start() throws Exception {
+    var pair = startAppAndAttach(
+        "actor-concurrency-it",
+        MyActorService.class,
+        AppRun.AppProtocol.HTTP,
+        appPort -> {
+          DaprContainer d = daprBuilder("actor-concurrency-it")
+              .withAppPort(appPort)
+              .withAppChannelAddress("host.testcontainers.internal")
+              .withComponent(redisStateStore(STATE_STORE_NAME));
+          d.start();
+          return d;
+        });
+    dapr = pair.dapr();
+    app = pair.app();
+    actorClient = newActorClient(dapr);
+  }
 
   @AfterEach
   public void cleanUpTestCase() {
@@ -80,19 +102,12 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   public void invokeOneActorMethodReminderAndTimer() throws Exception {
     System.out.println("Starting test 'actorTest1'");
 
-    var run = startDaprApp(
-      ActorTurnBasedConcurrencyIT.class.getSimpleName(),
-      MyActorService.SUCCESS_MESSAGE,
-      MyActorService.class,
-      true,
-      60000);
-
     Thread.sleep(5000);
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient()));
+        new ActorProxyBuilder(actorType, ActorProxy.class, actorClient);
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(ACTOR_ID);
     logger.debug("Building proxy");
@@ -157,7 +172,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     validateEventNotObserved(logs, "stopTimer", TIMER_METHOD_NAME);
     validateEventNotObserved(logs, "stopReminder", REMINDER_METHOD_NAME);
     validateMethodCalls(logs, "say", expectedSayMethodInvocations.get());
-
   }
 
   /**
@@ -230,12 +244,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   }
 
   private static ManagedChannel buildManagedChannel() {
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
-    }
-
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+    return ManagedChannelBuilder.forAddress("127.0.0.1", dapr.getGrpcPort())
         .usePlaintext()
         .userAgent(Version.getSdkVersion())
         .build();
