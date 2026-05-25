@@ -356,7 +356,6 @@ package io.dapr.it.containers;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.config.Property;
 import io.dapr.it.AppRun;
@@ -368,7 +367,6 @@ import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.AfterAll;
 import org.testcontainers.Testcontainers;
 
-import java.lang.reflect.Constructor;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -422,59 +420,39 @@ public abstract class BaseContainerIT {
 
   // ---------- App lifecycle ----------
 
-  /**
-   * Spawns an {@link AppRun} subprocess for the given service class on a fresh
-   * free port, exposes that port to Testcontainers so the Dapr sidecar can
-   * reach it via {@code host.testcontainers.internal}, and registers the
-   * AppRun for {@code @AfterAll} cleanup. The caller must immediately pass
-   * the returned AppRun's port into the DaprContainer via
-   * {@code .withAppPort(app.getAppPort()).withAppChannelAddress("host.testcontainers.internal")}.
-   */
-  protected static AppRun startApp(String appName, Class<?> serviceClass,
-                                   AppRun.AppProtocol protocol) throws Exception {
-    // We need an app port (and Dapr port placeholders so AppRun's DaprPorts
-    // dependency is satisfied). The Dapr ports here are unused at runtime —
-    // we'll override them once the DaprContainer is up. We materialize them
-    // up-front so DaprPorts.build is consistent; the override takes effect
-    // via the 6-arg AppRun constructor below.
-    DaprPorts ports = DaprPorts.build(true, true, true);
-    // Placeholder construction. We'll throw this AppRun away and rebuild
-    // with overrides once the DaprContainer is started — but to do that
-    // we need the app port. Reuse the same DaprPorts so the app port stays
-    // stable.
-    // Strategy: return a small holder so the caller can call buildAppRun
-    // AFTER dapr.start(). See startAppAndAttach below for the combined flow.
-    throw new UnsupportedOperationException(
-        "Use startAppAndAttach(appName, serviceClass, protocol, daprFactory) instead — "
-            + "the Dapr ports must be known before the AppRun is spawned.");
-  }
+  /** Pair returned by {@link #startAppAndAttach}. */
+  public record DaprAndApp(DaprContainer dapr, AppRun app) {}
 
   /**
-   * Two-phase startup: allocates the app port, exposes it to Testcontainers,
-   * lets the caller build and start the DaprContainer (which now knows
-   * appPort + appChannelAddress), then spawns the AppRun subprocess with the
-   * DaprContainer's mapped HTTP/gRPC ports. Returns the running AppRun.
+   * Two-phase startup for ITs that need an app callback. Allocates the app
+   * port, exposes it to Testcontainers, lets the caller build and start the
+   * DaprContainer (which now knows the appPort + appChannelAddress), then
+   * spawns the AppRun subprocess with the DaprContainer's mapped HTTP/gRPC
+   * ports. Returns both. Both are registered for {@code @AfterAll} cleanup
+   * via {@link #deferStop} (DaprContainer first, AppRun second — stopped LIFO).
    *
-   * @param appName        used both as the Dapr app id and the AppRun name
-   * @param serviceClass   the class whose {@code main(String[])} the subprocess runs
-   * @param protocol       HTTP or GRPC (currently unused by AppRun beyond logging,
-   *                       but reserved for future use)
-   * @param daprFactory    given the allocated app port, returns a started DaprContainer
-   *                       (the factory body builds DaprContainer, calls
-   *                       {@code .withAppPort(appPort).withAppChannelAddress(...)},
-   *                       and calls {@code .start()})
+   * @param appName       used both as the Dapr app id and the AppRun name
+   * @param serviceClass  the class whose {@code main(String[])} the subprocess runs
+   * @param protocol      reserved for future use; AppRun currently ignores it
+   * @param daprFactory   given the allocated app port, returns a STARTED
+   *                      DaprContainer (factory body builds DaprContainer,
+   *                      calls {@code .withAppPort(appPort)
+   *                      .withAppChannelAddress("host.testcontainers.internal")},
+   *                      and calls {@code .start()})
    */
-  protected static AppRun startAppAndAttach(
+  protected static DaprAndApp startAppAndAttach(
       String appName,
       Class<?> serviceClass,
       AppRun.AppProtocol protocol,
       java.util.function.IntFunction<DaprContainer> daprFactory) throws Exception {
-    DaprPorts ports = DaprPorts.build(true, true, true);
+    // Only the app port matters here — Dapr HTTP/gRPC ports will come from
+    // the started DaprContainer's getMappedPort. Allocate only what we need.
+    DaprPorts ports = DaprPorts.build(true, false, false);
     int appPort = ports.getAppPort();
     Testcontainers.exposeHostPorts(appPort);
 
     DaprContainer dapr = daprFactory.apply(appPort);
-    // dapr is now running — caller already invoked .start() in the factory.
+    // dapr is started inside the factory.
     deferStop(dapr);
 
     AppRun app = new AppRun(
@@ -486,7 +464,7 @@ public abstract class BaseContainerIT {
         dapr.getGrpcPort());
     app.start();
     deferStop(app);
-    return app;
+    return new DaprAndApp(dapr, app);
   }
 
   /**
@@ -513,35 +491,22 @@ public abstract class BaseContainerIT {
   }
 
   protected static DaprClientBuilder newDaprClientBuilder(DaprContainer dapr) {
-    Map<Property<?>, String> overrides = new HashMap<>();
-    overrides.put(Properties.HTTP_ENDPOINT, "http://127.0.0.1:" + dapr.getHttpPort());
-    overrides.put(Properties.GRPC_ENDPOINT, "127.0.0.1:" + dapr.getGrpcPort());
-    overrides.put(Properties.HTTP_PORT, String.valueOf(dapr.getHttpPort()));
-    overrides.put(Properties.GRPC_PORT, String.valueOf(dapr.getGrpcPort()));
-    return new DaprClientBuilder().withPropertyOverrides(overrides);
+    return new DaprClientBuilder().withPropertyOverrides(daprOverrides(dapr));
   }
 
   protected static ActorClient newActorClient(DaprContainer dapr) {
-    Map<Property<?>, String> overrides = new HashMap<>();
-    overrides.put(Properties.HTTP_ENDPOINT, "http://127.0.0.1:" + dapr.getHttpPort());
-    overrides.put(Properties.GRPC_ENDPOINT, "127.0.0.1:" + dapr.getGrpcPort());
-    overrides.put(Properties.HTTP_PORT, String.valueOf(dapr.getHttpPort()));
-    overrides.put(Properties.GRPC_PORT, String.valueOf(dapr.getGrpcPort()));
-    ActorClient client = new ActorClient(new Properties(overrides), null);
+    ActorClient client = new ActorClient(new Properties(daprOverrides(dapr)), null);
     deferClose(client);
     return client;
   }
 
-  protected static ActorClient newActorClient(DaprContainer dapr, ResiliencyOptions opts) {
-    try {
-      Constructor<ActorClient> ctor = ActorClient.class.getDeclaredConstructor(ResiliencyOptions.class);
-      ctor.setAccessible(true);
-      ActorClient client = ctor.newInstance(opts);
-      deferClose(client);
-      return client;
-    } catch (ReflectiveOperationException e) {
-      throw new RuntimeException(e);
-    }
+  private static Map<Property<?>, String> daprOverrides(DaprContainer dapr) {
+    Map<Property<?>, String> overrides = new HashMap<>();
+    overrides.put(Properties.HTTP_ENDPOINT, "http://127.0.0.1:" + dapr.getHttpPort());
+    overrides.put(Properties.GRPC_ENDPOINT, "127.0.0.1:" + dapr.getGrpcPort());
+    overrides.put(Properties.HTTP_PORT, String.valueOf(dapr.getHttpPort()));
+    overrides.put(Properties.GRPC_PORT, String.valueOf(dapr.getGrpcPort()));
+    return overrides;
   }
 
   // ---------- Component helpers (Redis) ----------
@@ -1123,7 +1088,7 @@ Identify the service class and the test pattern.
 
 - [ ] **Step 2: Rewrite setup**
 
-Pattern (adapt names to match the actual service class):
+`startAppAndAttach` returns a `DaprAndApp` record (defined in Task 3) so the caller gets both the started `DaprContainer` and the `AppRun`. Adapt names to match the actual service class:
 
 ```java
 package io.dapr.it.actors;
@@ -1145,7 +1110,7 @@ public class ActorExceptionIT extends BaseContainerIT {
 
   @BeforeAll
   static void init() throws Exception {
-    app = startAppAndAttach(
+    var pair = startAppAndAttach(
         "actor-exception-it",
         SomeActorService.class,
         AppRun.AppProtocol.HTTP,
@@ -1157,73 +1122,21 @@ public class ActorExceptionIT extends BaseContainerIT {
           d.start();
           return d;
         });
-    // Recover the started DaprContainer from the deferStop stack so we can
-    // hand it to newActorClient. Simpler: capture it via a one-element array
-    // closure or refactor startAppAndAttach to return both. For now use the
-    // closure capture pattern below.
+    dapr = pair.dapr();
+    app = pair.app();
+    actorClient = newActorClient(dapr);
   }
-  ...
-}
-```
 
-**Refactor note**: the closure-capture awkwardness above is the first sign that `startAppAndAttach` should return `DaprContainer + AppRun` rather than just `AppRun`. Apply this refactor here:
-
-In [BaseContainerIT.java](../../../sdk-tests/src/test/java/io/dapr/it/containers/BaseContainerIT.java), change `startAppAndAttach` to return a small record:
-
-```java
-public record DaprAndApp(DaprContainer dapr, AppRun app) {}
-
-protected static DaprAndApp startAppAndAttach(
-    String appName,
-    Class<?> serviceClass,
-    AppRun.AppProtocol protocol,
-    java.util.function.IntFunction<DaprContainer> daprFactory) throws Exception {
-  DaprPorts ports = DaprPorts.build(true, true, true);
-  int appPort = ports.getAppPort();
-  Testcontainers.exposeHostPorts(appPort);
-
-  DaprContainer dapr = daprFactory.apply(appPort);
-  deferStop(dapr);
-
-  AppRun app = new AppRun(
-      ports,
-      getServiceSuccessMessage(serviceClass),
-      serviceClass,
-      60_000,
-      dapr.getHttpPort(),
-      dapr.getGrpcPort());
-  app.start();
-  deferStop(app);
-  return new DaprAndApp(dapr, app);
-}
-```
-
-Then in `ActorExceptionIT`:
-
-```java
-@BeforeAll
-static void init() throws Exception {
-  var pair = startAppAndAttach(
-      "actor-exception-it",
-      SomeActorService.class,
-      AppRun.AppProtocol.HTTP,
-      appPort -> {
-        DaprContainer d = daprBuilder("actor-exception-it")
-            .withAppPort(appPort)
-            .withAppChannelAddress("host.testcontainers.internal")
-            .withComponent(redisStateStore(STATE_STORE_NAME));
-        d.start();
-        return d;
-      });
-  dapr = pair.dapr();
-  app = pair.app();
-  actorClient = newActorClient(dapr);
+  // existing @Test method bodies, with these replacements:
+  //   - run.getAppName() -> "actor-exception-it"
+  //   - run.newActorClient() -> actorClient
+  //   - run.newDaprClientBuilder().build() -> newDaprClient(dapr)
 }
 ```
 
 - [ ] **Step 3: Update the `@Test` method bodies**
 
-The tests today reference `run.getAppName()` / `run.newActorClient()`. Replace with literal app name string (`"actor-exception-it"`) and `actorClient`.
+The tests today reference `run.getAppName()` / `run.newActorClient()`. Replace with the literal app name string (`"actor-exception-it"`) and the static `actorClient`.
 
 - [ ] **Step 4: Run**
 
@@ -1233,12 +1146,8 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sdk-tests/src/test/java/io/dapr/it/containers/BaseContainerIT.java \
-        sdk-tests/src/test/java/io/dapr/it/actors/ActorExceptionIT.java
-git commit -m "Migrate ActorExceptionIT to Testcontainers + refactor startAppAndAttach
-
-startAppAndAttach now returns DaprAndApp record so callers can take the
-DaprContainer reference for newActorClient(dapr) calls."
+git add sdk-tests/src/test/java/io/dapr/it/actors/ActorExceptionIT.java
+git commit -m "Migrate ActorExceptionIT to Testcontainers"
 ```
 
 ---
@@ -1443,12 +1352,16 @@ SharedTestInfra.zipkin();   // ensure started
 dapr = daprBuilder(APP_NAME)
     .withAppPort(appPort)
     .withAppChannelAddress("host.testcontainers.internal")
-    .withConfiguration(new Configuration("tracing", new TracingConfigurationSettings(
-        "1",                                          // samplingRate
-        true,                                         // stdout
-        null,
-        new ZipkinTracingConfigurationSettings(SharedTestInfra.zipkinInternalEndpoint())
-    )));
+    .withConfiguration(new Configuration(
+        "tracing",
+        new TracingConfigurationSettings(
+            "1",                                          // samplingRate
+            true,                                         // stdout
+            null,
+            new ZipkinTracingConfigurationSettings(SharedTestInfra.zipkinInternalEndpoint())
+        ),
+        null                                             // appHttpPipeline
+    ));
 ```
 
 (Check the actual `TracingConfigurationSettings` / `ZipkinTracingConfigurationSettings` constructor signatures via `cat testcontainers-dapr/src/main/java/io/dapr/testcontainers/TracingConfigurationSettings.java` and `cat testcontainers-dapr/src/main/java/io/dapr/testcontainers/ZipkinTracingConfigurationSettings.java`.)
