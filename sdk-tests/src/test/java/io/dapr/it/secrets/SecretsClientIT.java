@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.images.builder.Transferable;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -96,16 +95,9 @@ public class SecretsClientIT extends BaseContainerIT {
   }
 
   private static Map<String, Map<String, Object>> buildSecretPayload() {
-    Map<String, Object> key1 = new HashMap<>() {{
-      put("title", "The Metrics IV");
-      put("year", "2020");
-    }};
-    Map<String, Object> key2 = new HashMap<>() {{
-      put("name", "Jon Doe");
-    }};
-    Map<String, Map<String, Object>> secret = new HashMap<>();
-    secret.put(KEY1, key1);
-    secret.put(KYE2, key2);
-    return secret;
+    return Map.of(
+        KEY1, Map.of("title", "The Metrics IV", "year", "2020"),
+        KYE2, Map.of("name", "Jon Doe")
+    );
   }
 }
