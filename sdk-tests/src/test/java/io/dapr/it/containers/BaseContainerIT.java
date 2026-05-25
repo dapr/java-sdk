@@ -52,8 +52,8 @@ import java.util.Map;
  */
 public abstract class BaseContainerIT {
 
-  /** Pinned Dapr runtime image. Matches what spring-boot-4-sdk-tests uses. */
-  protected static final String DAPR_IMAGE = "daprio/daprd:1.15.6";
+  /** Pinned Dapr runtime image. Matches the testcontainers-dapr library default. */
+  protected static final String DAPR_IMAGE = io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
   protected static final String STATE_STORE_NAME = "statestore";
   protected static final String PUBSUB_NAME = "messagebus";
@@ -108,9 +108,11 @@ public abstract class BaseContainerIT {
       Class<?> serviceClass,
       AppRun.AppProtocol protocol,
       java.util.function.IntFunction<DaprContainer> daprFactory) throws Exception {
-    // Only the app port matters here — Dapr HTTP/gRPC ports will come from
-    // the started DaprContainer's getMappedPort. Allocate only what we need.
-    DaprPorts ports = DaprPorts.build(true, false, false);
+    // DaprPorts.build requires non-null http/grpc ports — its constructor builds an
+    // overrides map that calls .toString() on both. We pass true for all three even
+    // though the http/grpc ports are unused at runtime (the AppRun ctor below uses
+    // overrides from the started DaprContainer's mapped ports instead).
+    DaprPorts ports = DaprPorts.build(true, true, true);
     int appPort = ports.getAppPort();
     Testcontainers.exposeHostPorts(appPort);
 
