@@ -58,7 +58,7 @@ public class AppRun implements Stoppable {
    * DaprContainer's mapped host ports) instead of {@code ports.getHttpPort() /
    * ports.getGrpcPort()}.
    */
-  AppRun(DaprPorts ports,
+  public AppRun(DaprPorts ports,
          String successMessage,
          Class serviceClass,
          int maxWaitMilliseconds,
