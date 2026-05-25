@@ -113,17 +113,17 @@ public abstract class BaseContainerIT {
       Class<?> serviceClass,
       AppRun.AppProtocol protocol,
       java.util.function.IntFunction<DaprContainer> daprFactory) throws Exception {
-    // DaprPorts.build requires non-null http/grpc ports — its constructor builds an
-    // overrides map that calls .toString() on both. We pass true for all three even
-    // though the http/grpc ports are unused at runtime (the AppRun ctor below uses
-    // overrides from the started DaprContainer's mapped ports instead).
     DaprPorts ports = DaprPorts.build(true, true, true);
     int appPort = ports.getAppPort();
-    Testcontainers.exposeHostPorts(appPort);
 
     DaprContainer dapr = daprFactory.apply(appPort);
     // dapr is started inside the factory.
     deferStop(dapr);
+    // Expose the host port AFTER dapr.start() so Testcontainers' SSH bridge is set up
+    // while daprd is alive. spring-boot-4-sdk-tests does it this way and reliably
+    // discovers actors; exposing before container start has been observed to leave
+    // daprd unable to reach back to host.testcontainers.internal:<appPort>.
+    Testcontainers.exposeHostPorts(appPort);
 
     AppRun app = new AppRun(
         ports,
