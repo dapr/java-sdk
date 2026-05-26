@@ -7,7 +7,7 @@ spec:
   version: v1
   metadata:
   - name: url
-    value: https://httpbin.org/status/404
+    value: https://api.github.com/unknown_path
 scopes:
   - bindingit-httpoutputbinding-exception
 ---
@@ -20,7 +20,7 @@ spec:
   version: v1
   metadata:
     - name: url
-      value: https://httpbin.org/status/404
+      value: https://api.github.com/unknown_path
     - name: errorIfNot2XX
       value: "false"
 scopes:
