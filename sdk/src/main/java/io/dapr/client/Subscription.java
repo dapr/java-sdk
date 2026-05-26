@@ -146,7 +146,11 @@ public class Subscription<T> implements Closeable {
         }
 
         if (running.get()) {
-          long backoffMs = Math.min(1000L * (1L << reconnectAttempts), 30000L);
+          // Cap the shift (not just the resulting value) so the multiplication
+          // can never overflow Long; 1000 << 5 == 32000 already exceeds the
+          // 30s ceiling, so no useful range is lost.
+          int shift = Math.min(reconnectAttempts, 5);
+          long backoffMs = Math.min(1000L << shift, 30000L);
           try {
             Thread.sleep(backoffMs);
           } catch (InterruptedException e) {
@@ -199,6 +203,10 @@ public class Subscription<T> implements Closeable {
   public void close() {
     running.set(false);
     receiverStateChange.release();
+    // Interrupt both threads so that any in-flight Thread.sleep (e.g., the
+    // receiver's reconnect backoff, up to 30s) returns immediately instead
+    // of blocking shutdown.
+    this.receiver.interrupt();
     this.acker.interrupt();
   }
 
