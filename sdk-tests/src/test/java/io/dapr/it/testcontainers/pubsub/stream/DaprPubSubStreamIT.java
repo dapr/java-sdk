@@ -50,6 +50,8 @@ public class DaprPubSubStreamIT {
   private static final String TOPIC_NAME_FLUX = "stream-topic-flux";
   private static final String TOPIC_NAME_CLOUDEVENT = "stream-topic-cloudevent";
   private static final String TOPIC_NAME_RAWPAYLOAD = "stream-topic-rawpayload";
+  private static final String TOPIC_NAME_DLQ = "stream-topic-dlq";
+  private static final String TOPIC_NAME_DLQ_DEADLETTER = "stream-topic-dlq-deadletter";
   private static final String PUBSUB_NAME = "pubsub";
 
   @Container
@@ -220,6 +222,74 @@ public class DaprPubSubStreamIT {
       }, 60000);
 
       disposable.dispose();
+    }
+  }
+
+  /**
+   * Streaming subscription should forward DROPped messages to the configured
+   * dead-letter topic. Ports the {@code testPubSubDeadLetterTopic} test from
+   * the legacy {@code PubSubStreamIT} into the Testcontainers harness.
+   */
+  @Test
+  public void testPubSubDeadLetterTopic() throws Exception {
+    var runId = UUID.randomUUID().toString();
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
+         DaprPreviewClient previewClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER)
+             .buildPreviewClient()) {
+
+      Set<String> deadLetterMessageIds = Collections.synchronizedSet(new HashSet<>());
+      CountDownLatch deadLetterReady = new CountDownLatch(1);
+      CountDownLatch mainReady = new CountDownLatch(1);
+
+      // Subscribe to the dead-letter topic first so we don't miss any messages.
+      var deadLetterListener = new SubscriptionListener<String>() {
+        @Override
+        public Mono<Status> onEvent(CloudEvent<String> event) {
+          deadLetterReady.countDown();
+          if (event.getData() != null && event.getData().contains(runId)) {
+            deadLetterMessageIds.add(event.getId());
+          }
+          return Mono.just(Status.SUCCESS);
+        }
+
+        @Override
+        public void onError(RuntimeException exception) {
+        }
+      };
+
+      // Always-DROP listener on the main topic; daprd should forward each dropped
+      // message to the dead-letter topic.
+      var mainListener = new SubscriptionListener<String>() {
+        @Override
+        public Mono<Status> onEvent(CloudEvent<String> event) {
+          mainReady.countDown();
+          return Mono.just(Status.DROP);
+        }
+
+        @Override
+        public void onError(RuntimeException exception) {
+        }
+      };
+
+      try (var deadLetterSubscription = previewClient.subscribeToEvents(
+              PUBSUB_NAME, TOPIC_NAME_DLQ_DEADLETTER, deadLetterListener, TypeRef.STRING);
+           var mainSubscription = previewClient.subscribeToEvents(
+              PUBSUB_NAME, TOPIC_NAME_DLQ, TOPIC_NAME_DLQ_DEADLETTER, mainListener, TypeRef.STRING)) {
+
+        waitForSubscription(client, TOPIC_NAME_DLQ_DEADLETTER, deadLetterReady);
+        waitForSubscription(client, TOPIC_NAME_DLQ, mainReady);
+
+        for (int i = 0; i < NUM_MESSAGES; i++) {
+          String message = String.format("DLQ message #%d for run %s", i, runId);
+          client.publishEvent(PUBSUB_NAME, TOPIC_NAME_DLQ, message).block();
+        }
+
+        callWithRetry(() -> {
+          assertEquals(NUM_MESSAGES, deadLetterMessageIds.size(),
+              String.format("Got %d/%d dead-letter messages on topic %s",
+                  deadLetterMessageIds.size(), NUM_MESSAGES, TOPIC_NAME_DLQ_DEADLETTER));
+        }, 120000);
+      }
     }
   }
 }
