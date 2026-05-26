@@ -22,6 +22,9 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
@@ -95,6 +98,7 @@ public class DaprPubSubIT {
   private static final String BINARY_TOPIC_NAME = "binarytopic";
   private static final String TTL_TOPIC_NAME = "ttltopic";
   private static final String LONG_TOPIC_NAME = "testinglongvalues";
+  private static final String BULK_SUB_TOPIC_NAME = "topicBulkSub";
 
   private static final int NUM_MESSAGES = 10;
 
@@ -532,6 +536,49 @@ public class DaprPubSubIT {
         final List
             messages = client.invokeMethod(PUBSUB_APP_ID, "messages/" + TTL_TOPIC_NAME, null, HttpExtension.GET, List.class).block();
         assertThat(messages).hasSize(0);
+      }, 2000);
+    }
+  }
+
+  @Test
+  @DisplayName("Should deliver published messages as a single bulk batch to a @BulkSubscribe handler")
+  public void testPubSubBulkSubscribe() throws Exception {
+    // Send a batch of messages on the bulk-subscribe topic.
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d on topic %s", i, BULK_SUB_TOPIC_NAME);
+        client.publishEvent(PUBSUB_NAME, BULK_SUB_TOPIC_NAME, message).block();
+        LOG.info("Published message: '{}' to topic '{}' pubsub_name '{}'", message, BULK_SUB_TOPIC_NAME, PUBSUB_NAME);
+      }
+    }
+
+    // Give the subscriber a chance to receive the messages as a bulk batch.
+    Thread.sleep(5000);
+
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      callWithRetry(() -> {
+        LOG.info("Checking results for topic " + BULK_SUB_TOPIC_NAME);
+
+        @SuppressWarnings("unchecked")
+        Class<List<BulkSubscribeAppResponse>> clazz = (Class) List.class;
+
+        final List<BulkSubscribeAppResponse> messages = client.invokeMethod(
+            PUBSUB_APP_ID,
+            "messages/" + BULK_SUB_TOPIC_NAME,
+            null,
+            HttpExtension.GET,
+            clazz).block();
+
+        assertNotNull(messages);
+        // There should be a single bulk response containing NUM_MESSAGES entries.
+        assertThat(messages).hasSize(1);
+
+        BulkSubscribeAppResponse response = OBJECT_MAPPER.convertValue(
+            messages.get(0), BulkSubscribeAppResponse.class);
+        assertThat(response.getStatuses()).hasSize(NUM_MESSAGES);
+        for (BulkSubscribeAppResponseEntry entry : response.getStatuses()) {
+          assertThat(entry.getStatus()).isEqualTo(BulkSubscribeAppResponseStatus.SUCCESS);
+        }
       }, 2000);
     }
   }
