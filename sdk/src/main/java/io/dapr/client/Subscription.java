@@ -88,7 +88,7 @@ public class Subscription<T> implements Closeable {
     });
 
     this.receiver = new Thread(() -> {
-      int reconnectAttempts = 0;
+      long backoffMs = 1000L;
       while (running.get()) {
         var stream = asyncStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
           @Override
@@ -146,18 +146,14 @@ public class Subscription<T> implements Closeable {
         }
 
         if (running.get()) {
-          // Cap the shift (not just the resulting value) so the multiplication
-          // can never overflow Long; 1000 << 5 == 32000 already exceeds the
-          // 30s ceiling, so no useful range is lost.
-          int shift = Math.min(reconnectAttempts, 5);
-          long backoffMs = Math.min(1000L << shift, 30000L);
           try {
             Thread.sleep(backoffMs);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             running.set(false);
           }
-          reconnectAttempts++;
+          // Double the backoff for the next reconnect, capped at 30s.
+          backoffMs = Math.min(backoffMs * 2, 30_000L);
         }
       }
     });
