@@ -56,7 +56,6 @@ public class MethodInvokeIT extends BaseContainerIT {
                 DaprContainer d = daprBuilder(APP_NAME)
                     .withAppPort(appPort)
                     .withAppChannelAddress("host.testcontainers.internal");
-                d.start();
                 return d;
             });
         dapr = pair.dapr();

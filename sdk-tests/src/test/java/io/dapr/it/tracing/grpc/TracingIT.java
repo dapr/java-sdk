@@ -75,7 +75,6 @@ public class TracingIT extends BaseContainerIT {
                         ),
                         null
                     ));
-                d.start();
                 return d;
             });
         dapr = pair.dapr();
@@ -101,6 +100,6 @@ public class TracingIT extends BaseContainerIT {
 
         span.end();
 
-        Validation.validate(spanName, "calllocal/" + APP_NAME + "-service/sleepovergrpc", zipkinTracesUrl);
+        Validation.validate(spanName, "calllocal/" + APP_NAME + "/sleepovergrpc", zipkinTracesUrl);
     }
 }

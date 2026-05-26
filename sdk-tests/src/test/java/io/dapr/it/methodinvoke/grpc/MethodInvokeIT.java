@@ -58,7 +58,6 @@ public class MethodInvokeIT extends BaseContainerIT {
                     .withAppPort(appPort)
                     .withAppChannelAddress("host.testcontainers.internal")
                     .withAppProtocol(DaprProtocol.GRPC);
-                d.start();
                 return d;
             });
         dapr = pair.dapr();

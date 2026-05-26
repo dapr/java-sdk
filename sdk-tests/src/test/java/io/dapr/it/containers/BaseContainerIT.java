@@ -94,10 +94,12 @@ public abstract class BaseContainerIT {
   /**
    * Two-phase startup for ITs that need an app callback. Allocates the app
    * port, exposes it to Testcontainers, starts the AppRun subprocess so it
-   * has bound the host port, then lets the caller build and start the
-   * DaprContainer. Returns both. Both are registered for {@code @AfterAll}
-   * cleanup via {@link #deferStop} (DaprContainer first, AppRun second —
-   * stopped LIFO).
+   * has bound the host port, then lets the caller build the
+   * DaprContainer. Binds daprd to the pre-allocated host ports so the
+   * already-running app's {@code DAPR_HTTP_PORT} / {@code DAPR_GRPC_PORT}
+   * env vars (used by callbacks like {@code registerActorTimer}) point at
+   * a reachable daprd. Returns both. Both are registered for
+   * {@code @AfterAll} cleanup via {@link #deferStop}.
    *
    * <p>Order matters: starting daprd before the app causes daprd's
    * application-channel probe to succeed against the Testcontainers SSH
@@ -109,11 +111,13 @@ public abstract class BaseContainerIT {
    * @param appName       used both as the Dapr app id and the AppRun name
    * @param serviceClass  the class whose {@code main(String[])} the subprocess runs
    * @param protocol      reserved for future use; AppRun currently ignores it
-   * @param daprFactory   given the allocated app port, returns a STARTED
-   *                      DaprContainer (factory body builds DaprContainer,
+   * @param daprFactory   given the allocated app port, returns an UNSTARTED
+   *                      DaprContainer (factory body builds the container,
    *                      calls {@code .withAppPort(appPort)
-   *                      .withAppChannelAddress("host.testcontainers.internal")},
-   *                      and calls {@code .start()})
+   *                      .withAppChannelAddress("host.testcontainers.internal")}
+   *                      and other configuration, then returns it WITHOUT
+   *                      calling {@code .start()} — BaseContainerIT pins the
+   *                      daprd HTTP/gRPC host ports and starts the container).
    */
   protected static DaprAndApp startAppAndAttach(
       String appName,
@@ -122,6 +126,8 @@ public abstract class BaseContainerIT {
       java.util.function.IntFunction<DaprContainer> daprFactory) throws Exception {
     DaprPorts ports = DaprPorts.build(true, true, true);
     int appPort = ports.getAppPort();
+    int daprHttpPort = ports.getHttpPort();
+    int daprGrpcPort = ports.getGrpcPort();
 
     // Wire the SSH bridge before either side starts so daprd can resolve
     // host.testcontainers.internal:appPort the moment its container boots.
@@ -130,10 +136,9 @@ public abstract class BaseContainerIT {
     // Start the app subprocess BEFORE daprd. AppRun.start() blocks on
     // assertListeningOnPort, so by the time it returns the JVM has bound
     // appPort and /dapr/config will respond with the registered actor types.
-    // DAPR_HTTP_PORT/DAPR_GRPC_PORT env vars are passed as 0 because the
-    // ITs that use this helper build their DaprClients via newDaprClient(dapr)
-    // (which reads dapr's mapped ports directly) — the test app processes
-    // themselves never read DAPR_*_PORT.
+    // DAPR_HTTP_PORT/DAPR_GRPC_PORT point at the pre-allocated host ports
+    // we will pin daprd to below; this is what app-side callbacks like
+    // registerActorTimer use to dial back to the sidecar.
     AppRun app = new AppRun(
         ports,
         // Empty success-message: the legacy "dapr initialized. Status: Running" string is
@@ -145,13 +150,19 @@ public abstract class BaseContainerIT {
         "",
         serviceClass,
         60_000,
-        0,
-        0);
+        daprHttpPort,
+        daprGrpcPort);
     app.start();
     deferStop(app);
 
     DaprContainer dapr = daprFactory.apply(appPort);
-    // dapr is started inside the factory.
+    // Pin daprd's host ports so they match the values the AppRun's env was
+    // already given. Must be done before .start().
+    dapr.setPortBindings(java.util.List.of(
+        daprHttpPort + ":3500",
+        daprGrpcPort + ":50001"
+    ));
+    dapr.start();
     deferStop(dapr);
 
     // Daprd's HTTP healthz/outbound (the wait strategy on DaprContainer) returns 2xx as

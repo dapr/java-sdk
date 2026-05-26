@@ -67,7 +67,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseContainerIT {
               .withAppPort(appPort)
               .withAppChannelAddress("host.testcontainers.internal")
               .withComponent(redisStateStore(STATE_STORE_NAME));
-          d.start();
           return d;
         });
     dapr = pair.dapr();
