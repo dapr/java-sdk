@@ -13,9 +13,11 @@ limitations under the License.
 
 package io.dapr.it.state;
 
+import com.google.protobuf.ByteString;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.State;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprStateProtos;
 import org.junit.jupiter.api.AfterAll;
@@ -91,17 +93,23 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
    * the public API for obtaining a raw {@code DaprGrpc.DaprBlockingStub} routed
    * through the SDK's managed channel. Ports the only test from the legacy
    * {@code HelloWorldClientIT}, which previously exercised this API end-to-end
-   * via {@code dapr run}.
+   * via {@code dapr run}. Uses the raw stub for save/get/delete to avoid the
+   * SDK's default JSON serialization wrapping the value in quotes.
    */
   @Test
   public void rawGrpcStubGetAndDeleteState() {
     final String key = "newGrpcStubKey";
     final String value = "Hello World";
 
-    DaprClient daprClient = buildDaprClient();
-    daprClient.saveState(STATE_STORE_NAME, key, value).block();
+    DaprGrpc.DaprBlockingStub stub = buildDaprClient().newGrpcStub("n/a", DaprGrpc::newBlockingStub);
 
-    DaprGrpc.DaprBlockingStub stub = daprClient.newGrpcStub("n/a", DaprGrpc::newBlockingStub);
+    stub.saveState(DaprStateProtos.SaveStateRequest.newBuilder()
+        .setStoreName(STATE_STORE_NAME)
+        .addStates(CommonProtos.StateItem.newBuilder()
+            .setKey(key)
+            .setValue(ByteString.copyFromUtf8(value))
+            .build())
+        .build());
 
     DaprStateProtos.GetStateResponse before = stub.getState(DaprStateProtos.GetStateRequest.newBuilder()
         .setStoreName(STATE_STORE_NAME)
