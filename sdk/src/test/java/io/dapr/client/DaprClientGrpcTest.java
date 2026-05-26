@@ -2302,14 +2302,14 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     assertDoesNotThrow(() -> client.scheduleJob(expectedScheduleJobRequest).block());
 
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    verify(daprStub, times(1)).scheduleJob(captor.capture(), Mockito.any());
     DaprJobsProtos.ScheduleJobRequest actualScheduleJobReq = captor.getValue();
 
     assertEquals("testJob", actualScheduleJobReq.getJob().getName());
@@ -2322,6 +2322,31 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void scheduleJobShouldFallBackToAlpha1WhenStableRpcIsUnimplemented() {
+    ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest("testJob",
+        JobSchedule.fromString("*/5 * * * *"));
+
+    // The stable ScheduleJob RPC is not implemented on the (older) sidecar...
+    doAnswer(invocation -> {
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onError(newStatusRuntimeException("UNIMPLEMENTED", "stable ScheduleJob not implemented"));
+      return null;
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+
+    // ...so the client falls back to the deprecated Alpha1 RPC.
+    doAnswer(invocation -> {
+      StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+
+    assertDoesNotThrow(() -> client.scheduleJob(scheduleJobRequest).block());
+
+    verify(daprStub, times(1)).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), Mockito.any());
+    verify(daprStub, times(1)).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), Mockito.any());
+  }
+
+  @Test
   public void scheduleJobShouldSucceedWhenRequiredFieldsNameAndDueTimeArePresentInRequest() {
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         .withZone(ZoneOffset.UTC);
@@ -2330,7 +2355,7 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest =
         new ScheduleJobRequest("testJob", Instant.now().plus(10, ChronoUnit.MINUTES));
@@ -2339,7 +2364,7 @@ public class DaprClientGrpcTest {
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    verify(daprStub, times(1)).scheduleJob(captor.capture(), Mockito.any());
     DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
     DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
@@ -2360,7 +2385,7 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"));
@@ -2369,7 +2394,7 @@ public class DaprClientGrpcTest {
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    verify(daprStub, times(1)).scheduleJob(captor.capture(), Mockito.any());
     DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
     DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
@@ -2385,7 +2410,7 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
@@ -2396,7 +2421,7 @@ public class DaprClientGrpcTest {
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    verify(daprStub, times(1)).scheduleJob(captor.capture(), Mockito.any());
     DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
     DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
@@ -2440,7 +2465,7 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
@@ -2451,7 +2476,7 @@ public class DaprClientGrpcTest {
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    verify(daprStub, times(1)).scheduleJob(captor.capture(), Mockito.any());
     DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
     DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
@@ -2469,7 +2494,7 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
@@ -2480,7 +2505,7 @@ public class DaprClientGrpcTest {
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    verify(daprStub, times(1)).scheduleJob(captor.capture(), Mockito.any());
     DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
     DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
@@ -2499,7 +2524,7 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
@@ -2511,7 +2536,7 @@ public class DaprClientGrpcTest {
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    verify(daprStub, times(1)).scheduleJob(captor.capture(), Mockito.any());
     DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
     DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
@@ -2539,7 +2564,7 @@ public class DaprClientGrpcTest {
         observer.onError(newStatusRuntimeException("ALREADY_EXISTS", "Job with name 'testJob' already exists"));
       }
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     // First call should succeed
     ScheduleJobRequest firstRequest = new ScheduleJobRequest("testJob", Instant.now());
@@ -2548,7 +2573,7 @@ public class DaprClientGrpcTest {
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
 
-    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    verify(daprStub, times(1)).scheduleJob(captor.capture(), Mockito.any());
     DaprJobsProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
     DaprJobsProtos.Job job = actualScheduleJobRequest.getJob();
     assertEquals("testJob", job.getName());
@@ -2572,7 +2597,7 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response for both calls
       return null;
-    }).when(daprStub).scheduleJobAlpha1(any(DaprJobsProtos.ScheduleJobRequest.class), any());
+    }).when(daprStub).scheduleJob(any(DaprJobsProtos.ScheduleJobRequest.class), any());
 
     // First call should succeed
     ScheduleJobRequest firstRequest = new ScheduleJobRequest("testJob", Instant.now());
@@ -2586,7 +2611,7 @@ public class DaprClientGrpcTest {
     // Verify that both calls were made successfully
     ArgumentCaptor<DaprJobsProtos.ScheduleJobRequest> captor =
         ArgumentCaptor.forClass(DaprJobsProtos.ScheduleJobRequest.class);
-    verify(daprStub, times(2)).scheduleJobAlpha1(captor.capture(), any());
+    verify(daprStub, times(2)).scheduleJob(captor.capture(), any());
 
     // Verify the first call doesn't have overwrite set
     DaprJobsProtos.ScheduleJobRequest firstActualRequest = captor.getAllValues().get(0);
@@ -2622,7 +2647,7 @@ public class DaprClientGrpcTest {
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJob(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2652,7 +2677,7 @@ public class DaprClientGrpcTest {
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJob(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2683,7 +2708,7 @@ public class DaprClientGrpcTest {
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJob(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2716,7 +2741,7 @@ public class DaprClientGrpcTest {
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJob(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2751,7 +2776,7 @@ public class DaprClientGrpcTest {
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJob(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2788,7 +2813,7 @@ public class DaprClientGrpcTest {
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJob(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2826,7 +2851,7 @@ public class DaprClientGrpcTest {
           .build());
       observer.onCompleted();
       return null;
-    }).when(daprStub).getJobAlpha1(any(DaprJobsProtos.GetJobRequest.class), any());
+    }).when(daprStub).getJob(any(DaprJobsProtos.GetJobRequest.class), any());
 
     Mono<GetJobResponse> resultMono = client.getJob(getJobRequest);
 
@@ -2852,7 +2877,7 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprJobsProtos.DeleteJobResponse> observer = invocation.getArgument(1);
       observer.onCompleted(); // Simulate successful response
       return null;
-    }).when(daprStub).deleteJobAlpha1(any(DaprJobsProtos.DeleteJobRequest.class), any());
+    }).when(daprStub).deleteJob(any(DaprJobsProtos.DeleteJobRequest.class), any());
 
     Mono<Void> resultMono = client.deleteJob(deleteJobRequest);
 
