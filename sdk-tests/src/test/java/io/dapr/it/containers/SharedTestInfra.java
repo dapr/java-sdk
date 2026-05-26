@@ -28,10 +28,12 @@ public final class SharedTestInfra {
 
   private static final String REDIS_NETWORK_ALIAS = "redis";
   private static final String ZIPKIN_NETWORK_ALIAS = "zipkin";
+  private static final String MONGO_NETWORK_ALIAS = "mongo";
 
   private static volatile Network network;
   private static volatile GenericContainer<?> redis;
   private static volatile GenericContainer<?> zipkin;
+  private static volatile GenericContainer<?> mongo;
 
   private SharedTestInfra() {}
 
@@ -72,5 +74,21 @@ public final class SharedTestInfra {
 
   public static String zipkinInternalEndpoint() {
     return "http://" + ZIPKIN_NETWORK_ALIAS + ":9411/api/v2/spans";
+  }
+
+  public static synchronized GenericContainer<?> mongo() {
+    if (mongo == null) {
+      mongo = new GenericContainer<>(DockerImageName.parse("mongo:7"))
+          .withNetwork(network())
+          .withNetworkAliases(MONGO_NETWORK_ALIAS)
+          .withExposedPorts(27017)
+          .withReuse(true);
+      mongo.start();
+    }
+    return mongo;
+  }
+
+  public static String mongoInternalHost() {
+    return MONGO_NETWORK_ALIAS + ":27017";
   }
 }

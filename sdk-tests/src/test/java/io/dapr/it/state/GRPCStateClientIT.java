@@ -35,7 +35,8 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
   @BeforeAll
   public static void init() {
     dapr = daprBuilder("grpc-state-it")
-        .withComponent(redisStateStore(STATE_STORE_NAME));
+        .withComponent(redisStateStore(STATE_STORE_NAME))
+        .withComponent(mongoStateStore(MONGO_QUERY_STATE_STORE_NAME));
     dapr.start();
     deferStop(dapr);
     daprClient = newDaprClient(dapr);

@@ -28,7 +28,6 @@ import io.dapr.client.domain.query.Sorting;
 import io.dapr.client.domain.query.filters.EqFilter;
 import io.dapr.exceptions.DaprException;
 import io.dapr.it.containers.BaseContainerIT;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
@@ -53,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public abstract class AbstractStateClientIT extends BaseContainerIT {
   private static final Logger logger = Logger.getLogger(AbstractStateClientIT.class.getName());
-  private static final String QUERY_STATE_STORE = "mongo-statestore";
+  private static final String QUERY_STATE_STORE = MONGO_QUERY_STATE_STORE_NAME;
 
   @Test
   public void saveAndGetState() {
@@ -141,7 +140,6 @@ public abstract class AbstractStateClientIT extends BaseContainerIT {
     assertNull(result.stream().skip(2).findFirst().get().getError());
   }
 
-  @Disabled("Requires MongoDB query state store; out of scope for Testcontainers migration.")
   @Test
   public void saveAndQueryAndDeleteState() throws JsonProcessingException {
     final String stateKeyOne = UUID.randomUUID().toString();

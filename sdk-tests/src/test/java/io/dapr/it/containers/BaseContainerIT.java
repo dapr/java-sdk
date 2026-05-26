@@ -59,6 +59,7 @@ public abstract class BaseContainerIT {
   protected static final String STATE_STORE_NAME = "statestore";
   protected static final String PUBSUB_NAME = "messagebus";
   protected static final String CONFIG_STORE_NAME = "redisconfigstore";
+  protected static final String MONGO_QUERY_STATE_STORE_NAME = "mongo-statestore";
 
   // JUnit Jupiter runs @BeforeAll/@AfterAll single-threaded per class, so no synchronization needed.
   private static final Deque<Stoppable> TO_BE_STOPPED = new LinkedList<>();
@@ -244,6 +245,22 @@ public abstract class BaseContainerIT {
     return new Component(name, "configuration.redis", "v1", Map.of(
         "redisHost", SharedTestInfra.redisInternalHost(),
         "redisPassword", ""
+    ));
+  }
+
+  /**
+   * Mongo-backed state store with query API support. Lazily starts the
+   * shared Mongo container before returning the component. Used by
+   * {@code AbstractStateClientIT#saveAndQueryAndDeleteState}, which exercises
+   * the Dapr preview Query State API — Redis doesn't support that API, so a
+   * separate store is required.
+   */
+  protected static Component mongoStateStore(String name) {
+    SharedTestInfra.mongo();   // ensure Mongo is up before DaprContainer needs it
+    return new Component(name, "state.mongodb", "v1", Map.of(
+        "host", SharedTestInfra.mongoInternalHost(),
+        "databaseName", "local",
+        "collectionName", "testCollection"
     ));
   }
 
