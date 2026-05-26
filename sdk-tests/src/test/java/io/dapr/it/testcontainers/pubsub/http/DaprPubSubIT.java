@@ -559,15 +559,15 @@ public class DaprPubSubIT {
       callWithRetry(() -> {
         LOG.info("Checking results for topic " + BULK_SUB_TOPIC_NAME);
 
-        @SuppressWarnings("unchecked")
-        Class<List<BulkSubscribeAppResponse>> clazz = (Class) List.class;
-
-        final List<BulkSubscribeAppResponse> messages = client.invokeMethod(
+        // The subscriber returns BulkSubscribeAppResponse objects, but the controller's
+        // generic List response type erases at runtime, so Jackson deserializes each
+        // element to LinkedHashMap. Take the list as List<?> and convertValue each item.
+        final List<?> messages = client.invokeMethod(
             PUBSUB_APP_ID,
             "messages/" + BULK_SUB_TOPIC_NAME,
             null,
             HttpExtension.GET,
-            clazz).block();
+            List.class).block();
 
         assertNotNull(messages);
 
@@ -577,7 +577,7 @@ public class DaprPubSubIT {
         // contract that matters: every published message reached the bulk endpoint with
         // SUCCESS, regardless of how the runtime batched them.
         int totalEntries = 0;
-        for (BulkSubscribeAppResponse rawResponse : messages) {
+        for (Object rawResponse : messages) {
           BulkSubscribeAppResponse response = OBJECT_MAPPER.convertValue(
               rawResponse, BulkSubscribeAppResponse.class);
           for (BulkSubscribeAppResponseEntry entry : response.getStatuses()) {
