@@ -62,7 +62,7 @@ public final class SharedTestInfra {
 
   public static synchronized GenericContainer<?> zipkin() {
     if (zipkin == null) {
-      zipkin = new GenericContainer<>(DockerImageName.parse("openzipkin/zipkin:latest"))
+      zipkin = new GenericContainer<>(DockerImageName.parse("openzipkin/zipkin:3.4"))
           .withNetwork(network())
           .withNetworkAliases(ZIPKIN_NETWORK_ALIAS)
           .withExposedPorts(9411)
