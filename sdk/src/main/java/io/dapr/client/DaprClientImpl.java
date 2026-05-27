@@ -1517,13 +1517,23 @@ public class DaprClientImpl extends AbstractDaprClient {
         jobBuilder.setFailurePolicy(FailurePolicyUtils.getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
       }
 
+      DaprJobsProtos.ScheduleJobRequest request = DaprJobsProtos.ScheduleJobRequest.newBuilder()
+          .setOverwrite(scheduleJobRequest.getOverwrite())
+          .setJob(jobBuilder.build())
+          .build();
+
       Mono<DaprJobsProtos.ScheduleJobResponse> scheduleJobResponseMono =
-          Mono.deferContextual(context -> this.createMono(
-                  it -> intercept(context, asyncStub)
-                      .scheduleJobAlpha1(DaprJobsProtos.ScheduleJobRequest.newBuilder()
-                                  .setOverwrite(scheduleJobRequest.getOverwrite())
-                                  .setJob(jobBuilder.build()).build(), it)
-              )
+          Mono.deferContextual(context ->
+              this.<DaprJobsProtos.ScheduleJobResponse>createMono(
+                  it -> intercept(context, asyncStub).scheduleJob(request, it)
+              ).onErrorResume(throwable -> {
+                // The stable ScheduleJob RPC is unavailable on pre-1.18 sidecars, fall back to Alpha1.
+                if (isUnimplemented(throwable)) {
+                  return this.<DaprJobsProtos.ScheduleJobResponse>createMono(
+                      it -> intercept(context, asyncStub).scheduleJobAlpha1(request, it));
+                }
+                return Mono.error(throwable);
+              })
           );
 
       return scheduleJobResponseMono.then();
@@ -1539,12 +1549,22 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateGetJobRequest(getJobRequest);
 
+      DaprJobsProtos.GetJobRequest request = DaprJobsProtos.GetJobRequest.newBuilder()
+          .setName(getJobRequest.getName())
+          .build();
+
       Mono<DaprJobsProtos.GetJobResponse> getJobResponseMono =
-          Mono.deferContextual(context -> this.createMono(
-                  it -> intercept(context, asyncStub)
-                      .getJobAlpha1(DaprJobsProtos.GetJobRequest.newBuilder()
-                          .setName(getJobRequest.getName()).build(), it)
-              )
+          Mono.deferContextual(context ->
+              this.<DaprJobsProtos.GetJobResponse>createMono(
+                  it -> intercept(context, asyncStub).getJob(request, it)
+              ).onErrorResume(throwable -> {
+                // The stable GetJob RPC is unavailable on pre-1.18 sidecars, fall back to Alpha1.
+                if (isUnimplemented(throwable)) {
+                  return this.<DaprJobsProtos.GetJobResponse>createMono(
+                      it -> intercept(context, asyncStub).getJobAlpha1(request, it));
+                }
+                return Mono.error(throwable);
+              })
           );
 
       return getJobResponseMono.map(response -> {
@@ -1602,18 +1622,38 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateDeleteJobRequest(deleteJobRequest);
 
+      DaprJobsProtos.DeleteJobRequest request = DaprJobsProtos.DeleteJobRequest.newBuilder()
+          .setName(deleteJobRequest.getName())
+          .build();
+
       Mono<DaprJobsProtos.DeleteJobResponse> deleteJobResponseMono =
-          Mono.deferContextual(context -> this.createMono(
-                  it -> intercept(context, asyncStub)
-                      .deleteJobAlpha1(DaprJobsProtos.DeleteJobRequest.newBuilder()
-                          .setName(deleteJobRequest.getName()).build(), it)
-              )
+          Mono.deferContextual(context ->
+              this.<DaprJobsProtos.DeleteJobResponse>createMono(
+                  it -> intercept(context, asyncStub).deleteJob(request, it)
+              ).onErrorResume(throwable -> {
+                // The stable DeleteJob RPC is unavailable on pre-1.18 sidecars, fall back to Alpha1.
+                if (isUnimplemented(throwable)) {
+                  return this.<DaprJobsProtos.DeleteJobResponse>createMono(
+                      it -> intercept(context, asyncStub).deleteJobAlpha1(request, it));
+                }
+                return Mono.error(throwable);
+              })
           );
 
       return deleteJobResponseMono.then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  /**
+   * Returns true when a failed RPC indicates the sidecar has not implemented the stable RPC,
+   * so the caller should retry against the deprecated Alpha1 RPC. The gRPC status is wrapped in a
+   * {@link DaprException} (and an {@link java.util.concurrent.ExecutionException}), so we let gRPC
+   * walk the cause chain to recover the original status code.
+   */
+  private static boolean isUnimplemented(Throwable throwable) {
+    return io.grpc.Status.fromThrowable(throwable).getCode() == io.grpc.Status.Code.UNIMPLEMENTED;
   }
 
   private void validateScheduleJobRequest(ScheduleJobRequest scheduleJobRequest) {
