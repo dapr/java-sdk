@@ -230,6 +230,16 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
           Thread.currentThread().interrupt();
           break;
         }
+
+        // After repeated connection failures, gRPC's default exponential backoff
+        // (1s → up to 120s) can outrun this 5s retry loop: the channel is mid-backoff
+        // when the next getWorkItems call fires, so it fast-fails with UNAVAILABLE
+        // instead of attempting reconnection. Short-circuit the backoff timer so the
+        // retry interval is bounded by this loop, not by the channel's internal state.
+        Channel ch = this.sidecarClient.getChannel();
+        if (ch instanceof ManagedChannel) {
+          ((ManagedChannel) ch).resetConnectBackoff();
+        }
       }
     }
   }
