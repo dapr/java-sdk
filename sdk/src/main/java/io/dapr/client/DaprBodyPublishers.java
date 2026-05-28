@@ -59,6 +59,18 @@ public final class DaprBodyPublishers {
    * <p>Callers are still responsible for setting an appropriate
    * {@code Content-Type} header (typically {@code application/json}).
    *
+   * <p>This helper is a convenience for the default-serializer case. It does
+   * <em>not</em> honor a custom {@link io.dapr.serializer.DaprObjectSerializer}
+   * configured on the {@link DaprClientBuilder}. Callers with a custom serializer
+   * should serialize the value themselves and wrap the resulting bytes:
+   * <pre>{@code
+   * byte[] bytes = mySerializer.serialize(value);
+   * BodyPublisher body = HttpRequest.BodyPublishers.ofByteArray(bytes);
+   * }</pre>
+   * The only behavior this helper adds over a direct {@code ofByteArray} call is
+   * choosing a length-known {@link BodyPublisher} so the JDK emits
+   * {@code Content-Length} rather than {@code Transfer-Encoding: chunked}.
+   *
    * @param value object to serialize; {@code null} yields an empty body.
    * @return a body publisher carrying the JSON-encoded bytes.
    * @throws UncheckedIOException if serialization fails.
