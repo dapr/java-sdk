@@ -6,7 +6,7 @@
 
   <groupId>io.dapr.spring</groupId>
   <artifactId>dapr-spring-bom</artifactId>
-  <version>1.18.0-rc-2</version>
+  <version>1.18.0-rc-3</version>
   <packaging>pom</packaging>
   <name>dapr-spring-bom</name>
   <description>Dapr Spring Bill of Materials (BOM). Import this POM to manage versions
@@ -45,7 +45,7 @@
 
   <properties>
     <gpg.skip>true</gpg.skip>
-    <dapr.sdk.version>1.18.0-rc-2</dapr.sdk.version>
+    <dapr.sdk.version>1.18.0-rc-3</dapr.sdk.version>
   </properties>
 
   <build>
