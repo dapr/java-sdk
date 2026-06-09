@@ -218,11 +218,83 @@ public class DaprChatModelDecorator implements ChatModel {
       return null;
     }
     try {
-      Object messages = request.getClass().getMethod("messages").invoke(request);
-      return String.valueOf(messages);
+      List<?> messages = (List<?>) request.getClass().getMethod("messages").invoke(request);
+      StringBuilder sb = new StringBuilder("[");
+      for (int i = 0; i < messages.size(); i++) {
+        if (i > 0) {
+          sb.append(", ");
+        }
+        sb.append(formatMessage(messages.get(i)));
+      }
+      sb.append("]");
+      return sb.toString();
     } catch (Exception ex) {
       return String.valueOf(request);
     }
+  }
+
+  /**
+   * Formats a single ChatMessage into a compact, human-readable string
+   * that omits null fields. Handles SystemMessage, UserMessage, AiMessage,
+   * and ToolExecutionResultMessage.
+   */
+  @SuppressWarnings("unchecked")
+  private String formatMessage(Object msg) {
+    String type = msg.getClass().getSimpleName();
+    try {
+      switch (type) {
+        case "SystemMessage": {
+          Object text = msg.getClass().getMethod("text").invoke(msg);
+          return "SystemMessage: " + quote(text);
+        }
+        case "UserMessage": {
+          Object text = msg.getClass().getMethod("singleText").invoke(msg);
+          return "UserMessage: " + quote(text);
+        }
+        case "AiMessage": {
+          Object text = msg.getClass().getMethod("text").invoke(msg);
+          if (text != null) {
+            return "AiMessage: " + quote(text);
+          }
+          Object toolReqs = msg.getClass().getMethod("toolExecutionRequests").invoke(msg);
+          if (toolReqs instanceof List<?> list && !list.isEmpty()) {
+            StringBuilder sb = new StringBuilder("AiMessage: tool_calls=[");
+            for (int i = 0; i < list.size(); i++) {
+              if (i > 0) {
+                sb.append(", ");
+              }
+              Object req = list.get(i);
+              Object name = req.getClass().getMethod("name").invoke(req);
+              Object args = req.getClass().getMethod("arguments").invoke(req);
+              sb.append(name).append("(").append(args).append(")");
+            }
+            sb.append("]");
+            return sb.toString();
+          }
+          return "AiMessage: (empty)";
+        }
+        case "ToolExecutionResultMessage": {
+          Object toolName = msg.getClass().getMethod("toolName").invoke(msg);
+          Object text = msg.getClass().getMethod("text").invoke(msg);
+          return "ToolResult[" + toolName + "]: " + quote(text);
+        }
+        default:
+          return type + ": " + msg;
+      }
+    } catch (ReflectiveOperationException e) {
+      return type + ": " + msg;
+    }
+  }
+
+  private static String quote(Object value) {
+    if (value == null) {
+      return "null";
+    }
+    String s = String.valueOf(value);
+    if (s.length() > 200) {
+      s = s.substring(0, 200) + "...";
+    }
+    return "\"" + s + "\"";
   }
 
   /**

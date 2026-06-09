@@ -136,13 +136,13 @@ kill -9 <pid>
 mvn quarkus:dev
 ```
 
-In the Dapr dashboard, completed agents show cached results. The crashed agent shows "Recovery timeout" in logs, then re-runs and completes.
+In the Dapr dashboard, completed agents show cached results. The crashed agent is detected via `TaskFailedException`, then re-runs and completes.
 
 ### Key classes
 
 | Class | Role |
 |-------|------|
-| `AgentRunWorkflow` | Detects missing AiServices thread via timer, triggers recovery |
+| `AgentRunWorkflow` | Catches `TaskFailedException` on activity failure, triggers recovery |
 | `RecoveryAgentActivity` | Self-contained ReAct loop: ChatModel.chat() + tool dispatch |
 | `ToolRegistry` | CDI bean that discovers @Tool methods at startup for recovery |
 | `AgentToolClassRegistry` | Maps agent names to their @ToolBox classes (populated at build time) |

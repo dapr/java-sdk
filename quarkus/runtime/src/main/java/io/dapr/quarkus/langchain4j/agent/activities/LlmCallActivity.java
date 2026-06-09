@@ -127,7 +127,26 @@ public class LlmCallActivity implements WorkflowActivity {
       Object aiMessage = result.getClass().getMethod("aiMessage").invoke(result);
       if (aiMessage != null) {
         Object text = aiMessage.getClass().getMethod("text").invoke(aiMessage);
-        return String.valueOf(text);
+        if (text != null) {
+          return String.valueOf(text);
+        }
+        // text is null — check if the LLM returned tool execution requests
+        Object toolRequests = aiMessage.getClass()
+            .getMethod("toolExecutionRequests").invoke(aiMessage);
+        if (toolRequests instanceof java.util.List<?> list && !list.isEmpty()) {
+          StringBuilder sb = new StringBuilder("[tool_calls: ");
+          for (int i = 0; i < list.size(); i++) {
+            if (i > 0) {
+              sb.append(", ");
+            }
+            Object req = list.get(i);
+            Object name = req.getClass().getMethod("name").invoke(req);
+            sb.append(name);
+          }
+          sb.append("]");
+          return sb.toString();
+        }
+        return null;
       }
     } catch (ReflectiveOperationException ignored) {
       // Not a ChatResponse or missing expected methods — fall through.
