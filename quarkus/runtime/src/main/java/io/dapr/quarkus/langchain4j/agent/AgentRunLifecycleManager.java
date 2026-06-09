@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.agent;
 
+import io.dapr.quarkus.langchain4j.agent.recovery.AgentToolClassRegistry;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentEvent;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentRunInput;
 import io.dapr.quarkus.langchain4j.workflow.DaprAgentServiceUtil;
@@ -22,6 +23,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
+import java.util.List;
 import java.util.UUID;
 /**
  * Request-scoped CDI bean that manages the lifecycle of a lazily-started
@@ -71,9 +73,11 @@ public class AgentRunLifecycleManager {
       String name = (agentName != null && !agentName.isBlank()) ? agentName : "standalone";
       AgentRunContext runContext = new AgentRunContext(agentRunId);
       DaprAgentRunRegistry.register(agentRunId, runContext);
+      List<String> toolClasses = AgentToolClassRegistry.get(name);
       workflowClient.scheduleNewWorkflow(
           DaprAgentServiceUtil.agentWorkflowName(name),
-          new AgentRunInput(agentRunId, name, userMessage, systemMessage), agentRunId);
+          new AgentRunInput(agentRunId, name, userMessage, systemMessage, toolClasses),
+          agentRunId);
       DaprAgentContextHolder.set(agentRunId);
       LOG.infof("[AgentRun:%s] AgentRunWorkflow started — workflow=%s, agent=%s",
           agentRunId, DaprAgentServiceUtil.agentWorkflowName(name), name);

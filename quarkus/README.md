@@ -104,8 +104,51 @@ Swap LLM providers by changing the Dapr component YAML — no Java code changes.
 
 See [travel-planner-agents](https://github.com/javier-aliaga/travel-planner-agents) for a complete example with all agent types, Makefile targets, and Dapr components.
 
+## Crash Recovery
+
+If the process crashes mid-execution, completed agents are not re-run. The in-progress agent is automatically re-run from scratch using its original prompt and tools.
+
+### How it works
+
+1. **Normal operation**: LangChain4j's AiServices drives the ReAct loop. Each LLM call and tool call is recorded as a Dapr Workflow activity.
+2. **Crash**: The process dies. Dapr workflow history persists.
+3. **Restart**: Dapr replays the workflow. Completed activities return cached results instantly.
+4. **Recovery detection**: The in-progress activity is re-dispatched but fails because the in-memory `AgentRunContext` is gone. `AgentRunWorkflow` catches the failure.
+5. **Agent re-run**: `RecoveryAgentActivity` re-executes the agent's entire ReAct loop from scratch — calling `ChatModel.chat()` directly and invoking tools via `ToolRegistry`.
+
+### Recovery granularity
+
+| Scope | Behavior |
+|-------|----------|
+| Orchestration (e.g., Agent1 → Agent2 → Agent3) | Completed agents are skipped (Dapr child workflow replay). Only the in-progress agent re-runs. |
+| Single agent (LLM calls + tool calls) | The entire agent re-runs from its original prompt. Individual LLM/tool calls within the agent are not skipped. |
+
+### Demo: simulating a crash
+
+```bash
+# 1. Start the app and trigger a multi-agent workflow
+curl "http://localhost:8080/travel/plan?origin=NYC&destination=Paris"
+
+# 2. Kill the process mid-execution (e.g., during the second agent)
+kill -9 <pid>
+
+# 3. Restart the app — the workflow resumes automatically
+mvn quarkus:dev
+```
+
+In the Dapr dashboard, completed agents show cached results. The crashed agent shows "Recovery timeout" in logs, then re-runs and completes.
+
+### Key classes
+
+| Class | Role |
+|-------|------|
+| `AgentRunWorkflow` | Detects missing AiServices thread via timer, triggers recovery |
+| `RecoveryAgentActivity` | Self-contained ReAct loop: ChatModel.chat() + tool dispatch |
+| `ToolRegistry` | CDI bean that discovers @Tool methods at startup for recovery |
+| `AgentToolClassRegistry` | Maps agent names to their @ToolBox classes (populated at build time) |
+
 ## Known Limitations
 
 - **Nested composites**: `@ParallelAgent` inside `@SequenceAgent` is unstable (input type mismatch)
-- **Crash recovery**: Workflow history survives but mid-agent resumption requires future work
+- **Recovery granularity**: Agent-level only — individual LLM/tool calls within an agent are re-executed (not skipped)
 - **Small models**: llama3.2 (3B) sometimes malforms tool call arguments; llama3.1:8b+ recommended

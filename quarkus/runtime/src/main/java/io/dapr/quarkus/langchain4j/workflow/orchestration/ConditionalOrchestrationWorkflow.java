@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.workflow.orchestration;
 
+import io.dapr.quarkus.langchain4j.agent.recovery.AgentToolClassRegistry;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentRunInput;
 import io.dapr.quarkus.langchain4j.workflow.DaprAgentServiceUtil;
 import io.dapr.quarkus.langchain4j.workflow.DaprPlannerRegistry;
@@ -48,7 +49,8 @@ public class ConditionalOrchestrationWorkflow implements Workflow {
           String agentRunId = input.plannerId() + ":" + i;
           AgentMetadata metadata = planner.getAgentMetadata(i);
           AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
-              metadata.userMessage(), metadata.systemMessage());
+              metadata.userMessage(), metadata.systemMessage(),
+              AgentToolClassRegistry.get(metadata.agentName()));
 
           var childWorkflow = ctx.callChildWorkflow(
               DaprAgentServiceUtil.agentRunName(metadata.agentName()), agentInput, agentRunId, Void.class);

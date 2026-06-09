@@ -24,24 +24,29 @@ import java.util.List;
  * workflow custom status after every activity so observers can follow execution
  * progress in real time, and reflects the final state once {@code "done"} is received.
  *
- * @param agentName  human-readable name of the {@code @Agent} that was executed
- * @param toolCalls  ordered list of tool calls made by the agent, each with its
- *                   input arguments and return value
- * @param llmCalls   ordered list of LLM calls made by the agent, each with the
- *                   model method name and the response text
+ * @param agentName      human-readable name of the {@code @Agent} that was executed
+ * @param toolCalls      ordered list of tool calls made by the agent, each with its
+ *                       input arguments and return value
+ * @param llmCalls       ordered list of LLM calls made by the agent, each with the
+ *                       model method name and the response text
+ * @param recoveryResult if the agent was recovered after a crash, the final text response
+ *                       from the recovery ReAct loop; {@code null} for normal completions
  */
 public record AgentRunOutput(
     String agentName,
     List<ToolCallOutput> toolCalls,
-    List<LlmCallOutput> llmCalls) {
+    List<LlmCallOutput> llmCalls,
+    String recoveryResult) {
 
   /**
    * Creates an AgentRunOutput with unmodifiable defensive copies of the lists.
    */
   public AgentRunOutput(String agentName, List<ToolCallOutput> toolCalls,
-      List<LlmCallOutput> llmCalls) {
+      List<LlmCallOutput> llmCalls, String recoveryResult) {
     this.agentName = agentName;
     this.toolCalls = toolCalls == null ? null : Collections.unmodifiableList(List.copyOf(toolCalls));
     this.llmCalls = llmCalls == null ? null : Collections.unmodifiableList(List.copyOf(llmCalls));
+    this.recoveryResult = recoveryResult;
   }
+
 }

@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.agent.workflow;
 
+import java.util.List;
+
 /**
  * Input record for {@link AgentRunWorkflow}.
  *
@@ -26,6 +28,10 @@ package io.dapr.quarkus.langchain4j.agent.workflow;
  * @param systemMessage  the {@code @SystemMessage} template text (CDI bean path) or the
  *                       rendered system message from the {@code ChatRequest} (AiService path);
  *                       may be {@code null}
+ * @param toolClassNames fully-qualified class names of {@code @Tool} classes available to this
+ *                       agent (from {@code @ToolBox} annotation). Used by crash recovery to
+ *                       re-run the agent's ReAct loop. May be {@code null} or empty.
  */
-public record AgentRunInput(String agentRunId, String agentName, String userMessage, String systemMessage) {
+public record AgentRunInput(String agentRunId, String agentName, String userMessage,
+    String systemMessage, List<String> toolClassNames) {
 }

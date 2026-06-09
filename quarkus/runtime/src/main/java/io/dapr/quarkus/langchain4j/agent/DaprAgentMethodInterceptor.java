@@ -16,6 +16,7 @@ package io.dapr.quarkus.langchain4j.agent;
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
+import io.dapr.quarkus.langchain4j.agent.recovery.AgentToolClassRegistry;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentEvent;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentRunInput;
 import io.dapr.quarkus.langchain4j.workflow.DaprAgentServiceUtil;
@@ -87,7 +88,8 @@ public class DaprAgentMethodInterceptor {
     DaprAgentRunRegistry.register(agentRunId, runContext);
     workflowClient.scheduleNewWorkflow(
         DaprAgentServiceUtil.agentWorkflowName(agentName),
-        new AgentRunInput(agentRunId, agentName, userMessage, systemMessage), agentRunId);
+        new AgentRunInput(agentRunId, agentName, userMessage, systemMessage,
+            AgentToolClassRegistry.get(agentName)), agentRunId);
     DaprAgentContextHolder.set(agentRunId);
 
     try {

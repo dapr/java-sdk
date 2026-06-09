@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.quarkus.langchain4j.workflow;
 
 import io.dapr.quarkus.langchain4j.agent.AgentNameRegistry;
+import io.dapr.quarkus.langchain4j.agent.recovery.AgentToolClassRegistry;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowRuntime;
@@ -21,6 +22,8 @@ import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import org.jboss.logging.Logger;
+
+import java.util.List;
 
 /**
  * Quarkus recorder that registers Dapr workflows and activities at runtime
@@ -94,10 +97,17 @@ public class DaprWorkflowRuntimeRecorder {
   }
 
   /**
-   * Builds the workflow runtime and starts it (non-blocking).
+   * Registers the tool class names for an agent (from {@code @ToolBox} annotations).
+   * Used by crash recovery to know which tools to provide when re-running the agent.
    *
-   * @param builder the builder runtime value
+   * @param agentName      the agent name from {@code @Agent(name=...)}
+   * @param toolClassNames fully-qualified class names from {@code @ToolBox}
    */
+  public void registerAgentToolClasses(String agentName, List<String> toolClassNames) {
+    AgentToolClassRegistry.register(agentName, toolClassNames);
+    LOG.infof("Registered agent tool classes: %s -> %s", agentName, toolClassNames);
+  }
+
   /**
    * Sets the ChatModel provider name for observability.
    *
@@ -108,6 +118,11 @@ public class DaprWorkflowRuntimeRecorder {
     LOG.infof("ChatModel provider: %s", providerName);
   }
 
+  /**
+   * Builds the workflow runtime and starts it (non-blocking).
+   *
+   * @param builder the builder runtime value
+   */
   public void startRuntime(RuntimeValue<WorkflowRuntimeBuilder> builder) {
     WorkflowRuntime runtime = builder.getValue().build();
     runtime.start(false);

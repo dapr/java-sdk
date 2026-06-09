@@ -172,6 +172,12 @@ public class DaprAgenticProcessor {
       "io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow",
   };
 
+  /**
+   * Quarkus-LangChain4j {@code @ToolBox} annotation — references tool classes for an agent.
+   */
+  private static final DotName TOOLBOX_ANNOTATION =
+      DotName.createSimple("io.quarkiverse.langchain4j.ToolBox");
+
   private static final String[] ACTIVITY_CLASSES = {
       "io.dapr.quarkus.langchain4j.workflow.orchestration.activities.AgentExecutionActivity",
       "io.dapr.quarkus.langchain4j.workflow.orchestration.activities.ExitConditionCheckActivity",
@@ -180,6 +186,8 @@ public class DaprAgenticProcessor {
       "io.dapr.quarkus.langchain4j.agent.activities.ToolCallActivity",
       // Per-LLM-call activity
       "io.dapr.quarkus.langchain4j.agent.activities.LlmCallActivity",
+      // Crash recovery activity
+      "io.dapr.quarkus.langchain4j.agent.recovery.RecoveryAgentActivity",
   };
 
   @BuildStep
@@ -313,6 +321,30 @@ public class DaprAgenticProcessor {
       }
     }
 
+    // Register agent → tool class mappings for crash recovery.
+    // For each @Agent method with a @ToolBox annotation, extract the tool class names
+    // so RecoveryAgentActivity knows which tools to provide when re-running the agent.
+    for (AnnotationInstance ann : index.getAnnotations(AGENT_ANNOTATION)) {
+      if (ann.target().kind() != AnnotationTarget.Kind.METHOD) {
+        continue;
+      }
+      AnnotationValue nameValue = ann.value("name");
+      if (nameValue == null || nameValue.asString().isEmpty()) {
+        continue;
+      }
+      String agentName = nameValue.asString();
+      MethodInfo method = ann.target().asMethod();
+      AnnotationInstance toolBoxAnn = method.annotation(TOOLBOX_ANNOTATION);
+      if (toolBoxAnn != null && toolBoxAnn.value() != null) {
+        Type[] toolBoxTypes = toolBoxAnn.value().asClassArray();
+        java.util.List<String> toolClassNames = new java.util.ArrayList<>();
+        for (Type t : toolBoxTypes) {
+          toolClassNames.add(t.name().toString());
+        }
+        recorder.registerAgentToolClasses(agentName, toolClassNames);
+      }
+    }
+
     recorder.startRuntime(builder);
   }
 
@@ -341,6 +373,9 @@ public class DaprAgenticProcessor {
         "io.dapr.quarkus.langchain4j.agent.DaprChatModelWrapper"));
     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
         "io.dapr.quarkus.langchain4j.agent.DaprChatModelDecorator"));
+    // Tool registry for crash recovery — scans @Tool CDI beans at startup.
+    additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
+        "io.dapr.quarkus.langchain4j.agent.recovery.ToolRegistry"));
   }
 
   /**
