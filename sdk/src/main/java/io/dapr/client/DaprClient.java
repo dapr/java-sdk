@@ -321,6 +321,27 @@ public interface DaprClient extends AutoCloseable {
   <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type);
 
   /**
+   * Creates an HTTP client pre-configured for Dapr service invocation against the given app id.
+   *
+   * <p>The returned client resolves relative paths against
+   * {@code {daprHttpEndpoint}/v1.0/invoke/{appId}/method/} and automatically attaches the
+   * {@code dapr-api-token} header when one is configured. It reuses the SDK's shared
+   * {@link java.net.http.HttpClient} instance.
+   *
+   * <p><b>Migrating from {@code invokeMethod}:</b> the deprecated {@code invokeMethod}
+   * APIs serialized request bodies through the configured {@link io.dapr.serializer.DaprObjectSerializer}
+   * (JSON by default), so a {@code String} payload was sent as a JSON string literal
+   * (e.g. {@code "hello"}). This client does <em>not</em> serialize bodies — callers
+   * supply raw {@link java.net.http.HttpRequest.BodyPublisher BodyPublisher}s exactly
+   * as with any {@link java.net.http.HttpClient}. To preserve the previous JSON encoding,
+   * use {@link DaprBodyPublishers#json(Object)}.
+   *
+   * @param appId the application id to invoke.
+   * @return a {@link DaprInvokeHttpClient} bound to {@code appId}.
+   */
+  DaprInvokeHttpClient invokeHttpClient(String appId);
+
+  /**
    * Invokes a Binding operation.
    *
    * @param bindingName      The bindingName of the binding to call.
