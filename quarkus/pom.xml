@@ -33,24 +33,8 @@
         <quarkus-dapr.version>2.5.0</quarkus-dapr.version>
         <quarkus-langchain4j.version>1.7.1</quarkus-langchain4j.version>
         <!-- Pin to a released SDK version so quarkus modules can release independently -->
-        <dapr.sdk.version>1.19.0-SNAPSHOT</dapr.sdk.version>
+        <dapr.sdk.version>1.18.0-rc-3</dapr.sdk.version>
     </properties>
-
-    <!-- Needed while dapr.sdk.version points at a SNAPSHOT: the quarkus CI job builds
-         this tree standalone (no prior root build), so SDK snapshots must be resolvable.
-         Remove when dapr.sdk.version is pinned to a released version. -->
-    <repositories>
-        <repository>
-            <id>sonatype-snapshots</id>
-            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <dependencyManagement>
         <dependencies>
