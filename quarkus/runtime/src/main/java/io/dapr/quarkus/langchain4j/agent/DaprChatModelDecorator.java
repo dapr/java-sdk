@@ -26,12 +26,14 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.interceptor.Interceptor;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 /**
  * CDI Decorator that routes {@code ChatModel.chat(ChatRequest)} calls through a Dapr
  * Workflow Activity when executing inside an active agent run.
@@ -88,6 +90,14 @@ public class DaprChatModelDecorator implements ChatModel {
 
   @Inject
   Instance<AgentRunLifecycleManager> lifecycleManager;
+
+  /**
+   * Maximum time to wait for the routed LLM call to complete via the workflow activity.
+   * Configurable because large local models (e.g., Ollama) can have long generation times.
+   */
+  @Inject
+  @ConfigProperty(name = "dapr.agentic.call-timeout-minutes", defaultValue = "10")
+  long callTimeoutMinutes;
 
   /**
    * Explicit delegation for the {@code doChat()} template method.
@@ -153,9 +163,10 @@ public class DaprChatModelDecorator implements ChatModel {
           agentRunId, llmCallId);
       workflowClient.raiseEvent(agentRunId, "agent-event",
           new AgentEvent("llm-call", llmCallId, "chat", prompt));
-      LOG.infof("[AgentRun:%s][LlmCall:%s] POST-raiseEvent — blocking on future.join()",
-          agentRunId, llmCallId);
-      ChatResponse response = (ChatResponse) future.join();
+      LOG.infof("[AgentRun:%s][LlmCall:%s] POST-raiseEvent — blocking on future (timeout %d min)",
+          agentRunId, llmCallId, callTimeoutMinutes);
+      ChatResponse response = (ChatResponse) future
+          .orTimeout(callTimeoutMinutes, TimeUnit.MINUTES).join();
       LOG.infof("[AgentRun:%s][LlmCall:%s] POST-join — LLM result received",
           agentRunId, llmCallId);
       return response;

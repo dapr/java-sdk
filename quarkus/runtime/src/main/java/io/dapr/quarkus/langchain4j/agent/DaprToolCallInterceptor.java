@@ -21,11 +21,13 @@ import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 /**
  * CDI interceptor that routes {@code @Tool}-annotated method calls through a Dapr Workflow
  * Activity when executing inside a Dapr-backed agent run.
@@ -70,6 +72,13 @@ public class DaprToolCallInterceptor {
 
   @Inject
   Instance<AgentRunLifecycleManager> lifecycleManager;
+
+  /**
+   * Maximum time to wait for the routed tool call to complete via the workflow activity.
+   */
+  @Inject
+  @ConfigProperty(name = "dapr.agentic.call-timeout-minutes", defaultValue = "10")
+  long callTimeoutMinutes;
 
   /**
    * Intercepts tool-annotated method calls and routes them through Dapr Workflow.
@@ -123,7 +132,7 @@ public class DaprToolCallInterceptor {
         new AgentEvent("tool-call", toolCallId, ctx.getMethod().getName(), args));
 
     // Block the agent thread until ToolCallActivity completes the tool execution.
-    return future.join();
+    return future.orTimeout(callTimeoutMinutes, TimeUnit.MINUTES).join();
   }
 
   /**

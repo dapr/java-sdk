@@ -571,6 +571,9 @@ public class DaprAgenticProcessor {
             ? activateTry.load(systemMessage) : activateTry.loadNull());
 
     // If activation fails (no request scope), delegate directly without Dapr routing.
+    // NOTE: the metadata ThreadLocal must stay set DURING the fallback delegate call —
+    // DaprChatModelDecorator.tryLazyActivate() reads it to recover the real agent name
+    // and messages. Clear it only AFTER the delegate call returns.
     CatchBlockCreator activateCatch = activateTry.addCatch(Throwable.class);
     {
       ResultHandle delFallback = activateCatch.readInstanceField(
@@ -582,10 +585,14 @@ public class DaprAgenticProcessor {
       if (isVoid) {
         activateCatch.invokeInterfaceMethod(
             MethodDescriptor.of(method), delFallback, fallbackParams);
+        activateCatch.invokeStaticMethod(
+            MethodDescriptor.ofMethod(DaprAgentMetadataHolder.class, "clear", void.class));
         activateCatch.returnVoid();
       } else {
         ResultHandle fallbackResult = activateCatch.invokeInterfaceMethod(
             MethodDescriptor.of(method), delFallback, fallbackParams);
+        activateCatch.invokeStaticMethod(
+            MethodDescriptor.ofMethod(DaprAgentMetadataHolder.class, "clear", void.class));
         activateCatch.returnValue(fallbackResult);
       }
     }

@@ -68,9 +68,10 @@ public class RecoveryAgentActivity implements WorkflowActivity {
     ToolRegistry toolRegistry = Arc.container().instance(ToolRegistry.class).get();
 
     // Build tool specifications from the agent's @ToolBox classes
-    List<ToolSpecification> toolSpecs = input.toolClassNames() != null
-        ? toolRegistry.getToolSpecsForClasses(input.toolClassNames())
-        : toolRegistry.getAllToolSpecs();
+    List<ToolSpecification> toolSpecs =
+        input.toolClassNames() != null && !input.toolClassNames().isEmpty()
+            ? toolRegistry.getToolSpecsForClasses(input.toolClassNames())
+            : toolRegistry.getAllToolSpecs();
 
     LOG.infof("[Recovery:%s] Available tools: %d", input.agentRunId(), toolSpecs.size());
 
@@ -150,12 +151,11 @@ public class RecoveryAgentActivity implements WorkflowActivity {
       }
     }
 
-    // Max iterations reached
-    LOG.warnf("[Recovery:%s] Max iterations (%d) reached — returning last response",
+    // Max iterations reached — fail explicitly rather than returning a sentinel string
+    LOG.warnf("[Recovery:%s] Max iterations (%d) reached without text response",
         input.agentRunId(), MAX_ITERATIONS);
-    return new RecoveryAgentOutput(input.agentName(),
-        "Recovery reached max iterations (" + MAX_ITERATIONS + ")",
-        llmCalls, toolCalls);
+    throw new RuntimeException("Recovery agent '" + input.agentName()
+        + "' reached max iterations (" + MAX_ITERATIONS + ") without producing a result");
   }
 
   /**
@@ -185,6 +185,10 @@ public class RecoveryAgentActivity implements WorkflowActivity {
         // how LangChain4j generates ToolSpecification parameter names. The @P annotation
         // value is the description, not the name.
         String paramName = params[i].getName();
+        if (paramName.matches("arg\\d+") && params.length > 1) {
+          LOG.warnf("Tool '%s' parameter '%s' appears synthetic — "
+              + "ensure -parameters compiler flag is set for tool classes", toolName, paramName);
+        }
         Object value = argsMap.get(paramName);
         if (value == null && argsMap.size() == 1 && params.length == 1) {
           // Single-param tool: use whatever key the LLM sent

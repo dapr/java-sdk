@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.workflow.orchestration;
 
+import io.dapr.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.quarkus.langchain4j.agent.recovery.AgentToolClassRegistry;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentRunInput;
 import io.dapr.quarkus.langchain4j.workflow.DaprAgentServiceUtil;
@@ -42,46 +43,57 @@ public class LoopOrchestrationWorkflow implements Workflow {
       OrchestrationInput input = ctx.getInput(OrchestrationInput.class);
       DaprWorkflowPlanner planner = DaprPlannerRegistry.get(input.plannerId());
 
-      for (int iter = 0; iter < input.maxIterations(); iter++) {
-        // Check exit condition at loop start (unless configured to check at end)
-        if (!input.testExitAtLoopEnd()) {
-          boolean exit = ctx.callActivity("exit-condition-check",
-              new ExitConditionCheckInput(input.plannerId(), iter),
-              Boolean.class).await();
-          if (exit) {
-            break;
+      try {
+        for (int iter = 0; iter < input.maxIterations(); iter++) {
+          // Check exit condition at loop start (unless configured to check at end)
+          if (!input.testExitAtLoopEnd()) {
+            boolean exit = ctx.callActivity("exit-condition-check",
+                new ExitConditionCheckInput(input.plannerId(), iter),
+                Boolean.class).await();
+            if (exit) {
+              break;
+            }
+          }
+
+          // Execute all agents sequentially within this iteration
+          for (int i = 0; i < input.agentCount(); i++) {
+            String agentRunId = input.plannerId() + ":" + iter + ":" + i;
+            AgentMetadata metadata = planner.getAgentMetadata(i);
+            AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
+                metadata.userMessage(), metadata.systemMessage(),
+                AgentToolClassRegistry.get(metadata.agentName()));
+
+            var childWorkflow = ctx.callChildWorkflow(
+                DaprAgentServiceUtil.agentRunName(metadata.agentName()), agentInput, agentRunId, Void.class);
+            // Submit agent to planner (non-blocking activity -- returns immediately)
+            ctx.callActivity("agent-call",
+                new AgentExecInput(input.plannerId(), i, agentRunId), Void.class).await();
+            // Wait for agent completion (signaled by planner's nextAction)
+            ctx.waitForExternalEvent("agent-complete-" + agentRunId, Void.class).await();
+            childWorkflow.await();
+          }
+
+          // Check exit condition at loop end (if configured)
+          if (input.testExitAtLoopEnd()) {
+            boolean exit = ctx.callActivity("exit-condition-check",
+                new ExitConditionCheckInput(input.plannerId(), iter),
+                Boolean.class).await();
+            if (exit) {
+              break;
+            }
           }
         }
-
-        // Execute all agents sequentially within this iteration
-        for (int i = 0; i < input.agentCount(); i++) {
-          String agentRunId = input.plannerId() + ":" + iter + ":" + i;
-          AgentMetadata metadata = planner.getAgentMetadata(i);
-          AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
-              metadata.userMessage(), metadata.systemMessage(),
-              AgentToolClassRegistry.get(metadata.agentName()));
-
-          var childWorkflow = ctx.callChildWorkflow(
-              DaprAgentServiceUtil.agentRunName(metadata.agentName()), agentInput, agentRunId, Void.class);
-          // Submit agent to planner (non-blocking activity -- returns immediately)
-          ctx.callActivity("agent-call",
-              new AgentExecInput(input.plannerId(), i, agentRunId), Void.class).await();
-          // Wait for agent completion (signaled by planner's nextAction)
-          ctx.waitForExternalEvent("agent-complete-" + agentRunId, Void.class).await();
-          childWorkflow.await();
+      } catch (OrchestratorBlockedException blocked) {
+        // Framework yield — must propagate untouched (do NOT signal the planner).
+        throw blocked;
+      } catch (RuntimeException e) {
+        // Real failure (e.g. TaskFailedException) — release the blocked planner thread.
+        if (planner != null) {
+          planner.signalWorkflowComplete();
         }
-
-        // Check exit condition at loop end (if configured)
-        if (input.testExitAtLoopEnd()) {
-          boolean exit = ctx.callActivity("exit-condition-check",
-              new ExitConditionCheckInput(input.plannerId(), iter),
-              Boolean.class).await();
-          if (exit) {
-            break;
-          }
-        }
+        throw e;
       }
-      // Signal planner that the workflow has completed
+      // Normal completion — runs only on the final replay pass.
       if (planner != null) {
         planner.signalWorkflowComplete();
       }

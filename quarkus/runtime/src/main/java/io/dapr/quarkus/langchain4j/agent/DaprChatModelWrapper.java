@@ -82,11 +82,21 @@ public class DaprChatModelWrapper implements ChatModel {
 
   @Override
   public ChatResponse doChat(ChatRequest request) {
+    ensureDelegate();
     return delegate.doChat(request);
   }
 
   @Override
   public ChatResponse chat(ChatRequest request) {
+    ensureDelegate();
     return delegate.chat(request);
+  }
+
+  private void ensureDelegate() {
+    if (delegate == null) {
+      throw new IllegalStateException("No ChatModel provider configured. "
+          + "Add a LangChain4j provider dependency (e.g., quarkus-langchain4j-openai, "
+          + "quarkus-langchain4j-ollama) to your project.");
+    }
   }
 }

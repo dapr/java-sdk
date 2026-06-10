@@ -56,6 +56,9 @@ public class ToolRegistry {
     for (var bean : beanManager.getBeans(Object.class, jakarta.enterprise.inject.Any.Literal.INSTANCE)) {
       Class<?> beanClass = bean.getBeanClass();
       boolean hasTools = false;
+      // getDeclaredMethods (not getMethods): matches LangChain4j's own
+      // ToolSpecifications.toolSpecificationsFrom(), which only generates specs
+      // for methods declared directly on the class — any access level.
       for (Method m : beanClass.getDeclaredMethods()) {
         if (m.isAnnotationPresent(Tool.class)) {
           hasTools = true;
@@ -170,6 +173,7 @@ public class ToolRegistry {
         // @Tool name defaults to method name if not specified
         String name = toolAnn.name().isEmpty() ? m.getName() : toolAnn.name();
         if (name.equals(toolName)) {
+          m.setAccessible(true);
           return m;
         }
       }

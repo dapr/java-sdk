@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.quarkus.langchain4j.workflow.orchestration;
 
 import io.dapr.durabletask.Task;
+import io.dapr.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.quarkus.langchain4j.agent.recovery.AgentToolClassRegistry;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentRunInput;
 import io.dapr.quarkus.langchain4j.workflow.DaprAgentServiceUtil;
@@ -45,33 +46,44 @@ public class ParallelOrchestrationWorkflow implements Workflow {
       OrchestrationInput input = ctx.getInput(OrchestrationInput.class);
       DaprWorkflowPlanner planner = DaprPlannerRegistry.get(input.plannerId());
 
-      List<Task<Void>> childWorkflows = new ArrayList<>();
-      List<Task<Void>> submitTasks = new ArrayList<>();
-      List<Task<Void>> completionEvents = new ArrayList<>();
-      for (int i = 0; i < input.agentCount(); i++) {
-        String agentRunId = input.plannerId() + ":" + i;
-        AgentMetadata metadata = planner.getAgentMetadata(i);
-        AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
-            metadata.userMessage(), metadata.systemMessage(),
-            AgentToolClassRegistry.get(metadata.agentName()));
+      try {
+        List<Task<Void>> childWorkflows = new ArrayList<>();
+        List<Task<Void>> submitTasks = new ArrayList<>();
+        List<Task<Void>> completionEvents = new ArrayList<>();
+        for (int i = 0; i < input.agentCount(); i++) {
+          String agentRunId = input.plannerId() + ":" + i;
+          AgentMetadata metadata = planner.getAgentMetadata(i);
+          AgentRunInput agentInput = new AgentRunInput(agentRunId, metadata.agentName(),
+              metadata.userMessage(), metadata.systemMessage(),
+              AgentToolClassRegistry.get(metadata.agentName()));
 
-        // Start AgentRunWorkflow as a child workflow with agent-specific name
-        childWorkflows.add(ctx.callChildWorkflow(
-              DaprAgentServiceUtil.agentRunName(metadata.agentName()), agentInput, agentRunId, Void.class));
-        // Submit agent to planner (non-blocking activity -- returns immediately)
-        submitTasks.add(ctx.callActivity("agent-call",
-            new AgentExecInput(input.plannerId(), i, agentRunId), Void.class));
-        // Register event listener for agent completion (signaled by planner's nextAction)
-        completionEvents.add(
-            ctx.waitForExternalEvent("agent-complete-" + agentRunId, Void.class));
+          // Start AgentRunWorkflow as a child workflow with agent-specific name
+          childWorkflows.add(ctx.callChildWorkflow(
+                DaprAgentServiceUtil.agentRunName(metadata.agentName()), agentInput, agentRunId, Void.class));
+          // Submit agent to planner (non-blocking activity -- returns immediately)
+          submitTasks.add(ctx.callActivity("agent-call",
+              new AgentExecInput(input.plannerId(), i, agentRunId), Void.class));
+          // Register event listener for agent completion (signaled by planner's nextAction)
+          completionEvents.add(
+              ctx.waitForExternalEvent("agent-complete-" + agentRunId, Void.class));
+        }
+        // Wait for all agents to be submitted
+        ctx.allOf(submitTasks).await();
+        // Wait for all agents to complete (planner raises events after each agent finishes)
+        ctx.allOf(completionEvents).await();
+        // Wait for all child AgentRunWorkflows to finish (they received "done" from planner)
+        ctx.allOf(childWorkflows).await();
+      } catch (OrchestratorBlockedException blocked) {
+        // Framework yield — must propagate untouched (do NOT signal the planner).
+        throw blocked;
+      } catch (RuntimeException e) {
+        // Real failure (e.g. TaskFailedException) — release the blocked planner thread.
+        if (planner != null) {
+          planner.signalWorkflowComplete();
+        }
+        throw e;
       }
-      // Wait for all agents to be submitted
-      ctx.allOf(submitTasks).await();
-      // Wait for all agents to complete (planner raises events after each agent finishes)
-      ctx.allOf(completionEvents).await();
-      // Wait for all child AgentRunWorkflows to finish (they received "done" from planner)
-      ctx.allOf(childWorkflows).await();
-      // Signal planner that the workflow has completed
+      // Normal completion — runs only on the final replay pass.
       if (planner != null) {
         planner.signalWorkflowComplete();
       }
