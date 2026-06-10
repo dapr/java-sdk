@@ -108,8 +108,10 @@ class DaprWorkflowPlannerTest {
         PlanningContext planCtx = mock(PlanningContext.class);
         Action action = planner.firstAction(planCtx);
 
+        // Planner resolves the agent-specific workflow name from the description
+        // ("test" → dapr.langchain4j.Test.workflow), registered by DaprAgenticProcessor.
         verify(workflowClient).scheduleNewWorkflow(
-                eq("sequential-agent"),
+                eq("dapr.langchain4j.Test.workflow"),
                 any(),
                 eq(planner.getPlannerId()));
 

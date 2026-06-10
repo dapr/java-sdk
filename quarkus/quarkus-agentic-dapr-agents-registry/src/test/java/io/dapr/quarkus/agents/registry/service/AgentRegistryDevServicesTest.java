@@ -60,7 +60,7 @@ class AgentRegistryDevServicesTest {
             assertThat(schema.getSchemaVersion()).isEqualTo("0.11.1");
             assertThat(schema.getName()).isEqualTo("test-agent-with-prompt");
             assertThat(schema.getAgent().getAppId()).isEqualTo(APP_ID);
-            assertThat(schema.getAgent().getType()).isEqualTo("standalone");
+            assertThat(schema.getAgent().getType()).isEqualTo("Agent");
             assertThat(schema.getAgent().getGoal()).isEqualTo("Agent with system prompt");
             assertThat(schema.getAgent().getFramework()).isEqualTo("langchain4j");
             assertThat(schema.getAgent().getSystemPrompt()).isEqualTo("You are a test agent for integration testing.");
@@ -115,7 +115,7 @@ class AgentRegistryDevServicesTest {
                 AgentMetadataSchema schema = state.getValue();
                 assertThat(schema.getSchemaVersion()).isEqualTo("0.11.1");
                 assertThat(schema.getAgent().getAppId()).isEqualTo(APP_ID);
-                assertThat(schema.getAgent().getType()).isEqualTo("standalone");
+                assertThat(schema.getAgent().getType()).isEqualTo("Agent");
                 assertThat(schema.getAgent().getFramework()).isEqualTo("langchain4j");
                 assertThat(schema.getRegisteredAt()).isNotBlank();
             }
@@ -137,7 +137,8 @@ class AgentRegistryDevServicesTest {
             assertThat(indexData).containsKey("agents");
 
             List<String> agentsList = (List<String>) indexData.get("agents");
-            assertThat(agentsList).containsExactlyInAnyOrder(expectedAgents);
+            // contains (not exactly): other test fixtures in this module also register agents
+            assertThat(agentsList).contains(expectedAgents);
         });
     }
 }

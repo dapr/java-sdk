@@ -12,10 +12,12 @@ import jakarta.enterprise.inject.Alternative;
 
 /**
  * Mock ChatModel that returns predictable responses for integration testing.
- * Takes priority over the OpenAI ChatModel bean via {@code @Alternative @Priority(1)}.
+ * Priority 100 wins over both the OpenAI ChatModel bean and the extension's
+ * {@code DaprChatModelWrapper} ({@code @Alternative @Priority(1)}) — equal
+ * priorities would make the ChatModel injection point ambiguous.
  */
 @Alternative
-@Priority(1)
+@Priority(100)
 @ApplicationScoped
 public class MockChatModel implements ChatModel {
 

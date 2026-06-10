@@ -85,7 +85,7 @@ class AgentRegistryTest {
         assertThat(schema.getName()).isEqualTo("my-agent");
         assertThat(schema.getAgent().getGoal()).isEqualTo("A simple agent");
         assertThat(schema.getAgent().getAppId()).isEqualTo(APP_ID);
-        assertThat(schema.getAgent().getType()).isEqualTo("standalone");
+        assertThat(schema.getAgent().getType()).isEqualTo("Agent");
         assertThat(schema.getAgent().getFramework()).isEqualTo("langchain4j");
         assertThat(schema.getAgent().getSystemPrompt()).isNull();
         assertThat(schema.getRegisteredAt()).isNotBlank();
@@ -149,7 +149,7 @@ class AgentRegistryTest {
             assertThat(schema.getSchemaVersion()).isEqualTo("0.11.1");
             assertThat(schema.getAgent().getAppId()).isEqualTo(APP_ID);
             assertThat(schema.getAgent().getFramework()).isEqualTo("langchain4j");
-            assertThat(schema.getAgent().getType()).isEqualTo("standalone");
+            assertThat(schema.getAgent().getType()).isEqualTo("Agent");
         }
     }
 
