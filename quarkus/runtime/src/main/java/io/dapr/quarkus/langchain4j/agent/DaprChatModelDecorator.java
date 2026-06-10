@@ -239,7 +239,7 @@ public class DaprChatModelDecorator implements ChatModel {
       }
       sb.append("]");
       return sb.toString();
-    } catch (Exception ex) {
+    } catch (ReflectiveOperationException | RuntimeException ex) {
       return String.valueOf(request);
     }
   }
