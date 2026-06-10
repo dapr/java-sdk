@@ -28,13 +28,13 @@ import java.lang.reflect.InvocationTargetException;
  * Dapr Workflow Activity that executes a single {@code ChatModel.chat(ChatRequest)} call on
  * behalf of a running {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow}.
  *
- * <p><h3>How it works</h3>
+ * <h2>How it works</h2>
  * <ol>
  *   <li>Receives {@link LlmCallInput} with the {@code agentRunId}, {@code llmCallId},
  *       {@code methodName}, and the serialized {@code prompt} (messages sent to the LLM).</li>
  *   <li>Looks up the {@link AgentRunContext} from {@link DaprAgentRunRegistry}.</li>
  *   <li>Retrieves the {@link AgentRunContext.PendingCall} registered by
- *       {@link io.dapr.quarkus.langchain4j.agent.DaprLlmCallInterceptor}.</li>
+ *       {@link io.dapr.quarkus.langchain4j.agent.DaprChatModelDecorator}.</li>
  *   <li>Sets {@link DaprToolCallInterceptor#IS_ACTIVITY_CALL} on this thread so that
  *       {@code DaprChatModelDecorator} passes through to {@code delegate.chat()} when
  *       re-invoked via reflection on the stored decorator instance.</li>

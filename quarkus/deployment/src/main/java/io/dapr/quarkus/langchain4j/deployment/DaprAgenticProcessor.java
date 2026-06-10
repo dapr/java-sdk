@@ -70,7 +70,7 @@ import java.util.Set;
  *   <li>Produce an {@link IndexDependencyBuildItem} so our runtime JAR is indexed into
  *       the {@link CombinedIndexBuildItem} (and visible to Arc for CDI bean discovery).</li>
  *   <li>Consume the {@link CombinedIndexBuildItem}, look up our Workflow and WorkflowActivity
- *       classes, and produce {@link WorkflowItemBuildItem} instances that the existing
+ *       classes, and produce {@code WorkflowItemBuildItem} instances that the existing
  *       {@code DaprWorkflowProcessor} build steps consume to register with the Dapr
  *       workflow runtime.</li>
  *   <li>Produce {@link AdditionalBeanBuildItem} instances so Arc explicitly discovers
@@ -385,7 +385,7 @@ public class DaprAgenticProcessor {
    * Generates a CDI {@code @Decorator} for every interface that declares at least one
    * {@code @Agent}-annotated method.
    *
-   * <p><h3>Why a generated decorator?</h3>
+   * <h2>Why a generated decorator?</h2>
    * quarkus-langchain4j registers {@code @Agent} AiService beans as <em>synthetic beans</em>
    * (via {@code SyntheticBeanBuildItem}) -- CDI interceptors applied via
    * {@code AnnotationsTransformer} are silently ignored on synthetic beans.  CDI
@@ -395,7 +395,7 @@ public class DaprAgenticProcessor {
    * {@link io.dapr.quarkus.langchain4j.agent.DaprChatModelDecorator}
    * to wrap the synthetic {@code ChatModel} bean.
    *
-   * <p><h3>What the generated decorator does</h3>
+   * <h2>What the generated decorator does</h2>
    * For each interface {@code I} with at least one {@code @Agent} method, Gizmo emits a class
    * equivalent to:
    * <pre>{@code

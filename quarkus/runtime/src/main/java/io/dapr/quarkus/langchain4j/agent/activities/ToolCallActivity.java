@@ -27,7 +27,7 @@ import java.lang.reflect.InvocationTargetException;
  * Dapr Workflow Activity that executes a single {@code @Tool}-annotated method call on
  * behalf of a running {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow}.
  *
- * <p><h3>How it works</h3>
+ * <h2>How it works</h2>
  * <ol>
  *   <li>Receives {@link ToolCallInput} with the {@code agentRunId} and {@code toolCallId}.</li>
  *   <li>Looks up the {@link AgentRunContext} from {@link DaprAgentRunRegistry}.</li>

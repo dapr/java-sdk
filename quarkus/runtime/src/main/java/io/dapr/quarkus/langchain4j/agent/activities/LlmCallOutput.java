@@ -21,7 +21,7 @@ package io.dapr.quarkus.langchain4j.agent.activities;
  * @param methodName  name of the {@code ChatModel} method that was invoked (e.g., {@code "chat"})
  * @param prompt      serialized {@code ChatRequest} messages that were sent to the model;
  *                    extracted from the {@code ChatRequest} argument by
- *                    {@link io.dapr.quarkus.langchain4j.agent.DaprLlmCallInterceptor}
+ *                    {@link io.dapr.quarkus.langchain4j.agent.DaprChatModelDecorator}
  * @param response    AI response text extracted from {@code ChatResponse.aiMessage().text()};
  *                    this is the exact text the model returned to the agent
  */

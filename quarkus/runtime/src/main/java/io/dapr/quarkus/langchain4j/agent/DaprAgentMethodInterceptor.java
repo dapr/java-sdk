@@ -32,7 +32,8 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 /**
- * CDI interceptor that starts a Dapr {@link AgentRunWorkflow} for any standalone
+ * CDI interceptor that starts a Dapr
+ * {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow AgentRunWorkflow} for any standalone
  * {@code @Agent}-annotated method invocation.
  *
  * <p><strong>Note:</strong> In practice this interceptor only fires when the {@code @Agent}

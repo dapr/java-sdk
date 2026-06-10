@@ -32,7 +32,7 @@ import java.util.List;
  * Dapr Workflow representing the execution of a single {@code @Agent}-annotated method,
  * including all tool and LLM calls the agent makes during its ReAct loop.
  *
- * <p><h3>Lifecycle (normal path)</h3>
+ * <h2>Lifecycle (normal path)</h2>
  * <ol>
  *   <li>Started by {@link io.dapr.quarkus.langchain4j.workflow.orchestration.activities.AgentExecutionActivity}
  *       (orchestration path) or lazily by {@link io.dapr.quarkus.langchain4j.agent.AgentRunLifecycleManager}
@@ -47,7 +47,7 @@ import java.util.List;
  *   <li>Terminates when a {@code "done"} event is received.</li>
  * </ol>
  *
- * <p><h3>Crash recovery</h3>
+ * <h2>Crash recovery</h2>
  * After a crash, the Dapr runtime replays this workflow. Cached events and activities return
  * instantly. When replay reaches the activity that was in-progress during the crash, the
  * activity is re-dispatched but fails because the in-memory {@code AgentRunContext} is gone.

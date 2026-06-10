@@ -32,13 +32,13 @@ import java.util.concurrent.TimeUnit;
  * CDI interceptor that routes {@code @Tool}-annotated method calls through a Dapr Workflow
  * Activity when executing inside a Dapr-backed agent run.
  *
- * <p><h3>Execution flow (orchestration-driven)</h3>
+ * <h2>Execution flow (orchestration-driven)</h2>
  * When an agent is run via an orchestration workflow ({@code @SequenceAgent} etc.),
  * {@code AgentExecutionActivity} sets {@link DaprAgentContextHolder} before the agent starts.
  * Tool calls find a non-null {@code agentRunId} and are routed through
  * {@link io.dapr.quarkus.langchain4j.agent.activities.ToolCallActivity}.
  *
- * <p><h3>Execution flow (standalone {@code @Agent})</h3>
+ * <h2>Execution flow (standalone {@code @Agent})</h2>
  * When an {@code @Agent}-annotated method is called directly (without an orchestrator),
  * {@link DaprAgentContextHolder} is null on the first tool call. In this case the interceptor
  * calls {@link AgentRunLifecycleManager#getOrActivate()} to lazily start an
@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  * The workflow is terminated by {@link AgentRunLifecycleManager}'s {@code @PreDestroy} when the
  * CDI request scope ends.
  *
- * <p><h3>Deadlock prevention</h3>
+ * <h2>Deadlock prevention</h2>
  * {@code ToolCallActivity} calls the {@code @Tool} method via reflection on the CDI proxy. This
  * would cause the interceptor to fire again. The {@link #IS_ACTIVITY_CALL} {@code ThreadLocal}
  * prevents recursion: when set on the activity thread, the interceptor calls {@code ctx.proceed()}

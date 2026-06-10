@@ -27,20 +27,23 @@ import java.util.List;
 import java.util.UUID;
 /**
  * Request-scoped CDI bean that manages the lifecycle of a lazily-started
- * {@link AgentRunWorkflow} for standalone {@code @Agent} invocations.
+ * {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow
+ * AgentRunWorkflow} for standalone {@code @Agent} invocations.
  *
- * <p><h3>Why this exists</h3>
+ * <h2>Why this exists</h2>
  * {@code @Agent} interfaces in quarkus-langchain4j are registered as <em>synthetic beans</em>
  * (via {@code SyntheticBeanBuildItem}) without interception enabled. This means CDI interceptors
  * such as {@code DaprAgentMethodInterceptor} cannot fire on {@code @Agent} method calls.
  *
  * <p>Instead, {@link DaprToolCallInterceptor} calls {@link #getOrActivate()} on the <em>first</em>
  * {@code @Tool} method call it intercepts within a request that has no active Dapr agent context.
- * This lazily starts the {@link AgentRunWorkflow} and sets {@link DaprAgentContextHolder} so
+ * This lazily starts the {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow
+ * AgentRunWorkflow} and sets {@link DaprAgentContextHolder} so
  * that all subsequent tool calls within the same request are also routed through Dapr.
  *
  * <p>When the CDI request scope is destroyed (i.e., after the HTTP response is sent),
- * {@link #cleanup()} sends the {@code "done"} event that terminates the {@link AgentRunWorkflow}.
+ * {@link #cleanup()} sends the {@code "done"} event that terminates the
+ * {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow AgentRunWorkflow}.
  */
 
 @RequestScoped
@@ -55,7 +58,8 @@ public class AgentRunLifecycleManager {
 
   /**
    * Returns the active agent run ID for this request, lazily starting an
-   * {@link AgentRunWorkflow} if one has not been created yet.
+   * {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow
+   * AgentRunWorkflow} if one has not been created yet.
    *
    * <p>This overload accepts the agent name and prompt metadata extracted from the
    * {@code @Agent}, {@code @UserMessage}, and {@code @SystemMessage} annotations (CDI bean
@@ -87,7 +91,8 @@ public class AgentRunLifecycleManager {
 
   /**
    * Returns the active agent run ID for this request, lazily starting an
-   * {@link AgentRunWorkflow} if one has not been created yet.
+   * {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow
+   * AgentRunWorkflow} if one has not been created yet.
    *
    * <p>Uses {@code "standalone"} as the agent name and {@code null} for prompt metadata.
    * Prefer {@link #getOrActivate(String, String, String)} when agent metadata is available.
@@ -107,7 +112,8 @@ public class AgentRunLifecycleManager {
   }
 
   /**
-   * Signals the active {@link AgentRunWorkflow} that the {@code @Agent} method has finished,
+   * Signals the active {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow
+   * AgentRunWorkflow} that the {@code @Agent} method has finished,
    * then unregisters the run and clears the context holder.
    *
    * <p>Called directly by the <em>generated CDI decorator</em> when the {@code @Agent} method

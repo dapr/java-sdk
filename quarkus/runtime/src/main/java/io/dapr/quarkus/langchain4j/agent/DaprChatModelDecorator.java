@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * CDI Decorator that routes {@code ChatModel.chat(ChatRequest)} calls through a Dapr
  * Workflow Activity when executing inside an active agent run.
  *
- * <p><h3>Why a decorator instead of a CDI interceptor</h3>
+ * <h2>Why a decorator instead of a CDI interceptor</h2>
  * quarkus-langchain4j registers {@code ChatModel} as a <em>synthetic bean</em>
  * ({@code SyntheticBeanBuildItem}). Arc does not apply CDI interceptors to synthetic
  * beans based on {@code AnnotationsTransformer} modifications to the interface — the
@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  * however, work at the <em>bean type</em> level and are applied by Arc to any bean (including
  * synthetic beans) whose types include the delegate type.
  *
- * <p><h3>Execution flow</h3>
+ * <h2>Execution flow</h2>
  * <ol>
  *   <li>The LangChain4j AiService calls {@code chatModel.chat(request)} which routes
  *       through this decorator.</li>
@@ -65,7 +65,7 @@ import java.util.concurrent.TimeUnit;
  *       unblocking the agent thread.</li>
  * </ol>
  *
- * <p><h3>Lazy activation</h3>
+ * <h2>Lazy activation</h2>
  * When an {@code @Agent} method is called standalone (no orchestration workflow),
  * the first LLM call will find no active {@code agentRunId} in {@link DaprAgentContextHolder}.
  * This decorator calls {@link AgentRunLifecycleManager#getOrActivate()} to lazily start

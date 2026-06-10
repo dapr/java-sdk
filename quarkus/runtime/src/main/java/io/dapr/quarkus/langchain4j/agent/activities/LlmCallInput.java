@@ -22,7 +22,7 @@ package io.dapr.quarkus.langchain4j.agent.activities;
  * @param methodName  name of the {@code ChatModel} method being called (e.g., {@code "chat"});
  *                    stored in the Dapr activity input for observability in the workflow history
  * @param prompt      string representation of the {@code ChatRequest} messages sent to the LLM;
- *                    extracted by {@link io.dapr.quarkus.langchain4j.agent.DaprLlmCallInterceptor}
+ *                    extracted by {@link io.dapr.quarkus.langchain4j.agent.DaprChatModelDecorator}
  *                    and stored in the Dapr activity input so the full prompt is visible in the
  *                    workflow history without needing to inspect in-process state
  */
