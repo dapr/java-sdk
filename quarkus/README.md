@@ -147,6 +147,23 @@ In the Dapr dashboard, completed agents show cached results. The crashed agent i
 | `ToolRegistry` | CDI bean that discovers @Tool methods at startup for recovery |
 | `AgentToolClassRegistry` | Maps agent names to their @ToolBox classes (populated at build time) |
 
+## AgenticScope Checkpointing
+
+LangChain4j's agentic scope (the shared state and conversation context of a multi-agent
+workflow) can be checkpointed to a Dapr state store — the LangChain4j equivalent of a
+LangGraph checkpointer. Every scope update is persisted, so agentic state survives
+restarts and is shareable across replicas.
+
+```properties
+dapr.agentic.scope-store.enabled=true
+dapr.agentic.scope-store.name=kvstore
+```
+
+| Class | Role |
+|-------|------|
+| `DaprAgenticScopeStore` | `AgenticScopeStore` implementation over the Dapr state API |
+| `AgenticScopeStoreInitializer` | Registers the store with LangChain4j's `AgenticScopePersister` at startup |
+
 ## Known Limitations
 
 - **Nested composites**: `@ParallelAgent` inside `@SequenceAgent` is unstable (input type mismatch)

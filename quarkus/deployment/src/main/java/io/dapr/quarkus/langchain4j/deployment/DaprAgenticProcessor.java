@@ -376,6 +376,9 @@ public class DaprAgenticProcessor {
     // Tool registry for crash recovery — scans @Tool CDI beans at startup.
     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
         "io.dapr.quarkus.langchain4j.agent.recovery.ToolRegistry"));
+    // Registers the Dapr-backed AgenticScope store (checkpointing) when enabled.
+    additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(
+        "io.dapr.quarkus.langchain4j.scope.AgenticScopeStoreInitializer"));
   }
 
   /**
