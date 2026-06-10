@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.utils.Version;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -78,6 +79,16 @@ public class DaprInvokeHttpClientTest {
 
     assertEquals("http://localhost:3500/v1.0/invoke/orderprocessor/method/orders/42",
         request.uri().toString());
+  }
+
+  @Test
+  public void newRequestBuilder_attachesSdkUserAgentHeader() {
+    DaprInvokeHttpClient invoker = new DaprInvokeHttpClient(httpClient, BASE_URI, null, null);
+
+    HttpRequest request = invoker.newRequestBuilder("orders").GET().build();
+
+    assertEquals(Version.getSdkVersion(),
+        request.headers().firstValue(Headers.DAPR_USER_AGENT).orElse(null));
   }
 
   @Test

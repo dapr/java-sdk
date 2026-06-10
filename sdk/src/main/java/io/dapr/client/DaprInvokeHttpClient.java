@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.utils.Version;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -100,8 +102,9 @@ public class DaprInvokeHttpClient {
 
   /**
    * Creates an {@link HttpRequest.Builder} pre-bound to the Dapr invoke URL for the
-   * configured app id, with the {@code dapr-api-token} header attached (when one is
-   * configured) and the SDK's HTTP read timeout applied.
+   * configured app id, with the SDK {@code User-Agent} header attached, the
+   * {@code dapr-api-token} header attached (when one is configured) and the SDK's
+   * HTTP read timeout applied.
    *
    * <p>The {@code relativePath} is resolved against {@link #baseUri()} via
    * {@link URI#resolve(String)}. Per {@link URI#resolve(String)} semantics, a leading
@@ -113,7 +116,9 @@ public class DaprInvokeHttpClient {
    */
   public HttpRequest.Builder newRequestBuilder(String relativePath) {
     Objects.requireNonNull(relativePath, "relativePath");
-    HttpRequest.Builder builder = HttpRequest.newBuilder().uri(baseUri.resolve(relativePath));
+    HttpRequest.Builder builder = HttpRequest.newBuilder()
+        .uri(baseUri.resolve(relativePath))
+        .header(Headers.DAPR_USER_AGENT, Version.getSdkVersion());
     if (daprApiToken != null && !daprApiToken.isEmpty()) {
       builder.header(Headers.DAPR_API_TOKEN, daprApiToken);
     }
