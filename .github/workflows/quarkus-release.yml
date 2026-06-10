@@ -29,9 +29,9 @@ jobs:
       - name: Update quarkus version and tag
         env:
           GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
+          REL_VERSION: ${{ inputs.rel_version }}
         run: |
           set -ue
-          REL_VERSION="${{ inputs.rel_version }}"
 
           git config user.email "daprweb@microsoft.com"
           git config user.name "Dapr Bot"
