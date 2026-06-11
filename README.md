@@ -173,17 +173,17 @@ For Maven:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.17.2</version>
+      <version>1.18.0</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.17.2</version>
+      <version>1.18.0</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.17.2</version>
+      <version>1.18.0</version>
     </dependency>
   </dependencies>
   ...
