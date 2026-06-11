@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -18,6 +19,8 @@ import io.quarkus.test.junit.QuarkusTest;
  * <p>
  * Requires Docker for Dapr dev services. Uses {@link MockChatModel} instead of a real LLM.
  */
+@DisabledIfEnvironmentVariable(named = "CI", matches = "true",
+        disabledReason = "daprd 1.18.0 save-before-dispatch race (dapr/dapr#10054) loses workflow events; hangs are frequent on slow CI runners. Re-enable when the fixed runtime ships.")
 @QuarkusTest
 @ExtendWith(DockerAvailableCondition.class)
 class ParallelResourceTest {

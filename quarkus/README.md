@@ -170,7 +170,10 @@ dapr.agentic.scope-store.name=kvstore
 - **Same-named agents in concurrent orchestrations**: completion routing is exact, but the
   per-thread context binding is claimed FIFO by agent name, so observability may
   cross-attribute runs between concurrent requests using the same agent name
-- **daprd 1.18.0 workflow race**: a child workflow completion can occasionally be lost by
-  the runtime (child completes app-side but stays RUNNING in daprd, its event reminder
-  fires on an empty inbox), hanging that request. Tests retry once to absorb it.
+- **daprd 1.18.0 workflow race**: a workflow event can be lost by the runtime (the
+  workflow completes app-side but stays RUNNING in daprd, its event reminder fires on
+  an empty inbox), hanging that request — fix upstream in
+  [dapr/dapr#10054](https://github.com/dapr/dapr/pull/10054). The e2e tests retry once
+  locally and are skipped on CI (slow runners widen the race window) until a fixed
+  runtime ships.
 - **Small models**: llama3.2 (3B) sometimes malforms tool call arguments; llama3.1:8b+ recommended
