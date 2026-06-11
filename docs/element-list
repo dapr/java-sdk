@@ -34,6 +34,7 @@ io.dapr.spring.data.repository.config
 io.dapr.spring.data.repository.query
 io.dapr.spring.messaging
 io.dapr.spring.messaging.observation
+io.dapr.spring.observation.client
 io.dapr.spring.workflows.config
 io.dapr.spring.workflows.config.annotations
 io.dapr.spring6.data
