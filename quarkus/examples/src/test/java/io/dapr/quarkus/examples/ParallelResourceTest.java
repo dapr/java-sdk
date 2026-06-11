@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -19,7 +18,6 @@ import io.quarkus.test.junit.QuarkusTest;
  * <p>
  * Requires Docker for Dapr dev services. Uses {@link MockChatModel} instead of a real LLM.
  */
-@Disabled("Known race in the in-memory planner bridge: duplicate agent-call activity dispatch and FIFO completion correlation can hang back-to-back/parallel requests. Tracked for follow-up.")
 @QuarkusTest
 @ExtendWith(DockerAvailableCondition.class)
 class ParallelResourceTest {

@@ -13,7 +13,9 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.deployment;
 
+import io.dapr.quarkus.langchain4j.agent.AgentRunBindingRegistry;
 import io.dapr.quarkus.langchain4j.agent.AgentRunLifecycleManager;
+import io.dapr.quarkus.langchain4j.agent.DaprAgentContextHolder;
 import io.dapr.quarkus.langchain4j.agent.DaprAgentMetadataHolder;
 import io.dapr.quarkus.langchain4j.workflow.DaprWorkflowRuntimeRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -28,6 +30,8 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -538,8 +542,6 @@ public class DaprAgenticProcessor {
       FieldDescriptor delegateDesc, FieldDescriptor lcmDesc) {
 
     String agentName = extractAgentName(method);
-    String userMessage = extractAnnotationText(method, USER_MESSAGE_ANNOTATION);
-    String systemMessage = extractAnnotationText(method, SYSTEM_MESSAGE_ANNOTATION);
     final boolean isVoid = method.returnType().kind() == Type.Kind.VOID;
 
     MethodCreator mc = cc.getMethodCreator(MethodDescriptor.of(method));
@@ -547,6 +549,59 @@ public class DaprAgenticProcessor {
     for (Type exType : method.exceptions()) {
       mc.addException(exType.name().toString());
     }
+
+    // Orchestration path: if AgentExecutionActivity bound an agentRunId for this agent,
+    // claim it and set the Dapr context on THIS thread — LangChain4j's parallel executor
+    // threads are invisible to the planner, so this is the only place the context can be
+    // set for parallel agents. The planner's nextAction() handles done-signaling, so the
+    // bound path delegates directly without the standalone lifecycle (getOrActivate /
+    // triggerDone).
+    //
+    //   String claimed = AgentRunBindingRegistry.claim(agentName);
+    //   if (claimed != null) {
+    //     DaprAgentContextHolder.set(claimed);
+    //     try { [result =] delegate.method(params); }
+    //     finally { DaprAgentContextHolder.clear(); }
+    //     return [result];
+    //   }
+    ResultHandle claimedRunId = mc.invokeStaticMethod(
+        MethodDescriptor.ofMethod(AgentRunBindingRegistry.class, "claim",
+            String.class, String.class),
+        mc.load(agentName));
+    BranchResult claimBranch = mc.ifNull(claimedRunId);
+    BytecodeCreator bound = claimBranch.falseBranch();
+    {
+      bound.invokeStaticMethod(
+          MethodDescriptor.ofMethod(DaprAgentContextHolder.class, "set",
+              void.class, String.class),
+          claimedRunId);
+      TryBlock boundTry = bound.tryBlock();
+      ResultHandle boundDelegate = boundTry.readInstanceField(delegateDesc, boundTry.getThis());
+      ResultHandle[] boundParams = new ResultHandle[method.parametersCount()];
+      for (int i = 0; i < boundParams.length; i++) {
+        boundParams[i] = boundTry.getMethodParam(i);
+      }
+      if (isVoid) {
+        boundTry.invokeInterfaceMethod(MethodDescriptor.of(method), boundDelegate, boundParams);
+        boundTry.invokeStaticMethod(
+            MethodDescriptor.ofMethod(DaprAgentContextHolder.class, "clear", void.class));
+        boundTry.returnVoid();
+      } else {
+        ResultHandle boundResult = boundTry.invokeInterfaceMethod(
+            MethodDescriptor.of(method), boundDelegate, boundParams);
+        boundTry.invokeStaticMethod(
+            MethodDescriptor.ofMethod(DaprAgentContextHolder.class, "clear", void.class));
+        boundTry.returnValue(boundResult);
+      }
+      CatchBlockCreator boundCatch = boundTry.addCatch(Throwable.class);
+      boundCatch.invokeStaticMethod(
+          MethodDescriptor.ofMethod(DaprAgentContextHolder.class, "clear", void.class));
+      boundCatch.throwException(boundCatch.getCaughtException());
+    }
+    // claimed == null → standalone path below.
+
+    String userMessage = extractAnnotationText(method, USER_MESSAGE_ANNOTATION);
+    String systemMessage = extractAnnotationText(method, SYSTEM_MESSAGE_ANNOTATION);
 
     // Store @Agent metadata on the current thread so that DaprChatModelDecorator can
     // retrieve the real agent name and messages if the activation below fails and the

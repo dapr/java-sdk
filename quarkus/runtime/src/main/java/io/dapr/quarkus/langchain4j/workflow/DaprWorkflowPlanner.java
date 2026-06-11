@@ -20,6 +20,7 @@ import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.planner.Planner;
 import dev.langchain4j.agentic.planner.PlanningContext;
+import dev.langchain4j.agentic.scope.AgentInvocation;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -39,7 +40,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiPredicate;
@@ -76,13 +77,6 @@ public class DaprWorkflowPlanner implements Planner {
   public record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation, String agentRunId) {
   }
 
-  /**
-   * Tracks per-agent completion info so {@link #nextAction} can signal the
-   * orchestration workflow and clean up after each agent finishes.
-   */
-  private record PendingAgentInfo(String agentRunId) {
-  }
-
   private final String plannerId;
   private final Class<? extends Workflow> workflowClass;
   private final String description;
@@ -105,13 +99,14 @@ public class DaprWorkflowPlanner implements Planner {
   // Conditional configuration
   private Map<Integer, Predicate<AgenticScope>> conditions = Collections.emptyMap();
 
-  // Thread-safe deque for parallel agent futures — nextAction() is called from
-  // different threads (one per agent) in LangChain4j's parallel executor.
-  private final ConcurrentLinkedDeque<CompletableFuture<Void>> pendingFutures = new ConcurrentLinkedDeque<>();
+  // Pending exchanges keyed by AgentInstance.agentId(). nextAction() correlates each
+  // completion via PlanningContext.previousAgentInvocation().agentId() — completion
+  // order is arbitrary in parallel execution, so FIFO correlation is incorrect.
+  private final ConcurrentHashMap<String, AgentExchange> pendingByAgentId = new ConcurrentHashMap<>();
 
-  // Thread-safe deque for per-agent completion info — polled in nextAction()
-  // alongside pendingFutures to signal the orchestration workflow and clean up.
-  private final ConcurrentLinkedDeque<PendingAgentInfo> pendingAgentInfos = new ConcurrentLinkedDeque<>();
+  // Idempotency guard: agent-call is a durable activity (at-least-once delivery), so
+  // a redelivered submission for the same agentRunId must not enqueue the agent twice.
+  private final ConcurrentHashMap<String, CompletableFuture<Void>> submissionsByRunId = new ConcurrentHashMap<>();
 
   /**
    * Creates a new DaprWorkflowPlanner.
@@ -159,30 +154,38 @@ public class DaprWorkflowPlanner implements Planner {
   public Action nextAction(PlanningContext planningContext) {
     // Clear the per-agent Dapr context now that the previous agent has finished.
     DaprAgentContextHolder.clear();
-    // Complete one future per call. LangChain4j calls nextAction() once per agent
-    // from separate threads in parallel execution.
-    CompletableFuture<Void> future = pendingFutures.poll();
-    if (future != null) {
-      future.complete(null);
+
+    // Correlate the completion to its exchange by agent identity. LangChain4j calls
+    // nextAction() once per finished agent (from separate threads in parallel
+    // execution) and tells us WHICH agent finished via previousAgentInvocation.
+    AgentInvocation finished = planningContext != null
+        ? planningContext.previousAgentInvocation() : null;
+    AgentExchange exchange = finished != null
+        ? pendingByAgentId.remove(finished.agentId()) : null;
+
+    if (finished != null && exchange == null) {
+      LOG.warnf("[Planner:%s] No pending exchange for completed agent %s (agentId=%s)",
+          plannerId, finished.agentName(), finished.agentId());
     }
 
-    // Signal the orchestration workflow that this agent completed and clean up.
-    PendingAgentInfo info = pendingAgentInfos.poll();
-    if (info != null) {
+    if (exchange != null) {
+      if (exchange.continuation() != null) {
+        exchange.continuation().complete(null);
+      }
       try {
-        // Send "done" to the per-agent AgentRunWorkflow
-        workflowClient.raiseEvent(info.agentRunId(), "agent-event",
+        // Send "done" to this agent's AgentRunWorkflow
+        workflowClient.raiseEvent(exchange.agentRunId(), "agent-event",
             new AgentEvent("done", null, null, null));
         LOG.infof("[Planner:%s] Sent done event to AgentRunWorkflow — agentRunId=%s",
-            plannerId, info.agentRunId());
-        DaprAgentRunRegistry.unregister(info.agentRunId());
+            plannerId, exchange.agentRunId());
+        DaprAgentRunRegistry.unregister(exchange.agentRunId());
         // Signal the orchestration workflow that this agent has completed
-        workflowClient.raiseEvent(plannerId, "agent-complete-" + info.agentRunId(), null);
+        workflowClient.raiseEvent(plannerId, "agent-complete-" + exchange.agentRunId(), null);
         LOG.infof("[Planner:%s] Raised agent-complete event — agentRunId=%s",
-            plannerId, info.agentRunId());
+            plannerId, exchange.agentRunId());
       } catch (Exception ex) {
         LOG.warnf("[Planner:%s] Failed to signal agent completion for agentRunId=%s: %s",
-            plannerId, info.agentRunId(), ex.getMessage());
+            plannerId, exchange.agentRunId(), ex.getMessage());
       }
     }
 
@@ -254,13 +257,12 @@ public class DaprWorkflowPlanner implements Planner {
         return done();
       }
 
-      // Store all futures — one per agent. nextAction() is called once per agent
-      // (possibly from different threads), each call polls and completes one future.
-      pendingFutures.clear();
-      pendingAgentInfos.clear();
+      // Register all exchanges by agent identity. nextAction() is called once per
+      // finished agent (possibly from different threads) and removes the matching
+      // entry. No clear(): entries from a previous batch that have not been signaled
+      // yet must survive a staggered drain.
       for (AgentExchange exchange : exchanges) {
-        pendingFutures.add(exchange.continuation());
-        pendingAgentInfos.add(new PendingAgentInfo(exchange.agentRunId()));
+        pendingByAgentId.put(exchange.agent().agentId(), exchange);
       }
 
       // For sequential execution (single agent), set the Dapr agent context so that
@@ -285,9 +287,19 @@ public class DaprWorkflowPlanner implements Planner {
    * @return a future that completes when the planner has processed this agent
    */
   public CompletableFuture<Void> executeAgent(AgentInstance agent, String agentRunId) {
-    CompletableFuture<Void> future = new CompletableFuture<>();
-    agentExchangeQueue.add(new AgentExchange(agent, future, agentRunId));
-    return future;
+    if (agentRunId == null) {
+      // No run id to dedupe on — submit directly.
+      CompletableFuture<Void> future = new CompletableFuture<>();
+      agentExchangeQueue.add(new AgentExchange(agent, future, null));
+      return future;
+    }
+    // Idempotent by agentRunId: agent-call activities are delivered at-least-once,
+    // and a redelivery must not run the agent a second time.
+    return submissionsByRunId.computeIfAbsent(agentRunId, id -> {
+      CompletableFuture<Void> future = new CompletableFuture<>();
+      agentExchangeQueue.add(new AgentExchange(agent, future, id));
+      return future;
+    });
   }
 
   /**
@@ -444,6 +456,14 @@ public class DaprWorkflowPlanner implements Planner {
 
   private void cleanup() {
     DaprAgentContextHolder.clear();
+    // Release any straggler continuations so no activity thread stays blocked.
+    pendingByAgentId.values().forEach(ex -> {
+      if (ex.continuation() != null) {
+        ex.continuation().complete(null);
+      }
+    });
+    pendingByAgentId.clear();
+    submissionsByRunId.clear();
     DaprPlannerRegistry.unregister(plannerId);
   }
 }

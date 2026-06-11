@@ -48,10 +48,14 @@ class DaprWorkflowPlannerTest {
                 AgenticSystemTopology.SEQUENCE,
                 workflowClient);
 
-        agent1 = mock(AgentInstance.class);
+        // AgentExecutor mocks: Action.call() casts batch members to the internal
+        // AgentExecutor type, so plain AgentInstance mocks fail inside firstAction.
+        agent1 = mock(dev.langchain4j.agentic.internal.AgentExecutor.class);
         when(agent1.name()).thenReturn("agent1");
-        agent2 = mock(AgentInstance.class);
+        when(agent1.agentId()).thenReturn("agent1-id");
+        agent2 = mock(dev.langchain4j.agentic.internal.AgentExecutor.class);
         when(agent2.name()).thenReturn("agent2");
+        when(agent2.agentId()).thenReturn("agent2-id");
         scope = mock(AgenticScope.class);
     }
 
@@ -184,6 +188,57 @@ class DaprWorkflowPlannerTest {
 
         assertThat(planner.checkCondition(0)).isTrue();
         assertThat(planner.checkCondition(1)).isFalse();
+    }
+
+    @Test
+    void executeAgentShouldBeIdempotentByRunId() {
+        // agent-call activities are at-least-once: a redelivery for the same
+        // agentRunId must return the SAME future and not enqueue the agent twice.
+        CompletableFuture<Void> first = planner.executeAgent(agent1, "run-1");
+        CompletableFuture<Void> redelivered = planner.executeAgent(agent1, "run-1");
+
+        assertThat(redelivered).isSameAs(first);
+    }
+
+    @Test
+    void nextActionShouldSignalCompletedAgentByIdentity() throws Exception {
+        // Two agents submitted; agent2 finishes FIRST (parallel completion order is
+        // arbitrary). The planner must signal agent2's runId, not FIFO-poll agent1's.
+        InitPlanningContext initCtx = new InitPlanningContext(
+                scope, mock(AgentInstance.class), List.of(agent1, agent2));
+        planner.init(initCtx);
+
+        planner.executeAgent(agent1, "p:0");
+        planner.executeAgent(agent2, "p:1");
+
+        // Drain the batch (both exchanges) — sentinel posted from another thread so
+        // the planner's blocking drain in the SECOND call terminates.
+        Thread sentinel = new Thread(() -> {
+            try {
+                Thread.sleep(100);
+                planner.signalWorkflowComplete();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        sentinel.start();
+
+        PlanningContext batchCtx = mock(PlanningContext.class);
+        planner.firstAction(batchCtx);
+
+        // agent2 completes first
+        PlanningContext agent2Done = mock(PlanningContext.class);
+        when(agent2Done.previousAgentInvocation()).thenReturn(
+                new dev.langchain4j.agentic.scope.AgentInvocation(
+                        Object.class, "agent2", "agent2-id", Map.of(), "out"));
+        planner.nextAction(agent2Done);
+
+        // done + agent-complete went to agent2's runId — NOT agent1's
+        verify(workflowClient).raiseEvent(eq("p:1"), eq("agent-event"), any());
+        verify(workflowClient).raiseEvent(
+                eq(planner.getPlannerId()), eq("agent-complete-p:1"), any());
+        verify(workflowClient, org.mockito.Mockito.never())
+                .raiseEvent(eq("p:0"), eq("agent-event"), any());
     }
 
     @Test
