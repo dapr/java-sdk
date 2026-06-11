@@ -24,6 +24,8 @@ import io.dapr.v1.DaprStateProtos.SaveStateRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
+import java.util.concurrent.CountDownLatch;
+
 
 /**
  * Simple example.
@@ -35,7 +37,7 @@ public class HelloWorldGrpcStateService {
 
   public static final String SUCCESS_MESSAGE = "Hello from " + HelloWorldGrpcStateService.class.getSimpleName();
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InterruptedException {
     String grpcPort = System.getenv("DAPR_GRPC_PORT");
 
     // If port string is not valid, it will throw an exception.
@@ -64,5 +66,11 @@ public class HelloWorldGrpcStateService {
     channel.shutdown();
 
     System.out.println(SUCCESS_MESSAGE);
+
+    // Keep this app process alive until the test harness stops it (dapr stop --app-id).
+    // `dapr run` ties the sidecar's lifetime to this app: if main() returns, the JVM exits,
+    // the sidecar is torn down, and the test's subsequent gRPC calls race that teardown and
+    // intermittently fail with UNAVAILABLE / "connection refused".
+    new CountDownLatch(1).await();
   }
 }
