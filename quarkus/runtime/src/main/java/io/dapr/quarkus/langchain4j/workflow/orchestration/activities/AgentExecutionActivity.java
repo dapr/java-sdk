@@ -13,9 +13,6 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.workflow.orchestration.activities;
 
-import io.dapr.quarkus.langchain4j.agent.AgentRunBindingRegistry;
-import io.dapr.quarkus.langchain4j.agent.AgentRunContext;
-import io.dapr.quarkus.langchain4j.agent.DaprAgentRunRegistry;
 import io.dapr.quarkus.langchain4j.workflow.DaprPlannerRegistry;
 import io.dapr.quarkus.langchain4j.workflow.DaprWorkflowPlanner;
 import io.dapr.quarkus.langchain4j.workflow.DaprWorkflowPlanner.AgentMetadata;
@@ -31,9 +28,10 @@ import org.jboss.logging.Logger;
  * child {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow}, it:
  * <ol>
  *   <li>Looks up the planner from the registry.</li>
- *   <li>Creates a per-agent {@link AgentRunContext} and registers it.</li>
- *   <li>Submits the agent to the planner's exchange queue (along with its {@code agentRunId})
- *       so the planner can set {@link io.dapr.quarkus.langchain4j.agent.DaprAgentContextHolder}
+ *   <li>Submits the agent to the planner's exchange queue (along with its {@code agentRunId});
+ *       the planner registers the per-agent {@link io.dapr.quarkus.langchain4j.agent.AgentRunContext}
+ *       and the agent-name binding exactly once per run ID, and sets
+ *       {@link io.dapr.quarkus.langchain4j.agent.DaprAgentContextHolder}
  *       on the executing thread before tool calls begin.</li>
  *   <li>Returns immediately — the planner's {@code nextAction()} handles completion
  *       signaling (sending {@code "done"} to the AgentRunWorkflow, raising an external
@@ -67,18 +65,10 @@ public class AgentExecutionActivity implements WorkflowActivity {
     LOG.infof("[Planner:%s] AgentExecutionActivity started — agent=%s, agentRunId=%s",
         input.plannerId(), agentName, agentRunId);
 
-    // Register only once: this activity is delivered at-least-once, and replacing an
-    // in-flight AgentRunContext would orphan its pending LLM/tool calls.
-    if (DaprAgentRunRegistry.get(agentRunId) == null) {
-      DaprAgentRunRegistry.register(agentRunId, new AgentRunContext(agentRunId));
-      // Bind agentName → agentRunId so the generated decorator can claim the Dapr
-      // context on the agent's own thread (required for parallel execution, where
-      // the planner cannot set the ThreadLocal on LangChain4j's executor threads).
-      AgentRunBindingRegistry.bind(agentName, agentRunId);
-    }
-
-    // Submit the agent to the planner's exchange queue (non-blocking).
-    // The planner's nextAction() handles completion signaling and cleanup.
+    // Submit the agent to the planner's exchange queue (non-blocking). The planner
+    // registers the AgentRunContext and the agentName → agentRunId binding exactly once
+    // per run ID (this activity is delivered at-least-once), and its nextAction()
+    // handles completion signaling and cleanup.
     planner.executeAgent(planner.getAgent(input.agentIndex()), agentRunId);
 
     LOG.infof("[Planner:%s] AgentExecutionActivity submitted — agent=%s, agentRunId=%s",

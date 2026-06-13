@@ -61,4 +61,35 @@ public final class AgentRunBindingRegistry {
     Deque<String> queue = BINDINGS.get(agentName);
     return queue == null ? null : queue.poll();
   }
+
+  /**
+   * Removes a specific pending binding. Used by the planner when it routes a run on the
+   * current thread itself (sequential execution): the binding will never be claimed by a
+   * decorator, and leaving it behind would hand a dead run ID to a later claim of the
+   * same agent name.
+   *
+   * @param agentName  the agent name
+   * @param agentRunId the exact run ID to remove
+   */
+  public static void remove(String agentName, String agentRunId) {
+    Deque<String> queue = BINDINGS.get(agentName);
+    if (queue != null) {
+      queue.remove(agentRunId);
+    }
+  }
+
+  /**
+   * Removes all pending bindings whose run ID starts with the given prefix. Safety net
+   * used by the planner's cleanup so that an aborted orchestration cannot leak bindings
+   * into later runs of the same agent names.
+   *
+   * @param agentName      the agent name
+   * @param agentRunPrefix the run ID prefix (typically {@code plannerId + ":"})
+   */
+  public static void purge(String agentName, String agentRunPrefix) {
+    Deque<String> queue = BINDINGS.get(agentName);
+    if (queue != null) {
+      queue.removeIf(id -> id.startsWith(agentRunPrefix));
+    }
+  }
 }

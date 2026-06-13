@@ -541,7 +541,7 @@ public class DaprAgenticProcessor {
   private void generateDecoratedAgentMethod(ClassCreator cc, MethodInfo method,
       FieldDescriptor delegateDesc, FieldDescriptor lcmDesc) {
 
-    String agentName = extractAgentName(method);
+    final String agentName = extractAgentName(method);
     final boolean isVoid = method.returnType().kind() == Type.Kind.VOID;
 
     MethodCreator mc = cc.getMethodCreator(MethodDescriptor.of(method));
@@ -550,12 +550,42 @@ public class DaprAgenticProcessor {
       mc.addException(exType.name().toString());
     }
 
-    // Orchestration path: if AgentExecutionActivity bound an agentRunId for this agent,
-    // claim it and set the Dapr context on THIS thread — LangChain4j's parallel executor
-    // threads are invisible to the planner, so this is the only place the context can be
-    // set for parallel agents. The planner's nextAction() handles done-signaling, so the
-    // bound path delegates directly without the standalone lifecycle (getOrActivate /
-    // triggerDone).
+    // Sequential / single-agent path: when an agent is the only one in the planner's
+    // current batch, LangChain4j runs it on the planner's own loop thread — the same
+    // thread on which the planner already called DaprAgentContextHolder.set(agentRunId).
+    // Route through that live context directly; do NOT claim a name-binding. The planner
+    // owns and clears this context, and a name-keyed claim here could grab a STALE binding
+    // left by an earlier loop iteration of the same agent name (which would point at an
+    // already-completed run and wrongly trip crash recovery with an empty prompt).
+    //
+    //   if (DaprAgentContextHolder.get() != null) {
+    //     return delegate.method(params);   // context already set by the planner
+    //   }
+    ResultHandle liveContext = mc.invokeStaticMethod(
+        MethodDescriptor.ofMethod(DaprAgentContextHolder.class, "get", String.class));
+    BranchResult liveBranch = mc.ifNull(liveContext);
+    BytecodeCreator hasLive = liveBranch.falseBranch();
+    {
+      ResultHandle liveDelegate = hasLive.readInstanceField(delegateDesc, hasLive.getThis());
+      ResultHandle[] liveParams = new ResultHandle[method.parametersCount()];
+      for (int i = 0; i < liveParams.length; i++) {
+        liveParams[i] = hasLive.getMethodParam(i);
+      }
+      if (isVoid) {
+        hasLive.invokeInterfaceMethod(MethodDescriptor.of(method), liveDelegate, liveParams);
+        hasLive.returnVoid();
+      } else {
+        ResultHandle liveResult = hasLive.invokeInterfaceMethod(
+            MethodDescriptor.of(method), liveDelegate, liveParams);
+        hasLive.returnValue(liveResult);
+      }
+    }
+
+    // Parallel path: agents run on LangChain4j's executor threads, which are invisible to
+    // the planner, so it cannot set the context for them. AgentExecutionActivity bound an
+    // agentRunId for this agent — claim it and set the Dapr context on THIS thread. The
+    // planner's nextAction() handles done-signaling, so the bound path delegates directly
+    // without the standalone lifecycle (getOrActivate / triggerDone).
     //
     //   String claimed = AgentRunBindingRegistry.claim(agentName);
     //   if (claimed != null) {

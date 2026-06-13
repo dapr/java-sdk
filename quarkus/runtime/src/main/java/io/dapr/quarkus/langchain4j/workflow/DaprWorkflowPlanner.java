@@ -24,6 +24,8 @@ import dev.langchain4j.agentic.scope.AgentInvocation;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
+import io.dapr.quarkus.langchain4j.agent.AgentRunBindingRegistry;
+import io.dapr.quarkus.langchain4j.agent.AgentRunContext;
 import io.dapr.quarkus.langchain4j.agent.DaprAgentContextHolder;
 import io.dapr.quarkus.langchain4j.agent.DaprAgentRunRegistry;
 import io.dapr.quarkus.langchain4j.agent.workflow.AgentEvent;
@@ -267,8 +269,13 @@ public class DaprWorkflowPlanner implements Planner {
 
       // For sequential execution (single agent), set the Dapr agent context so that
       // DaprToolCallInterceptor can route @Tool calls through the AgentRunWorkflow.
+      // The agent runs on this very thread, so its name-binding will never be claimed
+      // by the generated decorator — remove it, or a later run of the same agent name
+      // (next loop iteration, next request) would claim this run's dead ID.
       if (exchanges.size() == 1 && exchanges.get(0).agentRunId() != null) {
         DaprAgentContextHolder.set(exchanges.get(0).agentRunId());
+        AgentRunBindingRegistry.remove(
+            exchanges.get(0).agent().name(), exchanges.get(0).agentRunId());
       }
 
       return call(batch);
@@ -294,8 +301,13 @@ public class DaprWorkflowPlanner implements Planner {
       return future;
     }
     // Idempotent by agentRunId: agent-call activities are delivered at-least-once,
-    // and a redelivery must not run the agent a second time.
+    // and a redelivery must not run the agent a second time. Registering the run
+    // context and the name-binding inside the same guard keeps redeliveries from
+    // re-creating them after the run completed and was unregistered — a stale
+    // re-bind would hand this run's dead ID to a later run of the same agent name.
     return submissionsByRunId.computeIfAbsent(agentRunId, id -> {
+      DaprAgentRunRegistry.register(id, new AgentRunContext(id));
+      AgentRunBindingRegistry.bind(agent.name(), id);
       CompletableFuture<Void> future = new CompletableFuture<>();
       agentExchangeQueue.add(new AgentExchange(agent, future, id));
       return future;
@@ -464,6 +476,11 @@ public class DaprWorkflowPlanner implements Planner {
     });
     pendingByAgentId.clear();
     submissionsByRunId.clear();
+    // Purge any unclaimed name-bindings from this orchestration (e.g. after an aborted
+    // run) so they cannot be claimed by a later run of the same agent names.
+    for (AgentInstance agent : agents) {
+      AgentRunBindingRegistry.purge(agent.name(), plannerId + ":");
+    }
     DaprPlannerRegistry.unregister(plannerId);
   }
 }
