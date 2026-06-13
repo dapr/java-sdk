@@ -167,13 +167,19 @@ dapr.agentic.scope-store.name=kvstore
 ## Known Limitations
 
 - **Recovery granularity**: Agent-level only — individual LLM/tool calls within an agent are re-executed (not skipped)
-- **Same-named agents in concurrent orchestrations**: completion routing is exact, but the
-  per-thread context binding is claimed FIFO by agent name, so observability may
-  cross-attribute runs between concurrent requests using the same agent name
+- **Same agent name in concurrent _parallel_ orchestrations**: within a single
+  orchestration each run's Dapr context is bound to its own run ID — including every
+  iteration of a `@LoopAgent` and all sequential agents, which run on the planner's
+  thread and route through the context it sets directly. Only when two *different*
+  concurrent requests run the same agent name on parallel executor threads at the same
+  instant can the FIFO name binding cross-attribute their runs; run IDs stay unique so
+  routing is still correct, but observability may interleave.
 - **daprd 1.18.0 workflow race**: a workflow event can be lost by the runtime (the
   workflow completes app-side but stays RUNNING in daprd, its event reminder fires on
-  an empty inbox), hanging that request — fix upstream in
-  [dapr/dapr#10054](https://github.com/dapr/dapr/pull/10054). The e2e tests retry once
-  locally and are skipped on CI (slow runners widen the race window) until a fixed
-  runtime ships.
+  an empty inbox) — fix upstream in
+  [dapr/dapr#10054](https://github.com/dapr/dapr/pull/10054). `AgentRunWorkflow` now
+  self-heals: each `agent-event` wait has a 60s timeout that re-arms and lets replay
+  redeliver the missed event from history, turning a permanent hang into a bounded
+  delay. The e2e tests still retry once locally and are skipped on CI (slow runners
+  widen the race window) until a fixed runtime ships.
 - **Small models**: llama3.2 (3B) sometimes malforms tool call arguments; llama3.1:8b+ recommended
