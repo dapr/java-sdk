@@ -19,6 +19,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.internal.JsonSchemaElementUtils;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -112,9 +113,14 @@ public class DaprConversationChatModel implements ChatModel {
           List.of(new ConversationMessageContent(um.singleText())));
     }
     if (msg instanceof AiMessage ai) {
-      List<ConversationToolCalls> toolCalls = null;
+      // Always non-null: AssistantMessage's constructor calls List.copyOf(toolCalls),
+      // which NPEs on null. A tool-less AiMessage (e.g. a prior iteration's plain-text
+      // answer carried into a @LoopAgent's follow-up history) must map cleanly. An empty
+      // list is safe on the wire: the alpha2 proto's tool_calls is a repeated field, so
+      // zero elements serialize identically to "unset" — daprd cannot distinguish empty
+      // from absent, so no tool_calls:[] is ever sent to the provider.
+      List<ConversationToolCalls> toolCalls = new ArrayList<>();
       if (ai.hasToolExecutionRequests()) {
-        toolCalls = new ArrayList<>();
         for (var req : ai.toolExecutionRequests()) {
           ConversationToolCalls tc = new ConversationToolCalls(
               new ConversationToolCallsOfFunction(req.name(), req.arguments()));
@@ -136,10 +142,16 @@ public class DaprConversationChatModel implements ChatModel {
   }
 
   private ConversationTools toDaprTool(ToolSpecification spec) {
-    // Use ToolSpecification's JSON Schema representation directly
-    Map<String, Object> parameters = new HashMap<>();
-    parameters.put("type", "object");
-    // TODO: map ToolSpecification.parameters() to JSON Schema when available
+    Map<String, Object> parameters;
+    if (spec.parameters() != null) {
+      // Convert the LangChain4j JSON schema (properties, required, ...) so the
+      // model knows the tool's argument shape
+      parameters = JsonSchemaElementUtils.toMap(spec.parameters());
+    } else {
+      // Parameterless tool: advertise an empty object schema
+      parameters = new HashMap<>();
+      parameters.put("type", "object");
+    }
     ConversationToolsFunction fn = new ConversationToolsFunction(spec.name(), parameters);
     if (spec.description() != null) {
       fn.setDescription(spec.description());
