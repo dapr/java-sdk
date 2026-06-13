@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.agent.workflow;
 
+import io.dapr.durabletask.TaskCanceledException;
 import io.dapr.durabletask.TaskFailedException;
 import io.dapr.quarkus.langchain4j.agent.activities.LlmCallInput;
 import io.dapr.quarkus.langchain4j.agent.activities.LlmCallOutput;
@@ -26,6 +27,7 @@ import io.quarkiverse.dapr.workflows.WorkflowMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -62,6 +64,22 @@ public class AgentRunWorkflow implements Workflow {
 
   private static final Logger LOG = Logger.getLogger(AgentRunWorkflow.class);
 
+  /**
+   * Timeout for each {@code waitForExternalEvent} arm of the agent loop.
+   *
+   * <p>The wait is NOT expected to time out in normal operation — events
+   * arrive within milliseconds of being raised. The timeout exists as a
+   * durable self-heal wake-up: durabletask-java can process the first work
+   * item built after a sidecar-side actor state reload entirely in replay
+   * mode and silently drop a new external event instead of delivering it to
+   * the waiter registered in that same execution (the event IS persisted to
+   * history; only the in-memory delivery is lost, leaving the workflow
+   * dormant on an eternal timer). With a finite timeout the next timer
+   * firing forces a fresh execution whose replay delivers the missed event
+   * from history, turning a permanent stall into a bounded delay.
+   */
+  private static final Duration EVENT_WAIT_TIMEOUT = Duration.ofSeconds(60);
+
   @Override
   public WorkflowStub create() {
     return ctx -> {
@@ -82,7 +100,18 @@ public class AgentRunWorkflow implements Workflow {
         LOG.infof("[AgentRun:%s][iter:%d] Waiting for agent-event (replay=%s)",
             agentRunId, eventIndex, ctx.isReplaying());
 
-        AgentEvent event = ctx.waitForExternalEvent("agent-event", AgentEvent.class).await();
+        AgentEvent event;
+        try {
+          event = ctx.waitForExternalEvent("agent-event", EVENT_WAIT_TIMEOUT, AgentEvent.class).await();
+        } catch (TaskCanceledException tce) {
+          // Wait timed out: no event was delivered within the window. Loop
+          // and re-arm — the fresh execution replays history, so an event
+          // that was persisted but never delivered to this waiter (see
+          // EVENT_WAIT_TIMEOUT) is picked up on this pass.
+          LOG.debugf("[AgentRun:%s][iter:%d] agent-event wait timed out after %s; re-arming (replay=%s)",
+              agentRunId, eventIndex, EVENT_WAIT_TIMEOUT, ctx.isReplaying());
+          continue;
+        }
         LOG.infof("[AgentRun:%s][iter:%d] Received event: type=%s, callId=%s (replay=%s)",
             agentRunId, eventIndex, event.type(), event.toolCallId(), ctx.isReplaying());
 
@@ -104,9 +133,7 @@ public class AgentRunWorkflow implements Workflow {
             LOG.infof("[AgentRun:%s][iter:%d] POST-callActivity tool-call=%s → %s",
                 agentRunId, eventIndex, event.toolName(), toolOutput.result());
             ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs, null));
-          }
-
-          if ("llm-call".equals(event.type())) {
+          } else if ("llm-call".equals(event.type())) {
             LOG.infof("[AgentRun:%s][iter:%d] PRE-callActivity llm-call=%s (replay=%s)",
                 agentRunId, eventIndex, event.toolName(), ctx.isReplaying());
             LlmCallOutput llmOutput = ctx.callActivity(
@@ -117,6 +144,13 @@ public class AgentRunWorkflow implements Workflow {
             LOG.infof("[AgentRun:%s][iter:%d] POST-callActivity llm-call=%s → %s",
                 agentRunId, eventIndex, event.toolName(), llmOutput.response());
             ctx.setCustomStatus(new AgentRunOutput(agentName, toolCallOutputs, llmCallOutputs, null));
+          } else {
+            // Never silently swallow an event: an unrecognized (or null)
+            // type here means a producer/serialization bug, and dropping it
+            // would strand whoever raised it waiting for a response.
+            LOG.warnf("[AgentRun:%s][iter:%d] UNHANDLED agent-event type=%s, callId=%s — ignoring; "
+                + "this indicates an event producer or serialization bug",
+                agentRunId, eventIndex, event.type(), event.toolCallId());
           }
         } catch (TaskFailedException e) {
           // Activity failed — the in-memory AgentRunContext is gone after a crash.
