@@ -424,18 +424,6 @@ public final class TaskOrchestrationExecutor {
         scheduleTaskBuilder.setInput(StringValue.of(serializedInput));
       }
 
-      // Add router information for cross-app routing
-      if (hasSourceAppId() && hasTargetAppId(options)) {
-        String targetAppId = options.getAppID();
-        scheduleTaskBuilder.setRouter(Orchestration.TaskRouter.newBuilder()
-            .setSourceAppID(this.appId)
-            .setTargetAppID(targetAppId)
-            .build());
-        this.logger.fine(() -> String.format(
-            "cross app routing detected: source=%s, target=%s",
-            this.appId, targetAppId));
-      }
-
       // Set history propagation scope if specified
       if (options != null && options.hasHistoryPropagationScope()) {
         scheduleTaskBuilder.setHistoryPropagationScope(
@@ -449,10 +437,14 @@ public final class TaskOrchestrationExecutor {
             .setId(id)
             .setScheduleTask(scheduleTaskBuilder);
         if (hasSourceAppId() && hasTargetAppId(options)) {
+          String targetAppId = options.getAppID();
           actionBuilder.setRouter(Orchestration.TaskRouter.newBuilder()
               .setSourceAppID(this.appId)
-              .setTargetAppID(options.getAppID())
+              .setTargetAppID(targetAppId)
               .build());
+          this.logger.fine(() -> String.format(
+              "cross app routing detected: source=%s, target=%s",
+              this.appId, targetAppId));
         }
         this.pendingActions.put(id, actionBuilder.build());
 
@@ -597,22 +589,6 @@ public final class TaskOrchestrationExecutor {
       }
       createSubOrchestrationActionBuilder.setInstanceId(instanceId);
 
-      // Add router information for cross-app routing of sub-orchestrations
-      if (hasSourceAppId()) {
-        Orchestration.TaskRouter.Builder routerBuilder = Orchestration.TaskRouter.newBuilder()
-            .setSourceAppID(this.appId);
-
-        // Add target app ID if specified in options
-        if (hasTargetAppId(options)) {
-          routerBuilder.setTargetAppID(options.getAppID());
-          this.logger.fine(() -> String.format(
-              "cross app sub-orchestration routing detected: source=%s, target=%s",
-              this.appId, options.getAppID()));
-        }
-
-        createSubOrchestrationActionBuilder.setRouter(routerBuilder.build());
-      }
-
       // Set history propagation scope if specified
       if (options != null && options.hasHistoryPropagationScope()) {
         createSubOrchestrationActionBuilder.setHistoryPropagationScope(
@@ -632,6 +608,9 @@ public final class TaskOrchestrationExecutor {
               .setSourceAppID(this.appId);
           if (hasTargetAppId(options)) {
             actionRouterBuilder.setTargetAppID(options.getAppID());
+            this.logger.fine(() -> String.format(
+                "cross app sub-orchestration routing detected: source=%s, target=%s",
+                this.appId, options.getAppID()));
           }
           actionBuilder.setRouter(actionRouterBuilder.build());
         }

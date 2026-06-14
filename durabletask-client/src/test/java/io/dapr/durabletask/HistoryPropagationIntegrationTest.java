@@ -527,10 +527,6 @@ class HistoryPropagationIntegrationTest {
     OrchestratorActions.CreateChildWorkflowAction createChild = action.getCreateChildWorkflow();
 
     // Verify BOTH cross-app routing and history propagation are set
-    assertTrue(createChild.hasRouter());
-    assertEquals(sourceAppId, createChild.getRouter().getSourceAppID());
-    assertEquals(targetAppId, createChild.getRouter().getTargetAppID());
-
     assertTrue(createChild.hasHistoryPropagationScope());
     assertEquals(Orchestration.HistoryPropagationScope.HISTORY_PROPAGATION_SCOPE_LINEAGE,
         createChild.getHistoryPropagationScope());
