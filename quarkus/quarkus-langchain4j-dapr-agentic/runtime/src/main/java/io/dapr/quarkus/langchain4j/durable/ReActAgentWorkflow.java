@@ -23,6 +23,7 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import io.dapr.durabletask.Task;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
 import io.quarkiverse.dapr.workflows.WorkflowMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -91,6 +92,7 @@ public class ReActAgentWorkflow implements Workflow {
             input.agentName(), messages.size(), !aiMessage.hasToolExecutionRequests()));
 
         if (!aiMessage.hasToolExecutionRequests()) {
+          saveMemory(ctx, input, messages);
           ctx.complete(aiMessage.text());
           return;
         }
@@ -112,5 +114,25 @@ public class ReActAgentWorkflow implements Workflow {
       throw new IllegalStateException(
           "Agent '" + input.agentName() + "' exceeded maxSteps without a final answer");
     };
+  }
+
+  /**
+   * Persists the conversation for a {@code @MemoryId} agent via the {@code memory-save} activity
+   * (durable + idempotent). The system message is excluded — it is regenerated from the template
+   * each turn, not part of the stored history.
+   */
+  private static void saveMemory(WorkflowContext ctx, ReActInput input, List<ChatMessage> messages) {
+    if (input.memoryId() == null || input.memoryId().isBlank()) {
+      return;
+    }
+    List<ChatMessage> toPersist = new ArrayList<>();
+    for (ChatMessage message : messages) {
+      if (!(message instanceof SystemMessage)) {
+        toPersist.add(message);
+      }
+    }
+    ctx.callActivity("memory-save",
+        new MemorySaveInput(input.memoryId(), ChatMessageSerializer.messagesToJson(toPersist)),
+        String.class).await();
   }
 }

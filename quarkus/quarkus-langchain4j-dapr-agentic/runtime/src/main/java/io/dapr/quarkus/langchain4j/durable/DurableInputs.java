@@ -42,6 +42,7 @@ final class DurableInputs {
           DurableRendering.render(node.systemTemplate(), state),
           DurableRendering.render(node.userTemplate(), state),
           null,
+          null,
           MAX_STEPS);
       case "durable-sequence", "durable-parallel" -> new DurableSequenceInput(
           node.subAgents(), state, node.outputKey(), node.combiner());

@@ -24,6 +24,8 @@ package io.dapr.quarkus.langchain4j.durable;
  * @param systemMessage     the rendered system message, or {@code null}
  * @param userMessage       the rendered user message
  * @param priorMessagesJson serialized prior chat history (LangChain4j JSON), or {@code null}/blank
+ * @param memoryId          the {@code @MemoryId} value for persisting this turn, or {@code null}
+ *                          when the agent has no chat memory
  * @param maxSteps          maximum ReAct iterations before giving up ({@code <= 0} uses the default)
  */
 public record ReActInput(
@@ -31,5 +33,6 @@ public record ReActInput(
     String systemMessage,
     String userMessage,
     String priorMessagesJson,
+    String memoryId,
     int maxSteps) {
 }

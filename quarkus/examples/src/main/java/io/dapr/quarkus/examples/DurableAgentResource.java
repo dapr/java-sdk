@@ -84,7 +84,7 @@ public class DurableAgentResource {
 
   private String runReactAgent(String agentName, String userMessage, String idPrefix)
       throws TimeoutException {
-    ReActInput input = new ReActInput(agentName, null, userMessage, null, 8);
+    ReActInput input = new ReActInput(agentName, null, userMessage, null, null, 8);
     String instanceId = idPrefix + UUID.randomUUID();
     workflowClient.scheduleNewWorkflow("react-agent", input, instanceId);
     WorkflowInstanceStatus status =

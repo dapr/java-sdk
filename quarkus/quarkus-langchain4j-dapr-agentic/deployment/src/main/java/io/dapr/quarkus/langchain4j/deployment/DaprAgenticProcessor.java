@@ -146,6 +146,8 @@ public class DaprAgenticProcessor {
       // The durable ReAct loop's only non-deterministic steps.
       "io.dapr.quarkus.langchain4j.durable.AgentLlmActivity",
       "io.dapr.quarkus.langchain4j.durable.AgentToolActivity",
+      // Persists chat memory for @MemoryId agents at the end of a run.
+      "io.dapr.quarkus.langchain4j.durable.AgentMemorySaveActivity",
   };
 
   @BuildStep

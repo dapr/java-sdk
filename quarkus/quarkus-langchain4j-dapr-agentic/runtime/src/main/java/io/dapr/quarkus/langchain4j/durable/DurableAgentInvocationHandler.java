@@ -13,7 +13,8 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.durable;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.langchain4j.service.MemoryId;
+import dev.langchain4j.service.output.ServiceOutputParser;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import io.quarkus.arc.Arc;
@@ -21,6 +22,7 @@ import org.jboss.logging.Logger;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +45,7 @@ public class DurableAgentInvocationHandler implements InvocationHandler {
 
   private static final Logger LOG = Logger.getLogger(DurableAgentInvocationHandler.class);
   private static final int WAIT_MINUTES = 10;
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ServiceOutputParser OUTPUT_PARSER = new ServiceOutputParser();
 
   private final Map<String, AgentMethodMeta> metasByMethod;
 
@@ -77,7 +79,7 @@ public class DurableAgentInvocationHandler implements InvocationHandler {
       }
     }
 
-    Object input = DurableInputs.build(meta, state);
+    Object input = withStructuredOutput(withMemory(DurableInputs.build(meta, state), method, args), method);
     String instanceId = meta.agentName() + "-" + UUID.randomUUID();
     LOG.infof("[DurableAgent:%s] starting %s workflow %s", meta.agentName(), meta.workflowName(), instanceId);
 
@@ -91,7 +93,7 @@ public class DurableAgentInvocationHandler implements InvocationHandler {
           "Durable agent '" + meta.agentName() + "' did not complete within " + WAIT_MINUTES + "m", e);
     }
 
-    return coerce(extractResult(meta, status), method.getReturnType());
+    return coerce(extractResult(meta, status), method);
   }
 
   /**
@@ -110,7 +112,66 @@ public class DurableAgentInvocationHandler implements InvocationHandler {
     return value == null ? null : String.valueOf(value);
   }
 
-  private static Object coerce(String raw, Class<?> returnType) throws Exception {
+  /**
+   * For a leaf agent with a structured (non-String) return type, append LangChain4j's
+   * output-format instructions to the rendered user message so the model emits parseable JSON.
+   * Composites produce their result via an {@code @Output} combiner — not directly from the model —
+   * so they are left untouched.
+   */
+  private static Object withStructuredOutput(Object input, Method method) {
+    Class<?> returnType = method.getReturnType();
+    if (returnType == String.class || returnType == void.class || returnType == Void.class) {
+      return input;
+    }
+    if (!(input instanceof ReActInput leaf)) {
+      return input;
+    }
+    String instructions = OUTPUT_PARSER.outputFormatInstructions(method.getGenericReturnType());
+    if (instructions == null || instructions.isBlank()) {
+      return input;
+    }
+    String userMessage = (leaf.userMessage() == null ? "" : leaf.userMessage()) + "\n" + instructions;
+    return new ReActInput(leaf.agentName(), leaf.systemMessage(), userMessage,
+        leaf.priorMessagesJson(), leaf.memoryId(), leaf.maxSteps());
+  }
+
+  /**
+   * For a leaf agent with a {@code @MemoryId} parameter, loads the prior conversation at the entry
+   * (so it is captured into the workflow input and stays replay-stable) and tags the input with the
+   * memory id so the workflow persists this turn at the end. Agents without {@code @MemoryId} are
+   * stateless per call, exactly as AiServices is when no chat memory is configured.
+   */
+  private static Object withMemory(Object input, Method method, Object[] args) {
+    if (!(input instanceof ReActInput leaf)) {
+      return input;
+    }
+    int idx = memoryIdIndex(method);
+    if (idx < 0 || args == null || idx >= args.length || args[idx] == null) {
+      return input;
+    }
+    String memoryId = String.valueOf(args[idx]);
+    String priorMessagesJson = DurableChatMemory.loadJson(memoryId);
+    return new ReActInput(leaf.agentName(), leaf.systemMessage(), leaf.userMessage(),
+        priorMessagesJson, memoryId, leaf.maxSteps());
+  }
+
+  private static int memoryIdIndex(Method method) {
+    Parameter[] params = method.getParameters();
+    for (int i = 0; i < params.length; i++) {
+      if (params[i].isAnnotationPresent(MemoryId.class)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * Coerces the workflow's raw result to the method's return type, reusing LangChain4j's
+   * {@link ServiceOutputParser} (the same parser AiServices uses) so JSON objects, enums,
+   * primitives and markdown-fenced output are all handled.
+   */
+  private static Object coerce(String raw, Method method) {
+    Class<?> returnType = method.getReturnType();
     if (returnType == void.class || returnType == Void.class) {
       return null;
     }
@@ -120,7 +181,6 @@ public class DurableAgentInvocationHandler implements InvocationHandler {
     if (raw == null) {
       return null;
     }
-    // Structured return (e.g. a @Output record) serialized as JSON in the state map.
-    return MAPPER.readValue(raw, returnType);
+    return OUTPUT_PARSER.parseText(method.getGenericReturnType(), raw);
   }
 }
