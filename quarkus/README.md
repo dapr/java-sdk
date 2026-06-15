@@ -166,6 +166,16 @@ dapr.agentic.scope-store.name=kvstore
 
 ## Known Limitations
 
+- **Single replica only (current design)**: live agent execution keeps per-run state in
+  JVM memory — the `AgentRunContext` registry, the `CompletableFuture` the agent thread
+  blocks on, and the per-thread Dapr context. Dapr Workflow, however,
+  [randomly load-balances activities across all replicas](https://docs.dapr.io/developing-applications/building-blocks/workflow/workflow-architecture/)
+  of an app-id, with no locality to where a run started. With more than one replica an
+  LLM/tool activity can be dispatched to a replica that lacks the in-memory context, fail
+  to find it, and surface as a (false) crash-recovery while the originating request blocks
+  until the call timeout. **Deploy a single replica** until execution state is moved into
+  workflow history (control inversion — see [Crash Recovery](#crash-recovery)); this is the
+  same root cause as agent-level (not per-call) recovery.
 - **Recovery granularity**: Agent-level only — individual LLM/tool calls within an agent are re-executed (not skipped)
 - **Same agent name in concurrent _parallel_ orchestrations**: within a single
   orchestration each run's Dapr context is bound to its own run ID — including every
