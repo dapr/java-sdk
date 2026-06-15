@@ -18,10 +18,9 @@
     <name>Dapr Quarkus Agentic - Parent</name>
 
     <modules>
-        <module>runtime</module>
-        <module>deployment</module>
-        <module>quarkus-agentic-dapr-agents-registry</module>
-        <module>quarkus-langchain4j-dapr</module>
+        <module>quarkus-langchain4j-dapr-agentic</module>
+        <module>quarkus-langchain4j-dapr-llm</module>
+        <module>quarkus-langchain4j-dapr-registry</module>
         <module>examples</module>
     </modules>
 

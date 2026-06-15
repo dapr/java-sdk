@@ -1,0 +1,11 @@
+name: LangChain4j Dapr Agentic
+description: Run LangChain4j agents as durable Dapr Workflows
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+    - ai
+    - agentic
+    - cncf
+    - dapr
+  categories:
+    - "integration"

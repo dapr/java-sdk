@@ -23,12 +23,12 @@ import io.quarkiverse.langchain4j.ToolBox;
  *
  * <p>The {@link ToolBox} annotation tells quarkus-langchain4j to make {@link ResearchTools}
  * available to the LLM for this agent's method. When the LLM decides to call
- * {@code getPopulation} or {@code getCapital}, the {@code quarkus-agentic-dapr} extension runs
+ * {@code getPopulation} or {@code getCapital}, the {@code quarkus-langchain4j-dapr-agentic} extension runs
  * that call as an {@code agent-tool} Dapr Workflow Activity — a durable, auditable record of
  * every tool invocation.
  *
  * <p><b>Architecture note:</b> No changes are required in this interface to enable the durable
- * routing. The {@code quarkus-agentic-dapr} extension replaces this agent's bean with a proxy
+ * routing. The {@code quarkus-langchain4j-dapr-agentic} extension replaces this agent's bean with a proxy
  * that runs its ReAct loop as a Dapr Workflow ({@code react-agent}).
  */
 public interface ResearchWriter {

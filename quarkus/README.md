@@ -10,24 +10,25 @@ agent state lives in the workflow history. Crash recovery, horizontal scale, and
 fall out for free. Composites (sequential, parallel, loop, conditional) are themselves workflows
 that call their children directly, forming a replayable parent-child tree.
 
-| Capability | Without Dapr | With `quarkus-agentic-dapr` |
+| Capability | Without Dapr | With `quarkus-langchain4j-dapr-agentic` |
 |---|---|---|
 | Durability | Lost on crash | Full workflow history persisted |
 | Crash recovery | Restart from scratch | Resume at the next un-run model/tool call |
 | Horizontal scale | Single process | Activities placed across replicas (no in-memory state) |
 | Observability | Logs only | Dapr dashboard + per-activity tracking |
 | Tool / LLM call audit trail | None | Every request/response recorded in history |
-| Code changes | — | **None** — just swap the dependency |
+| Code changes | — | **None** — just add `quarkus-langchain4j-dapr-agentic` |
 
 ## Modules
 
 ```
 quarkus/
-├── runtime/                               # Core extension (durable agent workflows + activities)
-├── deployment/                            # Build-time processing (annotation scanning, durable agent proxies)
-├── quarkus-agentic-dapr-agents-registry/  # Optional: registers agents in Dapr state store
-├── quarkus-langchain4j-dapr/              # Optional: Dapr Conversation API as ChatModel provider
-└── examples/                              # Built-in examples
+├── quarkus-langchain4j-dapr-agentic/   # The extension: agents as durable Dapr Workflows
+│   ├── runtime/                        #   durable agent workflows + activities
+│   └── deployment/                     #   annotation scanning, durable agent proxies
+├── quarkus-langchain4j-dapr-llm/       # Optional: Dapr Conversation API as ChatModel provider
+├── quarkus-langchain4j-dapr-registry/  # Optional: registers agents in Dapr state store
+└── examples/                           # Built-in examples
 ```
 
 ## Supported Agent Types
@@ -54,7 +55,7 @@ record return types are supported.
 ```xml
 <dependency>
     <groupId>io.dapr.quarkus</groupId>
-    <artifactId>quarkus-agentic-dapr</artifactId>
+    <artifactId>quarkus-langchain4j-dapr-agentic</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
