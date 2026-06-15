@@ -174,9 +174,11 @@ public final class TaskOrchestrationExecutor {
       context.fail(new FailureDetails(e));
     }
 
-    if ((context.continuedAsNew && !context.isComplete) || (completed && context.pendingActions.isEmpty()
-        && !context.waitingForEvents())) {
+    if ((context.continuedAsNew && !context.isComplete) || (completed
+        && context.pendingActionsOnlyObsoleteEventTimers() && !context.waitingForEvents())) {
       // There are no further actions for the orchestrator to take so auto-complete the orchestration.
+      // Timers guarding already-resolved event waits no longer represent
+      // work; counting them left the workflow RUNNING until the timer fired.
       context.complete(null);
     }
 
@@ -1228,6 +1230,20 @@ public final class TaskOrchestrationExecutor {
 
     private boolean waitingForEvents() {
       return this.outstandingEvents.size() > 0;
+    }
+
+    /**
+     * Returns true when every remaining pending action is a CreateTimer
+     * guarding an external-event wait. With no event waiters outstanding,
+     * such timers are obsolete and must not block implicit completion.
+     */
+    private boolean pendingActionsOnlyObsoleteEventTimers() {
+      for (OrchestratorActions.WorkflowAction action : this.pendingActions.values()) {
+        if (!action.hasCreateTimer() || !action.getCreateTimer().hasExternalEvent()) {
+          return false;
+        }
+      }
+      return true;
     }
 
     private boolean processNextEvent() {
