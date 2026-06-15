@@ -127,32 +127,6 @@ public class ToolRegistry {
   }
 
   /**
-   * Invokes a tool by name with the given arguments.
-   *
-   * @param toolName the tool name (as declared in {@code @Tool})
-   * @param args     the arguments to pass (already resolved to match method parameters)
-   * @return the tool result as a string
-   */
-  public String invokeTool(String toolName, Object[] args) {
-    ToolEntry entry = toolsByName.get(toolName);
-    if (entry == null) {
-      throw new IllegalArgumentException("Unknown tool: " + toolName);
-    }
-
-    Object beanInstance = Arc.container().instance(entry.beanClass()).get();
-    if (beanInstance == null) {
-      throw new IllegalStateException("No CDI bean instance for tool class: " + entry.beanClass().getName());
-    }
-
-    try {
-      Object result = entry.method().invoke(beanInstance, args);
-      return String.valueOf(result);
-    } catch (Exception e) {
-      throw new RuntimeException("Tool invocation failed: " + toolName, e);
-    }
-  }
-
-  /**
    * Returns the ToolEntry for the given tool name, or null if not found.
    *
    * @param toolName the tool name to look up

@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.quarkus.langchain4j.durable;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.service.tool.DefaultToolExecutor;
 import io.dapr.quarkus.langchain4j.agent.recovery.ToolRegistry;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
@@ -23,16 +23,19 @@ import io.quarkus.arc.Arc;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
-import java.lang.reflect.Parameter;
-import java.util.Map;
-
 /**
  * Stateless activity that invokes one {@code @Tool} for {@link ReActAgentWorkflow}.
  *
- * <p>Resolves the tool by name via {@link ToolRegistry}, binds the model's JSON arguments to
- * the method parameters, and returns the result as text. Like {@link AgentLlmActivity}, it
- * depends only on its {@link ToolInput} and the (replica-wide) tool registry, obtained via
- * {@link Arc} since the workflow runtime instantiates activities by reflection.
+ * <p>Resolves the tool by name via {@link ToolRegistry} and executes it with LangChain4j's
+ * {@link DefaultToolExecutor} — the same binder AiServices uses — so JSON arguments are bound
+ * to the method signature with full fidelity ({@code @P} parameters, nested/complex types).
+ * Like {@link AgentLlmActivity}, it depends only on its {@link ToolInput} and the (replica-wide)
+ * tool registry, obtained via {@link Arc} since the workflow runtime instantiates activities by
+ * reflection.
+ *
+ * <p><b>Self-correction:</b> an unknown (hallucinated) tool, or a binding/execution failure,
+ * returns the error text as the tool result rather than failing the workflow, so the model can
+ * react and retry on the next turn (LangChain4j ReAct semantics).
  *
  * <p><b>At-least-once:</b> activities can be redelivered, so side-effecting tools must be
  * idempotent or externally guarded.
@@ -42,42 +45,37 @@ import java.util.Map;
 public class AgentToolActivity implements WorkflowActivity {
 
   private static final Logger LOG = Logger.getLogger(AgentToolActivity.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Override
   public Object run(WorkflowActivityContext ctx) {
     ToolInput input = ctx.getInput(ToolInput.class);
     ToolRegistry toolRegistry = Arc.container().instance(ToolRegistry.class).get();
-    Object[] args = parseArguments(toolRegistry, input.toolName(), input.arguments());
-    String result = toolRegistry.invokeTool(input.toolName(), args);
-    return new ToolResult(input.toolCallId(), input.toolName(), result);
-  }
+    ToolRegistry.ToolEntry entry = toolRegistry.getToolEntry(input.toolName());
 
-  private Object[] parseArguments(ToolRegistry toolRegistry, String toolName, String argsJson) {
-    ToolRegistry.ToolEntry entry = toolRegistry.getToolEntry(toolName);
+    // Unknown / hallucinated tool: feed an error back to the model instead of crashing the
+    // workflow, so the loop can self-correct.
     if (entry == null) {
-      return new Object[0];
+      LOG.warnf("Model requested unknown tool '%s'", input.toolName());
+      return new ToolResult(input.toolCallId(), input.toolName(),
+          "Error: there is no tool named '" + input.toolName() + "'.");
     }
-    Parameter[] params = entry.method().getParameters();
-    if (params.length == 0) {
-      return new Object[0];
-    }
+
+    Object beanInstance = Arc.container().instance(entry.beanClass()).get();
+    ToolExecutionRequest request = ToolExecutionRequest.builder()
+        .id(input.toolCallId())
+        .name(input.toolName())
+        .arguments(input.arguments())
+        .build();
+
+    String result;
     try {
-      Map<String, Object> argsMap = MAPPER.readValue(argsJson, new TypeReference<Map<String, Object>>() {
-      });
-      Object[] result = new Object[params.length];
-      for (int i = 0; i < params.length; i++) {
-        Object value = argsMap.get(params[i].getName());
-        if (value == null && argsMap.size() == 1 && params.length == 1) {
-          value = argsMap.values().iterator().next();
-        }
-        result[i] = MAPPER.convertValue(value, params[i].getType());
-      }
-      return result;
+      // DefaultToolExecutor parses the JSON arguments against the method signature and invokes
+      // the tool; on failure it surfaces the error so we can return it to the model.
+      result = new DefaultToolExecutor(beanInstance, entry.method()).execute(request, null);
     } catch (Exception e) {
-      LOG.warnf("Failed to parse args for tool '%s': %s — trying single-argument fallback",
-          toolName, e.getMessage());
-      return params.length == 1 ? new Object[]{argsJson} : new Object[params.length];
+      LOG.warnf("Tool '%s' failed: %s", input.toolName(), e.getMessage());
+      result = "Error: " + e.getMessage();
     }
+    return new ToolResult(input.toolCallId(), input.toolName(), result);
   }
 }
