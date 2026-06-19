@@ -15,6 +15,24 @@
   <description>Dapr Spring Boot Starter</description>
   <packaging>jar</packaging>
 
+  <properties>
+    <springboot4.version>4.0.5</springboot4.version>
+    <!-- Override JUnit version to align with Spring Boot 4.x -->
+    <junit-bom.version>6.0.2</junit-bom.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot4.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -23,6 +41,10 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-properties</artifactId>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>

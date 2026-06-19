@@ -23,7 +23,6 @@ import org.springframework.data.util.CloseableIterator;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 
-import java.util.Collections;
 import java.util.Map;
 
 public abstract class AbstractDaprKeyValueAdapter implements KeyValueAdapter {
@@ -124,7 +123,7 @@ public abstract class AbstractDaprKeyValueAdapter implements KeyValueAdapter {
   }
 
   @Override
-  public Iterable<?> getAllOf(String keyspace) {
+  public Iterable<Object> getAllOf(String keyspace) {
     return getAllOf(keyspace, Object.class);
   }
 
