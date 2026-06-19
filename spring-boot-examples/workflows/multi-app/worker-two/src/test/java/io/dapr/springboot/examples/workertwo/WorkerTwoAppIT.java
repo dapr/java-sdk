@@ -13,23 +13,26 @@ limitations under the License.
 
 package io.dapr.springboot.examples.workertwo;
 
-import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import static io.restassured.RestAssured.given;
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
 @SpringBootTest(classes = {TestWorkerTwoApplication.class, DaprTestContainersConfig.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class WorkerTwoAppIT {
 
+  @LocalServerPort
+  private int port;
+
+  private RestTestClient client;
+
   @BeforeEach
   void setUp() {
-    RestAssured.baseURI = "http://localhost:" + 8082;
+    client = RestTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
     org.testcontainers.Testcontainers.exposeHostPorts(8082);
 
   }

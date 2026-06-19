@@ -17,19 +17,17 @@ import io.dapr.client.DaprClient;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.testcontainers.DaprContainer;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.web.servlet.client.RestTestClient;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-import java.io.IOException;
 import java.time.Duration;
 
-import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 
@@ -53,6 +51,11 @@ class ConsumerAppIT {
   @Autowired
   private DaprContainer daprContainer;
 
+  @LocalServerPort
+  private int port;
+
+  private RestTestClient client;
+
   @BeforeAll
   public static void setup() {
     org.testcontainers.Testcontainers.exposeHostPorts(8081);
@@ -60,21 +63,22 @@ class ConsumerAppIT {
 
   @BeforeEach
   void setUp() {
-    RestAssured.baseURI = "http://localhost:" + 8081;
+    client = RestTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
     Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(daprContainer);
   }
 
 
   @Test
-  void testMessageConsumer() throws InterruptedException, IOException {
+  void testMessageConsumer() throws InterruptedException {
 
     messagingTemplate.send("topic", new Order("abc-123", "the mars volta LP", 1));
 
-    given().contentType(ContentType.JSON)
-            .when()
-            .get("/events")
-            .then()
-            .statusCode(200);
+    client.get()
+        .uri("/events")
+        .exchange()
+        .expectStatus().isOk();
 
     await().atMost(Duration.ofSeconds(10))
             .until(subscriberRestController.getAllEvents()::size, equalTo(1));

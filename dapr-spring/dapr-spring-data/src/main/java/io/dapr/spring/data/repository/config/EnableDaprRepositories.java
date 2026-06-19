@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.spring.data.repository.config;
 
+import io.dapr.spring.data.repository.config.DaprRepositoriesRegistrar;
 import io.dapr.spring.data.repository.query.DaprPredicateQueryCreator;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.context.annotation.ComponentScan.Filter;

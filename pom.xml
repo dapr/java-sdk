@@ -52,7 +52,7 @@
     <junit-bom.version>5.11.4</junit-bom.version>
     <snakeyaml.version>2.0</snakeyaml.version>
     <testcontainers.version>2.0.5</testcontainers.version>
-    <springboot.version>3.5.12</springboot.version>
+    <springboot.version>4.0.5</springboot.version>
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <assertj.version>3.27.7</assertj.version>
     <opentelemetry.version>1.41.0</opentelemetry.version>
@@ -261,17 +261,7 @@
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
-        <artifactId>dapr-spring-boot-4-starter</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-starter-test</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr.spring</groupId>
-        <artifactId>dapr-spring-boot-4-starter-test</artifactId>
         <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
@@ -539,7 +529,6 @@
                 <excludes>
                   <exclude>io/dapr/durabletask/**/*</exclude>
                   <exclude>io/dapr/springboot/examples/**/*</exclude>
-                  <exclude>io/dapr/springboot4/examples/**/*</exclude>
                 </excludes>
                 <rules>
                   <rule>
@@ -768,26 +757,8 @@
       <modules>
         <module>sdk-tests</module>
         <module>spring-boot-examples</module>
+        <module>spring-boot-sdk-tests</module>
         <module>durabletask-client</module>
-      </modules>
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <skipTests>true</skipTests>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </build>
-
-    </profile>
-    <profile>
-      <id>integration-sb4-tests</id>
-      <modules>
-        <module>spring-boot-4-examples</module>
-        <module>spring-boot-4-sdk-tests</module>
       </modules>
       <build>
         <plugins>

@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.spring.data.repository.query;
 
 import org.springframework.beans.BeanWrapper;
-import org.springframework.data.mapping.PropertyPath;
+import org.springframework.data.core.PropertyPath;
 import org.springframework.data.util.DirectFieldAccessFallbackBeanWrapper;
 import org.springframework.util.ObjectUtils;
 

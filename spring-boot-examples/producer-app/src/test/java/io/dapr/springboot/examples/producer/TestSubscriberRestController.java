@@ -15,6 +15,7 @@ package io.dapr.springboot.examples.producer;
 
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.springboot.examples.producer.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;

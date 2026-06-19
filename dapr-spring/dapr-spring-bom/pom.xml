@@ -126,11 +126,6 @@
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
-        <artifactId>dapr-spring-6-data</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-messaging</artifactId>
         <version>${dapr.sdk.version}</version>
       </dependency>
@@ -151,11 +146,6 @@
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
-        <artifactId>dapr-spring-boot-4-autoconfigure</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-tests</artifactId>
         <version>${dapr.sdk.version}</version>
       </dependency>
@@ -166,17 +156,7 @@
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
-        <artifactId>dapr-spring-boot-4-starter</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-starter-test</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr.spring</groupId>
-        <artifactId>dapr-spring-boot-4-starter-test</artifactId>
         <version>${dapr.sdk.version}</version>
       </dependency>
     </dependencies>

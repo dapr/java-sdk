@@ -104,14 +104,9 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 17 ]
-        spring-boot-version: [  3.5.4 ]
-        spring-boot-display-version: [ 3.5.x ]
+        spring-boot-version: [ 4.0.5 ]
+        spring-boot-display-version: [ 4.0.x ]
         experimental: [ false ]
-        include:
-          - java: 17
-            spring-boot-version: 4.0.2
-            spring-boot-display-version: 4.0.x
-            experimental: false
     env:
       JDK_VER: ${{ matrix.java }}
     steps:
@@ -125,48 +120,38 @@ jobs:
         java-version: ${{ env.JDK_VER }}
     - name: Clean up and install sdk
       run: ./mvnw clean install -B -q -DskipTests
-    - name: Integration tests using spring boot 3.x version ${{ matrix.spring-boot-version }}
+    - name: Integration tests using Spring Boot ${{ matrix.spring-boot-version }}
       id: integration_tests
-      if: ${{ matrix.spring-boot-display-version == '3.5.x' }}
       uses: nick-fields/retry@v3
       with:
         max_attempts: 2
         timeout_minutes: 30
         retry_wait_seconds: 15
         command: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
-    - name: Integration tests using spring boot 4.x version ${{ matrix.spring-boot-version }}
-      id: integration_sb4_tests
-      if: ${{ matrix.spring-boot-display-version == '4.0.x' }}
-      uses: nick-fields/retry@v3
-      with:
-        max_attempts: 2
-        timeout_minutes: 30
-        retry_wait_seconds: 15
-        command: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-sb4-tests dependency:copy-dependencies verify
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v7
       with:
         name: failsafe-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/failsafe-reports
-    - name: Upload failsafe test report for sb4 sdk-tests on failure
-      if: ${{ failure() && steps.integration_sb4_tests.conclusion == 'failure' }}
+    - name: Upload failsafe test report for spring-boot-sdk-tests on failure
+      if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v7
       with:
-        name: failsafe-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
-        path: spring-boot-4-sdk-tests/target/failsafe-reports
+        name: failsafe-report-spring-boot-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
+        path: spring-boot-sdk-tests/target/failsafe-reports
     - name: Upload surefire test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v7
       with:
         name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/surefire-reports
-    - name: Upload surefire test report for sdk-tests on failure
-      if: ${{ failure() && steps.integration_sb4_tests.conclusion == 'failure' }}
+    - name: Upload surefire test report for spring-boot-sdk-tests on failure
+      if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v7
       with:
-        name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
-        path: spring-boot-4-sdk-tests/target/surefire-reports
+        name: surefire-report-spring-boot-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
+        path: spring-boot-sdk-tests/target/surefire-reports
 
 
   publish:
