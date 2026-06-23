@@ -151,16 +151,11 @@ class SubOrchestrationCrossAppTest {
     OrchestratorActions.WorkflowAction action = actions.get(0);
     assertTrue(action.hasCreateChildWorkflow());
 
-    // Verify the CreateSubOrchestrationAction has the router
     OrchestratorActions.CreateChildWorkflowAction createSub = action.getCreateChildWorkflow();
     assertEquals(subOrchestratorName, createSub.getName());
     assertEquals("child-instance-1", createSub.getInstanceId());
-    assertTrue(createSub.hasRouter());
-    assertEquals(sourceAppId, createSub.getRouter().getSourceAppID());
-    assertTrue(createSub.getRouter().hasTargetAppID());
-    assertEquals(targetAppId, createSub.getRouter().getTargetAppID());
 
-    // Verify the OrchestratorAction also has the router
+    // Verify the OrchestratorAction has the router
     assertTrue(action.hasRouter());
     assertEquals(sourceAppId, action.getRouter().getSourceAppID());
     assertTrue(action.getRouter().hasTargetAppID());
@@ -198,13 +193,7 @@ class SubOrchestrationCrossAppTest {
     OrchestratorActions.WorkflowAction action = actions.get(0);
     assertTrue(action.hasCreateChildWorkflow());
 
-    // Router should have source only, no target
-    OrchestratorActions.CreateChildWorkflowAction createSub = action.getCreateChildWorkflow();
-    assertTrue(createSub.hasRouter());
-    assertEquals(sourceAppId, createSub.getRouter().getSourceAppID());
-    assertFalse(createSub.getRouter().hasTargetAppID());
-
-    // OrchestratorAction router should also have source only
+    // OrchestratorAction router should have source only, no target
     assertTrue(action.hasRouter());
     assertEquals(sourceAppId, action.getRouter().getSourceAppID());
     assertFalse(action.getRouter().hasTargetAppID());
@@ -239,8 +228,6 @@ class SubOrchestrationCrossAppTest {
     assertTrue(action.hasCreateChildWorkflow());
 
     // No router should be set when appId is null
-    OrchestratorActions.CreateChildWorkflowAction createSub = action.getCreateChildWorkflow();
-    assertFalse(createSub.hasRouter());
     assertFalse(action.hasRouter());
   }
 
@@ -489,11 +476,6 @@ class SubOrchestrationCrossAppTest {
     assertEquals(subOrchestratorName, createSub.getName());
     assertEquals("child-id-1", createSub.getInstanceId());
 
-    // Verify cross-app router on the sub-orchestration action
-    assertTrue(createSub.hasRouter());
-    assertEquals(sourceAppId, createSub.getRouter().getSourceAppID());
-    assertEquals(targetAppId, createSub.getRouter().getTargetAppID());
-
     // Verify cross-app router on the OrchestratorAction envelope
     assertTrue(subAction.hasRouter());
     assertEquals(sourceAppId, subAction.getRouter().getSourceAppID());
@@ -527,7 +509,6 @@ class SubOrchestrationCrossAppTest {
     assertTrue(action.hasCreateChildWorkflow());
 
     // No router should be set when appId is empty
-    assertFalse(action.getCreateChildWorkflow().hasRouter());
     assertFalse(action.hasRouter());
   }
 
@@ -569,9 +550,8 @@ class SubOrchestrationCrossAppTest {
     OrchestratorActions.WorkflowAction action = actions.get(0);
     assertTrue(action.hasCreateChildWorkflow());
 
-    OrchestratorActions.CreateChildWorkflowAction createSub = action.getCreateChildWorkflow();
-    assertTrue(createSub.hasRouter());
-    assertEquals(sourceAppId, createSub.getRouter().getSourceAppID());
-    assertEquals(targetAppId, createSub.getRouter().getTargetAppID());
+    assertTrue(action.hasRouter());
+    assertEquals(sourceAppId, action.getRouter().getSourceAppID());
+    assertEquals(targetAppId, action.getRouter().getTargetAppID());
   }
 }
