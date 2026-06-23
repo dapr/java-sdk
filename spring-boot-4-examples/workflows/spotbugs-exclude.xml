@@ -1,6 +1,0 @@
-<FindBugsFilter>
-    <!--Ignoring checking for examples-->
-    <Match>
-        <Package name="~io\.dapr\.springboot.examples.*"/>
-    </Match>
-</FindBugsFilter>

@@ -12,7 +12,7 @@
 
   <artifactId>worker-one</artifactId>
   <name>worker-one</name>
-  <description>Spring Boot, Testcontainers and Dapr Integration Examples :: Worker 1 App</description>
+  <description>Spring Boot 4, Testcontainers and Dapr Integration Examples :: Worker 1 App</description>
 
   <dependencies>
     <dependency>
@@ -21,11 +21,11 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -40,11 +40,6 @@
     <dependency>
       <groupId>com.redis</groupId>
       <artifactId>testcontainers-redis</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.rest-assured</groupId>
-      <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
