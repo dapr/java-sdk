@@ -49,6 +49,27 @@ public final class Validation {
   public static final String JSONPATH_SLEEP_SPAN_ID =
       "$..[?(@.parentId=='%s' && @.duration > 1000000 && @.name=='%s')]['id']";
 
+  public static void validate(String spanName, String sleepSpanName, String zipkinTracesUrl) throws Exception {
+    // Must wait for some time to make sure Zipkin receives all spans.
+    Thread.sleep(10000);
+
+    HttpRequest request = HttpRequest.newBuilder()
+        .GET()
+        .uri(URI.create(zipkinTracesUrl))
+        .build();
+
+    HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    DocumentContext documentContext = JsonPath.parse(response.body());
+    String mainSpanId = readOne(documentContext, String.format(JSONPATH_MAIN_SPAN_ID, spanName)).toString();
+
+    assertNotNull(mainSpanId);
+
+    String sleepSpanId = readOne(documentContext, String.format(JSONPATH_SLEEP_SPAN_ID, mainSpanId, sleepSpanName))
+        .toString();
+
+    assertNotNull(sleepSpanId);
+  }
+
   public static void validate(String spanName, String sleepSpanName) throws Exception {
     // Must wait for some time to make sure Zipkin receives all spans.
     Thread.sleep(10000);

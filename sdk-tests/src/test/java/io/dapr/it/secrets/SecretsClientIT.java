@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,19 +15,15 @@ package io.dapr.it.secrets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
-import org.apache.commons.io.IOUtils;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.images.builder.Transferable;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,57 +31,44 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Test Secrets Store APIs using local file.
- *
- * 1. create secret file locally:
- */
-public class SecretsClientIT extends BaseIT {
+public class SecretsClientIT extends BaseContainerIT {
 
-  /**
-   * JSON Serializer to print output.
-   */
   private static final ObjectMapper JSON_SERIALIZER = new ObjectMapper();
-
   private static final String SECRETS_STORE_NAME = "localSecretStore";
-
-  private static final String LOCAL_SECRET_FILE_PATH = "./components/secret.json";
-
+  private static final String CONTAINER_SECRET_PATH = "/dapr-secret.json";
   private static final String KEY1 = UUID.randomUUID().toString();
-
   private static final String KYE2 = UUID.randomUUID().toString();
 
-  private static DaprRun daprRun;
-
-
+  private static DaprContainer dapr;
   private DaprClient daprClient;
-
-  private static File localSecretFile;
 
   @BeforeAll
   public static void init() throws Exception {
+    byte[] secretJson = JSON_SERIALIZER.writeValueAsBytes(buildSecretPayload());
 
-    localSecretFile = new File(LOCAL_SECRET_FILE_PATH);
-    boolean existed = localSecretFile.exists();
-    assertTrue(existed);
-    initSecretFile();
-
-    daprRun = startDaprApp(SecretsClientIT.class.getSimpleName(), 5000);
+    dapr = daprBuilder("secrets-it")
+        .withComponent(new Component(SECRETS_STORE_NAME, "secretstores.local.file", "v1", Map.of(
+            "secretsFile", CONTAINER_SECRET_PATH,
+            "nestedSeparator", ":",
+            "multiValued", "true"
+        )))
+        .withCopyToContainer(Transferable.of(secretJson), CONTAINER_SECRET_PATH);
+    dapr.start();
+    deferStop(dapr);
   }
 
   @BeforeEach
   public void setup() {
-    this.daprClient = daprRun.newDaprClientBuilder().build();
+    this.daprClient = newDaprClient(dapr);
   }
 
   @AfterEach
   public void tearDown() throws Exception {
     daprClient.close();
-    clearSecretFile();
   }
 
   @Test
-  public void getSecret() throws Exception {
+  public void getSecret() {
     Map<String, String> data = daprClient.getSecret(SECRETS_STORE_NAME, KEY1).block();
     assertEquals(2, data.size());
     assertEquals("The Metrics IV", data.get("title"));
@@ -93,9 +76,8 @@ public class SecretsClientIT extends BaseIT {
   }
 
   @Test
-  public void getBulkSecret() throws Exception {
+  public void getBulkSecret() {
     Map<String, Map<String, String>> data = daprClient.getBulkSecret(SECRETS_STORE_NAME).block();
-    // There can be other keys from other runs or test cases, so we are good with at least two.
     assertTrue(data.size() >= 2);
     assertEquals(2, data.get(KEY1).size());
     assertEquals("The Metrics IV", data.get(KEY1).get("title"));
@@ -114,26 +96,10 @@ public class SecretsClientIT extends BaseIT {
     assertThrows(RuntimeException.class, () -> daprClient.getSecret("unknownStore", "unknownKey").block());
   }
 
-  private static void initSecretFile() throws Exception {
-    Map<String, Object> key2 = new HashMap(){{
-      put("name", "Jon Doe");
-    }};
-    Map<String, Object> key1 = new HashMap(){{
-      put("title", "The Metrics IV");
-      put("year", "2020");
-    }};
-    Map<String, Map<String, Object>> secret = new HashMap<>(){{
-      put(KEY1, key1);
-      put(KYE2, key2);
-    }};
-    try (FileOutputStream fos = new FileOutputStream(localSecretFile)) {
-      JSON_SERIALIZER.writeValue(fos, secret);
-    }
-  }
-
-  private static void clearSecretFile() throws IOException {
-    try (FileOutputStream fos = new FileOutputStream(localSecretFile)) {
-      IOUtils.write("{}", fos);
-    }
+  private static Map<String, Map<String, Object>> buildSecretPayload() {
+    return Map.of(
+        KEY1, Map.of("title", "The Metrics IV", "year", "2020"),
+        KYE2, Map.of("name", "Jon Doe")
+    );
   }
 }

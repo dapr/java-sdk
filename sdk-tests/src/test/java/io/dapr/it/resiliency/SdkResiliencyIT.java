@@ -14,7 +14,8 @@ limitations under the License.
 package io.dapr.it.resiliency;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
 import eu.rekawek.toxiproxy.model.ToxicDirection;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
 import org.testcontainers.toxiproxy.ToxiproxyContainer;
@@ -49,7 +51,6 @@ import java.time.Duration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.any;
-import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
@@ -57,32 +58,25 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static io.dapr.it.resiliency.SdkResiliencyIT.WIREMOCK_PORT;
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static io.dapr.it.testcontainers.ContainerConstants.TOXI_PROXY_IMAGE_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Testcontainers
-@WireMockTest(httpPort = WIREMOCK_PORT)
 @Tags({@Tag("testcontainers"), @Tag("resiliency")})
 public class SdkResiliencyIT {
 
-  public static final int WIREMOCK_PORT = 8888;
   private static final Network NETWORK = Network.newNetwork();
   private static final String STATE_STORE_NAME = "kvstore";
   private static final int INFINITE_RETRY = -1;
 
-  @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
-      .withAppName("dapr-app")
-      .withAppPort(WIREMOCK_PORT)
-      .withDaprLogLevel(DaprLogLevel.DEBUG)
-      .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dapr-logs")))
-      .withAppHealthCheckPath("/actuator/health")
-      .withAppChannelAddress("host.testcontainers.internal")
-      .withNetworkAliases("dapr")
-      .withNetwork(NETWORK);
+  @RegisterExtension
+  static WireMockExtension wireMock = WireMockExtension.newInstance()
+      .options(WireMockConfiguration.wireMockConfig().dynamicPort())
+      .build();
+
+  private static DaprContainer daprContainer;
 
   @Container
   private static final ToxiproxyContainer TOXIPROXY = new ToxiproxyContainer(TOXI_PROXY_IMAGE_TAG)
@@ -91,41 +85,54 @@ public class SdkResiliencyIT {
   private static Proxy proxy;
 
   private void configStub() {
-    stubFor(any(urlMatching("/actuator/health"))
+    wireMock.stubFor(any(urlMatching("/actuator/health"))
         .willReturn(aResponse().withBody("[]").withStatus(200)));
 
-    stubFor(any(urlMatching("/dapr/subscribe"))
+    wireMock.stubFor(any(urlMatching("/dapr/subscribe"))
         .willReturn(aResponse().withBody("[]").withStatus(200)));
 
-    stubFor(get(urlMatching("/dapr/config"))
+    wireMock.stubFor(get(urlMatching("/dapr/config"))
         .willReturn(aResponse().withBody("[]").withStatus(200)));
 
-    // create a stub for simulating dapr sidecar with timeout of 1000 ms
-    stubFor(post(urlEqualTo("/dapr.proto.runtime.v1.Dapr/SaveState"))
+    wireMock.stubFor(post(urlEqualTo("/dapr.proto.runtime.v1.Dapr/SaveState"))
         .willReturn(aResponse().withStatus(204).withFixedDelay(1000)));
 
-    stubFor(any(urlMatching("/([a-z1-9]*)"))
+    wireMock.stubFor(any(urlMatching("/([a-z1-9]*)"))
         .willReturn(aResponse().withBody("[]").withStatus(200)));
 
-    configureFor("localhost", WIREMOCK_PORT);
+    WireMock.configureFor("localhost", wireMock.getPort());
   }
 
   @BeforeAll
   static void configure() throws IOException {
+    int wmPort = wireMock.getPort();
+    org.testcontainers.Testcontainers.exposeHostPorts(wmPort);
+
+    daprContainer = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(wmPort)
+        .withDaprLogLevel(DaprLogLevel.DEBUG)
+        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dapr-logs")))
+        .withAppHealthCheckPath("/actuator/health")
+        .withAppChannelAddress("host.testcontainers.internal")
+        .withNetworkAliases("dapr")
+        .withNetwork(NETWORK);
+    daprContainer.start();
+
     ToxiproxyClient toxiproxyClient = new ToxiproxyClient(TOXIPROXY.getHost(), TOXIPROXY.getControlPort());
-    proxy =
-        toxiproxyClient.createProxy("dapr", "0.0.0.0:8666", "dapr:3500");
+    proxy = toxiproxyClient.createProxy("dapr", "0.0.0.0:8666", "dapr:3500");
   }
 
   @AfterAll
   static void afterAll() {
-    WireMock.shutdownServer();
+    if (daprContainer != null) {
+      daprContainer.stop();
+    }
   }
 
   @BeforeEach
   public void beforeEach() {
     configStub();
-    org.testcontainers.Testcontainers.exposeHostPorts(WIREMOCK_PORT);
   }
 
   @Test
@@ -189,10 +196,11 @@ public class SdkResiliencyIT {
   @Test
   @DisplayName("should fail due to latency exceeding configuration with once retry")
   public void shouldFailDueToLatencyExceedingConfigurationWithOnceRetry() throws Exception {
+    int wmPort = wireMock.getPort();
 
     DaprClient client =
-        new DaprClientBuilder().withPropertyOverride(Properties.HTTP_ENDPOINT, "http://localhost:" + WIREMOCK_PORT)
-            .withPropertyOverride(Properties.GRPC_ENDPOINT, "http://localhost:" + WIREMOCK_PORT)
+        new DaprClientBuilder().withPropertyOverride(Properties.HTTP_ENDPOINT, "http://localhost:" + wmPort)
+            .withPropertyOverride(Properties.GRPC_ENDPOINT, "http://localhost:" + wmPort)
             .withResiliencyOptions(new ResiliencyOptions().setTimeout(Duration.ofMillis(900))
                 .setMaxRetries(1))
             .build();
@@ -202,7 +210,7 @@ public class SdkResiliencyIT {
     } catch (Exception ignored) {
     }
 
-    verify(2, postRequestedFor(urlEqualTo("/dapr.proto.runtime.v1.Dapr/SaveState")));
+    wireMock.verify(2, postRequestedFor(urlEqualTo("/dapr.proto.runtime.v1.Dapr/SaveState")));
 
     client.close();
   }
