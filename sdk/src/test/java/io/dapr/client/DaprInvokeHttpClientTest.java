@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.utils.UriUtils;
 import io.dapr.utils.Version;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,6 +81,41 @@ public class DaprInvokeHttpClientTest {
 
     assertEquals("http://localhost:3500/v1.0/invoke/orderprocessor/method/orders/42",
         request.uri().toString());
+  }
+
+  @Test
+  public void newRequestBuilder_acceptsEncodedPath() {
+    DaprInvokeHttpClient invoker = new DaprInvokeHttpClient(httpClient, BASE_URI, null, null);
+
+    HttpRequest request = invoker.newRequestBuilder(
+        UriUtils.encodePath("api/some-resource/Name With Spaces/versions")).GET().build();
+
+    assertEquals(
+        "http://localhost:3500/v1.0/invoke/orderprocessor/method/"
+            + "api/some-resource/Name%20With%20Spaces/versions",
+        request.uri().toString());
+  }
+
+  @Test
+  public void newRequestBuilder_rejectsIllegalCharactersWithoutLeakingInput() {
+    DaprInvokeHttpClient invoker = new DaprInvokeHttpClient(httpClient, BASE_URI, null, null);
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        () -> invoker.newRequestBuilder("orders/secret-token-abc 123"));
+
+    assertTrue(exception.getMessage().contains("encodePath"));
+    // The raw input must not leak into the message or via the wrapped cause.
+    assertFalse(exception.getMessage().contains("secret-token-abc"));
+    assertNull(exception.getCause());
+  }
+
+  @Test
+  public void newRequestBuilder_leadingSlashStillReplacesEntirePath() {
+    DaprInvokeHttpClient invoker = new DaprInvokeHttpClient(httpClient, BASE_URI, null, null);
+
+    HttpRequest request = invoker.newRequestBuilder("/v1.0/healthz/outbound").GET().build();
+
+    assertEquals("http://localhost:3500/v1.0/healthz/outbound", request.uri().toString());
   }
 
   @Test
