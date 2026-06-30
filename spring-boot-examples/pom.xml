@@ -15,6 +15,9 @@
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <springboot4.version>4.0.5</springboot4.version>
+    <!-- Override JUnit version to align with Spring Boot 4.x -->
+    <junit-bom.version>6.0.2</junit-bom.version>
   </properties>
 
   <modules>
@@ -23,6 +26,41 @@
     <module>workflows</module>
   </modules>
 
+  <dependencyManagement>
+    <dependencies>
+      <!-- Override Jackson 3.x for CVE SNYK-JAVA-TOOLSJACKSONCORE-15907550 (must precede SB BOM) -->
+      <dependency>
+        <groupId>tools.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>3.1.1</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot4.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webmvc</artifactId>
+        <version>${springboot4.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webmvc-test</artifactId>
+        <version>${springboot4.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-restclient</artifactId>
+        <version>${springboot4.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <build>
     <plugins>
       <plugin>

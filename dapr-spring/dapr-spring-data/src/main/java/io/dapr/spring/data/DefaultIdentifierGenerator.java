@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.spring.data;
 
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.keyvalue.core.IdentifierGenerator;
-import org.springframework.data.util.TypeInformation;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
