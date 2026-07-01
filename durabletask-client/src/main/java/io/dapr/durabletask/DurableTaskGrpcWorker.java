@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,6 +64,13 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
 
   private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient;
   private final boolean isExecutorServiceManaged;
+
+  // Per-stream cache of each instance's committed history for the stateful-history optimization,
+  // or null when disabled. Reset on every reconnect and swept for idle entries by the janitor.
+  private final WorkflowHistoryCache historyCache;
+  private static final Duration HISTORY_SWEEP_INTERVAL = Duration.ofMinutes(1);
+  private volatile ScheduledExecutorService historyJanitor;
+
   private volatile boolean isNormalShutdown = false;
   private volatile Thread workerThread;
 
@@ -104,7 +112,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
 
     this.isExecutorServiceManaged = builder.executorService == null;
 
-
+    this.historyCache = builder.disableStatefulHistory ? null : new WorkflowHistoryCache(
+        builder.historyCacheTtl, builder.historyCacheMaxInstances, builder.historyCacheMaxBytes);
   }
 
   /**
@@ -137,6 +146,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
       this.workerThread.interrupt();
     }
     this.isNormalShutdown = true;
+    this.shutDownHistoryJanitor();
     this.shutDownWorkerPool();
     this.closeSideCarChannel();
   }
@@ -172,10 +182,24 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
         this.dataConverter,
         logger);
 
+    this.startHistoryJanitor();
+
     while (!this.isNormalShutdown && !Thread.currentThread().isInterrupted()) {
       try {
-        OrchestratorService.GetWorkItemsRequest getWorkItemsRequest = OrchestratorService.GetWorkItemsRequest
-            .newBuilder().build();
+        // Each iteration establishes a fresh work-item stream. Start it cold: the sidecar drops
+        // the previous stream's warm set, so any histories cached from it are no longer in sync.
+        if (this.historyCache != null) {
+          this.historyCache.reset();
+        }
+
+        // Advertise the stateful-history capability so the sidecar can send deltas instead of the
+        // full history on each turn. Absent it, the sidecar always sends the full history.
+        OrchestratorService.GetWorkItemsRequest.Builder requestBuilder = OrchestratorService.GetWorkItemsRequest
+            .newBuilder();
+        if (this.historyCache != null) {
+          requestBuilder.addCapabilities(OrchestratorService.WorkerCapability.WORKER_CAPABILITY_STATEFUL_HISTORY);
+        }
+        OrchestratorService.GetWorkItemsRequest getWorkItemsRequest = requestBuilder.build();
         Iterator<OrchestratorService.WorkItem> workItemStream = this.sidecarClient.getWorkItems(getWorkItemsRequest);
         while (workItemStream.hasNext()) {
           if (this.isNormalShutdown || Thread.currentThread().isInterrupted()) {
@@ -190,7 +214,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
                 String.format("Processing orchestrator request for instance: {0}",
                     orchestratorRequest.getInstanceId()));
 
-            this.workerPool.submit(new OrchestratorRunner(workItem, taskOrchestrationExecutor, sidecarClient, tracer));
+            this.workerPool.submit(
+                new OrchestratorRunner(workItem, taskOrchestrationExecutor, sidecarClient, tracer, historyCache));
           } else if (requestType == OrchestratorService.WorkItem.RequestCase.ACTIVITYREQUEST) {
             OrchestratorService.ActivityRequest activityRequest = workItem.getActivityRequest();
 
@@ -261,6 +286,28 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
         // close() methods throw InterruptedException:
         // https://docs.oracle.com/javase/7/docs/api/java/lang/AutoCloseable.html
       }
+    }
+  }
+
+  private void startHistoryJanitor() {
+    if (this.historyCache == null || this.historyJanitor != null) {
+      return;
+    }
+    ScheduledExecutorService janitor = Executors.newSingleThreadScheduledExecutor(runnable -> {
+      Thread thread = new Thread(runnable, "dapr-workflow-history-janitor");
+      thread.setDaemon(true);
+      return thread;
+    });
+    long sweepSeconds = HISTORY_SWEEP_INTERVAL.getSeconds();
+    janitor.scheduleWithFixedDelay(this.historyCache::sweepExpired, sweepSeconds, sweepSeconds, TimeUnit.SECONDS);
+    this.historyJanitor = janitor;
+  }
+
+  private void shutDownHistoryJanitor() {
+    ScheduledExecutorService janitor = this.historyJanitor;
+    if (janitor != null) {
+      janitor.shutdownNow();
+      this.historyJanitor = null;
     }
   }
 
