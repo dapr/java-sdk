@@ -96,88 +96,88 @@ class ProducerAppIT {
 
   }
 
-//  @Test
-//  void testOrdersEndpointAndMessaging() {
-//    OrderDTO order = new OrderDTO("abc-123", "the mars volta LP", 1);
-//
-//    client.post()
-//        .uri("/orders")
-//        .contentType(MediaType.APPLICATION_JSON)
-//        .body(order)
-//        .exchange()
-//        .expectStatus().isOk();
-//
-//    await().atMost(Duration.ofSeconds(15))
-//            .until(controller.getAllEvents()::size, equalTo(1));
-//
-//    // Get all orders
-//    List<Order> orders = client.get()
-//        .uri("/orders")
-//        .exchange()
-//        .expectStatus().isOk()
-//        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
-//        .getResponseBody();
-//
-//    assertNotNull(orders);
-//    assertEquals(1, orders.size());
-//
-//    // Query by item
-//    List<Order> ordersByItem = client.get()
-//        .uri(uriBuilder -> uriBuilder
-//            .path("/orders/byItem/")
-//            .queryParam("item", "the mars volta LP")
-//            .build())
-//        .exchange()
-//        .expectStatus().isOk()
-//        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
-//        .getResponseBody();
-//
-//    assertNotNull(ordersByItem);
-//    assertEquals(1, ordersByItem.size());
-//
-//    // Query by item - no match
-//    List<Order> ordersByOtherItem = client.get()
-//        .uri(uriBuilder -> uriBuilder
-//            .path("/orders/byItem/")
-//            .queryParam("item", "other")
-//            .build())
-//        .exchange()
-//        .expectStatus().isOk()
-//        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
-//        .getResponseBody();
-//
-//    assertNotNull(ordersByOtherItem);
-//    assertEquals(0, ordersByOtherItem.size());
-//
-//    // Query by amount
-//    List<Order> ordersByAmount = client.get()
-//        .uri(uriBuilder -> uriBuilder
-//            .path("/orders/byAmount/")
-//            .queryParam("amount", 1)
-//            .build())
-//        .exchange()
-//        .expectStatus().isOk()
-//        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
-//        .getResponseBody();
-//
-//    assertNotNull(ordersByAmount);
-//    assertEquals(1, ordersByAmount.size());
-//
-//    // Query by amount - no match
-//    List<Order> ordersByOtherAmount = client.get()
-//        .uri(uriBuilder -> uriBuilder
-//            .path("/orders/byAmount/")
-//            .queryParam("amount", 2)
-//            .build())
-//        .exchange()
-//        .expectStatus().isOk()
-//        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
-//        .getResponseBody();
-//
-//    assertNotNull(ordersByOtherAmount);
-//    assertEquals(0, ordersByOtherAmount.size());
-//
-//  }
+  @Test
+  void testOrdersEndpointAndMessaging() {
+    OrderDTO order = new OrderDTO("abc-123", "the mars volta LP", 1);
+
+    client.post()
+        .uri("/orders")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(order)
+        .exchange()
+        .expectStatus().isOk();
+
+    await().atMost(Duration.ofSeconds(15))
+            .until(controller.getAllEvents()::size, equalTo(1));
+
+    // Get all orders
+    List<Order> orders = client.get()
+        .uri("/orders")
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
+
+    assertNotNull(orders);
+    assertEquals(1, orders.size());
+
+    // Query by item
+    List<Order> ordersByItem = client.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/orders/byItem/")
+            .queryParam("item", "the mars volta LP")
+            .build())
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
+
+    assertNotNull(ordersByItem);
+    assertEquals(1, ordersByItem.size());
+
+    // Query by item - no match
+    List<Order> ordersByOtherItem = client.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/orders/byItem/")
+            .queryParam("item", "other")
+            .build())
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
+
+    assertNotNull(ordersByOtherItem);
+    assertEquals(0, ordersByOtherItem.size());
+
+    // Query by amount
+    List<Order> ordersByAmount = client.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/orders/byAmount/")
+            .queryParam("amount", 1)
+            .build())
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
+
+    assertNotNull(ordersByAmount);
+    assertEquals(1, ordersByAmount.size());
+
+    // Query by amount - no match
+    List<Order> ordersByOtherAmount = client.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/orders/byAmount/")
+            .queryParam("amount", 2)
+            .build())
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
+
+    assertNotNull(ordersByOtherAmount);
+    assertEquals(0, ordersByOtherAmount.size());
+
+  }
 
   @Test
   void testCustomersWorkflows() {
