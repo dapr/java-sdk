@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.utils.UriUtils;
 import io.dapr.utils.Version;
 
 import java.io.IOException;
@@ -107,17 +108,24 @@ public class DaprInvokeHttpClient {
    * HTTP read timeout applied.
    *
    * <p>The {@code relativePath} is resolved against {@link #baseUri()} via
-   * {@link URI#resolve(String)}. Per {@link URI#resolve(String)} semantics, a leading
-   * slash replaces the entire path, so callers should typically pass a path
-   * <em>without</em> a leading slash (e.g. {@code "orders/42"}).
+   * {@link UriUtils#resolve(URI, String)} <em>without</em> modification. Per
+   * {@link URI#resolve(String)} semantics, a leading slash replaces the entire path, so
+   * callers should typically pass a path <em>without</em> a leading slash (e.g.
+   * {@code "orders/42"}).
+   *
+   * <p>The path is not encoded for you. If a segment may contain characters that are
+   * illegal in a URI path (e.g. spaces), encode it first with
+   * {@link UriUtils#encodePath(String)}; passing such characters directly throws
+   * {@link IllegalArgumentException}.
    *
    * @param relativePath path appended to the invoke prefix.
    * @return a request builder ready to be customized and built.
+   * @throws IllegalArgumentException if {@code relativePath} contains characters that are
+   *     illegal in a URI; encode it first with {@link UriUtils#encodePath(String)}.
    */
   public HttpRequest.Builder newRequestBuilder(String relativePath) {
-    Objects.requireNonNull(relativePath, "relativePath");
     HttpRequest.Builder builder = HttpRequest.newBuilder()
-        .uri(baseUri.resolve(relativePath))
+        .uri(UriUtils.resolve(baseUri, relativePath))
         .header(Headers.DAPR_USER_AGENT, Version.getSdkVersion());
     if (daprApiToken != null && !daprApiToken.isEmpty()) {
       builder.header(Headers.DAPR_API_TOKEN, daprApiToken);

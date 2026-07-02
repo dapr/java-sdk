@@ -23,7 +23,7 @@ jobs:
     env:
       JDK_VER: 17
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Set up OpenJDK ${{ env.JDK_VER }}
         uses: actions/setup-java@v4
         with:
@@ -54,14 +54,14 @@ jobs:
     env:
       JDK_VER: 17
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
     - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: ${{ env.JDK_VER }}
     - name: Checkout Durable Task Sidecar
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: dapr/durabletask-go
         path: durabletask-sidecar
@@ -124,7 +124,7 @@ jobs:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
     - name: Check Docker version
       run: docker version
     - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -140,14 +140,14 @@ jobs:
       with:
         go-version: ${{ env.GOVER }}
     - name: Checkout Dapr CLI repo to override dapr command.
-      uses: actions/checkout@v5
+      uses: actions/checkout@v7
       if: env.DAPR_CLI_REF != ''
       with:
         repository: dapr/cli
         ref: ${{ env.DAPR_CLI_REF }}
         path: cli
     - name: Checkout Dapr repo to override daprd.
-      uses: actions/checkout@v5
+      uses: actions/checkout@v7
       if: env.DAPR_REF != ''
       with:
         repository: dapr/dapr
@@ -242,7 +242,7 @@ jobs:
       GPG_KEY: ${{ secrets.GPG_KEY }}
       GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Set up OpenJDK ${{ env.JDK_VER }}
         uses: actions/setup-java@v5
         with:
