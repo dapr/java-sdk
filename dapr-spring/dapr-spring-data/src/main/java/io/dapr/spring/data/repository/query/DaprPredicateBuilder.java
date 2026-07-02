@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.spring.data.repository.query;
 
-import io.dapr.spring.data.repository.query.DaprPredicate;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.comparator.Comparators;
