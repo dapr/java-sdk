@@ -48,8 +48,10 @@ public class UriUtils {
       // The wrapped URISyntaxException echoes the full relativePath in its message, which may
       // contain sensitive identifiers; surface only the offending index, never the input, and
       // do not chain the cause.
-      String position = (exception.getCause() instanceof URISyntaxException syntaxException
-          && syntaxException.getIndex() >= 0) ? " at index " + syntaxException.getIndex() : "";
+      Throwable cause = exception.getCause();
+      String position = (cause instanceof URISyntaxException
+          && ((URISyntaxException) cause).getIndex() >= 0)
+          ? " at index " + ((URISyntaxException) cause).getIndex() : "";
       throw new IllegalArgumentException(
           "relativePath contains a character that is illegal in a URI" + position
               + " (e.g. a space). Encode it first with UriUtils.encodePath(String).");
