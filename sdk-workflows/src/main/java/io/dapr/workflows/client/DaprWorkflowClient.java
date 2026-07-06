@@ -26,12 +26,15 @@ import io.dapr.workflows.runtime.DefaultWorkflowInstanceStatus;
 import io.dapr.workflows.runtime.DefaultWorkflowState;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 /**
  * Defines client operations for managing Dapr Workflow instances.
@@ -109,7 +112,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the randomly-generated instance ID for new Workflow instance.
    */
   public <T extends Workflow> String scheduleNewWorkflow(String name) {
-    return this.innerClient.scheduleNewOrchestrationInstance(name);
+    return mapAlreadyExists(null, () -> this.innerClient.scheduleNewOrchestrationInstance(name));
   }
 
   /**
@@ -133,7 +136,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the randomly-generated instance ID for new Workflow instance.
    */
   public <T extends Workflow> String scheduleNewWorkflow(String name, Object input) {
-    return this.innerClient.scheduleNewOrchestrationInstance(name, input);
+    return mapAlreadyExists(null, () -> this.innerClient.scheduleNewOrchestrationInstance(name, input));
   }
 
   /**
@@ -144,6 +147,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param input      the input to pass to the scheduled orchestration instance. Must be serializable.
    * @param instanceId the unique ID of the orchestration instance to schedule
    * @return the <code>instanceId</code> parameter value.
+   * @throws WorkflowInstanceAlreadyExistsException if an active workflow with <code>instanceId</code> already exists.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
     return this.scheduleNewWorkflow(clazz.getCanonicalName(), input, instanceId);
@@ -157,9 +161,11 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param input      the input to pass to the scheduled orchestration instance. Must be serializable.
    * @param instanceId the unique ID of the orchestration instance to schedule
    * @return the <code>instanceId</code> parameter value.
+   * @throws WorkflowInstanceAlreadyExistsException if an active workflow with <code>instanceId</code> already exists.
    */
   public <T extends Workflow> String scheduleNewWorkflow(String name, Object input, String instanceId) {
-    return this.innerClient.scheduleNewOrchestrationInstance(name, input, instanceId);
+    return mapAlreadyExists(instanceId, () -> this.innerClient.scheduleNewOrchestrationInstance(name, input,
+        instanceId));
   }
 
   /**
@@ -169,6 +175,8 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param clazz   Class extending Workflow to start an instance of.
    * @param options the options for the new workflow, including input, instance ID, etc.
    * @return the <code>instanceId</code> parameter value.
+   * @throws WorkflowInstanceAlreadyExistsException if an active workflow with the requested instance ID
+   *                                                already exists.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOptions options) {
     return this.scheduleNewWorkflow(clazz.getCanonicalName(), options);
@@ -181,11 +189,13 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param name   name of the workflow to schedule
    * @param options the options for the new workflow, including input, instance ID, etc.
    * @return the <code>instanceId</code> parameter value.
+   * @throws WorkflowInstanceAlreadyExistsException if an active workflow with the requested instance ID
+   *                                                already exists.
    */
   public <T extends Workflow> String scheduleNewWorkflow(String name, NewWorkflowOptions options) {
     NewOrchestrationInstanceOptions orchestrationInstanceOptions = fromNewWorkflowOptions(options);
-    return this.innerClient.scheduleNewOrchestrationInstance(name,
-        orchestrationInstanceOptions);
+    return mapAlreadyExists(options.getInstanceId(), () -> this.innerClient.scheduleNewOrchestrationInstance(name,
+        orchestrationInstanceOptions));
   }
 
   /**
@@ -450,6 +460,31 @@ public class DaprWorkflowClient implements AutoCloseable {
     return new DurableTaskGrpcClientBuilder()
         .grpcChannel(grpcChannel)
         .build();
+  }
+
+  /**
+   * Runs the given scheduling call, translating the sidecar's rejection of a duplicate active
+   * instance ID into a {@link WorkflowInstanceAlreadyExistsException}.
+   */
+  private static String mapAlreadyExists(@Nullable String instanceId, Supplier<String> schedule) {
+    try {
+      return schedule.get();
+    } catch (StatusRuntimeException e) {
+      if (isAlreadyExists(e)) {
+        throw new WorkflowInstanceAlreadyExistsException(instanceId, e);
+      }
+      throw e;
+    }
+  }
+
+  private static boolean isAlreadyExists(StatusRuntimeException e) {
+    if (e.getStatus().getCode() == Status.Code.ALREADY_EXISTS) {
+      return true;
+    }
+    // Runtimes that predate the AlreadyExists status code only identify the collision
+    // through the error message.
+    String description = e.getStatus().getDescription();
+    return description != null && description.contains("already exists");
   }
 
   private static NewOrchestrationInstanceOptions fromNewWorkflowOptions(NewWorkflowOptions options) {

@@ -21,6 +21,8 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
 import io.grpc.ManagedChannel;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,8 @@ import java.util.concurrent.TimeoutException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -113,6 +117,75 @@ public class DaprWorkflowClientTest {
 
     verify(mockInnerClient, times(1))
         .scheduleNewOrchestrationInstance(expectedName, expectedInput, expectedInstanceId);
+  }
+
+  @Test
+  public void scheduleNewWorkflowThrowsWhenInstanceAlreadyExists() {
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    Object expectedInput = new Object();
+    String expectedInstanceId = "duplicateInstance";
+    StatusRuntimeException grpcException = new StatusRuntimeException(
+        Status.ALREADY_EXISTS.withDescription(
+            "an active workflow with ID 'duplicateInstance' already exists"));
+    when(mockInnerClient.scheduleNewOrchestrationInstance(expectedName, expectedInput, expectedInstanceId))
+        .thenThrow(grpcException);
+
+    WorkflowInstanceAlreadyExistsException exception = assertThrows(WorkflowInstanceAlreadyExistsException.class,
+        () -> client.scheduleNewWorkflow(TestWorkflow.class, expectedInput, expectedInstanceId));
+
+    assertEquals(expectedInstanceId, exception.getInstanceId());
+    assertSame(grpcException, exception.getCause());
+  }
+
+  @Test
+  public void scheduleNewWorkflowThrowsWhenInstanceAlreadyExistsOnLegacyRuntime() {
+    // Runtimes that predate the AlreadyExists status code report the collision
+    // as UNKNOWN with only the message identifying the failure.
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    String expectedInstanceId = "duplicateInstance";
+    StatusRuntimeException grpcException = new StatusRuntimeException(
+        Status.UNKNOWN.withDescription(
+            "failed to create workflow instance: an active workflow with ID 'duplicateInstance' already exists"));
+    when(mockInnerClient.scheduleNewOrchestrationInstance(expectedName, null, expectedInstanceId))
+        .thenThrow(grpcException);
+
+    WorkflowInstanceAlreadyExistsException exception = assertThrows(WorkflowInstanceAlreadyExistsException.class,
+        () -> client.scheduleNewWorkflow(TestWorkflow.class, null, expectedInstanceId));
+
+    assertEquals(expectedInstanceId, exception.getInstanceId());
+    assertSame(grpcException, exception.getCause());
+  }
+
+  @Test
+  public void scheduleNewWorkflowWithOptionsThrowsWhenInstanceAlreadyExists() {
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    String expectedInstanceId = "duplicateInstance";
+    NewWorkflowOptions options = new NewWorkflowOptions().setInstanceId(expectedInstanceId);
+    StatusRuntimeException grpcException = new StatusRuntimeException(
+        Status.ALREADY_EXISTS.withDescription(
+            "an active workflow with ID 'duplicateInstance' already exists"));
+    when(mockInnerClient.scheduleNewOrchestrationInstance(eq(expectedName), any(NewOrchestrationInstanceOptions.class)))
+        .thenThrow(grpcException);
+
+    WorkflowInstanceAlreadyExistsException exception = assertThrows(WorkflowInstanceAlreadyExistsException.class,
+        () -> client.scheduleNewWorkflow(TestWorkflow.class, options));
+
+    assertEquals(expectedInstanceId, exception.getInstanceId());
+    assertSame(grpcException, exception.getCause());
+  }
+
+  @Test
+  public void scheduleNewWorkflowRethrowsUnrelatedGrpcErrors() {
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    StatusRuntimeException grpcException = new StatusRuntimeException(
+        Status.UNAVAILABLE.withDescription("sidecar unavailable"));
+    when(mockInnerClient.scheduleNewOrchestrationInstance(expectedName, null, "myInstance"))
+        .thenThrow(grpcException);
+
+    StatusRuntimeException exception = assertThrows(StatusRuntimeException.class,
+        () -> client.scheduleNewWorkflow(TestWorkflow.class, null, "myInstance"));
+
+    assertSame(grpcException, exception);
   }
 
   @Test
