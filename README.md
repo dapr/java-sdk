@@ -92,19 +92,19 @@ For Maven:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.17.3</version>
+      <version>1.17.4</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.17.3</version>
+      <version>1.17.4</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.17.3</version>
+      <version>1.17.4</version>
     </dependency>
     ...
   </dependencies>
@@ -118,11 +118,11 @@ dependencies {
     implementation platform('io.dapr:dapr-sdk-bom:1.18.0')
 
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.17.3')
+    compile('io.dapr:dapr-sdk:1.17.4')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.17.3')
+    compile('io.dapr:dapr-sdk-actors:1.17.4')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.17.3')
+    compile('io.dapr:dapr-sdk-springboot:1.17.4')
 }
 ```
 
