@@ -15,6 +15,7 @@ package io.dapr.durabletask;
 
 import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
+import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
 import io.grpc.Channel;
@@ -28,8 +29,12 @@ import io.grpc.TlsChannelCredentials;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
 
 import javax.annotation.Nullable;
 
@@ -38,6 +43,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +66,9 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
   private final DataConverter dataConverter;
   private final ManagedChannel managedSidecarChannel;
   private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient;
+
+  // Optional. When null, scheduling emits no spans and no trace context is propagated (legacy behavior).
+  @Nullable
   private final Tracer tracer;
 
   DurableTaskGrpcClient(DurableTaskGrpcClientBuilder builder) {
@@ -133,12 +143,7 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       sidecarGrpcChannel = this.managedSidecarChannel;
     }
 
-    if (builder.tracer != null) {
-      this.tracer = builder.tracer;
-    } else {
-      //this.tracer = OpenTelemetry.noop().getTracer("DurableTaskGrpcClient");
-      this.tracer = GlobalOpenTelemetry.getTracer("dapr-workflow");
-    }
+    this.tracer = builder.tracer;
 
     this.sidecarClient = TaskHubSidecarServiceGrpc.newBlockingStub(sidecarGrpcChannel);
   }
@@ -198,12 +203,63 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setScheduledStartTimestamp(ts);
     }
 
+    Span span = null;
+    if (this.tracer != null) {
+      span = this.tracer.spanBuilder("create_orchestration:" + orchestratorName)
+          .setSpanKind(SpanKind.CLIENT)
+          .setAttribute("durabletask.type", "orchestration")
+          .setAttribute("durabletask.task.name", orchestratorName)
+          .setAttribute("durabletask.task.instance_id", instanceId)
+          .startSpan();
+      Orchestration.TraceContext parentTraceContext = buildTraceContext(span);
+      if (parentTraceContext != null) {
+        builder.setParentTraceContext(parentTraceContext);
+      }
+    }
+
     AtomicReference<OrchestratorService.CreateInstanceResponse> response = new AtomicReference<>();
 
     OrchestratorService.CreateInstanceRequest request = builder.build();
-    response.set(this.sidecarClient.startInstance(request));
+    try {
+      response.set(this.sidecarClient.startInstance(request));
+    } catch (RuntimeException e) {
+      if (span != null) {
+        span.setStatus(StatusCode.ERROR, "Failed to schedule orchestration instance");
+      }
+      throw e;
+    } finally {
+      if (span != null) {
+        span.end();
+      }
+    }
 
     return response.get().getInstanceId();
+  }
+
+  /**
+   * Serializes the span's context to a W3C trace context, so the scheduled orchestration
+   * (and its activities) are recorded as children of the caller's trace.
+   * Returns null when the span context is invalid (e.g. a no-op tracer), in which case
+   * no trace context is attached to the request.
+   */
+  @Nullable
+  private static Orchestration.TraceContext buildTraceContext(Span span) {
+    Map<String, String> carrier = new HashMap<>();
+    W3CTraceContextPropagator.getInstance().inject(Context.current().with(span), carrier, Map::put);
+
+    String traceParent = carrier.get("traceparent");
+    if (traceParent == null || traceParent.isEmpty()) {
+      return null;
+    }
+
+    Orchestration.TraceContext.Builder traceContext = Orchestration.TraceContext.newBuilder()
+        .setTraceParent(traceParent);
+    String traceState = carrier.get("tracestate");
+    if (traceState != null && !traceState.isEmpty()) {
+      traceContext.setTraceState(StringValue.of(traceState));
+    }
+
+    return traceContext.build();
   }
 
   @Override
