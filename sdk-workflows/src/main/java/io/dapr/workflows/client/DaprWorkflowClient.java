@@ -481,10 +481,13 @@ public class DaprWorkflowClient implements AutoCloseable {
     if (e.getStatus().getCode() == Status.Code.ALREADY_EXISTS) {
       return true;
     }
-    // Runtimes that predate the AlreadyExists status code only identify the collision
-    // through the error message.
+    // Runtimes that predate the AlreadyExists status code report the collision as UNKNOWN and
+    // only identify it through the error message.
+    if (e.getStatus().getCode() != Status.Code.UNKNOWN) {
+      return false;
+    }
     String description = e.getStatus().getDescription();
-    return description != null && description.contains("already exists");
+    return description != null && description.contains("an active workflow with ID");
   }
 
   private static NewOrchestrationInstanceOptions fromNewWorkflowOptions(NewWorkflowOptions options) {

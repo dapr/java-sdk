@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
  */
 public class WorkflowInstanceAlreadyExistsException extends RuntimeException {
 
+  @Nullable
   private final String instanceId;
 
   /**

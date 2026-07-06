@@ -172,6 +172,25 @@ public class DaprWorkflowClientTest {
 
     assertEquals(expectedInstanceId, exception.getInstanceId());
     assertSame(grpcException, exception.getCause());
+
+    ArgumentCaptor<NewOrchestrationInstanceOptions> captor =
+        ArgumentCaptor.forClass(NewOrchestrationInstanceOptions.class);
+    verify(mockInnerClient, times(1)).scheduleNewOrchestrationInstance(eq(expectedName), captor.capture());
+    assertEquals(expectedInstanceId, captor.getValue().getInstanceId());
+  }
+
+  @Test
+  public void scheduleNewWorkflowRethrowsUnknownErrorsWithoutCollisionMessage() {
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    StatusRuntimeException grpcException = new StatusRuntimeException(
+        Status.UNKNOWN.withDescription("failed to create workflow instance: state store unreachable"));
+    when(mockInnerClient.scheduleNewOrchestrationInstance(expectedName, null, "myInstance"))
+        .thenThrow(grpcException);
+
+    StatusRuntimeException exception = assertThrows(StatusRuntimeException.class,
+        () -> client.scheduleNewWorkflow(TestWorkflow.class, null, "myInstance"));
+
+    assertSame(grpcException, exception);
   }
 
   @Test
