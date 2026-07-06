@@ -269,18 +269,17 @@ jobs:
           ./mvnw -V -B -Dgpg.skip=false -DskipTests -s settings.xml deploy
           curl -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.dapr
 
-  # Opens (or comments on) a tracking issue when a tagged release fails
-  # anywhere in the build/test/publish chain.
+  # Opens (or comments on) a tracking issue only when the publish job (Maven
+  # Central deploy) fails. Build/test failures skip publish, so failure() stays
+  # false and CI flakes don't open issues.
   notify-on-failure:
-    needs: [build, test, build-durabletask, publish]
+    needs: [publish]
     if: failure() && startsWith(github.ref, 'refs/tags/v')
     permissions:
       issues: write
       actions: read
     uses: dapr/.github/.github/workflows/open-issue-on-failure.yml@main
     with:
-      title: "Release publish failed: ${{ github.workflow }} (${{ github.ref_name }})"
-      labels: "release,ci/publish-failure"
+      title: "Release workflow failed: ${{ github.workflow }} (${{ github.ref_name }})"
+      labels: "release,ci/release-failure"
       mention: "@dapr/maintainers-java-sdk @dapr/approvers-java-sdk"
-    secrets:
-      dapr_bot_token: ${{ secrets.DAPR_BOT_TOKEN }}
