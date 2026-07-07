@@ -90,6 +90,9 @@ public class Subscription<T> implements Closeable {
     this.receiver = new Thread(() -> {
       long backoffMs = 1000L;
       while (running.get()) {
+        // Tracks whether the current stream ever delivered an event. If it did,
+        // treat the disconnect as "post-healthy" and reset the reconnect backoff.
+        final AtomicBoolean streamReceivedEvent = new AtomicBoolean(false);
         var stream = asyncStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
           @Override
           public void onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 topicEventRequest) {
@@ -109,6 +112,7 @@ public class Subscription<T> implements Closeable {
                 return;
               }
 
+              streamReceivedEvent.set(true);
               onEvent(listener, cloudEvent).subscribe(status -> {
                 var ack = buildAckRequest(id, status);
                 try {
@@ -118,7 +122,9 @@ public class Subscription<T> implements Closeable {
                 }
               });
             } catch (Exception e) {
-              this.onError(DaprException.propagate(e));
+              // Notify the listener but keep the stream alive; a single bad event
+              // shouldn't trigger a reconnect of the whole subscription.
+              listener.onError(DaprException.propagate(e));
             }
           }
 
@@ -143,6 +149,12 @@ public class Subscription<T> implements Closeable {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           running.set(false);
+        }
+
+        // If the just-terminated stream had been healthy (delivered at least one
+        // event), reset the backoff so a later disconnect doesn't wait 30s.
+        if (streamReceivedEvent.get()) {
+          backoffMs = 1000L;
         }
 
         if (running.get()) {
