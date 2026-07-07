@@ -35,6 +35,7 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 
 import javax.annotation.Nullable;
 
@@ -220,10 +221,13 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
     AtomicReference<OrchestratorService.CreateInstanceResponse> response = new AtomicReference<>();
 
     OrchestratorService.CreateInstanceRequest request = builder.build();
-    try {
+    // Make the span current during the call so instrumentation running underneath
+    // (e.g. gRPC OpenTelemetry interceptors) attaches to it.
+    try (Scope ignored = span != null ? span.makeCurrent() : Scope.noop()) {
       response.set(this.sidecarClient.startInstance(request));
     } catch (RuntimeException e) {
       if (span != null) {
+        span.recordException(e);
         span.setStatus(StatusCode.ERROR, "Failed to schedule orchestration instance");
       }
       throw e;

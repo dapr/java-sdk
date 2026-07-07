@@ -21,6 +21,7 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
@@ -47,6 +48,7 @@ class DurableTaskGrpcClientTracingTest {
   private ManagedChannel channel;
   private DurableTaskClient client;
   private final AtomicReference<OrchestratorService.CreateInstanceRequest> capturedRequest = new AtomicReference<>();
+  private final AtomicReference<SpanContext> spanContextDuringCall = new AtomicReference<>();
 
   @BeforeEach
   void setUp() throws Exception {
@@ -59,6 +61,9 @@ class DurableTaskGrpcClientTracingTest {
               OrchestratorService.CreateInstanceRequest request,
               StreamObserver<OrchestratorService.CreateInstanceResponse> responseObserver) {
             capturedRequest.set(request);
+            // directExecutor() runs this handler on the client thread, so this observes
+            // the span the client made current for the duration of the call.
+            spanContextDuringCall.set(Span.current().getSpanContext());
             responseObserver.onNext(OrchestratorService.CreateInstanceResponse.newBuilder()
                 .setInstanceId(request.getInstanceId())
                 .build());
@@ -122,6 +127,11 @@ class DurableTaskGrpcClientTracingTest {
       // span distinct from the caller's own span.
       assertEquals(callerSpan.getSpanContext().getTraceId(), parts[1]);
       assertFalse(callerSpan.getSpanContext().getSpanId().equals(parts[2]));
+
+      // The scheduling span must be current while the sidecar call runs, so nested
+      // instrumentation attaches to it. It must match the propagated trace context.
+      assertEquals(parts[1], spanContextDuringCall.get().getTraceId());
+      assertEquals(parts[2], spanContextDuringCall.get().getSpanId());
     } finally {
       tracerProvider.close();
     }
