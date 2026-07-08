@@ -90,6 +90,11 @@
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-context</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-sdk</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
