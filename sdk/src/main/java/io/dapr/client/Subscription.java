@@ -88,11 +88,7 @@ public class Subscription<T> implements Closeable {
     });
 
     this.receiver = new Thread(() -> {
-      long backoffMs = 1000L;
       while (running.get()) {
-        // Tracks whether the current stream ever delivered an event. If it did,
-        // treat the disconnect as "post-healthy" and reset the reconnect backoff.
-        final AtomicBoolean streamReceivedEvent = new AtomicBoolean(false);
         var stream = asyncStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
           @Override
           public void onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 topicEventRequest) {
@@ -112,7 +108,6 @@ public class Subscription<T> implements Closeable {
                 return;
               }
 
-              streamReceivedEvent.set(true);
               onEvent(listener, cloudEvent).subscribe(status -> {
                 var ack = buildAckRequest(id, status);
                 try {
@@ -122,16 +117,13 @@ public class Subscription<T> implements Closeable {
                 }
               });
             } catch (Exception e) {
-              // Notify the listener but keep the stream alive; a single bad event
-              // shouldn't trigger a reconnect of the whole subscription.
-              listener.onError(DaprException.propagate(e));
+              this.onError(DaprException.propagate(e));
             }
           }
 
           @Override
           public void onError(Throwable throwable) {
             listener.onError(DaprException.propagate(throwable));
-            receiverStateChange.release();
           }
 
           @Override
@@ -149,23 +141,6 @@ public class Subscription<T> implements Closeable {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           running.set(false);
-        }
-
-        // If the just-terminated stream had been healthy (delivered at least one
-        // event), reset the backoff so a later disconnect doesn't wait 30s.
-        if (streamReceivedEvent.get()) {
-          backoffMs = 1000L;
-        }
-
-        if (running.get()) {
-          try {
-            Thread.sleep(backoffMs);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            running.set(false);
-          }
-          // Double the backoff for the next reconnect, capped at 30s.
-          backoffMs = Math.min(backoffMs * 2, 30_000L);
         }
       }
     });
@@ -211,10 +186,6 @@ public class Subscription<T> implements Closeable {
   public void close() {
     running.set(false);
     receiverStateChange.release();
-    // Interrupt both threads so that any in-flight Thread.sleep (e.g., the
-    // receiver's reconnect backoff, up to 30s) returns immediately instead
-    // of blocking shutdown.
-    this.receiver.interrupt();
     this.acker.interrupt();
   }
 
