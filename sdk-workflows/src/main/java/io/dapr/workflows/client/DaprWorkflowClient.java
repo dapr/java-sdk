@@ -26,12 +26,16 @@ import io.dapr.workflows.runtime.DefaultWorkflowInstanceStatus;
 import io.dapr.workflows.runtime.DefaultWorkflowState;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.opentelemetry.api.trace.Tracer;
 
 import javax.annotation.Nullable;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 /**
  * Defines client operations for managing Dapr Workflow instances.
@@ -55,7 +59,23 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param properties Properties for the GRPC Channel.
    */
   public DaprWorkflowClient(Properties properties) {
-    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)));
+    this(properties, (Tracer) null);
+  }
+
+  /**
+   * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
+   *
+   * <p>When a {@link Tracer} is provided, scheduling a workflow emits a client span as a child of
+   * the caller's current OpenTelemetry context and propagates that trace context to the Dapr
+   * sidecar, so the workflow execution is recorded as part of the caller's trace.
+   *
+   * @param properties Properties for the GRPC Channel.
+   * @param tracer     OpenTelemetry Tracer used to emit and propagate trace context when
+   *                   scheduling workflows. May be null, in which case tracing is disabled
+   *                   and this constructor behaves exactly like {@link #DaprWorkflowClient(Properties)}.
+   */
+  public DaprWorkflowClient(Properties properties, @Nullable Tracer tracer) {
+    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)), tracer);
   }
 
   /**
@@ -67,16 +87,17 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param additionalInterceptors extra interceptors appended after the API-token interceptor.
    */
   protected DaprWorkflowClient(Properties properties, ClientInterceptor... additionalInterceptors) {
-    this(buildChannelWithAdditional(properties, additionalInterceptors));
+    this(buildChannelWithAdditional(properties, additionalInterceptors), null);
   }
 
   /**
    * Private Constructor that passes a created DurableTaskClient and the new GRPC channel.
    *
    * @param grpcChannel ManagedChannel for GRPC channel.
+   * @param tracer      optional Tracer used to propagate trace context when scheduling workflows.
    */
-  private DaprWorkflowClient(ManagedChannel grpcChannel) {
-    this(createDurableTaskClient(grpcChannel), grpcChannel);
+  private DaprWorkflowClient(ManagedChannel grpcChannel, @Nullable Tracer tracer) {
+    this(createDurableTaskClient(grpcChannel, tracer), grpcChannel);
   }
 
   /**
@@ -109,7 +130,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the randomly-generated instance ID for new Workflow instance.
    */
   public <T extends Workflow> String scheduleNewWorkflow(String name) {
-    return this.innerClient.scheduleNewOrchestrationInstance(name);
+    return mapAlreadyExists(null, () -> this.innerClient.scheduleNewOrchestrationInstance(name));
   }
 
   /**
@@ -133,7 +154,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the randomly-generated instance ID for new Workflow instance.
    */
   public <T extends Workflow> String scheduleNewWorkflow(String name, Object input) {
-    return this.innerClient.scheduleNewOrchestrationInstance(name, input);
+    return mapAlreadyExists(null, () -> this.innerClient.scheduleNewOrchestrationInstance(name, input));
   }
 
   /**
@@ -144,6 +165,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param input      the input to pass to the scheduled orchestration instance. Must be serializable.
    * @param instanceId the unique ID of the orchestration instance to schedule
    * @return the <code>instanceId</code> parameter value.
+   * @throws WorkflowInstanceAlreadyExistsException if an active workflow with <code>instanceId</code> already exists.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
     return this.scheduleNewWorkflow(clazz.getCanonicalName(), input, instanceId);
@@ -157,9 +179,11 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param input      the input to pass to the scheduled orchestration instance. Must be serializable.
    * @param instanceId the unique ID of the orchestration instance to schedule
    * @return the <code>instanceId</code> parameter value.
+   * @throws WorkflowInstanceAlreadyExistsException if an active workflow with <code>instanceId</code> already exists.
    */
   public <T extends Workflow> String scheduleNewWorkflow(String name, Object input, String instanceId) {
-    return this.innerClient.scheduleNewOrchestrationInstance(name, input, instanceId);
+    return mapAlreadyExists(instanceId, () -> this.innerClient.scheduleNewOrchestrationInstance(name, input,
+        instanceId));
   }
 
   /**
@@ -169,6 +193,8 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param clazz   Class extending Workflow to start an instance of.
    * @param options the options for the new workflow, including input, instance ID, etc.
    * @return the <code>instanceId</code> parameter value.
+   * @throws WorkflowInstanceAlreadyExistsException if an active workflow with the requested instance ID
+   *                                                already exists.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOptions options) {
     return this.scheduleNewWorkflow(clazz.getCanonicalName(), options);
@@ -181,11 +207,13 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param name   name of the workflow to schedule
    * @param options the options for the new workflow, including input, instance ID, etc.
    * @return the <code>instanceId</code> parameter value.
+   * @throws WorkflowInstanceAlreadyExistsException if an active workflow with the requested instance ID
+   *                                                already exists.
    */
   public <T extends Workflow> String scheduleNewWorkflow(String name, NewWorkflowOptions options) {
     NewOrchestrationInstanceOptions orchestrationInstanceOptions = fromNewWorkflowOptions(options);
-    return this.innerClient.scheduleNewOrchestrationInstance(name,
-        orchestrationInstanceOptions);
+    return mapAlreadyExists(options.getInstanceId(), () -> this.innerClient.scheduleNewOrchestrationInstance(name,
+        orchestrationInstanceOptions));
   }
 
   /**
@@ -444,12 +472,46 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Static method to create the DurableTaskClient.
    *
    * @param grpcChannel ManagedChannel for GRPC.
+   * @param tracer      optional Tracer set on the underlying client; skipped when null.
    * @return a new instance of a DurableTaskClient with a GRPC channel.
    */
-  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel) {
-    return new DurableTaskGrpcClientBuilder()
-        .grpcChannel(grpcChannel)
-        .build();
+  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel, @Nullable Tracer tracer) {
+    DurableTaskGrpcClientBuilder builder = new DurableTaskGrpcClientBuilder()
+        .grpcChannel(grpcChannel);
+
+    if (tracer != null) {
+      builder.tracer(tracer);
+    }
+
+    return builder.build();
+  }
+
+  /**
+   * Runs the given scheduling call, translating the sidecar's rejection of a duplicate active
+   * instance ID into a {@link WorkflowInstanceAlreadyExistsException}.
+   */
+  private static String mapAlreadyExists(@Nullable String instanceId, Supplier<String> schedule) {
+    try {
+      return schedule.get();
+    } catch (StatusRuntimeException e) {
+      if (isAlreadyExists(e)) {
+        throw new WorkflowInstanceAlreadyExistsException(instanceId, e);
+      }
+      throw e;
+    }
+  }
+
+  private static boolean isAlreadyExists(StatusRuntimeException e) {
+    if (e.getStatus().getCode() == Status.Code.ALREADY_EXISTS) {
+      return true;
+    }
+    // Runtimes that predate the AlreadyExists status code report the collision as UNKNOWN and
+    // only identify it through the error message.
+    if (e.getStatus().getCode() != Status.Code.UNKNOWN) {
+      return false;
+    }
+    String description = e.getStatus().getDescription();
+    return description != null && description.contains("an active workflow with ID");
   }
 
   private static NewOrchestrationInstanceOptions fromNewWorkflowOptions(NewWorkflowOptions options) {
