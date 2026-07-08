@@ -28,6 +28,7 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.opentelemetry.api.trace.Tracer;
 
 import javax.annotation.Nullable;
 
@@ -58,7 +59,23 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param properties Properties for the GRPC Channel.
    */
   public DaprWorkflowClient(Properties properties) {
-    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)));
+    this(properties, (Tracer) null);
+  }
+
+  /**
+   * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
+   *
+   * <p>When a {@link Tracer} is provided, scheduling a workflow emits a client span as a child of
+   * the caller's current OpenTelemetry context and propagates that trace context to the Dapr
+   * sidecar, so the workflow execution is recorded as part of the caller's trace.
+   *
+   * @param properties Properties for the GRPC Channel.
+   * @param tracer     OpenTelemetry Tracer used to emit and propagate trace context when
+   *                   scheduling workflows. May be null, in which case tracing is disabled
+   *                   and this constructor behaves exactly like {@link #DaprWorkflowClient(Properties)}.
+   */
+  public DaprWorkflowClient(Properties properties, @Nullable Tracer tracer) {
+    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)), tracer);
   }
 
   /**
@@ -70,16 +87,17 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param additionalInterceptors extra interceptors appended after the API-token interceptor.
    */
   protected DaprWorkflowClient(Properties properties, ClientInterceptor... additionalInterceptors) {
-    this(buildChannelWithAdditional(properties, additionalInterceptors));
+    this(buildChannelWithAdditional(properties, additionalInterceptors), null);
   }
 
   /**
    * Private Constructor that passes a created DurableTaskClient and the new GRPC channel.
    *
    * @param grpcChannel ManagedChannel for GRPC channel.
+   * @param tracer      optional Tracer used to propagate trace context when scheduling workflows.
    */
-  private DaprWorkflowClient(ManagedChannel grpcChannel) {
-    this(createDurableTaskClient(grpcChannel), grpcChannel);
+  private DaprWorkflowClient(ManagedChannel grpcChannel, @Nullable Tracer tracer) {
+    this(createDurableTaskClient(grpcChannel, tracer), grpcChannel);
   }
 
   /**
@@ -454,12 +472,18 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Static method to create the DurableTaskClient.
    *
    * @param grpcChannel ManagedChannel for GRPC.
+   * @param tracer      optional Tracer set on the underlying client; skipped when null.
    * @return a new instance of a DurableTaskClient with a GRPC channel.
    */
-  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel) {
-    return new DurableTaskGrpcClientBuilder()
-        .grpcChannel(grpcChannel)
-        .build();
+  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel, @Nullable Tracer tracer) {
+    DurableTaskGrpcClientBuilder builder = new DurableTaskGrpcClientBuilder()
+        .grpcChannel(grpcChannel);
+
+    if (tracer != null) {
+      builder.tracer(tracer);
+    }
+
+    return builder.build();
   }
 
   /**

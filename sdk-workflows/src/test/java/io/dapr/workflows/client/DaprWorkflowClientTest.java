@@ -13,7 +13,9 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
+import io.dapr.config.Properties;
 import io.dapr.durabletask.DurableTaskClient;
+import io.dapr.durabletask.DurableTaskGrpcClientBuilder;
 import io.dapr.durabletask.NewOrchestrationInstanceOptions;
 import io.dapr.durabletask.OrchestrationMetadata;
 import io.dapr.durabletask.OrchestrationRuntimeStatus;
@@ -23,10 +25,12 @@ import io.dapr.workflows.WorkflowStub;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.opentelemetry.api.trace.Tracer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedConstruction;
 
 import java.lang.reflect.Constructor;
 import java.time.Duration;
@@ -42,6 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -85,6 +91,37 @@ public class DaprWorkflowClientTest {
   @Test
   public void EmptyConstructor() {
     assertDoesNotThrow(() -> new DaprWorkflowClient());
+  }
+
+  @Test
+  public void tracerConstructorPassesTracerToDurableTaskClientBuilder() throws Exception {
+    Tracer tracer = mock(Tracer.class);
+
+    try (MockedConstruction<DurableTaskGrpcClientBuilder> construction =
+        mockConstruction(DurableTaskGrpcClientBuilder.class, (builder, context) -> {
+          when(builder.grpcChannel(any())).thenReturn(builder);
+          when(builder.tracer(any())).thenReturn(builder);
+          when(builder.build()).thenReturn(mockInnerClient);
+        })) {
+      new DaprWorkflowClient(new Properties(), tracer).close();
+
+      DurableTaskGrpcClientBuilder builder = construction.constructed().get(0);
+      verify(builder, times(1)).tracer(tracer);
+    }
+  }
+
+  @Test
+  public void nullTracerIsNotPassedToDurableTaskClientBuilder() throws Exception {
+    try (MockedConstruction<DurableTaskGrpcClientBuilder> construction =
+        mockConstruction(DurableTaskGrpcClientBuilder.class, (builder, context) -> {
+          when(builder.grpcChannel(any())).thenReturn(builder);
+          when(builder.build()).thenReturn(mockInnerClient);
+        })) {
+      new DaprWorkflowClient(new Properties(), (Tracer) null).close();
+
+      DurableTaskGrpcClientBuilder builder = construction.constructed().get(0);
+      verify(builder, never()).tracer(any());
+    }
   }
 
   @Test
