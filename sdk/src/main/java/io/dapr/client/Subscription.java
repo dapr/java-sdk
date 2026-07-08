@@ -204,6 +204,7 @@ public class Subscription<T> implements Closeable {
   public void close() {
     running.set(false);
     receiverStateChange.release();
+    this.receiver.interrupt();
     this.acker.interrupt();
   }
 
