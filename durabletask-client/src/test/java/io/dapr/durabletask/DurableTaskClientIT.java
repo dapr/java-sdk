@@ -1288,26 +1288,24 @@ public class DurableTaskClientIT extends IntegrationTestBase {
     final String orchestratorName = "orchestratorName";
 
     DurableTaskGrpcWorker worker = this.createWorkerBuilder()
-            .addOrchestrator(orchestratorName, ctx -> {
-              try {
-                // The orchestration remains in the "Pending" state until the first await statement
-                TimeUnit.SECONDS.sleep(5);
-              } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-              }
-            })
+            .addOrchestrator(orchestratorName, ctx -> ctx.complete(null))
             .buildAndStart();
 
     DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
     try (worker; client) {
-      // Schedule synchronously so the instance is guaranteed to exist in the backend before we
-      // wait for it to start. scheduleNewOrchestrationInstance returns as soon as the instance is
-      // created (it does not wait for the orchestrator to run), and the orchestrator stays in the
-      // "Pending" state for 5s (no await), so waiting for start with a 2s timeout throws
-      // TimeoutException. Scheduling on a separate thread previously raced with waitForInstanceStart,
-      // which could reach the sidecar first and fail with "no such instance exists"
-      // (StatusRuntimeException) instead of timing out.
-      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName);
+      // Schedule the instance with a start time in the future so it is created (and therefore
+      // guaranteed to exist) but stays in the "Pending" state: the sidecar does not dispatch a
+      // scheduled instance to a worker until its start time is reached. waitForInstanceStart
+      // therefore blocks until its 2s deadline and throws TimeoutException, deterministically and
+      // regardless of how quickly a worker would otherwise pick the instance up.
+      //
+      // Scheduling on a background thread (the previous approach) was racy: if waitForInstanceStart
+      // reached the sidecar first it failed with "no such instance exists" (StatusRuntimeException),
+      // and if the schedule won the race the worker started the instance within 2s so nothing was
+      // thrown.
+      String instanceId = client.scheduleNewOrchestrationInstance(
+          orchestratorName,
+          new NewOrchestrationInstanceOptions().setStartTime(Instant.now().plus(Duration.ofMinutes(1))));
 
       assertThrows(TimeoutException.class, () -> client.waitForInstanceStart(instanceId, Duration.ofSeconds(2)));
     }
