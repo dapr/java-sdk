@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,10 +14,14 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.BaseIT;
+import io.dapr.it.AppRun;
 import io.dapr.it.actors.services.springboot.DemoActor;
 import io.dapr.it.actors.services.springboot.DemoActorService;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,24 +34,38 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ActivationDeactivationIT extends BaseIT {
+public class ActivationDeactivationIT extends BaseContainerIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActivationDeactivationIT.class);
 
+  private static DaprContainer dapr;
+  private static AppRun app;
+  private static ActorClient actorClient;
+
+  @BeforeAll
+  public static void start() throws Exception {
+    var pair = startAppAndAttach(
+        "activation-deactivation-it",
+        DemoActorService.class,
+        AppRun.AppProtocol.HTTP,
+        appPort -> {
+          DaprContainer d = daprBuilder("activation-deactivation-it")
+              .withAppPort(appPort)
+              .withAppChannelAddress("host.testcontainers.internal")
+              .withComponent(redisStateStore(STATE_STORE_NAME));
+          return d;
+        });
+    dapr = pair.dapr();
+    app = pair.app();
+    actorClient = newActorClient(dapr);
+    waitForActorsReady(dapr);
+  }
+
   @Test
   public void activateInvokeDeactivate() throws Exception {
-    // The call below will fail if service cannot start successfully.
-    var run = startDaprApp(
-        ActivationDeactivationIT.class.getSimpleName(),
-        DemoActorService.SUCCESS_MESSAGE,
-        DemoActorService.class,
-        true,
-        60000);
-
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     logger.debug("Creating proxy builder");
-    ActorProxyBuilder<DemoActor> proxyBuilder
-        = new ActorProxyBuilder(DemoActor.class, deferClose(run.newActorClient()));
+    ActorProxyBuilder<DemoActor> proxyBuilder = new ActorProxyBuilder(DemoActor.class, actorClient);
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     logger.debug("Building proxy");
@@ -63,7 +81,7 @@ public class ActivationDeactivationIT extends BaseIT {
     logger.debug("Retrieving active Actors");
     List<String> activeActors = proxy.retrieveActiveActors();
     logger.debug("Active actors: [" + activeActors.toString() + "]");
-    assertTrue(activeActors.contains(actorId1.toString()),"Expecting actorId:[" + actorId1.toString() + "]");
+    assertTrue(activeActors.contains(actorId1.toString()), "Expecting actorId:[" + actorId1.toString() + "]");
 
     ActorId actorId2 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     DemoActor proxy2 = proxyBuilder.build(actorId2);

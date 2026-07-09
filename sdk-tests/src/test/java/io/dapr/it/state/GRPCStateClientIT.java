@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,10 +13,13 @@ limitations under the License.
 
 package io.dapr.it.state;
 
+import com.google.protobuf.ByteString;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
-import io.dapr.it.DaprRun;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.v1.CommonProtos;
+import io.dapr.v1.DaprGrpc;
+import io.dapr.v1.DaprStateProtos;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -24,27 +27,31 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test State GRPC DAPR capabilities using a DAPR instance with an empty service running
  */
 public class GRPCStateClientIT extends AbstractStateClientIT {
 
-  private static DaprRun daprRun;
-
+  private static DaprContainer dapr;
   private static DaprClient daprClient;
 
   @BeforeAll
-  public static void init() throws Exception {
-    daprRun = startDaprApp(GRPCStateClientIT.class.getSimpleName(), 5000);
-    daprClient = daprRun.newDaprClientBuilder().build();
+  public static void init() {
+    dapr = daprBuilder("grpc-state-it")
+        .withComponent(redisStateStore(STATE_STORE_NAME))
+        .withComponent(mongoStateStore(MONGO_QUERY_STATE_STORE_NAME));
+    dapr.start();
+    deferStop(dapr);
+    daprClient = newDaprClient(dapr);
   }
 
   @AfterAll
   public static void tearDown() throws Exception {
     daprClient.close();
   }
-  
+
   @Override
   protected DaprClient buildDaprClient() {
     return daprClient;
@@ -79,6 +86,47 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
             "unknown state store",
             Collections.singletonList(stateKey),
             byte[].class).block());
+  }
+
+  /**
+   * Exercises {@link DaprClient#newGrpcStub(String, java.util.function.Function)} —
+   * the public API for obtaining a raw {@code DaprGrpc.DaprBlockingStub} routed
+   * through the SDK's managed channel. Ports the only test from the legacy
+   * {@code HelloWorldClientIT}, which previously exercised this API end-to-end
+   * via {@code dapr run}. Uses the raw stub for save/get/delete to avoid the
+   * SDK's default JSON serialization wrapping the value in quotes.
+   */
+  @Test
+  public void rawGrpcStubGetAndDeleteState() {
+    final String key = "newGrpcStubKey";
+    final String value = "Hello World";
+
+    DaprGrpc.DaprBlockingStub stub = buildDaprClient().newGrpcStub("n/a", DaprGrpc::newBlockingStub);
+
+    stub.saveState(DaprStateProtos.SaveStateRequest.newBuilder()
+        .setStoreName(STATE_STORE_NAME)
+        .addStates(CommonProtos.StateItem.newBuilder()
+            .setKey(key)
+            .setValue(ByteString.copyFromUtf8(value))
+            .build())
+        .build());
+
+    DaprStateProtos.GetStateResponse before = stub.getState(DaprStateProtos.GetStateRequest.newBuilder()
+        .setStoreName(STATE_STORE_NAME)
+        .setKey(key)
+        .build());
+    assertEquals(value, before.getData().toStringUtf8());
+
+    stub.deleteState(DaprStateProtos.DeleteStateRequest.newBuilder()
+        .setStoreName(STATE_STORE_NAME)
+        .setKey(key)
+        .build());
+
+    DaprStateProtos.GetStateResponse after = stub.getState(DaprStateProtos.GetStateRequest.newBuilder()
+        .setStoreName(STATE_STORE_NAME)
+        .setKey(key)
+        .build());
+    assertEquals("", after.getData().toStringUtf8());
   }
 
 }

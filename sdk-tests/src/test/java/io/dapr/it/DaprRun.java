@@ -172,10 +172,13 @@ public class DaprRun implements Stoppable {
     System.out.println("Stopping dapr application ...");
     try {
       this.stopCommand.run();
-
       System.out.println("Dapr application stopped.");
     } catch (RuntimeException e) {
-      System.out.println("Could not stop app " + this.appName + ": " + e.getMessage());
+      if (e.getMessage() != null && e.getMessage().contains("Could not find success criteria")) {
+        System.out.println("App " + this.appName + " already stopped or not found (ignored).");
+      } else {
+        System.out.println("Could not stop app " + this.appName + ": " + e.getMessage());
+      }
     }
   }
 
@@ -219,8 +222,7 @@ public class DaprRun implements Stoppable {
         while (System.currentTimeMillis() <= maxWait) {
           try {
             stub.healthCheck(Empty.getDefaultInstance());
-            // artursouza: workaround due to race condition with runtime's probe on app's health.
-            Thread.sleep(5000);
+            Thread.sleep(2000);
             return;
           } catch (Exception e) {
             Thread.sleep(1000);
@@ -232,10 +234,10 @@ public class DaprRun implements Stoppable {
         channel.shutdown();
       }
     } else {
-      Duration waitDuration = Duration.ofMillis(maxWaitMilliseconds);
+      long maxWait = System.currentTimeMillis() + maxWaitMilliseconds;
       HttpClient client = HttpClient.newBuilder()
           .version(HttpClient.Version.HTTP_1_1)
-          .connectTimeout(waitDuration)
+          .connectTimeout(Duration.ofSeconds(5))
           .build();
       String url = "http://127.0.0.1:" + this.getAppPort() + "/health";
       HttpRequest request = HttpRequest.newBuilder()
@@ -243,18 +245,20 @@ public class DaprRun implements Stoppable {
           .uri(URI.create(url))
           .build();
 
-      try {
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() != 200) {
-          throw new RuntimeException("error: HTTP service is not healthy.");
+      while (System.currentTimeMillis() <= maxWait) {
+        try {
+          HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+          if (response.statusCode() == 200) {
+            Thread.sleep(2000);
+            return;
+          }
+        } catch (IOException e) {
+          // not ready yet
         }
-      } catch (IOException e) {
-          throw new RuntimeException("exception: HTTP service is not healthy.");
+        Thread.sleep(1000);
       }
 
-      // artursouza: workaround due to race condition with runtime's probe on app's health.
-      Thread.sleep(5000);
+      throw new RuntimeException("timeout: HTTP service is not healthy.");
     }
   }
 

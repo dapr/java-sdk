@@ -24,6 +24,7 @@ import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -36,7 +37,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
@@ -47,7 +47,7 @@ import java.util.Random;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
-@Disabled("Unclear why this test is failing intermittently in CI")
+@Disabled("Outbox event delivery via in-memory pubsub is unreliable — suspected Dapr runtime issue. See #1603")
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     classes = {
@@ -70,7 +70,6 @@ public class DaprPubSubOutboxIT {
   private static final String TOPIC_PRODUCT_CREATED = "product.created";
   private static final String STATE_STORE_NAME = "kvstore";
 
-  @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withAppName(PUBSUB_APP_ID)
       .withNetwork(DAPR_NETWORK)
@@ -87,21 +86,20 @@ public class DaprPubSubOutboxIT {
   @Autowired
   private ProductWebhookController productWebhookController;
 
-  /**
-   * Expose the Dapr ports to the host.
-   *
-   * @param registry the dynamic property registry
-   */
   @DynamicPropertySource
   static void daprProperties(DynamicPropertyRegistry registry) {
-    registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
-    registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
     registry.add("server.port", () -> PORT);
   }
 
   @BeforeAll
-  public static void beforeAll(){
+  public static void beforeAll() {
     org.testcontainers.Testcontainers.exposeHostPorts(PORT);
+    DAPR_CONTAINER.start();
+  }
+
+  @AfterAll
+  public static void afterAll() {
+    DAPR_CONTAINER.stop();
   }
 
   @BeforeEach
@@ -128,7 +126,8 @@ public class DaprPubSubOutboxIT {
 
       client.executeStateTransaction(transactionRequest).block();
 
-      Awaitility.await().atMost(Duration.ofSeconds(10))
+      Awaitility.await().atMost(Duration.ofSeconds(60))
+          .pollInterval(Duration.ofMillis(500))
           .ignoreExceptions()
           .untilAsserted(() -> Assertions.assertThat(productWebhookController.getEventList()).isNotEmpty());
     }
