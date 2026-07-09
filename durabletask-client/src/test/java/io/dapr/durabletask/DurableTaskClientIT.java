@@ -1300,11 +1300,14 @@ public class DurableTaskClientIT extends IntegrationTestBase {
 
     DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
     try (worker; client) {
-      var instanceId = UUID.randomUUID().toString();
-      Thread thread = new Thread(() -> {
-        client.scheduleNewOrchestrationInstance(orchestratorName, null, instanceId);
-      });
-      thread.start();
+      // Schedule synchronously so the instance is guaranteed to exist in the backend before we
+      // wait for it to start. scheduleNewOrchestrationInstance returns as soon as the instance is
+      // created (it does not wait for the orchestrator to run), and the orchestrator stays in the
+      // "Pending" state for 5s (no await), so waiting for start with a 2s timeout throws
+      // TimeoutException. Scheduling on a separate thread previously raced with waitForInstanceStart,
+      // which could reach the sidecar first and fail with "no such instance exists"
+      // (StatusRuntimeException) instead of timing out.
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName);
 
       assertThrows(TimeoutException.class, () -> client.waitForInstanceStart(instanceId, Duration.ofSeconds(2)));
     }
