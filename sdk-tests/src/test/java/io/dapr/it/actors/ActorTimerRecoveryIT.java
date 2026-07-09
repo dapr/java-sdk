@@ -54,7 +54,6 @@ public class ActorTimerRecoveryIT extends BaseIT {
       true,
       60000);
 
-    Thread.sleep(3000);
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
@@ -68,16 +67,14 @@ public class ActorTimerRecoveryIT extends BaseIT {
     logger.debug("Invoking actor method 'startTimer' which will register a timer");
     proxy.invokeMethod("startTimer", "myTimer").block();
 
-    logger.debug("Pausing 7 seconds to allow timer to fire");
-    Thread.sleep(7000);
-
+    logger.debug("Waiting for timer to fire at least 3 times");
     final List<MethodEntryTracker> logs = new ArrayList<>();
     callWithRetry(() -> {
       logs.clear();
       logs.addAll(fetchMethodCallLogs(proxy));
       validateMethodCalls(logs, METHOD_NAME, 3);
       validateMessageContent(logs, METHOD_NAME, "ping!");
-    }, 5000);
+    }, 30000);
 
     // Restarts app only.
     runs.left.stop();
@@ -91,7 +88,7 @@ public class ActorTimerRecoveryIT extends BaseIT {
       newLogs.clear();
       newLogs.addAll(fetchMethodCallLogs(proxy));
       validateMethodCalls(newLogs, METHOD_NAME, 3);
-    }, 10000);
+    }, 30000);
 
     // Check that the restart actually happened by confirming the old logs are not in the new logs.
     for (MethodEntryTracker oldLog: logs) {

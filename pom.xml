@@ -73,6 +73,7 @@
     <junit-platform-console.version>1.7.0</junit-platform-console.version>
     <reactor.version>3.5.12</reactor.version>
     <testcontainers-redis.version>2.2.4</testcontainers-redis.version>
+    <jedis.version>5.1.0</jedis.version>
     <slf4j.version>2.0.9</slf4j.version>
     <mockito.version>3.11.2</mockito.version>
     <opentelemetry-bom.version>2.1.0</opentelemetry-bom.version>
@@ -405,6 +406,12 @@
             <artifactId>testcontainers</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>redis.clients</groupId>
+        <artifactId>jedis</artifactId>
+        <version>${jedis.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.github.microcks</groupId>

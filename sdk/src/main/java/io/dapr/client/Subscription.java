@@ -88,7 +88,9 @@ public class Subscription<T> implements Closeable {
     });
 
     this.receiver = new Thread(() -> {
+      long backoffMs = 1000L;
       while (running.get()) {
+        final AtomicBoolean streamReceivedEvent = new AtomicBoolean(false);
         var stream = asyncStub.subscribeTopicEventsAlpha1(new StreamObserver<>() {
           @Override
           public void onNext(DaprPubsubProtos.SubscribeTopicEventsResponseAlpha1 topicEventRequest) {
@@ -108,6 +110,7 @@ public class Subscription<T> implements Closeable {
                 return;
               }
 
+              streamReceivedEvent.set(true);
               onEvent(listener, cloudEvent).subscribe(status -> {
                 var ack = buildAckRequest(id, status);
                 try {
@@ -117,13 +120,14 @@ public class Subscription<T> implements Closeable {
                 }
               });
             } catch (Exception e) {
-              this.onError(DaprException.propagate(e));
+              listener.onError(DaprException.propagate(e));
             }
           }
 
           @Override
           public void onError(Throwable throwable) {
             listener.onError(DaprException.propagate(throwable));
+            receiverStateChange.release();
           }
 
           @Override
@@ -141,6 +145,20 @@ public class Subscription<T> implements Closeable {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           running.set(false);
+        }
+
+        if (streamReceivedEvent.get()) {
+          backoffMs = 1000L;
+        }
+
+        if (running.get()) {
+          try {
+            Thread.sleep(backoffMs);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            running.set(false);
+          }
+          backoffMs = Math.min(backoffMs * 2, 30_000L);
         }
       }
     });
@@ -186,6 +204,7 @@ public class Subscription<T> implements Closeable {
   public void close() {
     running.set(false);
     receiverStateChange.release();
+    this.receiver.interrupt();
     this.acker.interrupt();
   }
 

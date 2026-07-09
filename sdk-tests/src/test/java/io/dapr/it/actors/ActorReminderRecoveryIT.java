@@ -129,24 +129,19 @@ public class ActorReminderRecoveryIT extends BaseIT {
   ) throws Exception {
     setup(actorType);
 
-    logger.debug("Pausing 3 seconds to let gRPC connection get ready");
-    Thread.sleep(3000);
-    
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
     proxy.invokeMethod("setReminderData", reminderDataParam).block();
 
     proxy.invokeMethod("startReminder",  reminderName).block();
 
-    logger.debug("Pausing 7 seconds to allow reminder to fire");
-    Thread.sleep(7000);
-
+    logger.debug("Waiting for reminder to fire at least 3 times");
     final List<MethodEntryTracker> logs = new ArrayList<>();
     callWithRetry(() -> {
       logs.clear();
       logs.addAll(fetchMethodCallLogs(proxy));
       validateMethodCalls(logs, METHOD_NAME, 3);
       validateMessageContent(logs, METHOD_NAME, expectedReminderStateText);
-    }, 5000);
+    }, 30000);
 
     // Restarts runtime only.
     logger.info("Stopping Dapr sidecar");
