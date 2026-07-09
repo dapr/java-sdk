@@ -33,6 +33,27 @@ public class OpenTelemetry {
   private static final String ENDPOINT_V2_SPANS = "/api/v2/spans";
 
   /**
+   * Creates an opentelemetry instance using an explicit Zipkin endpoint URL.
+   * Skips the local Zipkin readiness probe — callers (e.g., Testcontainers-backed ITs)
+   * are responsible for ensuring the Zipkin endpoint is reachable before invocation.
+   * @param serviceName Name of the service in Zipkin (informational; not consumed here).
+   * @param zipkinEndpointUrl Full Zipkin spans endpoint URL (e.g., http://host:port/api/v2/spans).
+   * @return OpenTelemetry.
+   */
+  public static io.opentelemetry.api.OpenTelemetry createOpenTelemetry(String serviceName, String zipkinEndpointUrl) {
+    ZipkinSpanExporter zipkinExporter = ZipkinSpanExporter.builder().setEndpoint(zipkinEndpointUrl).build();
+
+    SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
+        .addSpanProcessor(SimpleSpanProcessor.create(zipkinExporter))
+        .build();
+
+    return OpenTelemetrySdk.builder()
+        .setTracerProvider(sdkTracerProvider)
+        .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+        .build();
+  }
+
+  /**
    * Creates an opentelemetry instance.
    * @param serviceName Name of the service in Zipkin
    * @return OpenTelemetry.

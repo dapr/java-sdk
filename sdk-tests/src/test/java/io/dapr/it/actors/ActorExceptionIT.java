@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,12 +14,13 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.it.AppRun;
 import io.dapr.it.actors.app.MyActor;
 import io.dapr.it.actors.app.MyActorService;
-import org.junit.jupiter.api.Assertions;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -30,35 +31,44 @@ import java.util.Map;
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprExceptionSubstring;
 
-
-public class ActorExceptionIT extends BaseIT {
+public class ActorExceptionIT extends BaseContainerIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorExceptionIT.class);
 
-  private static DaprRun run;
+  private static DaprContainer dapr;
+  private static AppRun app;
+  private static ActorClient actorClient;
 
   @BeforeAll
   public static void start() throws Exception {
-    // The call below will fail if service cannot start successfully.
-    run = startDaprApp(
-        ActorExceptionIT.class.getSimpleName(),
-        MyActorService.SUCCESS_MESSAGE,
+    var pair = startAppAndAttach(
+        "actor-exception-it",
         MyActorService.class,
-        true,
-        60000);
+        AppRun.AppProtocol.HTTP,
+        appPort -> {
+          DaprContainer d = daprBuilder("actor-exception-it")
+              .withAppPort(appPort)
+              .withAppChannelAddress("host.testcontainers.internal")
+              .withComponent(redisStateStore(STATE_STORE_NAME));
+          return d;
+        });
+    dapr = pair.dapr();
+    app = pair.app();
+    actorClient = newActorClient(dapr);
+    waitForActorsReady(dapr);
   }
 
   @Test
   public void exceptionTest() throws Exception {
     ActorProxyBuilder<MyActor> proxyBuilder =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient()));
+        new ActorProxyBuilder("MyActorTest", MyActor.class, actorClient);
     MyActor proxy = proxyBuilder.build(new ActorId("1"));
 
     callWithRetry(() -> {
       assertThrowsDaprExceptionSubstring(
           "INTERNAL",
           "INTERNAL: error invoke actor method: error from actor service",
-          () ->  proxy.throwException());
+          () -> proxy.throwException());
     }, 10000);
   }
 
@@ -66,8 +76,9 @@ public class ActorExceptionIT extends BaseIT {
   public void exceptionDueToMetadataTest() throws Exception {
     // Setting this HTTP header via actor metadata will cause the Actor HTTP server to error.
     Map<String, String> metadata = Map.of("Content-Length", "9999");
+    ActorClient metadataClient = newActorClient(dapr, metadata);
     ActorProxyBuilder<MyActor> proxyBuilderMetadataOverride =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient(metadata)));
+        new ActorProxyBuilder("MyActorTest", MyActor.class, metadataClient);
 
     MyActor proxyWithMetadata = proxyBuilderMetadataOverride.build(new ActorId("2"));
     callWithRetry(() -> {

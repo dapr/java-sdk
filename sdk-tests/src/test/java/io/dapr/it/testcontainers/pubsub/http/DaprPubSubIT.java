@@ -22,11 +22,13 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.it.pubsub.http.PubSubIT;
 import io.dapr.it.testcontainers.DaprClientFactory;
 import io.dapr.serializer.CustomizableObjectSerializer;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -96,16 +98,17 @@ public class DaprPubSubIT {
   private static final String BINARY_TOPIC_NAME = "binarytopic";
   private static final String TTL_TOPIC_NAME = "ttltopic";
   private static final String LONG_TOPIC_NAME = "testinglongvalues";
+  private static final String BULK_SUB_TOPIC_NAME = "topicBulkSub";
 
   private static final int NUM_MESSAGES = 10;
 
   // typeRefs
   private static final TypeRef<List<CloudEvent>> CLOUD_EVENT_LIST_TYPE_REF = new TypeRef<>() {
   };
-  private static final TypeRef<List<CloudEvent<PubSubIT.ConvertToLong>>> CLOUD_EVENT_LONG_LIST_TYPE_REF =
+  private static final TypeRef<List<CloudEvent<ConvertToLong>>> CLOUD_EVENT_LONG_LIST_TYPE_REF =
       new TypeRef<>() {
       };
-  private static final TypeRef<List<CloudEvent<PubSubIT.MyObject>>> CLOUD_EVENT_MYOBJECT_LIST_TYPE_REF =
+  private static final TypeRef<List<CloudEvent<MyObject>>> CLOUD_EVENT_MYOBJECT_LIST_TYPE_REF =
       new TypeRef<>() {
       };
 
@@ -199,7 +202,7 @@ public class DaprPubSubIT {
       sendBulkMessagesAsText(client, ANOTHER_TOPIC_NAME);
 
       //Publishing an object.
-      PubSubIT.MyObject object = new PubSubIT.MyObject();
+      MyObject object = new MyObject();
       object.setId("123");
       client.publishEvent(PUBSUB_NAME, TOPIC_NAME, object).block();
       LOG.info("Published one object.");
@@ -321,7 +324,7 @@ public class DaprPubSubIT {
       callWithRetry(() -> {
         LOG.info("Checking results for topic " + TYPED_TOPIC_NAME);
 
-        List<CloudEvent<PubSubIT.MyObject>> messages = client.invokeMethod(
+        List<CloudEvent<MyObject>> messages = client.invokeMethod(
             PUBSUB_APP_ID,
             "messages/typedtestingtopic",
             null,
@@ -332,8 +335,8 @@ public class DaprPubSubIT {
         assertThat(messages)
             .extracting(CloudEvent::getData)
             .filteredOn(Objects::nonNull)
-            .filteredOn(PubSubIT.MyObject.class::isInstance)
-            .map(PubSubIT.MyObject::getId)
+            .filteredOn(MyObject.class::isInstance)
+            .map(MyObject::getId)
             .contains("123");
       }, 2000);
 
@@ -408,9 +411,9 @@ public class DaprPubSubIT {
   }
 
   private void publishMyObjectAsserting(DaprClient client) {
-    PubSubIT.MyObject object = new PubSubIT.MyObject();
+    MyObject object = new MyObject();
     object.setId("123");
-    BulkPublishResponse<PubSubIT.MyObject> response = client.publishEvents(
+    BulkPublishResponse<MyObject> response = client.publishEvents(
         PUBSUB_NAME,
         TOPIC_BULK,
         "application/json",
@@ -538,23 +541,73 @@ public class DaprPubSubIT {
   }
 
   @Test
+  @DisplayName("Should deliver published messages via the @BulkSubscribe handler with all SUCCESS")
+  public void testPubSubBulkSubscribe() throws Exception {
+    // Send a batch of messages on the bulk-subscribe topic.
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d on topic %s", i, BULK_SUB_TOPIC_NAME);
+        client.publishEvent(PUBSUB_NAME, BULK_SUB_TOPIC_NAME, message).block();
+        LOG.info("Published message: '{}' to topic '{}' pubsub_name '{}'", message, BULK_SUB_TOPIC_NAME, PUBSUB_NAME);
+      }
+    }
+
+    // Give the subscriber a chance to receive the messages.
+    Thread.sleep(5000);
+
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
+      callWithRetry(() -> {
+        LOG.info("Checking results for topic " + BULK_SUB_TOPIC_NAME);
+
+        // The subscriber returns BulkSubscribeAppResponse objects, but the controller's
+        // generic List response type erases at runtime, so Jackson deserializes each
+        // element to LinkedHashMap. Take the list as List<?> and convertValue each item.
+        final List<?> messages = client.invokeMethod(
+            PUBSUB_APP_ID,
+            "messages/" + BULK_SUB_TOPIC_NAME,
+            null,
+            HttpExtension.GET,
+            List.class).block();
+
+        assertNotNull(messages);
+
+        // Bulk-subscribe batching is timing-dependent (depends on publish rate vs the
+        // controller's maxAwaitDurationMs window). With pubsub.in-memory and synchronous
+        // publishes the runtime may deliver each message in its own batch. Assert on the
+        // contract that matters: every published message reached the bulk endpoint with
+        // SUCCESS, regardless of how the runtime batched them.
+        int totalEntries = 0;
+        for (Object rawResponse : messages) {
+          BulkSubscribeAppResponse response = OBJECT_MAPPER.convertValue(
+              rawResponse, BulkSubscribeAppResponse.class);
+          for (BulkSubscribeAppResponseEntry entry : response.getStatuses()) {
+            assertThat(entry.getStatus()).isEqualTo(BulkSubscribeAppResponseStatus.SUCCESS);
+            totalEntries++;
+          }
+        }
+        assertThat(totalEntries).isEqualTo(NUM_MESSAGES);
+      }, 2000);
+    }
+  }
+
+  @Test
   @DisplayName("Should publish long values")
   public void testLongValues() throws Exception {
 
     Random random = new Random(590518626939830271L);
-    Set<PubSubIT.ConvertToLong> values = new HashSet<>();
-    values.add(new PubSubIT.ConvertToLong().setVal(590518626939830271L));
-    PubSubIT.ConvertToLong val;
+    Set<ConvertToLong> values = new HashSet<>();
+    values.add(new ConvertToLong().setVal(590518626939830271L));
+    ConvertToLong val;
     for (int i = 0; i < NUM_MESSAGES - 1; i++) {
       do {
-        val = new PubSubIT.ConvertToLong().setVal(random.nextLong());
+        val = new ConvertToLong().setVal(random.nextLong());
       } while (values.contains(val));
       values.add(val);
     }
-    Iterator<PubSubIT.ConvertToLong> valuesIt = values.iterator();
+    Iterator<ConvertToLong> valuesIt = values.iterator();
     try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
-        PubSubIT.ConvertToLong value = valuesIt.next();
+        ConvertToLong value = valuesIt.next();
         LOG.info("The long value sent " + value.getValue());
         //Publishing messages
         client.publishEvent(
@@ -573,17 +626,17 @@ public class DaprPubSubIT {
       }
     }
 
-    Set<PubSubIT.ConvertToLong> actual = new HashSet<>();
+    Set<ConvertToLong> actual = new HashSet<>();
     try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       callWithRetry(() -> {
         LOG.info("Checking results for topic " + LONG_TOPIC_NAME);
-        final List<CloudEvent<PubSubIT.ConvertToLong>> messages = client.invokeMethod(
+        final List<CloudEvent<ConvertToLong>> messages = client.invokeMethod(
             PUBSUB_APP_ID,
             "messages/testinglongvalues",
             null,
             HttpExtension.GET, CLOUD_EVENT_LONG_LIST_TYPE_REF).block();
         assertNotNull(messages);
-        for (CloudEvent<PubSubIT.ConvertToLong> message : messages) {
+        for (CloudEvent<ConvertToLong> message : messages) {
           actual.add(message.getData());
         }
         assertThat(values).containsAll(actual);

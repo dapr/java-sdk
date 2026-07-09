@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,20 +14,20 @@ limitations under the License.
 package io.dapr.it.configuration;
 
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.it.containers.SharedTestInfra;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import redis.clients.jedis.Jedis;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,38 +37,40 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConfigurationClientIT extends BaseIT {
+public class ConfigurationClientIT extends BaseContainerIT {
 
     private static final String CONFIG_STORE_NAME = "redisconfigstore";
 
-    private static DaprRun daprRun;
-
+    private static DaprContainer dapr;
     private static DaprClient daprClient;
+    private static Jedis jedis;
 
     private static String key = "myconfig1";
-
     private static List<String> keys = new ArrayList<>(Arrays.asList("myconfig1", "myconfig2", "myconfig3"));
 
-    private static String[] insertCmd = new String[] {
-            "docker", "exec", "dapr_redis", "redis-cli",
-            "MSET",
-            "myconfigkey1", "myconfigvalue1||1",
-            "myconfigkey2", "myconfigvalue2||1",
-            "myconfigkey3", "myconfigvalue3||1"
-    };
+    private static final Map<String, String> INITIAL_VALUES = Map.of(
+        "myconfigkey1", "myconfigvalue1||1",
+        "myconfigkey2", "myconfigvalue2||1",
+        "myconfigkey3", "myconfigvalue3||1"
+    );
 
-    private static String[] updateCmd = new String[] {
-            "docker", "exec", "dapr_redis", "redis-cli",
-            "MSET",
-            "myconfigkey1", "update_myconfigvalue1||2",
-            "myconfigkey2", "update_myconfigvalue2||2",
-            "myconfigkey3", "update_myconfigvalue3||2"
-    };
+    private static final Map<String, String> UPDATED_VALUES = Map.of(
+        "myconfigkey1", "update_myconfigvalue1||2",
+        "myconfigkey2", "update_myconfigvalue2||2",
+        "myconfigkey3", "update_myconfigvalue3||2"
+    );
 
     @BeforeAll
     public static void init() throws Exception {
-        daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
-        daprClient = daprRun.newDaprClientBuilder().build();
+        dapr = daprBuilder("config-it")
+            .withComponent(redisConfigStore(CONFIG_STORE_NAME));
+        dapr.start();
+        deferStop(dapr);
+
+        jedis = new Jedis(SharedTestInfra.redis().getHost(), SharedTestInfra.redis().getMappedPort(6379));
+        deferClose(jedis);
+
+        daprClient = newDaprClient(dapr);
         daprClient.waitForSidecar(10000).block();
     }
 
@@ -79,7 +81,7 @@ public class ConfigurationClientIT extends BaseIT {
 
     @BeforeEach
     public void setupConfigStore() {
-        executeDockerCommand(insertCmd);
+        seedRedis(INITIAL_VALUES);
     }
 
     @Test
@@ -115,17 +117,13 @@ public class ConfigurationClientIT extends BaseIT {
         Thread subscribeThread = new Thread(subscribeTask);
         subscribeThread.start();
         try {
-            // To ensure that subscribeThread gets scheduled
             Thread.sleep(0);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        Runnable updateKeys = () -> {
-            executeDockerCommand(updateCmd);
-        };
+        Runnable updateKeys = () -> seedRedis(UPDATED_VALUES);
         new Thread(updateKeys).start();
         try {
-            // To ensure main thread does not die before outFlux subscribe gets called
             Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -149,24 +147,17 @@ public class ConfigurationClientIT extends BaseIT {
         };
         new Thread(subscribeTask).start();
 
-        // To ensure that subscribeThread gets scheduled
         inducingSleepTime(0);
 
         Runnable updateKeys = () -> {
             int i = 1;
             while (i <= 5) {
-                String[] command = new String[] {
-                        "docker", "exec", "dapr_redis", "redis-cli",
-                        "SET",
-                        "myconfigkey1", "update_myconfigvalue" + i + "||2"
-                };
-                executeDockerCommand(command);
+                jedis.set("myconfigkey1", "update_myconfigvalue" + i + "||2");
                 i++;
             }
         };
         new Thread(updateKeys).start();
 
-        // To ensure key starts getting updated
         inducingSleepTime(1000);
 
         UnsubscribeConfigurationResponse res = daprClient.unsubscribeConfiguration(
@@ -177,12 +168,10 @@ public class ConfigurationClientIT extends BaseIT {
         assertTrue(res != null);
         assertTrue(res.getIsUnsubscribed());
         int listSize = updatedValues.size();
-        // To ensure main thread does not die
         inducingSleepTime(1000);
 
         new Thread(updateKeys).start();
 
-        // To ensure main thread does not die
         inducingSleepTime(2000);
         assertTrue(updatedValues.size() == listSize);
     }
@@ -195,19 +184,13 @@ public class ConfigurationClientIT extends BaseIT {
         }
     }
 
-    private static void executeDockerCommand(String[] command) {
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        Process process = null;
-        try {
-            process = processBuilder.start();
-            process.waitFor();
-            if (process.exitValue() != 0) {
-                throw new RuntimeException("Not zero exit code for Redis command: " + process.exitValue());
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+    private static void seedRedis(Map<String, String> kvs) {
+        String[] flat = new String[kvs.size() * 2];
+        int i = 0;
+        for (Map.Entry<String, String> entry : kvs.entrySet()) {
+            flat[i++] = entry.getKey();
+            flat[i++] = entry.getValue();
         }
+        jedis.mset(flat);
     }
 }
