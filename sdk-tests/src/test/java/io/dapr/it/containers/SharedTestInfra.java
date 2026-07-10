@@ -29,11 +29,13 @@ public final class SharedTestInfra {
   private static final String REDIS_NETWORK_ALIAS = "redis";
   private static final String ZIPKIN_NETWORK_ALIAS = "zipkin";
   private static final String MONGO_NETWORK_ALIAS = "mongo";
+  private static final String KAFKA_NETWORK_ALIAS = "kafka";
 
   private static volatile Network network;
   private static volatile GenericContainer<?> redis;
   private static volatile GenericContainer<?> zipkin;
   private static volatile GenericContainer<?> mongo;
+  private static volatile org.testcontainers.kafka.KafkaContainer kafka;
 
   private SharedTestInfra() {}
 
@@ -90,5 +92,21 @@ public final class SharedTestInfra {
 
   public static String mongoInternalHost() {
     return MONGO_NETWORK_ALIAS + ":27017";
+  }
+
+  public static synchronized org.testcontainers.kafka.KafkaContainer kafka() {
+    if (kafka == null) {
+      kafka = new org.testcontainers.kafka.KafkaContainer("apache/kafka:3.8.0")
+          .withNetwork(network())
+          .withNetworkAliases(KAFKA_NETWORK_ALIAS)
+          .withListener(KAFKA_NETWORK_ALIAS + ":19092")
+          .withReuse(true);
+      kafka.start();
+    }
+    return kafka;
+  }
+
+  public static String kafkaInternalBroker() {
+    return KAFKA_NETWORK_ALIAS + ":19092";
   }
 }

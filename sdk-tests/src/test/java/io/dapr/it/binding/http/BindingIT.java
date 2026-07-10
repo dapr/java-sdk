@@ -15,14 +15,13 @@ package io.dapr.it.binding.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.it.AppRun;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -34,14 +33,18 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * Service for input and output binding example.
  */
-public class BindingIT extends BaseIT {
+public class BindingIT extends BaseContainerIT {
+
+  private static final String APP_NAME = "bindingit-grpc";
 
   @Test
   public void httpOutputBindingError() throws Exception {
-    var run = startDaprApp(
-        this.getClass().getSimpleName() + "-httpoutputbinding-exception",
-        60000);
-    try(DaprClient client = run.newDaprClientBuilder().build()) {
+    DaprContainer dapr = daprBuilder("bindingit-httpoutputbinding-exception")
+        .withComponent(httpBinding("github-http-binding-404", "https://api.github.com/unknown_path", true));
+    dapr.start();
+    deferStop(dapr);
+
+    try (DaprClient client = newDaprClient(dapr)) {
       // Validate error message
       callWithRetry(() -> {
         System.out.println("Checking exception handling for output binding ...");
@@ -61,10 +64,13 @@ public class BindingIT extends BaseIT {
 
   @Test
   public void httpOutputBindingErrorIgnoredByComponent() throws Exception {
-    var run = startDaprApp(
-        this.getClass().getSimpleName() + "-httpoutputbinding-ignore-error",
-        60000);
-    try(DaprClient client = run.newDaprClientBuilder().build()) {
+    DaprContainer dapr = daprBuilder("bindingit-httpoutputbinding-ignore-error")
+        .withComponent(
+            httpBinding("github-http-binding-404-success", "https://api.github.com/unknown_path", false));
+    dapr.start();
+    deferStop(dapr);
+
+    try (DaprClient client = newDaprClient(dapr)) {
       // Validate error message
       callWithRetry(() -> {
         System.out.println("Checking exception handling for output binding ...");
@@ -86,20 +92,23 @@ public class BindingIT extends BaseIT {
 
   @Test
   public void inputOutputBinding() throws Exception {
-    DaprRun daprRun = startDaprApp(
-        this.getClass().getSimpleName() + "-grpc",
-        InputBindingService.SUCCESS_MESSAGE,
+    var bindingName = "sample123";
+
+    var pair = startAppAndAttach(
+        APP_NAME,
         InputBindingService.class,
-        true,
-        60000);
+        AppRun.AppProtocol.HTTP,
+        appPort -> daprBuilder(APP_NAME)
+            .withAppPort(appPort)
+            .withAppChannelAddress("host.testcontainers.internal")
+            .withComponent(kafkaBinding(bindingName)));
+    DaprContainer dapr = pair.dapr();
 
-    var bidingName = "sample123";
-
-    try(DaprClient client = daprRun.newDaprClientBuilder().build()) {
+    try (DaprClient client = newDaprClient(dapr)) {
       callWithRetry(() -> {
         System.out.println("Checking if input binding is up before publishing events ...");
         client.invokeBinding(
-            bidingName, "create", "ping").block();
+            bindingName, "create", "ping").block();
 
         try {
           Thread.sleep(1000);
@@ -108,7 +117,7 @@ public class BindingIT extends BaseIT {
           throw new RuntimeException(e);
         }
 
-        client.invokeMethod(daprRun.getAppName(), "initialized", "", HttpExtension.GET).block();
+        client.invokeMethod(APP_NAME, "initialized", "", HttpExtension.GET).block();
       }, 120000);
 
       // This is an example of sending data in a user-defined object.  The input binding will receive:
@@ -118,21 +127,21 @@ public class BindingIT extends BaseIT {
 
       System.out.println("sending first message");
       client.invokeBinding(
-          bidingName, "create", myClass, Map.of("MyMetadata", "MyValue"), Void.class).block();
+          bindingName, "create", myClass, Map.of("MyMetadata", "MyValue"), Void.class).block();
 
       // This is an example of sending a plain string.  The input binding will receive
       //   cat
       final String m = "cat";
       System.out.println("sending " + m);
       client.invokeBinding(
-          bidingName, "create", m, Map.of("MyMetadata", "MyValue"), Void.class).block();
+          bindingName, "create", m, Map.of("MyMetadata", "MyValue"), Void.class).block();
 
       // Metadata is not used by Kafka component, so it is not possible to validate.
       callWithRetry(() -> {
         System.out.println("Checking results ...");
         final List<String> messages =
             client.invokeMethod(
-                daprRun.getAppName(),
+                APP_NAME,
                 "messages",
                 null,
                 HttpExtension.GET,

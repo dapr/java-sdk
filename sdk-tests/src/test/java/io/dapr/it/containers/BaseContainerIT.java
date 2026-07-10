@@ -341,6 +341,33 @@ public abstract class BaseContainerIT {
     ));
   }
 
+  /**
+   * Kafka-backed input/output binding. Lazily starts the shared Kafka container
+   * before returning the component. The {@code {appID}} placeholders in
+   * {@code topics}/{@code publishTopic}/{@code consumerGroup} resolve to the
+   * owning daprd's app-id, so topic and consumer group are self-consistent
+   * without needing a {@code scopes} entry.
+   */
+  protected static Component kafkaBinding(String name) {
+    SharedTestInfra.kafka();   // ensure Kafka is up before DaprContainer needs it
+    return new Component(name, "bindings.kafka", "v1", Map.of(
+        "brokers", SharedTestInfra.kafkaInternalBroker(),
+        "topics", "topic-{appID}",
+        "publishTopic", "topic-{appID}",
+        "consumerGroup", "{appID}",
+        "authRequired", "false",
+        "initialOffset", "oldest"
+    ));
+  }
+
+  /** HTTP output binding pointed at an arbitrary URL. */
+  protected static Component httpBinding(String name, String url, boolean errorIfNot2xx) {
+    return new Component(name, "bindings.http", "v1", Map.of(
+        "url", url,
+        "errorIfNot2XX", Boolean.toString(errorIfNot2xx)
+    ));
+  }
+
   // ---------- Cleanup ----------
 
   protected static <T extends AutoCloseable> T deferClose(T object) {
