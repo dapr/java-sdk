@@ -187,6 +187,21 @@ public abstract class BaseContainerIT {
     DaprWait.forActors().waitUntilReady(dapr);
   }
 
+  /**
+   * Restarts the app subprocess on its same pre-allocated port. The daprd
+   * container stays up and reconnects to the app via
+   * {@code host.testcontainers.internal:appPort}. Because {@link #daprBuilder}
+   * configures NO app-health-check, daprd does not deactivate actors during the
+   * gap, so in-memory timers survive (matching the legacy
+   * {@code @DaprRunConfig(enableAppHealthCheck=false)}). There is intentionally
+   * no sleep between stop and start — {@code ActorTimerRecoveryIT} relies on a
+   * quick restart.
+   */
+  protected static void restartApp(AppRun app) throws Exception {
+    app.stop();
+    app.start();
+  }
+
   // ---------- DaprClient / ActorClient factories ----------
 
   protected static DaprClient newDaprClient(DaprContainer dapr) {
