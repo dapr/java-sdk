@@ -21,6 +21,7 @@ import io.dapr.config.Property;
 import io.dapr.it.AppRun;
 import io.dapr.it.DaprPorts;
 import io.dapr.it.Stoppable;
+import io.dapr.it.testcontainers.ContainerConstants;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprContainerConstants;
@@ -30,6 +31,7 @@ import io.dapr.testcontainers.DaprSchedulerContainer;
 import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.AfterAll;
 import org.testcontainers.Testcontainers;
+import org.testcontainers.toxiproxy.ToxiproxyContainer;
 
 import java.util.Deque;
 import java.util.HashMap;
@@ -246,6 +248,20 @@ public abstract class BaseContainerIT {
       client.waitForSidecar(30_000).block();
     }
     waitForActorsReady(dapr);
+  }
+
+  /** Starts a Toxiproxy container on the shared network and registers it for
+   *  @AfterAll cleanup. Callers create proxies via a ToxiproxyClient against
+   *  {@code getHost()}/{@code getControlPort()} (the control channel), then point
+   *  Dapr clients at {@code getMappedPort(<listenPort>)} of a proxy created on a
+   *  fixed listen port (e.g. 8666). Mirrors SdkResiliencyIT. */
+  protected static ToxiproxyContainer newToxiproxy() {
+    ToxiproxyContainer toxiproxy =
+        new ToxiproxyContainer(ContainerConstants.TOXI_PROXY_IMAGE_TAG)
+            .withNetwork(SharedTestInfra.network());
+    toxiproxy.start();
+    deferStop(toxiproxy);
+    return toxiproxy;
   }
 
   // ---------- DaprClient / ActorClient factories ----------
