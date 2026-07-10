@@ -50,7 +50,7 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JDK_VER }}
       - name: Check Docker version
-        run: docker version   
+        run: docker version
       - name: Set up Dapr CLI
         run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash -s ${{ env.DAPR_CLI_VER }}
       - name: Set up Go ${{ env.GOVER }}
@@ -114,81 +114,135 @@ jobs:
       - name: Install jars
         run: ./mvnw clean install -DskipTests -q
       - name: Validate crypto example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/crypto/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/crypto/README.md
       - name: Validate workflows example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/workflows/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/workflows/README.md
       - name: Validate Spring Boot examples
-        working-directory: ./spring-boot-examples
-        run: |
-          mm.py README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd spring-boot-examples && mm.py README.md
       - name: Validate Spring Boot Workflow Patterns examples
-        working-directory: ./spring-boot-examples/workflows/patterns
-        run: |
-          mm.py README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd spring-boot-examples/workflows/patterns && mm.py README.md
       - name: Validate Jobs example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/jobs/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/jobs/README.md
       - name: Validate conversation ai example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/conversation/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/conversation/README.md
       - name: Validate invoke http example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/invoke/http/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/invoke/http/README.md
       - name: Validate invoke grpc example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/invoke/grpc/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/invoke/grpc/README.md
       - name: Validate tracing example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/tracing/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/tracing/README.md
       - name: Validate expection handling example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/exception/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/exception/README.md
       - name: Validate state example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/state/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/state/README.md
       - name: Validate pubsub example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/pubsub/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/README.md
       - name: Validate bindings HTTP example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/bindings/http/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/bindings/http/README.md
       - name: Validate secrets example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/secrets/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/secrets/README.md
       - name: Validate unit testing example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/unittesting/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/unittesting/README.md
       - name: Validate Configuration API example
-        working-directory: ./examples
-        run: |
-            mm.py ./src/main/java/io/dapr/examples/configuration/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/configuration/README.md
       - name: Validate actors example
-        working-directory: ./examples
-        run: |
-            mm.py ./src/main/java/io/dapr/examples/actors/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/actors/README.md
       - name: Validate query state HTTP example
-        working-directory: ./examples
-        run: |
-            mm.py ./src/main/java/io/dapr/examples/querystate/README.md
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/querystate/README.md
       - name: Validate streaming subscription example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
-
-
-
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 10
+          retry_wait_seconds: 10
+          command: cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md

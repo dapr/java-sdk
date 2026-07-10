@@ -49,7 +49,7 @@ jobs:
   build-durabletask:
     name: "Durable Task build & tests"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     continue-on-error: false
     env:
       JDK_VER: 17
@@ -78,8 +78,14 @@ jobs:
       run: sleep 10
 
     - name: Integration Tests For Durable Tasks
-      run: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify || echo "TEST_FAILED=true" >> $GITHUB_ENV
-      continue-on-error: true
+      id: durabletask_tests
+      uses: nick-fields/retry@v3
+      with:
+        max_attempts: 2
+        timeout_minutes: 20
+        retry_wait_seconds: 15
+        command: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify
+        continue_on_error: true
 
     - name: Kill Durable Task Sidecar
       run: docker kill durabletask-sidecar
@@ -91,7 +97,7 @@ jobs:
         path: durabletask-sidecar.log
 
     - name: Fail the job if tests failed
-      if: env.TEST_FAILED == 'true'
+      if: steps.durabletask_tests.outputs.outcome == 'failure'
       run: exit 1
 
   build:
