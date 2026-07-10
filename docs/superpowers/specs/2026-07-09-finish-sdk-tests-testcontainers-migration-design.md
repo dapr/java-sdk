@@ -80,7 +80,7 @@ The only way to remove the CLI/`dapr init`/Kafka/ToxiProxy setup from CI — and
 | D4 | `ActorSdkResiliencyIT` migrated but stays `@Disabled` | Removes the last `ToxiProxyRun` consumer without re-introducing a flaky test into CI. |
 | D5 | Reminders survive daprd-container restart via the **scheduler container** | Dapr 1.18 stores actor reminders in the scheduler service; restarting only the daprd container (placement + scheduler + Redis stay up) preserves them. |
 | D6 | Failover uses **explicit shared** placement + scheduler containers via `withPlacementContainer`/`withSchedulerContainer` | `withReusablePlacement(true)` relies on Testcontainers reuse, which is disabled on CI hosts; explicit shared containers make the two-sidecar topology deterministic. Pattern already proven in `WorkflowsMultiAppCallActivityIT`. |
-| D7 | Add `org.testcontainers:testcontainers-kafka` (BOM-managed, test scope) for `BindingIT` | Kafka Testcontainers is not currently a dependency; Testcontainers 2.0.5 module artifactIds are `testcontainers-`-prefixed and versionless (managed by `testcontainers-bom`). |
+| D7 | Add `org.testcontainers:testcontainers-kafka` (test scope, versionless) to `sdk-tests/pom.xml` for `BindingIT` | `testcontainers-kafka` is already version-managed in the **root** `pom.xml` `dependencyManagement` (via `testcontainers-bom`) but is not a declared dependency of `sdk-tests`. Add it to `sdk-tests/pom.xml` only, without a `<version>`. Testcontainers 2.0.5 module artifactIds are `testcontainers-`-prefixed. |
 | D8 | Single spec + single staged implementation plan | Matches the single-cutover decision; plan tasks are ordered and independently reviewable. |
 
 ## Architecture
@@ -96,6 +96,11 @@ Stops and restarts the app subprocess on its **same** pre-allocated port. daprd 
 gap, so in-memory timers survive (matches the legacy `@DaprRunConfig(enableAppHealthCheck=false)`
 on `MyActorService`). For `ActorTimerRecoveryIT` the restart must be "quick" (no sleep between
 stop and start) — the helper calls `app.stop()` immediately followed by `app.start()`.
+
+> **Invariant:** this depends on `daprBuilder` (BaseContainerIT.java:75-88) never adding
+> `withAppHealthCheckPath(...)`. If a future change adds an app-health-check path to the shared
+> builder, daprd would deactivate the actor during the restart gap and `ActorTimerRecoveryIT`
+> would lose its timer. Keep any health-check config test-local, not in `daprBuilder`.
 
 ```java
 protected static void restartApp(AppRun app) throws Exception {
@@ -182,6 +187,13 @@ Each migrated IT drops `extends BaseIT`, all `startDaprApp`/`DaprRun`/`DaprPorts
 imports, and file-based component lookups; it defines components in-code via the `Component`
 model and uses the `BaseContainerIT` client/actor factories.
 
+> **ActorReminderRecoveryIT client:** the legacy test starts a second, long-lived client app
+> (`ActorReminderRecoveryTestClient`) and builds the reminder proxy off that client run, not the
+> service run. In the migrated test this is a plain `newActorClient(dapr)` against the same
+> sidecar (no second app subprocess is required) — the "(+ separate client app)" in the matrix
+> refers to this actor-client, which the plan should implement as an `ActorClient`, not a second
+> `startAppAndAttach`.
+
 ## CI changes ([.github/workflows/build.yml](../../../.github/workflows/build.yml), `build` job)
 
 | Step | Disposition |
@@ -204,8 +216,9 @@ Also delete `sdk-tests/deploy/local-test.yml` (Kafka/Zookeeper), unless another 
 
 After migration, delete (verifying zero remaining references first):
 - `sdk-tests/.../io/dapr/it/BaseIT.java`, `DaprRun.java`, `DaprRunConfig.java`, `ToxiProxyRun.java`
-- The file-based YAMLs only these tests loaded: Kafka binding, HTTP binding, and any
-  `components/`/`configurations/` files with no remaining `withComponent(Path)` or CLI consumer.
+- The file-based YAMLs only these tests loaded — explicitly `sdk-tests/components/kafka_bindings.yaml`
+  and `sdk-tests/components/http_binding.yaml`, plus any other `components/`/`configurations/`
+  file left with no remaining `withComponent(Path)` or CLI consumer (grep-verified per file).
 - `sdk-tests/deploy/local-test.yml`
 
 Retain: `AppRun`, `DaprPorts`, `Command`, `Stoppable`, `SharedTestInfra`, `BaseContainerIT`.
