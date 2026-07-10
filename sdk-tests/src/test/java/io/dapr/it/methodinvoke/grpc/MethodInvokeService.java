@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.it.methodinvoke.grpc;
 
 import io.dapr.grpc.GrpcHealthCheckService;
-import io.dapr.it.DaprRunConfig;
 import io.dapr.it.MethodInvokeServiceGrpc;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -28,9 +27,6 @@ import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepResponse;
 
-@DaprRunConfig(
-        enableAppHealthCheck = true
-)
 public class MethodInvokeService {
 
   private static final long STARTUP_DELAY_SECONDS = 10;
