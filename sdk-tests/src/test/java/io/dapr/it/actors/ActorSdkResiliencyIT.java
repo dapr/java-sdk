@@ -8,27 +8,34 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
-limitations under the License.
+ * limitations under the License.
 */
 
 package io.dapr.it.actors;
 
+import eu.rekawek.toxiproxy.Proxy;
+import eu.rekawek.toxiproxy.ToxiproxyClient;
+import eu.rekawek.toxiproxy.model.ToxicDirection;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.client.DaprClient;
 import io.dapr.client.resiliency.ResiliencyOptions;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
-import io.dapr.it.ToxiProxyRun;
+import io.dapr.config.Properties;
+import io.dapr.config.Property;
+import io.dapr.it.AppRun;
 import io.dapr.it.actors.services.springboot.DemoActor;
 import io.dapr.it.actors.services.springboot.DemoActorService;
-import org.junit.jupiter.api.AfterAll;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.toxiproxy.ToxiproxyContainer;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test SDK resiliency.
  */
-public class ActorSdkResiliencyIT extends BaseIT {
+public class ActorSdkResiliencyIT extends BaseContainerIT {
 
   private static final ActorId ACTOR_ID = new ActorId(UUID.randomUUID().toString());
 
@@ -52,13 +59,15 @@ public class ActorSdkResiliencyIT extends BaseIT {
 
   private static final int MAX_RETRIES = -1;  // Infinity
 
-  private static DaprRun daprRun;
+  private static DaprContainer dapr;
+
+  private static AppRun app;
 
   private static DaprClient daprClient;
 
   private static DemoActor demoActor;
 
-  private static ToxiProxyRun toxiProxyRun;
+  private static ToxiproxyContainer toxiproxy;
 
   private static DemoActor toxiDemoActor;
 
@@ -68,37 +77,50 @@ public class ActorSdkResiliencyIT extends BaseIT {
 
   @BeforeAll
   public static void init() throws Exception {
-    daprRun = startDaprApp(
-            ActorSdkResiliencyIT.class.getSimpleName(),
-            DemoActorService.SUCCESS_MESSAGE,
-            DemoActorService.class,
-            true,
-            60000);
+    var pair = startAppAndAttach(
+        "actor-sdk-resiliency-it",
+        DemoActorService.class,
+        AppRun.AppProtocol.HTTP,
+        appPort -> daprBuilder("actor-sdk-resiliency-it")
+            .withNetworkAliases("dapr")
+            .withAppPort(appPort)
+            .withAppChannelAddress("host.testcontainers.internal")
+            .withComponent(redisStateStore(STATE_STORE_NAME)));
+    dapr = pair.dapr();
+    app = pair.app();
+    waitForActorsReady(dapr);
 
-    demoActor = buildDemoActorProxy(deferClose(daprRun.newActorClient()));
-    daprClient = daprRun.newDaprClientBuilder().build();
+    demoActor = buildDemoActorProxy(newActorClient(dapr));
+    daprClient = deferClose(newDaprClient(dapr));
 
-    toxiProxyRun = new ToxiProxyRun(daprRun, LATENCY, JITTER);
-    toxiProxyRun.start();
+    toxiproxy = newToxiproxy();
+    ToxiproxyClient toxiproxyClient = new ToxiproxyClient(toxiproxy.getHost(), toxiproxy.getControlPort());
+    Proxy grpcProxy = toxiproxyClient.createProxy("dapr_grpc", "0.0.0.0:8666", "dapr:50001");
+    grpcProxy.toxics()
+        .latency("latency", ToxicDirection.DOWNSTREAM, LATENCY.toMillis())
+        .setJitter(JITTER.toMillis());
 
     toxiDemoActor = buildDemoActorProxy(
-        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT)));
+        newActorClientViaProxy(new ResiliencyOptions().setTimeout(TIMEOUT)));
     resilientDemoActor = buildDemoActorProxy(
-        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(MAX_RETRIES)));
+        newActorClientViaProxy(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(MAX_RETRIES)));
     oneRetryDemoActor = buildDemoActorProxy(
-        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1)));
+        newActorClientViaProxy(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1)));
+  }
+
+  private static ActorClient newActorClientViaProxy(ResiliencyOptions resiliencyOptions) {
+    Map<Property<?>, String> overrides = new HashMap<>();
+    int mappedPort = toxiproxy.getMappedPort(8666);
+    overrides.put(Properties.GRPC_ENDPOINT, "127.0.0.1:" + mappedPort);
+    overrides.put(Properties.GRPC_PORT, String.valueOf(mappedPort));
+    ActorClient client = new ActorClient(new Properties(overrides), resiliencyOptions);
+    deferClose(client);
+    return client;
   }
 
   private static DemoActor buildDemoActorProxy(ActorClient actorClient) {
     ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class, actorClient);
     return builder.build(ACTOR_ID);
-  }
-
-  @AfterAll
-  public static void tearDown() throws Exception {
-    if (toxiProxyRun != null) {
-      toxiProxyRun.stop();
-    }
   }
 
   @Test
