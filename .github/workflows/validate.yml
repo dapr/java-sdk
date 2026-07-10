@@ -113,136 +113,30 @@ jobs:
         run: sleep 30 && docker logs dapr_scheduler && nc -vz localhost 50006
       - name: Install jars
         run: ./mvnw clean install -DskipTests -q
-      - name: Validate crypto example
+      - name: Validate examples
         uses: nick-fields/retry@v3
         with:
           max_attempts: 2
           timeout_minutes: 30
           retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/crypto/README.md
-      - name: Validate workflows example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/workflows/README.md
-      - name: Validate Spring Boot examples
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd spring-boot-examples && mm.py README.md
-      - name: Validate Spring Boot Workflow Patterns examples
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd spring-boot-examples/workflows/patterns && mm.py README.md
-      - name: Validate Jobs example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/jobs/README.md
-      - name: Validate conversation ai example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/conversation/README.md
-      - name: Validate invoke http example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/invoke/http/README.md
-      - name: Validate invoke grpc example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/invoke/grpc/README.md
-      - name: Validate tracing example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/tracing/README.md
-      - name: Validate expection handling example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/exception/README.md
-      - name: Validate state example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/state/README.md
-      - name: Validate pubsub example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/README.md
-      - name: Validate bindings HTTP example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/bindings/http/README.md
-      - name: Validate secrets example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/secrets/README.md
-      - name: Validate unit testing example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/unittesting/README.md
-      - name: Validate Configuration API example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/configuration/README.md
-      - name: Validate actors example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/actors/README.md
-      - name: Validate query state HTTP example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/querystate/README.md
-      - name: Validate streaming subscription example
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 2
-          timeout_minutes: 30
-          retry_wait_seconds: 10
-          command: cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
+          command: |
+            set -e
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/crypto/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/workflows/README.md)
+            (cd spring-boot-examples && mm.py README.md)
+            (cd spring-boot-examples/workflows/patterns && mm.py README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/jobs/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/conversation/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/invoke/http/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/invoke/grpc/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/tracing/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/exception/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/state/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/bindings/http/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/secrets/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/unittesting/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/configuration/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/actors/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/querystate/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md)
