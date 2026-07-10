@@ -112,7 +112,7 @@ git commit -s -m "test: migrate ActorTimerRecoveryIT to Testcontainers"
 - Modify: `sdk-tests/src/test/java/io/dapr/it/containers/BaseContainerIT.java` (add `restartSidecar`)
 - Rewrite: `sdk-tests/src/test/java/io/dapr/it/actors/ActorReminderRecoveryIT.java`
 
-**Legacy behavior to preserve** (read [ActorReminderRecoveryIT.java](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorReminderRecoveryIT.java)): `@ParameterizedTest` over 4 data variants (String `"36"`, String `"\"my_text\""`, `byte[]{0,1}`, object `{"name":"abc","age":30}`) with actor types `MyActorTest`/`MyActorBinaryTest`/`MyActorObjectImpl`. Register reminder (fires ~every 2s); wait for ≥3 fires; **stop the daprd sidecar**; sleep 10s; **start the sidecar**; sleep 7s; assert the reminder resumed and fired ≥3 more times. Per the spec, the reminder lives in the scheduler container which survives the daprd restart. Keep the separate actor-client (build via `newActorClient(dapr)`, NOT a second app — see spec note).
+**Legacy behavior to preserve** (read [ActorReminderRecoveryIT.java](../../../sdk-tests/src/test/java/io/dapr/it/actors/ActorReminderRecoveryIT.java)): `@ParameterizedTest` over 4 data variants (String `"36"`, String `"\"my_text\""`, `byte[]{0,1}`, object `{"name":"abc","age":30}`) with actor types `MyActorTest`/`MyActorBinaryTest`/`MyActorObjectTest`. Register reminder (fires ~every 2s); wait for ≥3 fires; **stop the daprd sidecar**; sleep 10s; **start the sidecar**; sleep 7s; assert the reminder resumed and fired ≥3 more times. Per the spec, the reminder lives in the scheduler container which survives the daprd restart. Keep the separate actor-client (build via `newActorClient(dapr)`, NOT a second app — see spec note).
 
 - [ ] **Step 1: Add `restartSidecar` to `BaseContainerIT`** (after `restartApp`):
 
@@ -222,13 +222,14 @@ git commit -s -m "test: migrate ActorReminderFailoverIT to Testcontainers (+ sha
 
 **Legacy behavior to preserve** (read [WaitForSidecarIT.java](../../../sdk-tests/src/test/java/io/dapr/it/resiliency/WaitForSidecarIT.java) and copy the ToxiProxy wiring from [SdkResiliencyIT.java](../../../sdk-tests/src/test/java/io/dapr/it/resiliency/SdkResiliencyIT.java)): four tests — `waitSucceeds()` (direct sidecar, `waitForSidecar(5000)` OK), `waitTimeout()` (5s latency toxic, timeout 4900ms → `RuntimeException`, duration ≥ timeout), `waitSlow()` (timeout 5100ms → OK, duration ≥ 5s), `waitNotRunningTimeout()` (unavailable sidecar, timeout 5000ms → `RuntimeException`). Latency constant = 5s. No app needed.
 
-- [ ] **Step 1: Add `newToxiproxy` to `BaseContainerIT`** (import `org.testcontainers.containers.ToxiproxyContainer` and `io.dapr.it.testcontainers.ContainerConstants`):
+- [ ] **Step 1: Add `newToxiproxy` to `BaseContainerIT`** (import `org.testcontainers.toxiproxy.ToxiproxyContainer` — the same class `SdkResiliencyIT` uses, paired with the `eu.rekawek.toxiproxy.ToxiproxyClient` wiring — and `io.dapr.it.testcontainers.ContainerConstants`):
 
 ```java
   /** Starts a Toxiproxy container on the shared network and registers it for
    *  @AfterAll cleanup. Callers create proxies via a ToxiproxyClient against
-   *  {@code getHost()}/{@code getControlPort()} and point clients at the mapped
-   *  proxy listen port. Mirrors SdkResiliencyIT. */
+   *  {@code getHost()}/{@code getControlPort()} (the control channel), then point
+   *  Dapr clients at {@code getMappedPort(<listenPort>)} of a proxy created on a
+   *  fixed listen port (e.g. 8666). Mirrors SdkResiliencyIT. */
   protected static ToxiproxyContainer newToxiproxy() {
     ToxiproxyContainer toxiproxy =
         new ToxiproxyContainer(ContainerConstants.TOXI_PROXY_IMAGE_TAG)
