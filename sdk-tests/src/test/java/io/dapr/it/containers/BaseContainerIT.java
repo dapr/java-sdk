@@ -23,7 +23,10 @@ import io.dapr.it.DaprPorts;
 import io.dapr.it.Stoppable;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprContainerConstants;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.DaprPlacementContainer;
+import io.dapr.testcontainers.DaprSchedulerContainer;
 import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.AfterAll;
 import org.testcontainers.Testcontainers;
@@ -85,6 +88,33 @@ public abstract class BaseContainerIT {
         // Reuses the placement sidecar container within this JVM (Testcontainers manages it);
         // orthogonal to SharedTestInfra's Redis `withReuse(true)`.
         .withReusablePlacement(true);
+  }
+
+  // ---------- Shared control plane (multi-sidecar ITs) ----------
+
+  /** Shared placement for multi-sidecar ITs. Explicit (not reuse-based) so it is
+   *  deterministic on CI where Testcontainers reuse is disabled. */
+  protected static DaprPlacementContainer startSharedPlacement() {
+    DaprPlacementContainer placement =
+        new DaprPlacementContainer(DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG)
+            .withNetwork(SharedTestInfra.network())
+            .withNetworkAliases("placement")
+            .withReuse(false);
+    placement.start();
+    deferStop(placement);
+    return placement;
+  }
+
+  /** Shared scheduler for multi-sidecar ITs (owns actor reminders). */
+  protected static DaprSchedulerContainer startSharedScheduler() {
+    DaprSchedulerContainer scheduler =
+        new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG)
+            .withNetwork(SharedTestInfra.network())
+            .withNetworkAliases("scheduler")
+            .withReuse(false);
+    scheduler.start();
+    deferStop(scheduler);
+    return scheduler;
   }
 
   // ---------- App lifecycle ----------
