@@ -689,6 +689,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${maven-javadoc-plugin.version}</version>
+        <!-- Aggregate is a root-only report. Without inherited=false the site
+             lifecycle re-runs it at every reactor module, multiplying a full-source
+             Javadoc pass ~10x. Keep it pinned to the aggregator module. -->
+        <inherited>false</inherited>
         <reportSets>
           <reportSet>
             <id>aggregate</id>

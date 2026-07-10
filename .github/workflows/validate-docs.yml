@@ -28,7 +28,13 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: ${{ env.JDK_VER }}
+        cache: 'maven'
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
+    # Validate that aggregate Javadoc generates cleanly (failOnError is set in the
+    # pom's reporting config). Run javadoc:aggregate directly rather than site-deploy:
+    # the aggregate report re-executes once per reactor module under the site
+    # lifecycle (~10x a full-source pass), which is what pushed this job to ~32 min.
+    # Invoked directly, the goal runs once over the whole reactor.
     - name: Validate Java docs generation
-      run: ./mvnw site-deploy
+      run: ./mvnw -q -B -DskipTests javadoc:aggregate
