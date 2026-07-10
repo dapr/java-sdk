@@ -8,7 +8,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
-limitations under the License.
+ * limitations under the License.
 */
 
 package io.dapr.it.actors;
@@ -17,12 +17,12 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.AppRun;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.ActorReminderDataParam;
 import io.dapr.it.actors.app.MyActorService;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,11 +41,14 @@ import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMessageContent;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 
-public class ActorReminderRecoveryIT extends BaseIT {
+public class ActorReminderRecoveryIT extends BaseContainerIT {
 
   private static final Logger logger = LoggerFactory.getLogger(ActorReminderRecoveryIT.class);
 
   private static final String METHOD_NAME = "receiveReminder";
+
+  private static DaprContainer dapr;
+  private static AppRun app;
 
   /**
    * Parameters for this test.
@@ -81,29 +84,27 @@ public class ActorReminderRecoveryIT extends BaseIT {
 
   private ActorProxy proxy;
 
-  private ImmutablePair<AppRun, DaprRun> runs;
-
-  private DaprRun clientRun;
-
-  public void setup(String actorType) throws Exception {
-    runs = startSplitDaprAndApp(
-        ActorReminderRecoveryIT.class.getSimpleName(),
-        "Started MyActorService",
+  @BeforeAll
+  public static void start() throws Exception {
+    var pair = startAppAndAttach(
+        "actor-reminder-recovery-it",
         MyActorService.class,
-        true,
-        60000);
+        AppRun.AppProtocol.HTTP,
+        appPort -> daprBuilder("actor-reminder-recovery-it")
+            .withAppPort(appPort)
+            .withAppChannelAddress("host.testcontainers.internal")
+            .withComponent(redisStateStore(STATE_STORE_NAME)));
+    dapr = pair.dapr();
+    app = pair.app();
+    waitForActorsReady(dapr);
+  }
 
-    // Run that will stay up for integration tests.
-    // appId must not contain the appId from the other run, otherwise ITs will not run properly.
-    clientRun = startDaprApp("ActorReminderRecoveryTestClient", 5000);
-
-    Thread.sleep(3000);
-
+  public void setup(String actorType) {
     ActorId actorId = new ActorId(UUID.randomUUID().toString());
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(clientRun.newActorClient()));
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient(dapr));
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);
@@ -144,16 +145,13 @@ public class ActorReminderRecoveryIT extends BaseIT {
     }, 30000);
 
     // Restarts runtime only.
-    logger.info("Stopping Dapr sidecar");
-    runs.right.stop();
-
     // Pause a bit to let placements settle.
     logger.info("Pausing 10 seconds to let placements settle.");
     Thread.sleep(Duration.ofSeconds(10).toMillis());
 
-    logger.info("Starting Dapr sidecar");
-    runs.right.start();
-    logger.info("Dapr sidecar started");
+    logger.info("Restarting Dapr sidecar");
+    restartSidecar(dapr);
+    logger.info("Dapr sidecar restarted");
 
     logger.info("Pausing 7 seconds to allow sidecar to be healthy");
     Thread.sleep(7000);

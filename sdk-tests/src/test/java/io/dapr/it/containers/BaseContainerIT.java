@@ -202,6 +202,22 @@ public abstract class BaseContainerIT {
     app.start();
   }
 
+  /**
+   * Restarts the daprd container in place and re-waits for readiness. Placement
+   * and scheduler are NOT recreated on the second start (their DaprContainer
+   * fields are non-null), so a persisted actor reminder survives. Pinned host
+   * ports re-bind, so the app's DAPR_HTTP_PORT/DAPR_GRPC_PORT and any DaprClient
+   * remain valid.
+   */
+  protected static void restartSidecar(DaprContainer dapr) throws Exception {
+    dapr.stop();
+    dapr.start();
+    try (DaprClient client = newDaprClient(dapr)) {
+      client.waitForSidecar(30_000).block();
+    }
+    waitForActorsReady(dapr);
+  }
+
   // ---------- DaprClient / ActorClient factories ----------
 
   protected static DaprClient newDaprClient(DaprContainer dapr) {
