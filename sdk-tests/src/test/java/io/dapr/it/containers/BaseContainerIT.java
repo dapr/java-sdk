@@ -24,7 +24,6 @@ import io.dapr.it.Stoppable;
 import io.dapr.it.testcontainers.ContainerConstants;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
-import io.dapr.testcontainers.DaprContainerConstants;
 import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.testcontainers.DaprPlacementContainer;
 import io.dapr.testcontainers.DaprSchedulerContainer;
@@ -87,36 +86,32 @@ public abstract class BaseContainerIT {
         // errors. Without this, the container's stdout is consumed by Testcontainers
         // and we have no insight when actor registration or component init fails.
         .withLogConsumer(frame -> System.out.print("[daprd] " + frame.getUtf8String()))
-        // Reuses the placement sidecar container within this JVM (Testcontainers manages it);
-        // orthogonal to SharedTestInfra's Redis `withReuse(true)`.
-        .withReusablePlacement(true);
+        // Wire every daprd to the ONE shared placement + scheduler on the shared network.
+        // daprd resolves its control plane by DNS name ("placement"/"scheduler"), so there
+        // must be exactly one container answering each alias. DaprContainer would otherwise
+        // auto-create its own placement/scheduler per instance and never stop them (there is
+        // no stop() override), leaving several containers sharing the "placement"/"scheduler"
+        // aliases on the shared network -- Docker DNS then round-robins daprd to an arbitrary
+        // (often empty) one, breaking multi-sidecar failover and sidecar-restart reminder
+        // recovery. The JVM-singletons make each alias resolve to exactly one container and
+        // eliminate the per-container control-plane leak.
+        .withPlacementContainer(SharedTestInfra.placement())
+        .withSchedulerContainer(SharedTestInfra.scheduler());
   }
 
   // ---------- Shared control plane (multi-sidecar ITs) ----------
 
-  /** Shared placement for multi-sidecar ITs. Explicit (not reuse-based) so it is
-   *  deterministic on CI where Testcontainers reuse is disabled. */
+  /** The JVM-wide shared placement. Multi-sidecar ITs (e.g. failover) pass this to every
+   *  daprd via {@code withPlacementContainer} so all sidecars share one placement -- the
+   *  same singleton {@link #daprBuilder} wires by default. Not stopped per class; it lives
+   *  for the JVM (see {@link SharedTestInfra#placement()}). */
   protected static DaprPlacementContainer startSharedPlacement() {
-    DaprPlacementContainer placement =
-        new DaprPlacementContainer(DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG)
-            .withNetwork(SharedTestInfra.network())
-            .withNetworkAliases("placement")
-            .withReuse(false);
-    placement.start();
-    deferStop(placement);
-    return placement;
+    return SharedTestInfra.placement();
   }
 
-  /** Shared scheduler for multi-sidecar ITs (owns actor reminders). */
+  /** The JVM-wide shared scheduler (owns actor reminders). See {@link #startSharedPlacement()}. */
   protected static DaprSchedulerContainer startSharedScheduler() {
-    DaprSchedulerContainer scheduler =
-        new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG)
-            .withNetwork(SharedTestInfra.network())
-            .withNetworkAliases("scheduler")
-            .withReuse(false);
-    scheduler.start();
-    deferStop(scheduler);
-    return scheduler;
+    return SharedTestInfra.scheduler();
   }
 
   // ---------- App lifecycle ----------
