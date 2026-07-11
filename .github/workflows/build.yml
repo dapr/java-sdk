@@ -78,27 +78,23 @@ jobs:
       run: sleep 10
 
     - name: Integration Tests For Durable Tasks
-      id: durabletask_tests
       uses: nick-fields/retry@v3
       with:
         max_attempts: 2
         timeout_minutes: 30
         retry_wait_seconds: 15
         command: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify
-        continue_on_error: true
 
     - name: Kill Durable Task Sidecar
+      if: always()
       run: docker kill durabletask-sidecar
 
     - name: Upload Durable Task Sidecar Logs
+      if: always()
       uses: actions/upload-artifact@v7
       with:
         name: Durable Task Sidecar Logs
         path: durabletask-sidecar.log
-
-    - name: Fail the job if tests failed
-      if: steps.durabletask_tests.outputs.outcome == 'failure'
-      run: exit 1
 
   build:
     name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-display-version }} exp:${{ matrix.experimental }}"
