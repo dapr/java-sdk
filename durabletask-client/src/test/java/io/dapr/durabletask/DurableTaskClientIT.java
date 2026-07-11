@@ -373,7 +373,7 @@ public class DurableTaskClientIT extends IntegrationTestBase {
               // of how long worker startup / scheduling took. Computing the deadline from the test's
               // wall clock (the previous approach) made the effective span shrink by the startup
               // latency, which under CI load non-deterministically dropped an internal sub-timer and
-              // failed the count assertion below.
+              // failed the count assertion below
               ZonedDateTime fireAt = ZonedDateTime.ofInstant(ctx.getCurrentInstant().plus(delay), ZoneId.systemDefault());
               ctx.createTimer(fireAt).await();
             })
