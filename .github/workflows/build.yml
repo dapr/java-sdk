@@ -85,9 +85,7 @@ jobs:
         retry_wait_seconds: 15
         command: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify
 
-    - name: Kill Durable Task Sidecar
-      if: always()
-      run: docker kill durabletask-sidecar
+      run: docker rm -f durabletask-sidecar || true
 
     - name: Upload Durable Task Sidecar Logs
       if: always()
