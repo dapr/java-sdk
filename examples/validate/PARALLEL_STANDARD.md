@@ -42,6 +42,14 @@ dapr run --app-id pubsub-subscriber ...
 
 This is the keystone: unique app-ids give **state-key isolation for free** (see table).
 
+**Also update component `scopes`.** A Dapr component YAML may carry a `scopes:` list of
+app-ids; Dapr only exposes that component to the app-ids listed. If you rename an app-id
+without updating the scope, the app fails at runtime with e.g. `pubsub <name> is not
+found`. Today the only scoped component is
+[`examples/components/pubsub/redis_messagebus.yaml`](../components/pubsub/redis_messagebus.yaml)
+(shared by the `pubsub` and `pubsub/stream` examples) — its `scopes` must list the
+renamed app-ids of both examples.
+
 ### Rule 2 — Unique ports from the port registry
 
 - **Dapr sidecar ports** — **omit** `--dapr-http-port` and `--dapr-grpc-port` entirely.

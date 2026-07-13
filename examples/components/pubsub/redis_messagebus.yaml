@@ -10,8 +10,12 @@ spec:
     value: localhost:6379
   - name: redisPassword
     value: ""
+# NOTE: this pubsub component is scoped to specific app-ids. When an example's
+# app-id is renamed for parallel-safe validation, the matching scope entry MUST
+# be renamed too, or Dapr reports "pubsub messagebus is not found" for that app.
+# Shared by the pubsub and pubsub/stream examples — keep both examples' app-ids here.
 scopes:
-  - publisher
-  - bulk-publisher
-  - subscriber
-  - publisher-tracing
+  - pubsub-publisher
+  - pubsub-bulk-publisher
+  - pubsub-subscriber
+  - pubsub-publisher-tracing
