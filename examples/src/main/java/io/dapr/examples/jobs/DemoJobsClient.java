@@ -32,8 +32,8 @@ public class DemoJobsClient {
    */
   public static void main(String[] args) throws Exception {
     Map<Property<?>, String> overrides = Map.of(
-        Properties.HTTP_PORT, "3500",
-        Properties.GRPC_PORT, "51439"
+        Properties.HTTP_PORT, "3261",
+        Properties.GRPC_PORT, "3262"
     );
 
     try (DaprClient client = new DaprClientBuilder().withPropertyOverrides(overrides).build()) {

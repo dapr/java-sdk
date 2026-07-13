@@ -117,7 +117,7 @@ sleep: 30
 -->
 
 ```bash
-dapr run --resources-path ./components/crypto --app-id crypto-app -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.crypto.CryptoExample
+dapr run --resources-path ./components/crypto --app-id crypto-app --dapr-http-port 3180 --dapr-grpc-port 3181 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.crypto.CryptoExample
 ```
 
 <!-- END_STEP -->
@@ -130,7 +130,7 @@ dapr run --resources-path ./components/crypto --app-id crypto-app -- java -jar t
 - Custom encryption ciphers
 
 ```bash
-dapr run --resources-path ./components/crypto --app-id crypto-app -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.crypto.StreamingCryptoExample
+dapr run --resources-path ./components/crypto --app-id crypto-app --dapr-http-port 3180 --dapr-grpc-port 3181 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.crypto.StreamingCryptoExample
 ```
 
 ### Sample Output

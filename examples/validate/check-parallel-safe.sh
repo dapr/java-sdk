@@ -2,10 +2,9 @@
 # check-parallel-safe.sh
 #
 # Statically checks that Dapr example READMEs follow the "parallel-safe" standard
-# documented in examples/validate/PARALLEL_STANDARD.md, so they can all run
-# concurrently against one shared Dapr runtime.
+# so they can all run concurrently against one shared Dapr runtime.
 #
-# Rules enforced (see PARALLEL_STANDARD.md "Enforcement" section):
+# Rules enforced:
 #   1. Every --app-id must start with "<slug>-" or equal "<slug>" exactly, where
 #      <slug> is the README's path under examples/src/main/java/io/dapr/examples/
 #      with '/' replaced by '-' and the trailing /README.md removed.
