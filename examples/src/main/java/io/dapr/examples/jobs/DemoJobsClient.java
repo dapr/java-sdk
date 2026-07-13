@@ -16,6 +16,7 @@ package io.dapr.examples.jobs;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.JobSchedule;
@@ -37,6 +38,14 @@ public class DemoJobsClient {
     );
 
     try (DaprClient client = new DaprClientBuilder().withPropertyOverrides(overrides).build()) {
+
+      // The scheduler persists this recurring job across runs, so delete any
+      // pre-existing instance first to keep the example idempotent / re-runnable.
+      try {
+        client.deleteJob(new DeleteJobRequest("dapr-job-1")).block();
+      } catch (Exception e) {
+        System.out.println("No existing 'dapr-job-1' to delete (first run): " + e.getMessage());
+      }
 
       // Schedule a job.
       System.out.println("**** Scheduling a Job with name dapr-jobs-1 *****");
