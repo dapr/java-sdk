@@ -84,7 +84,7 @@ sleep: 1
 -->
 
 ```bash
-dapr run --app-id hellogrpc --app-port 5000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldService -p 5000
+dapr run --app-id invoke-grpc-hellogrpc --app-port 3220 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldService -p 3220
 ```
 
 <!-- END_STEP -->
@@ -131,7 +131,7 @@ sleep: 10
 -->
 
 ```bash
-dapr run --app-id invokegrpc --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
+dapr run --app-id invoke-grpc-invokegrpc --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
 ```
 
 <!-- END_STEP -->
@@ -145,8 +145,8 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id hellogrpc
-dapr stop --app-id invokegrpc
+dapr stop --app-id invoke-grpc-hellogrpc
+dapr stop --app-id invoke-grpc-invokegrpc
 ```
 
 <!-- END_STEP -->

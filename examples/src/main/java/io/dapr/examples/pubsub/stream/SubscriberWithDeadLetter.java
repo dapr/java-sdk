@@ -42,8 +42,8 @@ import reactor.core.publisher.Mono;
  */
 public class SubscriberWithDeadLetter {
 
-  private static final String DEFAULT_TOPIC_NAME = "testingtopic";
-  private static final String DEFAULT_DEAD_LETTER_TOPIC_NAME = "testingtopic-deadletter";
+  private static final String DEFAULT_TOPIC_NAME = "pubsub-stream-testingtopic";
+  private static final String DEFAULT_DEAD_LETTER_TOPIC_NAME = "pubsub-stream-testingtopic-deadletter";
   private static final String PUBSUB_NAME = "messagebus";
 
   /**

@@ -42,7 +42,7 @@ public class InvokeClient {
   /**
    * Identifier in Dapr for the service this client will invoke.
    */
-  private static final String SERVICE_APP_ID = "tracingdemoproxy";
+  private static final String SERVICE_APP_ID = "tracing-tracingdemoproxy";
 
   /**
    * Starts the invoke client.

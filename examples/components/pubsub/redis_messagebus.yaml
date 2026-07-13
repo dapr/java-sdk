@@ -19,3 +19,5 @@ scopes:
   - pubsub-bulk-publisher
   - pubsub-subscriber
   - pubsub-publisher-tracing
+  - pubsub-stream-subscriber
+  - pubsub-stream-publisher

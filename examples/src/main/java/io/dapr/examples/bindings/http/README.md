@@ -139,7 +139,7 @@ sleep: 10
 -->
 
 ```bash
-dapr run --resources-path ./components/bindings --app-id inputbinding --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
+dapr run --resources-path ./components/bindings --app-id bindings-http-inputbinding --app-port 3120 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3120
 ```
 
 <!-- END_STEP -->
@@ -209,7 +209,7 @@ sleep: 30
 -->
 
 ```bash
-dapr run --resources-path ./components/bindings --app-id outputbinding -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
+dapr run --resources-path ./components/bindings --app-id bindings-http-outputbinding -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
 ```
 
 <!-- END_STEP -->
@@ -249,8 +249,8 @@ name: Cleanup apps
 -->
 
 ```bash
-dapr stop --app-id inputbinding
-dapr stop --app-id outputbinding
+dapr stop --app-id bindings-http-inputbinding
+dapr stop --app-id bindings-http-outputbinding
 ```
 
 <!-- END_STEP -->

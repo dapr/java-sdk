@@ -33,7 +33,7 @@ import io.dapr.utils.TypeRef;
  */
 public class Subscriber {
 
-  private static final String DEFAULT_TOPIC_NAME = "testingtopic";
+  private static final String DEFAULT_TOPIC_NAME = "pubsub-stream-testingtopic";
   private static final String PUBSUB_NAME = "messagebus";
 
   /**

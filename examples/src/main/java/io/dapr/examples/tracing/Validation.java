@@ -47,16 +47,16 @@ final class Validation {
       .build();
 
   public static final String JSONPATH_PROXY_ECHO_SPAN_ID =
-      "$..[?(@.parentId=='%s' && @.name=='calllocal/tracingdemoproxy/proxy_echo')]['id']";
+      "$..[?(@.parentId=='%s' && @.name=='calllocal/tracing-tracingdemoproxy/proxy_echo')]['id']";
 
   public static final String JSONPATH_ECHO_SPAN_ID =
-      "$..[?(@.parentId=='%s' && @.name=='calllocal/tracingdemo/echo')]['id']";
+      "$..[?(@.parentId=='%s' && @.name=='calllocal/tracing-tracingdemo/echo')]['id']";
 
   public static final String JSONPATH_PROXY_SLEEP_SPAN_ID =
-      "$..[?(@.parentId=='%s' && @.duration > 1000000 && @.name=='calllocal/tracingdemoproxy/proxy_sleep')]['id']";
+      "$..[?(@.parentId=='%s' && @.duration > 1000000 && @.name=='calllocal/tracing-tracingdemoproxy/proxy_sleep')]['id']";
 
   public static final String JSONPATH_SLEEP_SPAN_ID =
-      "$..[?(@.parentId=='%s' && @.duration > 1000000 && @.name=='calllocal/tracingdemo/sleep')]['id']";
+      "$..[?(@.parentId=='%s' && @.duration > 1000000 && @.name=='calllocal/tracing-tracingdemo/sleep')]['id']";
 
   static void validate() {
     Status<Void> result = new CallExecutorBuilder().config(RETRY_CONFIG).build().execute(() -> doValidate());

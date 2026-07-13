@@ -44,7 +44,7 @@ public class HelloWorldClient {
     String user = "World";
     try (DaprClient client = new DaprClientBuilder().build()) {
       HelloWorldGrpc.HelloWorldBlockingStub blockingStub = client.newGrpcStub(
-          "hellogrpc",
+          "invoke-grpc-hellogrpc",
           channel -> HelloWorldGrpc.newBlockingStub(channel));
 
       logger.info("Will try to greet " + user + " ...");

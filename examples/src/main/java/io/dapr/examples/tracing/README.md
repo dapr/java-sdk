@@ -142,7 +142,7 @@ timeout_seconds: 40
 -->
 
 ```bash
-dapr run --app-id tracingdemo --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3000
+dapr run --app-id tracing-tracingdemo --app-port 3380 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3380
 ```
 
 <!-- END_STEP -->
@@ -230,7 +230,7 @@ timeout_seconds: 40
 -->
 
 ```bash
-dapr run --app-id tracingdemoproxy --app-port 3001   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3001
+dapr run --app-id tracing-tracingdemoproxy --app-port 3381   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3381
 ```
 
 <!-- END_STEP -->
@@ -242,7 +242,7 @@ This sample code uses the Dapr SDK for invoking two remote methods (`proxy_echo`
 ```java
 public class InvokeClient {
 
-private static final String SERVICE_APP_ID = "tracingdemoproxy";
+private static final String SERVICE_APP_ID = "tracing-tracingdemoproxy";
 ///...
   public static void main(String[] args) throws Exception {
     final OpenTelemetry openTelemetry = OpenTelemetryConfig.createOpenTelemetry();
@@ -290,12 +290,12 @@ timeout_seconds: 40
 -->
 
 ```bash
-dapr run --app-id tracingdemoclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.InvokeClient "message one" "message two"
+dapr run --app-id tracing-tracingdemoclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.InvokeClient "message one" "message two"
 ```
 
 <!-- END_STEP -->
 
-Open the `tracingdemo` console and check the output as follows:
+Open the `tracing-tracingdemo` console and check the output as follows:
 
 ```txt
 Server: "\"message one\"" @ 2021-03-10 22:10:23.598 and metadata: {"user-agent":"okhttp/4.9.0","host":"127.0.0.1:3000","content-type":"application/json; charset=utf-8","content-length":"17","connection":"Keep-Alive","x-daprrequestid":"00d801df-2773-4b9d-b389-12d0a93d6b90","accept-encoding":"gzip","x-forwarded-for":"192.168.1.15","x-forwarded-host":"X","forwarded":"for=192.168.1.15;by=192.168.1.15;host=X","traceparent":"00-4659182fd55c552b84fa291e3157d215-d0145c33df26c04d-01"}

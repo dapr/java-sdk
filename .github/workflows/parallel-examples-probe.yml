@@ -1,6 +1,6 @@
-# TEMPORARY probe workflow — validates the parallel-example-validation approach on a
-# 3-README pilot (state + invoke/http + pubsub) against a single shared `dapr init`
-# runtime. Remove before merging; not intended for master.
+# TEMPORARY probe workflow — validates parallel example validation across ALL 17
+# example READMEs against a single shared `dapr init` runtime. Once green, validate.yml
+# is wired to run-parallel.sh and this file is removed. Not intended for master.
 name: Parallel Examples Probe
 
 on:
@@ -12,16 +12,12 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     env:
       JDK_VER: 17
       DAPR_CLI_VER: 1.18.0
       DAPR_RUNTIME_VER: 1.18.0
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.18.0/install/install.sh
-      PILOT: >-
-        src/main/java/io/dapr/examples/state/README.md
-        src/main/java/io/dapr/examples/invoke/http/README.md
-        src/main/java/io/dapr/examples/pubsub/README.md
     steps:
       - uses: actions/checkout@v7
       - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -46,15 +42,15 @@ jobs:
           pip3 install mechanical-markdown
       - name: Build SDK + examples jar
         run: ./mvnw -pl examples -am clean install -B -q -DskipTests
-      - name: Static parallel-safety check (pilot only)
-        run: bash examples/validate/check-parallel-safe.sh ${{ env.PILOT }}
-      - name: Sequential baseline (-j 1)
+      - name: Static parallel-safety check (all 17 READMEs)
+        run: bash examples/validate/check-parallel-safe.sh
+      - name: Sequential baseline (-j 1, all 17)
         run: |
           echo "::group::sequential"
-          time bash examples/validate/run-parallel.sh -j 1 ${{ env.PILOT }}
+          time bash examples/validate/run-parallel.sh -j 1
           echo "::endgroup::"
-      - name: Parallel run on one shared runtime (-j 3)
+      - name: Parallel run on one shared runtime (-j 4, all 17)
         run: |
           echo "::group::parallel"
-          time bash examples/validate/run-parallel.sh -j 3 ${{ env.PILOT }}
+          time bash examples/validate/run-parallel.sh -j 4
           echo "::endgroup::"
