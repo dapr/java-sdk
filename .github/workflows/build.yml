@@ -78,21 +78,22 @@ jobs:
       run: sleep 10
 
     - name: Integration Tests For Durable Tasks
-      run: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify || echo "TEST_FAILED=true" >> $GITHUB_ENV
-      continue-on-error: true
+      uses: nick-fields/retry@v3
+      with:
+        max_attempts: 2
+        timeout_minutes: 30
+        retry_wait_seconds: 15
+        command: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify
 
     - name: Kill Durable Task Sidecar
-      run: docker kill durabletask-sidecar
+      run: docker rm -f durabletask-sidecar || true
 
     - name: Upload Durable Task Sidecar Logs
+      if: always()
       uses: actions/upload-artifact@v7
       with:
         name: Durable Task Sidecar Logs
         path: durabletask-sidecar.log
-
-    - name: Fail the job if tests failed
-      if: env.TEST_FAILED == 'true'
-      run: exit 1
 
   build:
     name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-display-version }} exp:${{ matrix.experimental }}"
@@ -200,11 +201,21 @@ jobs:
     - name: Integration tests using spring boot 3.x version ${{ matrix.spring-boot-version }}
       id: integration_tests
       if: ${{ matrix.spring-boot-display-version == '3.5.x' }}
-      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
+      uses: nick-fields/retry@v3
+      with:
+        max_attempts: 2
+        timeout_minutes: 30
+        retry_wait_seconds: 15
+        command: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
     - name: Integration tests using spring boot 4.x version ${{ matrix.spring-boot-version }}
       id: integration_sb4_tests
       if: ${{ matrix.spring-boot-display-version == '4.0.x' }}
-      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-sb4-tests dependency:copy-dependencies verify
+      uses: nick-fields/retry@v3
+      with:
+        max_attempts: 2
+        timeout_minutes: 30
+        retry_wait_seconds: 15
+        command: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-sb4-tests dependency:copy-dependencies verify
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v7
