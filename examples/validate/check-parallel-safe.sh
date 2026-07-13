@@ -11,6 +11,8 @@
 #      with '/' replaced by '-' and the trailing /README.md removed.
 #   2. No line may use the default --dapr-http-port 3500 or --dapr-grpc-port 50001.
 #   3. Every --app-port value must be unique across all READMEs in the list.
+#   4. Every app-id in a component YAML's "scopes:" list (under examples/components)
+#      must equal, or start with "<slug>-" for, a known example slug.
 #
 # Portable: macOS bash 3.2 and Linux bash. No associative arrays, no mapfile.
 
@@ -242,6 +244,54 @@ if [ -s "$APP_PORTS_TMP" ]; then
     done <<EOF
 $distinct_ports
 EOF
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 4: component scope app-ids must be slug-prefixed.
+# A Dapr component YAML may carry a top-level "scopes:" list of app-ids; Dapr
+# only exposes the component to those app-ids. When app-ids are renamed for
+# parallel-safety, the scope entries must be renamed too, or the app fails at
+# runtime (e.g. "pubsub <name> is not found"). Flag any scope entry that is not
+# equal to, and does not start with "<slug>-" for, a known example slug.
+# ---------------------------------------------------------------------------
+KNOWN_SLUGS_TMP="$(mktemp)"
+SCOPE_ENTRIES_TMP="$(mktemp)"
+trap 'rm -f "$README_LIST_TMP" "$APP_PORTS_TMP" "$VIOLATIONS_TMP" "$VALID_README_LIST_TMP" "$affected_files_tmp" "$KNOWN_SLUGS_TMP" "$SCOPE_ENTRIES_TMP"' EXIT
+
+while IFS= read -r readme_rel || [ -n "$readme_rel" ]; do
+    [ -z "$readme_rel" ] && continue
+    slug_for "$readme_rel"
+done < "$VALID_README_LIST_TMP" | sort -u > "$KNOWN_SLUGS_TMP"
+
+if [ -d "$EXAMPLES_DIR/components" ]; then
+    : > "$SCOPE_ENTRIES_TMP"
+    for sf in $(grep -rl -- "scopes:" "$EXAMPLES_DIR/components" 2>/dev/null); do
+        awk -v f="$sf" '
+            /^scopes:[[:space:]]*$/ { inscope = 1; next }
+            inscope == 1 && /^[[:space:]]*-[[:space:]]/ {
+                e = $0
+                sub(/^[[:space:]]*-[[:space:]]*/, "", e)
+                sub(/[[:space:]]+$/, "", e)
+                if (e != "") print f "\t" NR "\t" e
+                next
+            }
+            inscope == 1 && /^[^[:space:]#-]/ { inscope = 0 }
+        ' "$sf" >> "$SCOPE_ENTRIES_TMP"
+    done
+
+    while IFS=$'\t' read -r s_file s_line s_appid; do
+        [ -z "$s_appid" ] && continue
+        valid=0
+        while IFS= read -r g; do
+            [ -z "$g" ] && continue
+            if [ "$s_appid" = "$g" ]; then valid=1; break; fi
+            case "$s_appid" in "$g"-*) valid=1; break ;; esac
+        done < "$KNOWN_SLUGS_TMP"
+        if [ "$valid" -eq 0 ]; then
+            rel="${s_file#"$REPO_ROOT/"}"
+            add_violation "$rel:$s_line: scope app-id '$s_appid' is not prefixed with a known example slug (rename to match the migrated app-id)"
+        fi
+    done < "$SCOPE_ENTRIES_TMP"
 fi
 
 # ---------------------------------------------------------------------------
