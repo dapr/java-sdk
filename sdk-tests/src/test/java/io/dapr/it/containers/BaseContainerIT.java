@@ -21,12 +21,16 @@ import io.dapr.config.Property;
 import io.dapr.it.AppRun;
 import io.dapr.it.DaprPorts;
 import io.dapr.it.Stoppable;
+import io.dapr.it.testcontainers.ContainerConstants;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.DaprPlacementContainer;
+import io.dapr.testcontainers.DaprSchedulerContainer;
 import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.AfterAll;
 import org.testcontainers.Testcontainers;
+import org.testcontainers.toxiproxy.ToxiproxyContainer;
 
 import java.util.Deque;
 import java.util.HashMap;
@@ -82,9 +86,32 @@ public abstract class BaseContainerIT {
         // errors. Without this, the container's stdout is consumed by Testcontainers
         // and we have no insight when actor registration or component init fails.
         .withLogConsumer(frame -> System.out.print("[daprd] " + frame.getUtf8String()))
-        // Reuses the placement sidecar container within this JVM (Testcontainers manages it);
-        // orthogonal to SharedTestInfra's Redis `withReuse(true)`.
-        .withReusablePlacement(true);
+        // Wire every daprd to the ONE shared placement + scheduler on the shared network.
+        // daprd resolves its control plane by DNS name ("placement"/"scheduler"), so there
+        // must be exactly one container answering each alias. DaprContainer would otherwise
+        // auto-create its own placement/scheduler per instance and never stop them (there is
+        // no stop() override), leaving several containers sharing the "placement"/"scheduler"
+        // aliases on the shared network -- Docker DNS then round-robins daprd to an arbitrary
+        // (often empty) one, breaking multi-sidecar failover and sidecar-restart reminder
+        // recovery. The JVM-singletons make each alias resolve to exactly one container and
+        // eliminate the per-container control-plane leak.
+        .withPlacementContainer(SharedTestInfra.placement())
+        .withSchedulerContainer(SharedTestInfra.scheduler());
+  }
+
+  // ---------- Shared control plane (multi-sidecar ITs) ----------
+
+  /** The JVM-wide shared placement. Multi-sidecar ITs (e.g. failover) pass this to every
+   *  daprd via {@code withPlacementContainer} so all sidecars share one placement -- the
+   *  same singleton {@link #daprBuilder} wires by default. Not stopped per class; it lives
+   *  for the JVM (see {@link SharedTestInfra#placement()}). */
+  protected static DaprPlacementContainer startSharedPlacement() {
+    return SharedTestInfra.placement();
+  }
+
+  /** The JVM-wide shared scheduler (owns actor reminders). See {@link #startSharedPlacement()}. */
+  protected static DaprSchedulerContainer startSharedScheduler() {
+    return SharedTestInfra.scheduler();
   }
 
   // ---------- App lifecycle ----------
@@ -187,6 +214,51 @@ public abstract class BaseContainerIT {
     DaprWait.forActors().waitUntilReady(dapr);
   }
 
+  /**
+   * Restarts the app subprocess on its same pre-allocated port. The daprd
+   * container stays up and reconnects to the app via
+   * {@code host.testcontainers.internal:appPort}. Because {@link #daprBuilder}
+   * configures NO app-health-check, daprd does not deactivate actors during the
+   * gap, so in-memory timers survive (matching the legacy
+   * {@code @DaprRunConfig(enableAppHealthCheck=false)}). There is intentionally
+   * no sleep between stop and start — {@code ActorTimerRecoveryIT} relies on a
+   * quick restart.
+   */
+  protected static void restartApp(AppRun app) throws Exception {
+    app.stop();
+    app.start();
+  }
+
+  /**
+   * Restarts the daprd container in place and re-waits for readiness. Placement
+   * and scheduler are NOT recreated on the second start (their DaprContainer
+   * fields are non-null), so a persisted actor reminder survives. Pinned host
+   * ports re-bind, so the app's DAPR_HTTP_PORT/DAPR_GRPC_PORT and any DaprClient
+   * remain valid.
+   */
+  protected static void restartSidecar(DaprContainer dapr) throws Exception {
+    dapr.stop();
+    dapr.start();
+    try (DaprClient client = newDaprClient(dapr)) {
+      client.waitForSidecar(30_000).block();
+    }
+    waitForActorsReady(dapr);
+  }
+
+  /** Starts a Toxiproxy container on the shared network and registers it for
+   *  @AfterAll cleanup. Callers create proxies via a ToxiproxyClient against
+   *  {@code getHost()}/{@code getControlPort()} (the control channel), then point
+   *  Dapr clients at {@code getMappedPort(<listenPort>)} of a proxy created on a
+   *  fixed listen port (e.g. 8666). Mirrors SdkResiliencyIT. */
+  protected static ToxiproxyContainer newToxiproxy() {
+    ToxiproxyContainer toxiproxy =
+        new ToxiproxyContainer(ContainerConstants.TOXI_PROXY_IMAGE_TAG)
+            .withNetwork(SharedTestInfra.network());
+    toxiproxy.start();
+    deferStop(toxiproxy);
+    return toxiproxy;
+  }
+
   // ---------- DaprClient / ActorClient factories ----------
 
   protected static DaprClient newDaprClient(DaprContainer dapr) {
@@ -261,6 +333,33 @@ public abstract class BaseContainerIT {
         "host", SharedTestInfra.mongoInternalHost(),
         "databaseName", "local",
         "collectionName", "testCollection"
+    ));
+  }
+
+  /**
+   * Kafka-backed input/output binding. Lazily starts the shared Kafka container
+   * before returning the component. The {@code {appID}} placeholders in
+   * {@code topics}/{@code publishTopic}/{@code consumerGroup} resolve to the
+   * owning daprd's app-id, so topic and consumer group are self-consistent
+   * without needing a {@code scopes} entry.
+   */
+  protected static Component kafkaBinding(String name) {
+    SharedTestInfra.kafka();   // ensure Kafka is up before DaprContainer needs it
+    return new Component(name, "bindings.kafka", "v1", Map.of(
+        "brokers", SharedTestInfra.kafkaInternalBroker(),
+        "topics", "topic-{appID}",
+        "publishTopic", "topic-{appID}",
+        "consumerGroup", "{appID}",
+        "authRequired", "false",
+        "initialOffset", "oldest"
+    ));
+  }
+
+  /** HTTP output binding pointed at an arbitrary URL. */
+  protected static Component httpBinding(String name, String url, boolean errorIfNot2xx) {
+    return new Component(name, "bindings.http", "v1", Map.of(
+        "url", url,
+        "errorIfNot2XX", Boolean.toString(errorIfNot2xx)
     ));
   }
 

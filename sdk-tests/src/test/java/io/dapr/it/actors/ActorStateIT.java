@@ -8,7 +8,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
-limitations under the License.
+ * limitations under the License.
 */
 
 package io.dapr.it.actors;
@@ -16,10 +16,12 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
+import io.dapr.it.AppRun;
 import io.dapr.it.actors.services.springboot.StatefulActor;
 import io.dapr.it.actors.services.springboot.StatefulActorService;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,21 +31,30 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class ActorStateIT extends BaseIT {
+public class ActorStateIT extends BaseContainerIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorStateIT.class);
 
+  private static DaprContainer dapr;
+  private static AppRun app;
+
+  @BeforeAll
+  public static void start() throws Exception {
+    var pair = startAppAndAttach(
+        "actor-state-it",
+        StatefulActorService.class,
+        AppRun.AppProtocol.HTTP,
+        appPort -> daprBuilder("actor-state-it")
+            .withAppPort(appPort)
+            .withAppChannelAddress("host.testcontainers.internal")
+            .withComponent(redisStateStore(STATE_STORE_NAME)));
+    dapr = pair.dapr();
+    app = pair.app();
+    waitForActorsReady(dapr);
+  }
+
   @Test
   public void writeReadState() throws Exception {
-    logger.debug("Starting actor runtime ...");
-    // The call below will fail if service cannot start successfully.
-    DaprRun run = startDaprApp(
-      this.getClass().getSimpleName(),
-      StatefulActorService.SUCCESS_MESSAGE,
-      StatefulActorService.class,
-      true,
-      60000);
-
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
     byte[] bytes = new byte[] { 0x1 };
@@ -52,12 +63,12 @@ public class ActorStateIT extends BaseIT {
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient()));
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient(dapr));
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     // waiting for actor to be activated
     Thread.sleep(5000);
-    
+
     // Validate conditional read works.
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not present yet ... ");
@@ -126,23 +137,15 @@ public class ActorStateIT extends BaseIT {
     logger.debug("Waiting, so actor can be deactivated ...");
     Thread.sleep(10000);
 
-    logger.debug("Stopping service ...");
-    run.stop();
-
-    logger.debug("Starting service ...");
-    DaprRun run2 = startDaprApp(
-        this.getClass().getSimpleName(),
-        StatefulActorService.SUCCESS_MESSAGE,
-        StatefulActorService.class,
-        true,
-        60000);
+    logger.debug("Restarting app ...");
+    restartApp(app);
 
     // Need new proxy builder because the proxy builder holds the channel.
-    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run2.newActorClient()));
+    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient(dapr));
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
     // waiting for actor to be activated
-    Thread.sleep(2000);  
+    Thread.sleep(2000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not cached ... ");

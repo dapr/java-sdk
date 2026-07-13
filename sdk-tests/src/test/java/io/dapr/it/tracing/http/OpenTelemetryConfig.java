@@ -27,8 +27,16 @@ public class OpenTelemetryConfig {
   public static final String SERVICE_NAME = "integration testing service over http";
 
   @Bean
-  public OpenTelemetry initOpenTelemetry() throws InterruptedException {
-    return io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry(SERVICE_NAME);
+  public OpenTelemetry initOpenTelemetry() {
+    // Use the explicit-endpoint overload so this bean does NOT block on a Zipkin readiness
+    // probe during app startup. This app runs as a host subprocess and only needs a propagator
+    // for context extraction; it exports no spans that the test asserts on (the validated
+    // "calllocal/<app>/sleep" span is emitted by the Dapr sidecar, which exports to Zipkin over
+    // the container network). The legacy createOpenTelemetry(SERVICE_NAME) overload probed
+    // 127.0.0.1:9411, but Zipkin now runs as a Testcontainer on a random mapped port, so the
+    // probe failed and crashed startup -- startAppAndAttach then saw "connection refused".
+    return io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry(
+        SERVICE_NAME, "http://localhost:9411/api/v2/spans");
   }
 
   @Bean

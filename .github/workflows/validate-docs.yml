@@ -28,6 +28,7 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: ${{ env.JDK_VER }}
+        cache: 'maven'
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
     - name: Validate Java docs generation

@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.it.methodinvoke.http;
 
-import io.dapr.it.DaprRunConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -21,9 +20,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Service for subscriber.
  */
-@DaprRunConfig(
-        enableAppHealthCheck = true
-)
 @SpringBootApplication
 public class MethodInvokeService {
 

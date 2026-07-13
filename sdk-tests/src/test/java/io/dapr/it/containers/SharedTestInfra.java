@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.it.containers;
 
+import io.dapr.testcontainers.DaprContainerConstants;
+import io.dapr.testcontainers.DaprPlacementContainer;
+import io.dapr.testcontainers.DaprSchedulerContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
@@ -29,11 +32,17 @@ public final class SharedTestInfra {
   private static final String REDIS_NETWORK_ALIAS = "redis";
   private static final String ZIPKIN_NETWORK_ALIAS = "zipkin";
   private static final String MONGO_NETWORK_ALIAS = "mongo";
+  private static final String KAFKA_NETWORK_ALIAS = "kafka";
+  private static final String PLACEMENT_NETWORK_ALIAS = "placement";
+  private static final String SCHEDULER_NETWORK_ALIAS = "scheduler";
 
   private static volatile Network network;
   private static volatile GenericContainer<?> redis;
   private static volatile GenericContainer<?> zipkin;
   private static volatile GenericContainer<?> mongo;
+  private static volatile org.testcontainers.kafka.KafkaContainer kafka;
+  private static volatile DaprPlacementContainer placement;
+  private static volatile DaprSchedulerContainer scheduler;
 
   private SharedTestInfra() {}
 
@@ -90,5 +99,60 @@ public final class SharedTestInfra {
 
   public static String mongoInternalHost() {
     return MONGO_NETWORK_ALIAS + ":27017";
+  }
+
+  public static synchronized org.testcontainers.kafka.KafkaContainer kafka() {
+    if (kafka == null) {
+      kafka = new org.testcontainers.kafka.KafkaContainer("apache/kafka:3.8.0")
+          .withNetwork(network())
+          .withNetworkAliases(KAFKA_NETWORK_ALIAS)
+          .withListener(KAFKA_NETWORK_ALIAS + ":19092")
+          .withReuse(true);
+      kafka.start();
+    }
+    return kafka;
+  }
+
+  public static String kafkaInternalBroker() {
+    return KAFKA_NETWORK_ALIAS + ":19092";
+  }
+
+  /**
+   * The single Dapr placement service shared by every daprd in the JVM.
+   *
+   * <p>daprd resolves its placement service by DNS name ({@code placement:50005}), so
+   * there must be exactly ONE container answering to the {@code "placement"} alias on the
+   * shared network. If several exist (which happens when each {@code DaprContainer}
+   * auto-creates its own, never-stopped placement), Docker DNS round-robins daprd to an
+   * arbitrary one -- often an empty placement that never received this test's actor-host
+   * registrations -- producing "did not find address for actor" in multi-sidecar failover
+   * and losing the actor host across a sidecar restart. Sharing this singleton (wired via
+   * {@code DaprContainer.withPlacementContainer}) guarantees a single DNS answer.
+   */
+  public static synchronized DaprPlacementContainer placement() {
+    if (placement == null) {
+      placement = new DaprPlacementContainer(DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG)
+          .withNetwork(network())
+          .withNetworkAliases(PLACEMENT_NETWORK_ALIAS)
+          .withReuse(true);
+      placement.start();
+    }
+    return placement;
+  }
+
+  /**
+   * The single Dapr scheduler service shared by every daprd in the JVM. Owns actor
+   * reminders in Dapr 1.18+, so it must stay up across a daprd restart for reminder
+   * recovery to work. Same single-DNS-answer requirement as {@link #placement()}.
+   */
+  public static synchronized DaprSchedulerContainer scheduler() {
+    if (scheduler == null) {
+      scheduler = new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG)
+          .withNetwork(network())
+          .withNetworkAliases(SCHEDULER_NETWORK_ALIAS)
+          .withReuse(true);
+      scheduler.start();
+    }
+    return scheduler;
   }
 }

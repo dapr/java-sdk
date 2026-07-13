@@ -8,7 +8,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
-limitations under the License.
+ * limitations under the License.
 */
 
 package io.dapr.it.actors;
@@ -17,10 +17,10 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.AppRun;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.MyActorService;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import io.dapr.it.containers.BaseContainerIT;
+import io.dapr.testcontainers.DaprContainer;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +35,29 @@ import static io.dapr.it.actors.MyActorTestUtils.validateMessageContent;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class ActorTimerRecoveryIT extends BaseIT {
+public class ActorTimerRecoveryIT extends BaseContainerIT {
 
   private static final Logger logger = LoggerFactory.getLogger(ActorTimerRecoveryIT.class);
 
   private static final String METHOD_NAME = "clock";
+
+  private static DaprContainer dapr;
+  private static AppRun app;
+
+  @BeforeAll
+  public static void start() throws Exception {
+    var pair = startAppAndAttach(
+        "actor-timer-recovery-it",
+        MyActorService.class,
+        AppRun.AppProtocol.HTTP,
+        appPort -> daprBuilder("actor-timer-recovery-it")
+            .withAppPort(appPort)
+            .withAppChannelAddress("host.testcontainers.internal")
+            .withComponent(redisStateStore(STATE_STORE_NAME)));
+    dapr = pair.dapr();
+    app = pair.app();
+    waitForActorsReady(dapr);
+  }
 
   /**
    * Create an actor, register a timer, validates its content, restarts the Actor and confirms timer continues.
@@ -47,18 +65,11 @@ public class ActorTimerRecoveryIT extends BaseIT {
    */
   @Test
   public void timerRecoveryTest() throws Exception {
-    ImmutablePair<AppRun, DaprRun> runs = startSplitDaprAndApp(
-      ActorTimerRecoveryIT.class.getSimpleName(),
-      "Started MyActorService",
-      MyActorService.class,
-      true,
-      60000);
-
-    String actorType="MyActorTest";
+    String actorType = "MyActorTest";
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(runs.right.newActorClient()));
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient(dapr));
     logger.debug("Creating actorId");
     ActorId actorId = new ActorId(UUID.randomUUID().toString());
     logger.debug("Building proxy");
@@ -77,11 +88,10 @@ public class ActorTimerRecoveryIT extends BaseIT {
     }, 30000);
 
     // Restarts app only.
-    runs.left.stop();
     // Cannot sleep between app's stop and start since it can trigger unhealthy actor in runtime and lose timers.
     // Timers will survive only if the restart is "quick" and survives the runtime's actor health check.
     // Starting in 1.13, sidecar is more sensitive to an app restart and will not keep actors active for "too long".
-    runs.left.start();
+    restartApp(app);
 
     final List<MethodEntryTracker> newLogs = new ArrayList<>();
     callWithRetry(() -> {
