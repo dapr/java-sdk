@@ -266,8 +266,7 @@ Note: You may need to run `./mvnw clean` after changing this setting to remove a
 
 #### Pre-Requisites
 * [Pre-Requisites for the SDK](#pre-requisites)
-* Docker installed 
-  * [Docker Compose](https://docs.docker.com/compose/install/) 
+* Docker installed and running
   * [Docker Desktop](https://www.docker.com/products/docker-desktop)
 * Bash shell
   * In Windows use [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install)
@@ -280,23 +279,11 @@ This project depends on the rest of the JARs built by the other modules in the r
 
 As a starting point for running the Integration Tests, first run `./mvnw clean install` from the root of the repo to build the JARs for the different modules, except the `sdk-tests` module.
 
-#### Run all the dependent services spun up during build
+#### Backing services (managed automatically by Testcontainers)
 
-During normal CI build, docker compose is used to bring up services like MongoDB, Hashicorp Vault, Apache Zookeeper, Kafka etc. 
+The integration tests use [Testcontainers](https://testcontainers.com/) to start and manage every backing service they depend on — Redis, Zipkin, MongoDB, Kafka, and the Dapr control plane (`placement` and `scheduler`) — automatically at test runtime.
 
-Similarly, all of these need to be run for running the ITs either individually or as a whole.
-
-Run the following commands from the root of the repo to start all the docker containers that the tests depend on.
-
-```bash
-docker compose -f ./sdk-tests/deploy/local-test.yml up -d
-```
-
-To stop the containers and services, run the following commands.
-
-```bash
-docker compose -f ./sdk-tests/deploy/local-test.yml down
-```
+There is no separate step to bring these services up: you only need a running Docker daemon. Testcontainers pulls the required images and starts/stops the containers as the tests run.
 
 
 #### Run all ITs from command line
