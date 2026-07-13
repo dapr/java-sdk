@@ -1,5 +1,5 @@
-# TEMPORARY probe — re-added only to validate the crypto/jobs port fix and confirm the
-# full 17-README parallel run is green. Removed again once validated; not for master.
+# TEMPORARY probe — validates the full 17-README parallel run on one shared dapr
+# runtime and self-reports failures as annotations. Removed once green; not for master.
 name: Parallel Examples Probe
 
 on:
@@ -48,8 +48,17 @@ jobs:
           echo "::group::sequential"
           time bash examples/validate/run-parallel.sh -j 1
           echo "::endgroup::"
-      - name: Parallel run on one shared runtime (-j 4, all 17)
+      - name: Parallel run on one shared runtime (-j 2, all 17)
         run: |
+          set +e
           echo "::group::parallel"
-          time bash examples/validate/run-parallel.sh -j 4
+          time bash examples/validate/run-parallel.sh -j 2 2>&1 | tee /tmp/par.out
+          rc=${PIPESTATUS[0]}
           echo "::endgroup::"
+          if [ "$rc" -ne 0 ]; then
+            echo "---- parallel failures (as annotations) ----"
+            grep -nE "^  FAIL |Caused by|ALREADY_EXISTS|signal: killed|error code|Exception|is not found|DAPR_|Reason:" /tmp/par.out | head -40 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+          fi
+          exit "$rc"

@@ -123,6 +123,6 @@ jobs:
             set -e
             # Example READMEs run concurrently against one shared Dapr runtime via the
             # parallel-safe runner examples/validate/run-parallel.sh.
-            bash examples/validate/run-parallel.sh -j 4
+            bash examples/validate/run-parallel.sh -j 2
             (cd spring-boot-examples && mm.py README.md)
             (cd spring-boot-examples/workflows/patterns && mm.py README.md)

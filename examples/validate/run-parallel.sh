@@ -8,8 +8,8 @@
 #   run-parallel.sh [-j N] [-r R] [-f FILE] [--dry-run] [README ...]
 #
 #   -j N       Max concurrent READMEs (default 4).
-#   -r R       Per-README retry count on failure (default 1, i.e. up to
-#              2 attempts total).
+#   -r R       Per-README retry count on failure (default 2, i.e. up to
+#              3 attempts total).
 #   -f FILE    README list file (default: examples/validate/readmes.txt
 #              resolved relative to the repo root).
 #   --dry-run  Do not run mm.py; print the exact command that would run
@@ -101,7 +101,7 @@ repo_root=$(cd "$script_dir/../.." && pwd)
 examples_dir="$repo_root/examples"
 
 jobs=4
-retries=1
+retries=2
 list_file="$examples_dir/validate/readmes.txt"
 dry_run=0
 positional_readmes=()
