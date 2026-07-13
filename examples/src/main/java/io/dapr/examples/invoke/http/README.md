@@ -125,7 +125,7 @@ sleep: 5
 -->
 
 ```sh
-dapr run --app-id invokedemo --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.DemoService -p 3000
+dapr run --app-id invoke-http-invokedemo --app-port 3240 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.DemoService -p 3240
 ```
 
 <!-- END_STEP -->
@@ -145,7 +145,7 @@ In `InvokeClient.java` file, you will find the `InvokeClient` class and the `mai
 ```java
 public class InvokeClient {
 
-  private static final String SERVICE_APP_ID = "invokedemo";
+  private static final String SERVICE_APP_ID = "invoke-http-invokedemo";
   private static final String METHOD = "say";
 
   public static void main(String[] args) throws Exception {
@@ -197,7 +197,7 @@ sleep: 5
 -->
 
 ```sh
-dapr run --app-id invokeclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient "message one" "message two"
+dapr run --app-id invoke-http-invokeclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient "message one" "message two"
 ```
 
 <!-- END_STEP -->
@@ -223,8 +223,8 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id invokedemo
-dapr stop --app-id invokeclient
+dapr stop --app-id invoke-http-invokedemo
+dapr stop --app-id invoke-http-invokeclient
 ```
 
 <!-- END_STEP -->
