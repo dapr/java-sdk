@@ -60,6 +60,8 @@ If using [SDKMAN!](https://sdkman.io), execute `sdk env install` to install the 
 
 ### Importing Dapr's Java SDK
 
+> **Spring Boot compatibility:** from **1.19.0** onward, the SDK's Spring integration targets **Spring Boot 4.0**. If you are on **Spring Boot 3.5**, use the **1.18.x** line instead. See **[SUPPORT.md](SUPPORT.md)** for the full compatibility matrix and version-support policy.
+
 #### Using a BOM (recommended)
 
 Two BOMs are published:
