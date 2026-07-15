@@ -15,43 +15,44 @@ package io.dapr.springboot.examples.wfp;
 
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
+import io.dapr.springboot.examples.wfp.externalevent.Decision;
+import io.dapr.springboot.examples.wfp.fanoutin.Result;
 import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
 import io.dapr.springboot.examples.wfp.timer.TimerLogService;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Integration tests for Dapr Workflow Patterns.
- * 
+ *
  * DEBUGGING: For more detailed logs during test execution, you can:
  * 1. Run `docker ps` to find the Dapr container ID
  * 2. Run `docker logs --follow <container-id>` to stream real-time logs
  * 3. The container name will typically be something like "dapr-workflow-patterns-app-<hash>"
- * 
+ *
  * Example:
  * ```bash
  * docker ps | grep dapr
  * docker logs --follow <container-id>
  * ```
- * 
+ *
  * This will show you detailed Dapr runtime logs including workflow execution,
  * state transitions, and component interactions.
  */
@@ -66,9 +67,16 @@ class WorkflowPatternsAppIT {
   @Autowired
   private TimerLogService logService;
 
+  @LocalServerPort
+  private int port;
+
+  private RestTestClient client;
+
   @BeforeEach
   void setUp() {
-    RestAssured.baseURI = "http://localhost:" + 8080;
+    client = RestTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
     logService.clearLog();
   }
@@ -76,22 +84,32 @@ class WorkflowPatternsAppIT {
 
   @Test
   void testChainWorkflow() {
-    given().contentType(ContentType.JSON)
+    String result = client.post()
+            .uri("/wfp/chain")
+            .contentType(MediaType.APPLICATION_JSON)
             .body("")
-            .when()
-            .post("/wfp/chain")
-            .then()
-            .statusCode(200).body(containsString("TOKYO, LONDON, SEATTLE"));
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
+
+    assertNotNull(result);
+    assertTrue(result.contains("TOKYO, LONDON, SEATTLE"));
   }
 
   @Test
   void testChildWorkflow() {
-    given().contentType(ContentType.JSON)
+    String result = client.post()
+            .uri("/wfp/child")
+            .contentType(MediaType.APPLICATION_JSON)
             .body("")
-            .when()
-            .post("/wfp/child")
-            .then()
-            .statusCode(200).body(containsString("!wolfkroW rpaD olleH"));
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
+
+    assertNotNull(result);
+    assertTrue(result.contains("!wolfkroW rpaD olleH"));
   }
 
   @Test
@@ -103,87 +121,116 @@ class WorkflowPatternsAppIT {
             "The greatest glory in living lies not in never falling, but in rising every time we fall.",
             "Always remember that you are absolutely unique. Just like everyone else.");
 
-    given().contentType(ContentType.JSON)
+    Result result = client.post()
+            .uri("/wfp/fanoutin")
+            .contentType(MediaType.APPLICATION_JSON)
             .body(listOfStrings)
-            .when()
-            .post("/wfp/fanoutin")
-            .then()
-            .statusCode(200).body("wordCount",equalTo(60));
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(Result.class)
+            .getResponseBody();
+
+    assertNotNull(result);
+    assertEquals(60, result.getWordCount());
   }
 
   @Test
   void testExternalEventApprove() {
 
-    given()
-            .queryParam("orderId", "123")
-            .when()
-            .post("/wfp/externalevent")
-            .then()
-            .statusCode(200).extract().asString();
+    String instanceId = client.post()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/wfp/externalevent")
+                    .queryParam("orderId", "123")
+                    .build())
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
 
+    assertNotNull(instanceId);
 
+    Decision decision = client.post()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/wfp/externalevent-continue")
+                    .queryParam("orderId", "123")
+                    .queryParam("decision", true)
+                    .build())
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(Decision.class)
+            .getResponseBody();
 
-    given()
-            .queryParam("orderId", "123")
-            .queryParam("decision", true)
-            .when()
-            .post("/wfp/externalevent-continue")
-            .then()
-            .statusCode(200).body("approved", equalTo(true));
+    assertNotNull(decision);
+    assertTrue(decision.getApproved());
   }
 
   @Test
   void testExternalEventDeny() {
 
-    given()
-            .queryParam("orderId", "123")
-            .when()
-            .post("/wfp/externalevent")
-            .then()
-            .statusCode(200).extract().asString();
+    String instanceId = client.post()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/wfp/externalevent")
+                    .queryParam("orderId", "123")
+                    .build())
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
 
+    assertNotNull(instanceId);
 
+    Decision decision = client.post()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/wfp/externalevent-continue")
+                    .queryParam("orderId", "123")
+                    .queryParam("decision", false)
+                    .build())
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(Decision.class)
+            .getResponseBody();
 
-    given()
-            .queryParam("orderId", "123")
-            .queryParam("decision", false)
-            .when()
-            .post("/wfp/externalevent-continue")
-            .then()
-            .statusCode(200).body("approved", equalTo(false));
+    assertNotNull(decision);
+    assertEquals(false, decision.getApproved());
   }
 
 
   /**
    * Tests the ContinueAsNew workflow pattern.
-   * 
+   *
    * The ContinueAsNew pattern should execute cleanup activities 5 times
    * with 5-second intervals between each iteration.
    */
   @Test
   void testContinueAsNew() {
     //This call blocks until all the clean up activities are executed
-    CleanUpLog cleanUpLog = given().contentType(ContentType.JSON)
+    CleanUpLog cleanUpLog = client.post()
+            .uri("/wfp/continueasnew")
+            .contentType(MediaType.APPLICATION_JSON)
             .body("")
-            .when()
-            .post("/wfp/continueasnew")
-            .then()
-            .statusCode(200).extract().as(CleanUpLog.class);
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(CleanUpLog.class)
+            .getResponseBody();
 
+    assertNotNull(cleanUpLog);
     assertEquals(5, cleanUpLog.getCleanUpTimes());
   }
 
   @Test
   void testRemoteEndpoint() {
 
-    Payload payload = given().contentType(ContentType.JSON)
+    Payload payload = client.post()
+            .uri("/wfp/remote-endpoint")
+            .contentType(MediaType.APPLICATION_JSON)
             .body(new Payload("123", "content goes here"))
-            .when()
-            .post("/wfp/remote-endpoint")
-            .then()
-            .statusCode(200).extract().as(Payload.class);
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(Payload.class)
+            .getResponseBody();
 
-    assertEquals(true, payload.getProcessed());
+    assertNotNull(payload);
+    assertTrue(payload.getProcessed());
 
     assertEquals(2, ensemble.getMicrocksContainer()
             .getServiceInvocationsCount("API Payload Processor", "1.0.0"));
@@ -192,54 +239,70 @@ class WorkflowPatternsAppIT {
   @Test
   void testSuspendResume() {
 
-    String instanceId = given()
-            .queryParam("orderId", "123")
-            .when()
-            .post("/wfp/suspendresume")
-            .then()
-            .statusCode(200).extract().asString();
+    String instanceId = client.post()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/wfp/suspendresume")
+                    .queryParam("orderId", "123")
+                    .build())
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
 
     assertNotNull(instanceId);
 
     // The workflow is waiting on an event, let's suspend the workflow
-    String state = given()
-            .queryParam("orderId", "123")
-            .when()
-            .post("/wfp/suspendresume/suspend")
-            .then()
-            .statusCode(200).extract().asString();
+    String state = client.post()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/wfp/suspendresume/suspend")
+                    .queryParam("orderId", "123")
+                    .build())
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
 
     assertEquals(WorkflowRuntimeStatus.SUSPENDED.name(), state);
 
     // The let's resume the suspended workflow and check the state
-    state = given()
-            .queryParam("orderId", "123")
-            .when()
-            .post("/wfp/suspendresume/resume")
-            .then()
-            .statusCode(200).extract().asString();
+    state = client.post()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/wfp/suspendresume/resume")
+                    .queryParam("orderId", "123")
+                    .build())
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
 
     assertEquals(WorkflowRuntimeStatus.RUNNING.name(), state);
 
     // Now complete the workflow by sending an event
-    given()
-            .queryParam("orderId", "123")
-            .queryParam("decision", false)
-            .when()
-            .post("/wfp/suspendresume/continue")
-            .then()
-            .statusCode(200).body("approved", equalTo(false));
+    Decision decision = client.post()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/wfp/suspendresume/continue")
+                    .queryParam("orderId", "123")
+                    .queryParam("decision", false)
+                    .build())
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(Decision.class)
+            .getResponseBody();
+
+    assertNotNull(decision);
+    assertEquals(false, decision.getApproved());
 
   }
 
   @Test
   void testDurationTimer() throws InterruptedException {
 
-    String instanceId = given()
-            .when()
-            .post("/wfp/durationtimer")
-            .then()
-            .statusCode(200).extract().asString();
+    String instanceId = client.post()
+            .uri("/wfp/durationtimer")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
 
     assertNotNull(instanceId);
 
@@ -265,11 +328,12 @@ class WorkflowPatternsAppIT {
   @Test
   void testZonedDateTimeTimer() throws InterruptedException {
 
-    String instanceId = given()
-            .when()
-            .post("/wfp/zoneddatetimetimer")
-            .then()
-            .statusCode(200).extract().asString();
+    String instanceId = client.post()
+            .uri("/wfp/zoneddatetimetimer")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult(String.class)
+            .getResponseBody();
 
     assertNotNull(instanceId);
 

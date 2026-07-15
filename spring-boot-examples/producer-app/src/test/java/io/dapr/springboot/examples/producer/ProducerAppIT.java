@@ -15,27 +15,32 @@ package io.dapr.springboot.examples.producer;
 
 import io.dapr.client.DaprClient;
 import io.dapr.springboot.DaprAutoConfiguration;
+import io.dapr.springboot.examples.producer.Customer;
+import io.dapr.springboot.examples.producer.CustomerStore;
+import io.dapr.springboot.examples.producer.OrderDTO;
 import io.dapr.springboot.examples.producer.workflow.CustomerFollowupActivity;
 import io.dapr.springboot.examples.producer.workflow.CustomerWorkflow;
 import io.dapr.springboot.examples.producer.workflow.RegisterCustomerActivity;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.wait.strategy.DaprWait;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
-import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 
-import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = {TestProducerApplication.class, DaprTestContainersConfig.class,
         DaprAutoConfiguration.class, CustomerWorkflow.class, CustomerFollowupActivity.class,
@@ -52,14 +57,19 @@ class ProducerAppIT {
   @Autowired
   private DaprClient daprClient;
 
-
   @Autowired
   private DaprContainer daprContainer;
 
+  @LocalServerPort
+  private int port;
+
+  private RestTestClient client;
 
   @BeforeEach
   void setUp() {
-    RestAssured.baseURI = "http://localhost:" + 8080;
+    client = RestTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
 
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
     DaprWait.forSubscription("pubsub", "topic").waitUntilReady(daprContainer);
@@ -74,12 +84,12 @@ class ProducerAppIT {
   void testOrdersOutboxEndpointAndMessaging() {
     OrderDTO order = new OrderDTO("outbox-order-123", "Lorem ipsum", 1000);
 
-    given().contentType(ContentType.JSON)
+    client.post()
+        .uri("/orders/outbox")
+        .contentType(MediaType.APPLICATION_JSON)
         .body(order)
-        .when()
-        .post("/orders/outbox")
-        .then()
-        .statusCode(200);
+        .exchange()
+        .expectStatus().isOk();
 
     await().atMost(Duration.ofSeconds(15))
         .until(controller.getAllEvents()::size, equalTo(1));
@@ -89,74 +99,109 @@ class ProducerAppIT {
   @Test
   void testOrdersEndpointAndMessaging() {
     OrderDTO order = new OrderDTO("abc-123", "the mars volta LP", 1);
-    given().contentType(ContentType.JSON)
-            .body(order)
-            .when()
-            .post("/orders")
-            .then()
-            .statusCode(200);
+
+    client.post()
+        .uri("/orders")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(order)
+        .exchange()
+        .expectStatus().isOk();
 
     await().atMost(Duration.ofSeconds(15))
             .until(controller.getAllEvents()::size, equalTo(1));
 
-    given().contentType(ContentType.JSON)
-            .when()
-            .get("/orders")
-            .then()
-            .statusCode(200).body("size()", is(1));
+    // Get all orders
+    List<Order> orders = client.get()
+        .uri("/orders")
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
 
-    given().contentType(ContentType.JSON)
-            .when()
+    assertNotNull(orders);
+    assertEquals(1, orders.size());
+
+    // Query by item
+    List<Order> ordersByItem = client.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/orders/byItem/")
             .queryParam("item", "the mars volta LP")
-            .get("/orders/byItem/")
-            .then()
-            .statusCode(200).body("size()", is(1));
+            .build())
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
 
-    given().contentType(ContentType.JSON)
-            .when()
+    assertNotNull(ordersByItem);
+    assertEquals(1, ordersByItem.size());
+
+    // Query by item - no match
+    List<Order> ordersByOtherItem = client.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/orders/byItem/")
             .queryParam("item", "other")
-            .get("/orders/byItem/")
-            .then()
-            .statusCode(200).body("size()", is(0));
+            .build())
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
 
-    given().contentType(ContentType.JSON)
-            .when()
+    assertNotNull(ordersByOtherItem);
+    assertEquals(0, ordersByOtherItem.size());
+
+    // Query by amount
+    List<Order> ordersByAmount = client.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/orders/byAmount/")
             .queryParam("amount", 1)
-            .get("/orders/byAmount/")
-            .then()
-            .statusCode(200).body("size()", is(1));
+            .build())
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
 
-    given().contentType(ContentType.JSON)
-            .when()
+    assertNotNull(ordersByAmount);
+    assertEquals(1, ordersByAmount.size());
+
+    // Query by amount - no match
+    List<Order> ordersByOtherAmount = client.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/orders/byAmount/")
             .queryParam("amount", 2)
-            .get("/orders/byAmount/")
-            .then()
-            .statusCode(200).body("size()", is(0));
+            .build())
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(new ParameterizedTypeReference<List<Order>>() {})
+        .getResponseBody();
+
+    assertNotNull(ordersByOtherAmount);
+    assertEquals(0, ordersByOtherAmount.size());
 
   }
 
   @Test
   void testCustomersWorkflows() {
 
-    given().contentType(ContentType.JSON)
-            .body("{\"customerName\": \"salaboy\"}")
-            .when()
-            .post("/customers")
-            .then()
-            .statusCode(200);
+    client.post()
+        .uri("/customers")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("{\"customerName\": \"salaboy\"}")
+        .exchange()
+        .expectStatus().isOk();
 
 
     await().atMost(Duration.ofSeconds(15))
             .until(customerStore.getCustomers()::size, equalTo(1));
     Customer customer = customerStore.getCustomer("salaboy");
-    assertEquals(true, customer.isInCustomerDB());
+    assertTrue(customer.isInCustomerDB());
     String workflowId = customer.getWorkflowId();
-    given().contentType(ContentType.JSON)
-            .body("{ \"workflowId\": \"" + workflowId + "\",\"customerName\": \"salaboy\" }")
-            .when()
-            .post("/customers/followup")
-            .then()
-            .statusCode(200);
+
+    client.post()
+        .uri("/customers/followup")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("{ \"workflowId\": \"" + workflowId + "\",\"customerName\": \"salaboy\" }")
+        .exchange()
+        .expectStatus().isOk();
 
     assertEquals(1, customerStore.getCustomers().size());
 

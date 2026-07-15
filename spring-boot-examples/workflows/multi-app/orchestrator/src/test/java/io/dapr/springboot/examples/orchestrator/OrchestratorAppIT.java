@@ -13,17 +13,19 @@ limitations under the License.
 
 package io.dapr.springboot.examples.orchestrator;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
+import io.dapr.springboot.examples.orchestrator.Customer;
+import io.dapr.springboot.examples.orchestrator.CustomersRestController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
-import java.io.IOException;
 import java.time.Duration;
 
-import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = {TestOrchestratorApplication.class, DaprTestContainersConfig.class, CustomersRestController.class},
@@ -31,68 +33,80 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         properties = {"reuse=false", "tests.workers.enabled=true"})
 class OrchestratorAppIT {
 
+  @LocalServerPort
+  private int port;
+
+  private RestTestClient client;
 
   @BeforeEach
   void setUp() {
-    RestAssured.baseURI = "http://localhost:" + 8080;
+    client = RestTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
 
   }
 
   @Test
-  void testCustomersWorkflows() throws InterruptedException, IOException {
+  void testCustomersWorkflows() throws InterruptedException {
 
     // Create a new workflow instance for a given customer
-    given().contentType(ContentType.JSON)
-            .body("{\"customerName\": \"salaboy\"}")
-            .when()
-            .post("/customers")
-            .then()
-            .statusCode(200);
+    client.post()
+        .uri("/customers")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("{\"customerName\": \"salaboy\"}")
+        .exchange()
+        .expectStatus().isOk();
 
     // Wait for the workflow instance to be running by checking the status
     await().atMost(Duration.ofSeconds(5)).until(() ->
             {
-              String workflowStatus = given().contentType(ContentType.JSON)
+              String workflowStatus = client.post()
+                      .uri("/customers/status")
+                      .contentType(MediaType.APPLICATION_JSON)
                       .body("{\"customerName\": \"salaboy\" }")
-                      .when()
-                      .post("/customers/status")
-                      .then()
-                      .statusCode(200)
-                      .extract().asString();
-              return workflowStatus.equals("Workflow for Customer: salaboy is RUNNING");
+                      .exchange()
+                      .expectStatus().isOk()
+                      .returnResult(String.class)
+                      .getResponseBody();
+              return "Workflow for Customer: salaboy is RUNNING".equals(workflowStatus);
             }
     );
 
     // Raise an external event to move the workflow forward
-    given().contentType(ContentType.JSON)
-            .body("{\"customerName\": \"salaboy\" }")
-            .when()
-            .post("/customers/followup")
-            .then()
-            .statusCode(200);
+    client.post()
+        .uri("/customers/followup")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("{\"customerName\": \"salaboy\" }")
+        .exchange()
+        .expectStatus().isOk();
 
     // Wait for the workflow instance to be completed by checking the status
     await().atMost(Duration.ofSeconds(5)).until(() ->
             {
-              String workflowStatus = given().contentType(ContentType.JSON)
+              String workflowStatus = client.post()
+                      .uri("/customers/status")
+                      .contentType(MediaType.APPLICATION_JSON)
                       .body("{\"customerName\": \"salaboy\" }")
-                      .when()
-                      .post("/customers/status")
-                      .then()
-                      .statusCode(200).extract().asString();
-              return workflowStatus.equals("Workflow for Customer: salaboy is COMPLETED");
+                      .exchange()
+                      .expectStatus().isOk()
+                      .returnResult(String.class)
+                      .getResponseBody();
+              return "Workflow for Customer: salaboy is COMPLETED".equals(workflowStatus);
             }
     );
 
     // Get the customer after running all the workflow activities
-    Customer customer = given().contentType(ContentType.JSON)
-            .body("{\"customerName\": \"salaboy\" }")
-            .when()
-            .post("/customers/output")
-            .then()
-            .statusCode(200).extract().as(Customer.class);
+    Customer customer = client.post()
+        .uri("/customers/output")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("{\"customerName\": \"salaboy\" }")
+        .exchange()
+        .expectStatus().isOk()
+        .returnResult(Customer.class)
+        .getResponseBody();
 
+    assertNotNull(customer);
     assertTrue(customer.isInCustomerDB());
     assertTrue(customer.isFollowUp());
 

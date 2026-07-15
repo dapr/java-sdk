@@ -200,7 +200,7 @@ Then, `getReactorContext()` method is used to convert the OpenTelemetry's contex
 
 ```java
 @Configuration
-@EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class})
+@EnableAutoConfiguration
 public class OpenTelemetryConfig {
   // ...
   public static reactor.util.context.Context getReactorContext(Context context) {

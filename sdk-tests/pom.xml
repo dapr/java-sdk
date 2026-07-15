@@ -26,20 +26,21 @@
     <!-- The JaCoCo plugin was expecting coverage for this module, but since it's a test module
     and code coverage typically doesn't apply to tests, the coverage is set to 0. -->
     <jacoco-maven-plugin.coverage-ratio>0%</jacoco-maven-plugin.coverage-ratio>
-    <junit-platform.version>1.11.4</junit-platform.version>
+    <springboot4.version>4.0.5</springboot4.version>
+    <!-- Spring Boot 4 ITs (Testcontainers/@SpringBootTest) require JUnit 6; align this test module to it. -->
+    <junit-bom.version>6.0.2</junit-bom.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <!-- Import the Spring Boot 4 BOM so JUnit (jupiter + platform) resolves consistently to 6.x,
+           matching the spring-boot-sdk-tests module and the Spring Boot 4 starter pulled in here. -->
       <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-commons</artifactId>
-        <version>${junit-platform.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-engine</artifactId>
-        <version>${junit-platform.version}</version>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot4.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
