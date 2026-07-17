@@ -24,6 +24,14 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- Override Jackson 2.x for CVE-2026-54512..54518 (must precede SB BOM) -->
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
