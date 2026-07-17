@@ -49,7 +49,7 @@
     <dapr.sdk.version>1.18.1-rc-1</dapr.sdk.version>
     <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.132 (CVE-2026-33871, CVE-2026-33870) -->
     <netty.version>4.1.132.Final</netty.version>
-    <jackson.version>2.21.2</jackson.version>
+    <jackson.version>2.21.5</jackson.version>
     <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
     <commons-compress.version>1.26.0</commons-compress.version>
   </properties>
