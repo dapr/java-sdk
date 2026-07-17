@@ -15,7 +15,8 @@
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <springboot4.version>4.0.5</springboot4.version>
+    <!-- Must be >= 4.0.6 for CVE-2026-40973 -->
+    <springboot4.version>4.0.6</springboot4.version>
     <!-- Override JUnit version to align with Spring Boot 4.x -->
     <junit-bom.version>6.0.2</junit-bom.version>
   </properties>
@@ -28,11 +29,11 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Override Jackson 3.x for CVE SNYK-JAVA-TOOLSJACKSONCORE-15907550 (must precede SB BOM) -->
+      <!-- Override Jackson 3.x for CVE SNYK-JAVA-TOOLSJACKSONCORE-15907550 and CVE-2026-54512..54518 (must precede SB BOM) -->
       <dependency>
         <groupId>tools.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.4</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
