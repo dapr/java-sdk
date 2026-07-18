@@ -23,11 +23,27 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Override Jackson 3.x for CVE SNYK-JAVA-TOOLSJACKSONCORE-15907550 (must precede SB BOM) -->
+      <!-- Override Jackson 3.x for CVE SNYK-JAVA-TOOLSJACKSONCORE-15907550 and CVE-2026-54512..54518 (must precede SB BOM) -->
       <dependency>
         <groupId>tools.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.4</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Override Jackson 2.x for CVE-2026-54512..54518 (must precede SB BOM) -->
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Override OTel for CVE-2026-45292 (must precede SB BOM) -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
