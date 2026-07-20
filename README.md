@@ -80,7 +80,7 @@ For Maven:
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk-bom</artifactId>
-        <version>1.18.0</version>
+        <version>1.18.1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -126,7 +126,7 @@ For Maven:
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-bom</artifactId>
-        <version>1.18.0</version>
+        <version>1.18.1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -173,17 +173,17 @@ For Maven:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.18.0</version>
+      <version>1.18.1</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.18.0</version>
+      <version>1.18.1</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.18.0</version>
+      <version>1.18.1</version>
     </dependency>
   </dependencies>
   ...
