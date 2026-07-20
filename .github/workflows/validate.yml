@@ -114,7 +114,7 @@ jobs:
       - name: Install jars
         run: ./mvnw clean install -DskipTests -q
       - name: Validate examples
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 2
           timeout_minutes: 30

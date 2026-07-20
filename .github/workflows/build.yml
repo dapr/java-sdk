@@ -78,7 +78,7 @@ jobs:
       run: sleep 10
 
     - name: Integration Tests For Durable Tasks
-      uses: nick-fields/retry@v3
+      uses: nick-fields/retry@v4
       with:
         max_attempts: 2
         timeout_minutes: 30
@@ -122,7 +122,7 @@ jobs:
       run: ./mvnw clean install -B -q -DskipTests
     - name: Integration tests using Spring Boot ${{ matrix.spring-boot-version }}
       id: integration_tests
-      uses: nick-fields/retry@v3
+      uses: nick-fields/retry@v4
       with:
         max_attempts: 2
         timeout_minutes: 30
