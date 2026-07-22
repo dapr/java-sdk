@@ -18,7 +18,7 @@ jobs:
   test:
     name: "Unit tests"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 7
     continue-on-error: false
     env:
       JDK_VER: 17
@@ -49,7 +49,7 @@ jobs:
   build-durabletask:
     name: "Durable Task build & tests"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 7
     continue-on-error: false
     env:
       JDK_VER: 17
@@ -81,7 +81,7 @@ jobs:
       uses: nick-fields/retry@v4
       with:
         max_attempts: 2
-        timeout_minutes: 30
+        timeout_minutes: 5
         retry_wait_seconds: 15
         command: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify
 
@@ -98,7 +98,7 @@ jobs:
   build:
     name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-display-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 25
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
@@ -125,7 +125,7 @@ jobs:
       uses: nick-fields/retry@v4
       with:
         max_attempts: 2
-        timeout_minutes: 30
+        timeout_minutes: 22
         retry_wait_seconds: 15
         command: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
     - name: Upload failsafe test report for sdk-tests on failure
@@ -157,7 +157,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: [ build, test, build-durabletask ]
-    timeout-minutes: 30
+    timeout-minutes: 10
     env:
       JDK_VER: 17
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
