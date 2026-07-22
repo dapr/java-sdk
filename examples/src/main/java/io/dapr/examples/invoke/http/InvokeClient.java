@@ -46,7 +46,7 @@ public class InvokeClient {
   /**
    * Identifier in Dapr for the service this client will invoke.
    */
-  private static final String SERVICE_APP_ID = "invokedemo";
+  private static final String SERVICE_APP_ID = "invoke-http-invokedemo";
 
   /**
    * Method on the target service to invoke.

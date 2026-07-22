@@ -260,7 +260,7 @@ sleep: 10
 
 Run this example with the following command:
 ```bash
-dapr run --resources-path ./components/state --app-id query-state-example -H 3600 -- java -Ddapr.api.protocol=HTTP -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.querystate.QuerySavedState
+dapr run --resources-path ./components/state --app-id querystate-query-state-example -- java -Ddapr.api.protocol=HTTP -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.querystate.QuerySavedState
 ```
 
 <!-- END_STEP -->
@@ -294,7 +294,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id query-state-example
+dapr stop --app-id querystate-query-state-example
 ```
 <!-- END_STEP -->
 

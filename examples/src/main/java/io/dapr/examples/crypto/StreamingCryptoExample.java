@@ -61,8 +61,8 @@ public class StreamingCryptoExample {
     generateKeysIfNeeded();
 
     Map<Property<?>, String> overrides = Map.of(
-        Properties.HTTP_PORT, "3500",
-        Properties.GRPC_PORT, "50001"
+        Properties.HTTP_PORT, "3180",
+        Properties.GRPC_PORT, "3181"
     );
 
     try (DaprPreviewClient client = new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient()) {

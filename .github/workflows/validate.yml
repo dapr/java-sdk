@@ -121,22 +121,8 @@ jobs:
           retry_wait_seconds: 10
           command: |
             set -e
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/crypto/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/workflows/README.md)
+            # Example READMEs run concurrently against one shared Dapr runtime via the
+            # parallel-safe runner examples/validate/run-parallel.sh.
+            bash examples/validate/run-parallel.sh -j 2
             (cd spring-boot-examples && mm.py README.md)
             (cd spring-boot-examples/workflows/patterns && mm.py README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/jobs/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/conversation/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/invoke/http/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/invoke/grpc/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/tracing/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/exception/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/state/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/bindings/http/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/secrets/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/unittesting/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/configuration/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/actors/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/querystate/README.md)
-            (cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md)

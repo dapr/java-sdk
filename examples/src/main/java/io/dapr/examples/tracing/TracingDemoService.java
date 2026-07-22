@@ -29,11 +29,11 @@ import org.apache.commons.cli.Options;
  * mvn clean install
  * 2. cd [repo root]/examples
  * 3. Run in server mode:
- * dapr run --app-id tracingdemo --app-port 3000 \
- *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3000
+ * dapr run --app-id tracing-tracingdemo --app-port 3380 \
+ *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3380
  * 4. Run middle server:
- * dapr run --app-id tracingdemoproxy --app-port 3001 \
- *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3001
+ * dapr run --app-id tracing-tracingdemoproxy --app-port 3381 \
+ *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3381
  */
 public class TracingDemoService {
 

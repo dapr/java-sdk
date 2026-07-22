@@ -41,7 +41,7 @@ public class MultiAppWorkflow implements Workflow {
       String multiAppResult = ctx.callActivity(
           App2TransformActivity.class.getName(),
           input,
-          new WorkflowTaskOptions("app2"),
+          new WorkflowTaskOptions("workflows-app2"),
           String.class
       ).await();
 
@@ -51,7 +51,7 @@ public class MultiAppWorkflow implements Workflow {
       String finalResult = ctx.callActivity(
           App3FinalizeActivity.class.getName(),
           multiAppResult,
-          new WorkflowTaskOptions("app3"),
+          new WorkflowTaskOptions("workflows-app3"),
           String.class
       ).await();
       logger.info("Final multi-app activity result: {}", finalResult);

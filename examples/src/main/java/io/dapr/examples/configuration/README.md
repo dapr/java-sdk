@@ -158,7 +158,7 @@ sleep: 10
 -->
 
 ```bash
-dapr run --resources-path ./components/configuration --app-id configgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.ConfigurationClient
+dapr run --resources-path ./components/configuration --app-id configuration-configgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.ConfigurationClient
 ```
 
 <!-- END_STEP -->
@@ -185,7 +185,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id configgrpc
+dapr stop --app-id configuration-configgrpc
 ```
 
 <!-- END_STEP -->

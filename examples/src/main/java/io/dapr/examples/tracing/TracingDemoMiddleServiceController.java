@@ -37,7 +37,7 @@ import java.net.http.HttpResponse;
 @RestController
 public class TracingDemoMiddleServiceController {
 
-  private static final String INVOKE_APP_ID = "tracingdemo";
+  private static final String INVOKE_APP_ID = "tracing-tracingdemo";
 
   private static final HttpClient httpClient = HttpClient.newHttpClient();
 

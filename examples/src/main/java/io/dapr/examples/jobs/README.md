@@ -104,7 +104,7 @@ sleep: 10
 -->
 
 ```bash
-dapr run --resources-path ./components/configuration --app-id myapp --app-port 8080 --dapr-http-port 3500 --dapr-grpc-port 51439  --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.jobs.DemoJobsSpringApplication
+dapr run --resources-path ./components/configuration --app-id jobs-myapp --app-port 3260 --dapr-http-port 3261 --dapr-grpc-port 3262 --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.jobs.DemoJobsSpringApplication --server.port=3260
 ```
 
 ```bash
@@ -127,7 +127,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id myapp
+dapr stop --app-id jobs-myapp
 ```
 
 <!-- END_STEP -->

@@ -202,7 +202,7 @@ sleep: 15
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
+dapr run --resources-path ./components/pubsub --app-id pubsub-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
 ```
 
 <!-- END_STEP -->
@@ -402,7 +402,7 @@ background: true
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id bulk-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.BulkPublisher
+dapr run --resources-path ./components/pubsub --app-id pubsub-bulk-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.BulkPublisher
 ```
 <!-- END_STEP -->
 
@@ -471,7 +471,7 @@ background: true
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher testingtopicbulk
+dapr run --resources-path ./components/pubsub --app-id pubsub-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher testingtopicbulk
 ```
 
 <!-- END_STEP -->
@@ -600,7 +600,7 @@ sleep: 15
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol http -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3000
+dapr run --resources-path ./components/pubsub --app-id pubsub-subscriber --app-port 3280 --app-protocol http -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3280
 ```
 
 <!-- END_STEP -->
@@ -717,11 +717,11 @@ sleep: 15
 -->
 ```bash
 # stop http subscriber if you have started one.
-dapr stop --app-id subscriber
+dapr stop --app-id pubsub-subscriber
 
 
 # start a grpc subscriber
-dapr run --resources-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.grpc.Subscriber -p 3000
+dapr run --resources-path ./components/pubsub --app-id pubsub-subscriber --app-port 3280 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.grpc.Subscriber -p 3280
 ```
 <!-- END_STEP -->
 
@@ -737,7 +737,7 @@ sleep: 15
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
+dapr run --resources-path ./components/pubsub --app-id pubsub-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
 ```
 
 <!-- END_STEP -->
@@ -768,7 +768,7 @@ background: true
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher testingtopicbulk
+dapr run --resources-path ./components/pubsub --app-id pubsub-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher testingtopicbulk
 ```
 
 <!-- END_STEP -->
@@ -837,7 +837,7 @@ sleep: 15
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id publisher-tracing -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.PublisherWithTracing
+dapr run --resources-path ./components/pubsub --app-id pubsub-publisher-tracing -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.PublisherWithTracing
 ```
 
 <!-- END_STEP -->
@@ -866,12 +866,12 @@ mvn install
 
 Run the publisher app:
 ```sh
-dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
+dapr run --resources-path ./components/pubsub --app-id pubsub-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
 ```
 
 Wait until all 10 messages are published like before, then wait for a few more seconds and run the subscriber app:
 ```sh
-dapr run --resources-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Subscriber -p 3000
+dapr run --resources-path ./components/pubsub --app-id pubsub-subscriber --app-port 3280 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Subscriber -p 3280
 ```
 
 No message is consumed by the subscriber app and warnings messages are emitted from Dapr sidecar:
@@ -907,14 +907,14 @@ name: Cleanup
 -->
 Use the following command to stop your running http subscriber or gRPC subscriber.
 ```bash
-dapr stop --app-id subscriber
+dapr stop --app-id pubsub-subscriber
 ```
 <!-- END_STEP -->
 After completing publish , the application will automatically exit. However, you can still use the following command to stop your running publisher.
 
 ```bash
-dapr stop --app-id publisher
-dapr stop --app-id bulk-publisher
+dapr stop --app-id pubsub-publisher
+dapr stop --app-id pubsub-bulk-publisher
 ```
 
 

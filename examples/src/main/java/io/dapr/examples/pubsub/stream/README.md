@@ -159,7 +159,7 @@ timeout_seconds: 30
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id subscriber -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.stream.Subscriber
+dapr run --resources-path ./components/pubsub --app-id pubsub-stream-subscriber -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.stream.Subscriber
 ```
 
 <!-- END_STEP -->
@@ -167,14 +167,14 @@ dapr run --resources-path ./components/pubsub --app-id subscriber -- java -jar t
 Or run the CloudEvent Subscriber example:
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id subscriber -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.stream.SubscriberCloudEvent
+dapr run --resources-path ./components/pubsub --app-id pubsub-stream-subscriber -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.stream.SubscriberCloudEvent
 ```
 
 Or run the dead-letter Subscriber example, which routes messages whose payload
 contains "fail" to a dead-letter topic and consumes both topics:
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id subscriber -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.stream.SubscriberWithDeadLetter
+dapr run --resources-path ./components/pubsub --app-id pubsub-stream-subscriber -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.stream.SubscriberWithDeadLetter
 ```
 
 Once the subscriber is running, run the publisher in a new terminal to see the events in the subscriber's side:
@@ -190,7 +190,7 @@ timeout_seconds: 30
 -->
 
 ```bash
-dapr run --resources-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
+dapr run --resources-path ./components/pubsub --app-id pubsub-stream-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher pubsub-stream-testingtopic
 ```
 
 <!-- END_STEP -->
