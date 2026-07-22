@@ -29,6 +29,15 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- Pin Netty to the gRPC-supported 4.1.x line (root netty.version); MUST precede the Spring Boot
+           BOM, which manages Netty 4.2.x - unsupported by the non-shaded grpc-netty this SDK uses. -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
