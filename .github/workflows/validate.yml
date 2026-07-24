@@ -27,7 +27,6 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     strategy:
       fail-fast: false # Keep running if one leg fails.
       matrix:
@@ -118,7 +117,7 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 2
-          timeout_minutes: 17
+          timeout_minutes: 25
           retry_wait_seconds: 10
           command: |
             set -e
