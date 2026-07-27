@@ -117,7 +117,7 @@ jobs:
         uses: nick-fields/retry@v4
         with:
           max_attempts: 2
-          timeout_minutes: 30
+          timeout_minutes: 25
           retry_wait_seconds: 10
           command: |
             set -e
