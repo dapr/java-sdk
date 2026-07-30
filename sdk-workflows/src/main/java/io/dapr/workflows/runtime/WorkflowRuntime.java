@@ -14,7 +14,10 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.DurableTaskGrpcWorker;
+import io.dapr.workflows.internal.GrpcChannelKeepalive;
 import io.grpc.ManagedChannel;
+
+import javax.annotation.Nullable;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +30,7 @@ public class WorkflowRuntime implements AutoCloseable {
   private final DurableTaskGrpcWorker worker;
   private final ManagedChannel managedChannel;
   private final ExecutorService executorService;
+  private final GrpcChannelKeepalive keepalive;
 
   /**
    * Constructor.
@@ -38,9 +42,26 @@ public class WorkflowRuntime implements AutoCloseable {
   public WorkflowRuntime(DurableTaskGrpcWorker worker,
                          ManagedChannel managedChannel,
                          ExecutorService executorService) {
+    this(worker, managedChannel, executorService, null);
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param worker grpcWorker processing activities.
+   * @param managedChannel grpc channel.
+   * @param executorService executor service responsible for running the threads.
+   * @param keepalive application-level keepalive on the worker's channel, stopped on
+   *                  {@link #close()}. May be null when no keepalive is wanted.
+   */
+  public WorkflowRuntime(DurableTaskGrpcWorker worker,
+                         ManagedChannel managedChannel,
+                         ExecutorService executorService,
+                         @Nullable GrpcChannelKeepalive keepalive) {
     this.worker = worker;
     this.managedChannel = managedChannel;
     this.executorService = executorService;
+    this.keepalive = keepalive;
   }
 
   /**
@@ -68,6 +89,9 @@ public class WorkflowRuntime implements AutoCloseable {
    * {@inheritDoc}
    */
   public void close() {
+    if (this.keepalive != null) {
+      this.keepalive.close();
+    }
     this.shutDownWorkerPool();
     this.closeSideCarChannel();
     this.worker.close();

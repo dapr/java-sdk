@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
-import com.google.protobuf.Empty;
 import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
@@ -37,7 +36,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,7 +49,6 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private static final int DEFAULT_PORT = 4001;
   private static final Logger logger = Logger.getLogger(DurableTaskGrpcWorker.class.getPackage().getName());
   private static final Duration DEFAULT_MAXIMUM_TIMER_INTERVAL = Duration.ofDays(3);
-  private static final long KEEPALIVE_INTERVAL_SECONDS = 30;
 
   private final TaskOrchestrationFactories orchestrationFactories;
 
@@ -67,7 +64,6 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient;
   private final boolean isExecutorServiceManaged;
   private volatile boolean isNormalShutdown = false;
-  private ScheduledExecutorService keepaliveScheduler;
   private volatile Thread workerThread;
 
   DurableTaskGrpcWorker(DurableTaskGrpcWorkerBuilder builder) {
@@ -141,7 +137,6 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
       this.workerThread.interrupt();
     }
     this.isNormalShutdown = true;
-    this.stopKeepaliveLoop();
     this.shutDownWorkerPool();
     this.closeSideCarChannel();
   }
@@ -182,42 +177,36 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
         OrchestratorService.GetWorkItemsRequest getWorkItemsRequest = OrchestratorService.GetWorkItemsRequest
             .newBuilder().build();
         Iterator<OrchestratorService.WorkItem> workItemStream = this.sidecarClient.getWorkItems(getWorkItemsRequest);
-        startKeepaliveLoop();
-        try {
-          while (workItemStream.hasNext()) {
-            if (this.isNormalShutdown || Thread.currentThread().isInterrupted()) {
-              break;
-            }
-            OrchestratorService.WorkItem workItem = workItemStream.next();
-            OrchestratorService.WorkItem.RequestCase requestType = workItem.getRequestCase();
-
-            if (requestType == OrchestratorService.WorkItem.RequestCase.WORKFLOWREQUEST) {
-              OrchestratorService.WorkflowRequest orchestratorRequest = workItem.getWorkflowRequest();
-              logger.log(Level.FINEST,
-                  String.format("Processing orchestrator request for instance: {0}",
-                      orchestratorRequest.getInstanceId()));
-
-              this.workerPool.submit(
-                  new OrchestratorRunner(workItem, taskOrchestrationExecutor, sidecarClient, tracer));
-            } else if (requestType == OrchestratorService.WorkItem.RequestCase.ACTIVITYREQUEST) {
-              OrchestratorService.ActivityRequest activityRequest = workItem.getActivityRequest();
-
-              logger.log(Level.INFO,
-                  String.format("Processing activity request: %s for instance: %s, gRPC thread context: %s",
-                      activityRequest.getName(),
-                      activityRequest.getWorkflowInstance().getInstanceId(),
-                      Context.current()));
-
-              this.workerPool.submit(new ActivityRunner(workItem, taskActivityExecutor, sidecarClient, tracer));
-
-            } else {
-              logger.log(Level.WARNING,
-                  "Received and dropped an unknown '{0}' work-item from the sidecar.",
-                  requestType);
-            }
+        while (workItemStream.hasNext()) {
+          if (this.isNormalShutdown || Thread.currentThread().isInterrupted()) {
+            break;
           }
-        } finally {
-          stopKeepaliveLoop();
+          OrchestratorService.WorkItem workItem = workItemStream.next();
+          OrchestratorService.WorkItem.RequestCase requestType = workItem.getRequestCase();
+
+          if (requestType == OrchestratorService.WorkItem.RequestCase.WORKFLOWREQUEST) {
+            OrchestratorService.WorkflowRequest orchestratorRequest = workItem.getWorkflowRequest();
+            logger.log(Level.FINEST,
+                String.format("Processing orchestrator request for instance: {0}",
+                    orchestratorRequest.getInstanceId()));
+
+            this.workerPool.submit(new OrchestratorRunner(workItem, taskOrchestrationExecutor, sidecarClient, tracer));
+          } else if (requestType == OrchestratorService.WorkItem.RequestCase.ACTIVITYREQUEST) {
+            OrchestratorService.ActivityRequest activityRequest = workItem.getActivityRequest();
+
+            logger.log(Level.INFO,
+                String.format("Processing activity request: %s for instance: %s, gRPC thread context: %s",
+                    activityRequest.getName(),
+                    activityRequest.getWorkflowInstance().getInstanceId(),
+                    Context.current()));
+
+            this.workerPool.submit(new ActivityRunner(workItem, taskActivityExecutor, sidecarClient, tracer));
+
+          } else {
+            logger.log(Level.WARNING,
+                "Received and dropped an unknown '{0}' work-item from the sidecar.",
+                requestType);
+          }
         }
       } catch (StatusRuntimeException e) {
         if (e.getStatus().getCode() == Status.Code.UNAVAILABLE) {
@@ -290,46 +279,6 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
-    }
-  }
-
-  /**
-   * Starts a background keepalive loop to keep the gRPC connection alive.
-   * This is an application-level keepalive to prevent AWS ALBs from
-   * killing idle HTTP/2 connections.
-   */
-  private synchronized void startKeepaliveLoop() {
-    stopKeepaliveLoop();
-    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-      Thread t = new Thread(r, "durabletask-keepalive");
-      t.setDaemon(true);
-      return t;
-    });
-    try {
-      scheduler.scheduleWithFixedDelay(() -> {
-        try {
-          this.sidecarClient
-              .withDeadlineAfter(5, TimeUnit.SECONDS)
-              .hello(Empty.getDefaultInstance());
-        } catch (StatusRuntimeException e) {
-          logger.log(Level.FINE, "keepalive failed", e);
-        }
-      }, KEEPALIVE_INTERVAL_SECONDS, KEEPALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
-    } catch (RuntimeException e) {
-      scheduler.shutdownNow();
-      throw e;
-    }
-    this.keepaliveScheduler = scheduler;
-  }
-
-  /**
-   * Stops the background keepalive loop if one is running.
-   */
-  private synchronized void stopKeepaliveLoop() {
-    ScheduledExecutorService scheduler = this.keepaliveScheduler;
-    this.keepaliveScheduler = null;
-    if (scheduler != null) {
-      scheduler.shutdownNow();
     }
   }
 

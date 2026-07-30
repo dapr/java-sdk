@@ -21,6 +21,7 @@ import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
+import io.dapr.workflows.internal.GrpcChannelKeepalive;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +44,7 @@ public class WorkflowRuntimeBuilder {
   private final Set<String> workflowSet = Collections.synchronizedSet(new HashSet<>());
   private final DurableTaskGrpcWorkerBuilder builder;
   private final ManagedChannel managedChannel;
+  private final Properties properties;
   private ExecutorService executorService;
 
   /**
@@ -69,6 +71,7 @@ public class WorkflowRuntimeBuilder {
     this.workflowApiTokenInterceptor = new ApiTokenClientInterceptor(properties);
     this.managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, workflowApiTokenInterceptor);
     this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(this.managedChannel);
+    this.properties = properties;
     this.logger = logger;
   }
 
@@ -82,9 +85,14 @@ public class WorkflowRuntimeBuilder {
       synchronized (WorkflowRuntime.class) {
         this.executorService = this.executorService == null ? Executors.newCachedThreadPool() : this.executorService;
         if (instance == null) {
+          GrpcChannelKeepalive keepalive = null;
+          if (this.properties.getValue(Properties.WORKFLOWS_APP_KEEP_ALIVE_ENABLED)) {
+            keepalive = new GrpcChannelKeepalive(this.managedChannel, "dapr-workflow-runtime-keepalive",
+                this.properties.getValue(Properties.WORKFLOWS_APP_KEEP_ALIVE_INTERVAL_SECONDS));
+          }
           instance = new WorkflowRuntime(
               this.builder.withExecutorService(this.executorService).build(),
-              this.managedChannel, this.executorService);
+              this.managedChannel, this.executorService, keepalive);
         }
       }
     }
