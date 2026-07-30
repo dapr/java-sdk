@@ -18,12 +18,18 @@ import io.dapr.durabletask.DurableTaskGrpcWorker;
 import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
+import io.dapr.workflows.internal.GrpcChannelKeepalive;
+import io.grpc.ManagedChannel;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WorkflowRuntimeTest {
 
@@ -33,6 +39,29 @@ public class WorkflowRuntimeTest {
     WorkflowRuntime runtime = new WorkflowRuntime(worker, NetworkUtils.buildGrpcManagedChannel(new Properties()),
             Executors.newCachedThreadPool());
     assertDoesNotThrow(() -> runtime.start(false));
+  }
+
+  @Test
+  public void startStartsKeepaliveAndCloseStopsIt() throws InterruptedException {
+    String threadName = "dapr-workflow-runtime-keepalive";
+    DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
+    ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel(new Properties());
+    GrpcChannelKeepalive keepalive = new GrpcChannelKeepalive(channel, threadName, Duration.ofSeconds(30));
+    WorkflowRuntime runtime = new WorkflowRuntime(worker, channel, Executors.newCachedThreadPool(), keepalive);
+    assertFalse(keepaliveThreadAlive(threadName), "keepalive must stay inert until the runtime starts");
+    runtime.start(false);
+    assertTrue(keepaliveThreadAlive(threadName), "keepalive thread expected after runtime start");
+    assertDoesNotThrow(runtime::close);
+    long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
+    while (keepaliveThreadAlive(threadName) && System.currentTimeMillis() < deadline) {
+      Thread.sleep(10);
+    }
+    assertFalse(keepaliveThreadAlive(threadName), "keepalive thread should terminate after close()");
+  }
+
+  private static boolean keepaliveThreadAlive(String threadName) {
+    return Thread.getAllStackTraces().keySet().stream()
+        .anyMatch(t -> t.getName().equals(threadName) && t.isAlive());
   }
 
   @Test
