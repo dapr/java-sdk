@@ -36,20 +36,33 @@ public final class GrpcChannelKeepalive implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(GrpcChannelKeepalive.class);
   private static final long KEEPALIVE_DEADLINE_SECONDS = 5;
 
-  private final ScheduledExecutorService scheduler;
+  private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub stub;
+  private final String threadName;
+  private final Duration interval;
+  private ScheduledExecutorService scheduler;
 
   /**
-   * Starts a keepalive loop on the given channel.
+   * Creates a keepalive for the given channel. No pings are sent until {@link #start()}.
    *
    * @param channel    channel to the Dapr sidecar to keep alive.
    * @param threadName name of the keepalive thread, to tell instances apart in thread dumps.
    * @param interval   delay between pings.
    */
   public GrpcChannelKeepalive(Channel channel, String threadName, Duration interval) {
-    TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub stub =
-        TaskHubSidecarServiceGrpc.newBlockingStub(channel);
-    this.scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
-      Thread thread = new Thread(runnable, threadName);
+    this.stub = TaskHubSidecarServiceGrpc.newBlockingStub(channel);
+    this.threadName = threadName;
+    this.interval = interval;
+  }
+
+  /**
+   * Starts the keepalive loop. Does nothing if already started.
+   */
+  public synchronized void start() {
+    if (this.scheduler != null) {
+      return;
+    }
+    ScheduledExecutorService newScheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+      Thread thread = new Thread(runnable, this.threadName);
       thread.setDaemon(true);
       return thread;
     });
@@ -58,21 +71,25 @@ public final class GrpcChannelKeepalive implements AutoCloseable {
     // every ping after the first fail immediately with DEADLINE_EXCEEDED.
     // Catch Throwable, not just RuntimeException: any throwable escaping a periodic
     // task silently cancels all future runs.
-    this.scheduler.scheduleWithFixedDelay(() -> {
+    newScheduler.scheduleWithFixedDelay(() -> {
       try {
-        stub.withDeadlineAfter(KEEPALIVE_DEADLINE_SECONDS, TimeUnit.SECONDS)
+        this.stub.withDeadlineAfter(KEEPALIVE_DEADLINE_SECONDS, TimeUnit.SECONDS)
             .hello(Empty.getDefaultInstance());
       } catch (Throwable e) {
         LOGGER.debug("Sidecar keepalive ping failed", e);
       }
-    }, interval.toMillis(), interval.toMillis(), TimeUnit.MILLISECONDS);
+    }, this.interval.toMillis(), this.interval.toMillis(), TimeUnit.MILLISECONDS);
+    this.scheduler = newScheduler;
   }
 
   /**
-   * Stops the keepalive loop.
+   * Stops the keepalive loop. Does nothing if not started.
    */
   @Override
-  public void close() {
-    this.scheduler.shutdownNow();
+  public synchronized void close() {
+    if (this.scheduler != null) {
+      this.scheduler.shutdownNow();
+      this.scheduler = null;
+    }
   }
 }

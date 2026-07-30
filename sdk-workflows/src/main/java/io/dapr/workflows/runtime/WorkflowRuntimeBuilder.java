@@ -86,7 +86,7 @@ public class WorkflowRuntimeBuilder {
         this.executorService = this.executorService == null ? Executors.newCachedThreadPool() : this.executorService;
         if (instance == null) {
           GrpcChannelKeepalive keepalive = null;
-          if (this.properties.getValue(Properties.WORKFLOWS_APP_KEEP_ALIVE_ENABLED)) {
+          if (this.properties.getValue(Properties.WORKFLOWS_RUNTIME_APP_KEEP_ALIVE_ENABLED)) {
             keepalive = new GrpcChannelKeepalive(this.managedChannel, "dapr-workflow-runtime-keepalive",
                 this.properties.getValue(Properties.WORKFLOWS_APP_KEEP_ALIVE_INTERVAL_SECONDS));
           }

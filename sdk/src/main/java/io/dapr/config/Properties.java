@@ -190,21 +190,21 @@ public class Properties {
       true);
 
   /**
-   * Enables the application-level keepalive on workflow gRPC channels.
-   * When enabled, the SDK periodically invokes the sidecar's hello RPC so that
-   * intermediaries that do not treat HTTP/2 PING frames as connection activity
+   * Enables the application-level keepalive on the workflow runtime's gRPC channel.
+   * While the runtime is started, the SDK periodically invokes the sidecar's hello RPC
+   * so that intermediaries that do not treat HTTP/2 PING frames as connection activity
    * (e.g. AWS ALBs) never see the connection as idle and close it.
-   * Environment variable: DAPR_WORKFLOWS_APP_KEEP_ALIVE_ENABLED
-   * System property: dapr.workflows.app.keep.alive.enabled
-   * Default: false
+   * Environment variable: DAPR_WORKFLOWS_RUNTIME_APP_KEEP_ALIVE_ENABLED
+   * System property: dapr.workflows.runtime.app.keep.alive.enabled
+   * Default: true
    */
-  public static final Property<Boolean> WORKFLOWS_APP_KEEP_ALIVE_ENABLED = new BooleanProperty(
-      "dapr.workflows.app.keep.alive.enabled",
-      "DAPR_WORKFLOWS_APP_KEEP_ALIVE_ENABLED",
-      false);
+  public static final Property<Boolean> WORKFLOWS_RUNTIME_APP_KEEP_ALIVE_ENABLED = new BooleanProperty(
+      "dapr.workflows.runtime.app.keep.alive.enabled",
+      "DAPR_WORKFLOWS_RUNTIME_APP_KEEP_ALIVE_ENABLED",
+      true);
 
   /**
-   * Interval between application-level keepalive pings on workflow gRPC channels.
+   * Interval between application-level keepalive pings on the workflow runtime's gRPC channel.
    * Environment variable: DAPR_WORKFLOWS_APP_KEEP_ALIVE_INTERVAL_SECONDS
    * System property: dapr.workflows.app.keep.alive.interval.seconds
    * Default: 30 seconds

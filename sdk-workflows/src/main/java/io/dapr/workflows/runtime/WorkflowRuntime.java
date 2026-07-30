@@ -51,8 +51,9 @@ public class WorkflowRuntime implements AutoCloseable {
    * @param worker grpcWorker processing activities.
    * @param managedChannel grpc channel.
    * @param executorService executor service responsible for running the threads.
-   * @param keepalive application-level keepalive on the worker's channel, stopped on
-   *                  {@link #close()}. May be null when no keepalive is wanted.
+   * @param keepalive application-level keepalive on the worker's channel, started with
+   *                  {@link #start()} and stopped on {@link #close()}. May be null when
+   *                  no keepalive is wanted.
    */
   public WorkflowRuntime(DurableTaskGrpcWorker worker,
                          ManagedChannel managedChannel,
@@ -78,6 +79,9 @@ public class WorkflowRuntime implements AutoCloseable {
    * @param block block the thread if true
    */
   public void start(boolean block) {
+    if (this.keepalive != null) {
+      this.keepalive.start();
+    }
     if (block) {
       this.worker.startAndBlock();
     } else {

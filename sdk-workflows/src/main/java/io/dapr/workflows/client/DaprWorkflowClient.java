@@ -22,7 +22,6 @@ import io.dapr.durabletask.PurgeResult;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
-import io.dapr.workflows.internal.GrpcChannelKeepalive;
 import io.dapr.workflows.runtime.DefaultWorkflowInstanceStatus;
 import io.dapr.workflows.runtime.DefaultWorkflowState;
 import io.grpc.ClientInterceptor;
@@ -46,7 +45,6 @@ public class DaprWorkflowClient implements AutoCloseable {
   private ClientInterceptor workflowApiTokenInterceptor;
   private DurableTaskClient innerClient;
   private ManagedChannel grpcChannel;
-  private GrpcChannelKeepalive keepalive;
 
   /**
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
@@ -77,8 +75,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    *                   and this constructor behaves exactly like {@link #DaprWorkflowClient(Properties)}.
    */
   public DaprWorkflowClient(Properties properties, @Nullable Tracer tracer) {
-    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)),
-        tracer, properties);
+    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)), tracer);
   }
 
   /**
@@ -90,7 +87,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param additionalInterceptors extra interceptors appended after the API-token interceptor.
    */
   protected DaprWorkflowClient(Properties properties, ClientInterceptor... additionalInterceptors) {
-    this(buildChannelWithAdditional(properties, additionalInterceptors), null, properties);
+    this(buildChannelWithAdditional(properties, additionalInterceptors), null);
   }
 
   /**
@@ -98,10 +95,9 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    * @param grpcChannel ManagedChannel for GRPC channel.
    * @param tracer      optional Tracer used to propagate trace context when scheduling workflows.
-   * @param properties  Properties the channel was built from.
    */
-  private DaprWorkflowClient(ManagedChannel grpcChannel, @Nullable Tracer tracer, Properties properties) {
-    this(createDurableTaskClient(grpcChannel, tracer), grpcChannel, properties);
+  private DaprWorkflowClient(ManagedChannel grpcChannel, @Nullable Tracer tracer) {
+    this(createDurableTaskClient(grpcChannel, tracer), grpcChannel);
   }
 
   /**
@@ -109,15 +105,10 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    * @param innerClient DurableTaskGrpcClient with GRPC Channel set up.
    * @param grpcChannel ManagedChannel for instance variable setting.
-   * @param properties  Properties the channel was built from.
    */
-  private DaprWorkflowClient(DurableTaskClient innerClient, ManagedChannel grpcChannel, Properties properties) {
+  private DaprWorkflowClient(DurableTaskClient innerClient, ManagedChannel grpcChannel) {
     this.innerClient = innerClient;
     this.grpcChannel = grpcChannel;
-    if (properties.getValue(Properties.WORKFLOWS_APP_KEEP_ALIVE_ENABLED)) {
-      this.keepalive = new GrpcChannelKeepalive(grpcChannel, "dapr-workflow-client-keepalive",
-          properties.getValue(Properties.WORKFLOWS_APP_KEEP_ALIVE_INTERVAL_SECONDS));
-    }
   }
 
   /**
@@ -450,10 +441,6 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Closes the inner DurableTask client and shutdown the GRPC channel.
    */
   public void close() throws InterruptedException {
-    if (this.keepalive != null) {
-      this.keepalive.close();
-      this.keepalive = null;
-    }
     try {
       if (this.innerClient != null) {
         this.innerClient.close();

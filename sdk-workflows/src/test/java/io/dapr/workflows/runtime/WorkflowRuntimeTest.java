@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WorkflowRuntimeTest {
 
@@ -41,12 +42,15 @@ public class WorkflowRuntimeTest {
   }
 
   @Test
-  public void closeStopsKeepalive() throws InterruptedException {
+  public void startStartsKeepaliveAndCloseStopsIt() throws InterruptedException {
     String threadName = "dapr-workflow-runtime-keepalive";
     DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
     ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel(new Properties());
     GrpcChannelKeepalive keepalive = new GrpcChannelKeepalive(channel, threadName, Duration.ofSeconds(30));
     WorkflowRuntime runtime = new WorkflowRuntime(worker, channel, Executors.newCachedThreadPool(), keepalive);
+    assertFalse(keepaliveThreadAlive(threadName), "keepalive must stay inert until the runtime starts");
+    runtime.start(false);
+    assertTrue(keepaliveThreadAlive(threadName), "keepalive thread expected after runtime start");
     assertDoesNotThrow(runtime::close);
     long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
     while (keepaliveThreadAlive(threadName) && System.currentTimeMillis() < deadline) {

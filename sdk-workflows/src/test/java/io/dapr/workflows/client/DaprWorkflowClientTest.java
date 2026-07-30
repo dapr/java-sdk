@@ -70,7 +70,7 @@ public class DaprWorkflowClientTest {
   public static void beforeAll() {
     constructor =
         Constructor.class.cast(Arrays.stream(DaprWorkflowClient.class.getDeclaredConstructors())
-            .filter(c -> c.getParameters().length == 3
+            .filter(c -> c.getParameters().length == 2
                 && c.getParameterTypes()[0] == DurableTaskClient.class)
             .map(c -> {
               c.setAccessible(true);
@@ -85,7 +85,7 @@ public class DaprWorkflowClientTest {
 
     when(mockGrpcChannel.shutdown()).thenReturn(mockGrpcChannel);
 
-    client = constructor.newInstance(mockInnerClient, mockGrpcChannel, new Properties());
+    client = constructor.newInstance(mockInnerClient, mockGrpcChannel);
   }
 
   @Test

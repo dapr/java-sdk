@@ -73,8 +73,19 @@ public class GrpcChannelKeepaliveTest {
   }
 
   @Test
+  public void noPingsBeforeStart() throws InterruptedException {
+    try (GrpcChannelKeepalive keepalive = new GrpcChannelKeepalive(channel, "test-keepalive", TEST_INTERVAL)) {
+      Thread.sleep(TEST_INTERVAL.toMillis() * 4);
+      assertEquals(0, helloCount.get());
+    }
+  }
+
+  @Test
   public void pingsPeriodically() throws InterruptedException {
     try (GrpcChannelKeepalive keepalive = new GrpcChannelKeepalive(channel, "test-keepalive", TEST_INTERVAL)) {
+      keepalive.start();
+      // A second start must not schedule a second ping loop.
+      keepalive.start();
       awaitHelloCountAtLeast(2);
     }
   }
@@ -83,6 +94,7 @@ public class GrpcChannelKeepaliveTest {
   public void continuesPingingAfterFailures() throws InterruptedException {
     failPings.set(true);
     try (GrpcChannelKeepalive keepalive = new GrpcChannelKeepalive(channel, "test-keepalive", TEST_INTERVAL)) {
+      keepalive.start();
       awaitHelloCountAtLeast(2);
       failPings.set(false);
       awaitHelloCountAtLeast(helloCount.get() + 2);
@@ -92,6 +104,7 @@ public class GrpcChannelKeepaliveTest {
   @Test
   public void closeStopsPinging() throws InterruptedException {
     GrpcChannelKeepalive keepalive = new GrpcChannelKeepalive(channel, "test-keepalive", TEST_INTERVAL);
+    keepalive.start();
     awaitHelloCountAtLeast(1);
     keepalive.close();
     // Allow an already in-flight ping to finish before snapshotting.
@@ -105,6 +118,7 @@ public class GrpcChannelKeepaliveTest {
   public void keepaliveThreadIsDaemonAndStopsOnClose() throws InterruptedException {
     String threadName = "test-keepalive-lifecycle";
     try (GrpcChannelKeepalive keepalive = new GrpcChannelKeepalive(channel, threadName, TEST_INTERVAL)) {
+      keepalive.start();
       awaitHelloCountAtLeast(1);
       Thread thread = findThread(threadName);
       assertTrue(thread != null && thread.isDaemon(), "expected a live daemon keepalive thread");
