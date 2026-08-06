@@ -38,6 +38,7 @@ public final class WorkflowHistoryCache {
   static final int DEFAULT_MAX_INSTANCES = 100_000;
 
   private static final class Entry {
+    /** Already wrapped unmodifiable, so {@link #get(String)} hands it out without allocating. */
     final List<HistoryEvents.HistoryEvent> events;
     final long bytes;
     long lastAccess;
@@ -86,9 +87,8 @@ public final class WorkflowHistoryCache {
    * Returns the cached committed history for an instance, refreshing its TTL, or {@code null} on a
    * miss.
    *
-   * <p>The returned list is an unmodifiable view of the cached entry rather than a copy, so reading
-   * it stays allocation-free on the hot path while a caller cannot corrupt the cache by mutating
-   * what it was handed.
+   * <p>The returned list is the entry's unmodifiable view, wrapped once when it was cached, so a
+   * caller cannot corrupt the cache by mutating what it was handed and this path allocates nothing.
    *
    * @param instanceId the workflow instance ID
    * @return the cached committed history, or {@code null} if the instance is not cached
@@ -100,7 +100,7 @@ public final class WorkflowHistoryCache {
         return null;
       }
       entry.lastAccess = this.clockNanos.getAsLong();
-      return Collections.unmodifiableList(entry.events);
+      return entry.events;
     }
   }
 
@@ -112,7 +112,9 @@ public final class WorkflowHistoryCache {
    * @param events     the committed history to cache for the instance
    */
   public void put(String instanceId, List<HistoryEvents.HistoryEvent> events) {
-    List<HistoryEvents.HistoryEvent> snapshot = new ArrayList<>(events);
+    // Snapshot so a later mutation by the caller is not observed, and wrap once here rather than on
+    // every get(), which is the hot path.
+    List<HistoryEvents.HistoryEvent> snapshot = Collections.unmodifiableList(new ArrayList<>(events));
     long bytes = 0;
     for (HistoryEvents.HistoryEvent event : snapshot) {
       bytes += event.getSerializedSize();
