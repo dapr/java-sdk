@@ -352,18 +352,20 @@ public class DaprClientImpl extends AbstractDaprClient {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
       Object data = request.getData();
+      String contentType = getPublishEventContentType(data, request.getContentType());
+      boolean useContentTypeConverter = objectSerializer instanceof DefaultObjectSerializer
+          && (DefaultContentTypeConverter.isBinaryContentType(contentType)
+          || DefaultContentTypeConverter.isStringContentType(contentType)
+          || DefaultContentTypeConverter.isJsonContentType(contentType)
+          || DefaultContentTypeConverter.isCloudEventContentType(contentType));
+      byte[] serializedEvent = useContentTypeConverter
+          ? DefaultContentTypeConverter.convertEventToBytesForGrpc(data, contentType)
+          : objectSerializer.serialize(data);
       DaprPubsubProtos.PublishEventRequest.Builder envelopeBuilder = DaprPubsubProtos.PublishEventRequest.newBuilder()
           .setTopic(topic)
           .setPubsubName(pubsubName)
-          .setData(ByteString.copyFrom(objectSerializer.serialize(data)));
-
-      // Content-type can be overwritten on a per-request basis.
-      // It allows CloudEvents to be handled differently, for example.
-      String contentType = request.getContentType();
-      if (contentType == null || contentType.isEmpty()) {
-        contentType = objectSerializer.getContentType();
-      }
-      envelopeBuilder.setDataContentType(contentType);
+          .setData(ByteString.copyFrom(serializedEvent))
+          .setDataContentType(contentType);
 
       Map<String, String> metadata = request.getMetadata();
       if (metadata != null) {
@@ -379,6 +381,20 @@ public class DaprClientImpl extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  private String getPublishEventContentType(Object data, String contentType) {
+    if (!Strings.isNullOrEmpty(contentType) || !(objectSerializer instanceof DefaultObjectSerializer)) {
+      return Strings.isNullOrEmpty(contentType) ? objectSerializer.getContentType() : contentType;
+    }
+
+    if (data instanceof byte[]) {
+      return "application/octet-stream";
+    }
+    if (data instanceof String || data instanceof Boolean || data instanceof Number) {
+      return "text/plain";
+    }
+    return objectSerializer.getContentType();
   }
 
   /**
