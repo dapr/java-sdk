@@ -266,6 +266,17 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void publishEventBooleanInfersTextPlainContentTypeTest() {
+    mockPublishEventSuccess();
+
+    client.publishEvent("pubsubname", "topic", true).block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("text/plain", request.getDataContentType());
+    assertEquals("true", request.getData().toString(StandardCharsets.UTF_8));
+  }
+
+  @Test
   public void publishEventByteArrayInfersOctetStreamContentTypeTest() {
     byte[] event = new byte[] {1, 2, 3};
     mockPublishEventSuccess();
@@ -289,6 +300,19 @@ public class DaprClientGrpcTest {
     DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
     assertEquals("image/png", request.getDataContentType());
     assertArrayEquals(event, request.getData().toByteArray());
+  }
+
+  @Test
+  public void publishEventCloudEventContentTypeUsesDefaultConverterTest() {
+    mockPublishEventSuccess();
+
+    client.publishEvent(
+        new PublishEventRequest("pubsubname", "topic", "hello")
+            .setContentType("application/cloudevents+json")).block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("application/cloudevents+json", request.getDataContentType());
+    assertEquals("\"hello\"", request.getData().toString(StandardCharsets.UTF_8));
   }
 
   private void mockPublishEventSuccess() {
