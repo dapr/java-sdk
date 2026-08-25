@@ -38,7 +38,9 @@ public final class WorkflowHistoryCache {
   static final int DEFAULT_MAX_INSTANCES = 100_000;
 
   private static final class Entry {
-    /** Already wrapped unmodifiable, so {@link #get(String)} hands it out without allocating. */
+    /**
+     * Already wrapped unmodifiable, so {@link #get(String)} hands it out without allocating.
+     */
     final List<HistoryEvents.HistoryEvent> events;
     final long bytes;
     long lastAccess;
