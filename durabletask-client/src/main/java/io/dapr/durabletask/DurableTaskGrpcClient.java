@@ -15,6 +15,7 @@ package io.dapr.durabletask;
 
 import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
 import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
@@ -45,6 +46,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -446,6 +448,54 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       return this.scheduleNewOrchestrationInstance(metadata.getName(),
           this.dataConverter.deserialize(metadata.getSerializedInput(), Object.class), metadata.getInstanceId());
     }
+  }
+
+  @Override
+  public OrchestratorService.ListInstanceIDsResponse listInstanceIds(
+      @Nullable String continuationToken, @Nullable Integer pageSize) {
+    OrchestratorService.ListInstanceIDsRequest.Builder builder =
+        OrchestratorService.ListInstanceIDsRequest.newBuilder();
+    if (continuationToken != null) {
+      builder.setContinuationToken(continuationToken);
+    }
+    if (pageSize != null) {
+      if (pageSize <= 0) {
+        throw new IllegalArgumentException("pageSize must be greater than zero.");
+      }
+      builder.setPageSize(pageSize);
+    }
+    return this.sidecarClient.listInstanceIDs(builder.build());
+  }
+
+  @Override
+  public List<HistoryEvent> getInstanceHistory(String instanceId) {
+    Helpers.throwIfArgumentNull(instanceId, "instanceId");
+    OrchestratorService.GetInstanceHistoryRequest request =
+        OrchestratorService.GetInstanceHistoryRequest.newBuilder()
+            .setInstanceId(instanceId)
+            .build();
+    OrchestratorService.GetInstanceHistoryResponse response = this.sidecarClient.getInstanceHistory(request);
+    return response.getEventsList();
+  }
+
+  @Override
+  public String rerunWorkflowFromEvent(String sourceInstanceId, int eventId,
+      @Nullable String newInstanceId, @Nullable Object input, boolean overwriteInput) {
+    Helpers.throwIfArgumentNull(sourceInstanceId, "sourceInstanceId");
+    OrchestratorService.RerunWorkflowFromEventRequest.Builder builder =
+        OrchestratorService.RerunWorkflowFromEventRequest.newBuilder()
+            .setSourceInstanceID(sourceInstanceId)
+            .setEventID(eventId)
+            .setOverwriteInput(overwriteInput);
+    if (newInstanceId != null) {
+      builder.setNewInstanceID(newInstanceId);
+    }
+    if (overwriteInput) {
+      builder.setInput(StringValue.of(this.dataConverter.serialize(input)));
+    }
+    OrchestratorService.RerunWorkflowFromEventResponse response =
+        this.sidecarClient.rerunWorkflowFromEvent(builder.build());
+    return response.getNewInstanceID();
   }
 
   private PurgeResult toPurgeResult(OrchestratorService.PurgeInstancesResponse response) {
