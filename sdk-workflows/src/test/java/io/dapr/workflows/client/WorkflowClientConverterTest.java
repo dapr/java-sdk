@@ -29,14 +29,61 @@ public class WorkflowClientConverterTest {
 
   @Test
   public void mapsEventTypeCases() {
+    // Execution events
     assertEquals(WorkflowHistoryEventType.EXECUTION_STARTED,
         WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EXECUTIONSTARTED));
+    assertEquals(WorkflowHistoryEventType.EXECUTION_COMPLETED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EXECUTIONCOMPLETED));
+    assertEquals(WorkflowHistoryEventType.EXECUTION_TERMINATED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EXECUTIONTERMINATED));
+    assertEquals(WorkflowHistoryEventType.EXECUTION_SUSPENDED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EXECUTIONSUSPENDED));
+    assertEquals(WorkflowHistoryEventType.EXECUTION_RESUMED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EXECUTIONRESUMED));
+    assertEquals(WorkflowHistoryEventType.EXECUTION_STALLED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EXECUTIONSTALLED));
+
+    // Task events
     assertEquals(WorkflowHistoryEventType.TASK_SCHEDULED,
         WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.TASKSCHEDULED));
-    assertEquals(WorkflowHistoryEventType.WORKFLOW_STARTED,
-        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.WORKFLOWSTARTED));
+    assertEquals(WorkflowHistoryEventType.TASK_COMPLETED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.TASKCOMPLETED));
+    assertEquals(WorkflowHistoryEventType.TASK_FAILED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.TASKFAILED));
+
+    // Child workflow events
+    assertEquals(WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_CREATED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.CHILDWORKFLOWINSTANCECREATED));
     assertEquals(WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_CREATED,
         WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.DETACHEDWORKFLOWINSTANCECREATED));
+    assertEquals(WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_COMPLETED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.CHILDWORKFLOWINSTANCECOMPLETED));
+    assertEquals(WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_FAILED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.CHILDWORKFLOWINSTANCEFAILED));
+
+    // Timer events
+    assertEquals(WorkflowHistoryEventType.TIMER_CREATED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.TIMERCREATED));
+    assertEquals(WorkflowHistoryEventType.TIMER_FIRED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.TIMERFIRED));
+
+    // Workflow events
+    assertEquals(WorkflowHistoryEventType.WORKFLOW_STARTED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.WORKFLOWSTARTED));
+    assertEquals(WorkflowHistoryEventType.WORKFLOW_COMPLETED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.WORKFLOWCOMPLETED));
+
+    // Event communication
+    assertEquals(WorkflowHistoryEventType.EVENT_SENT,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EVENTSENT));
+    assertEquals(WorkflowHistoryEventType.EVENT_RAISED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EVENTRAISED));
+
+    // Continue as new
+    assertEquals(WorkflowHistoryEventType.CONTINUE_AS_NEW,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.CONTINUEASNEW));
+
+    // Unknown/unset
     assertEquals(WorkflowHistoryEventType.UNKNOWN,
         WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.EVENTTYPE_NOT_SET));
   }
@@ -66,6 +113,18 @@ public class WorkflowClientConverterTest {
     assertEquals(1, WorkflowClientConverter.toWorkflowHistory(Arrays.asList(event)).size());
     assertEquals(WorkflowHistoryEventType.TIMER_CREATED,
         WorkflowClientConverter.toWorkflowHistory(Arrays.asList(event)).get(0).getEventType());
+  }
+
+  @Test
+  public void usesEpochTimestampWhenNotSet() {
+    HistoryEvent event = HistoryEvent.newBuilder()
+        .setEventId(42)
+        .setTaskScheduled(HistoryEvents.TaskScheduledEvent.getDefaultInstance())
+        .build();
+
+    WorkflowHistoryEvent result = WorkflowClientConverter.toWorkflowHistoryEvent(event);
+
+    assertEquals(Instant.EPOCH, result.getTimestamp());
   }
 
   @Test
