@@ -19,6 +19,8 @@ import io.dapr.durabletask.DurableTaskGrpcClientBuilder;
 import io.dapr.durabletask.NewOrchestrationInstanceOptions;
 import io.dapr.durabletask.OrchestrationMetadata;
 import io.dapr.durabletask.PurgeResult;
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
+import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
@@ -33,6 +35,7 @@ import io.opentelemetry.api.trace.Tracer;
 import javax.annotation.Nullable;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -435,6 +438,81 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
 
     return false;
+  }
+
+  /**
+   * Lists workflow instance IDs. Returns the first page with no size limit.
+   *
+   * @return a page of workflow instance IDs
+   */
+  public WorkflowInstancePage listInstanceIds() {
+    return this.listInstanceIds(null, null);
+  }
+
+  /**
+   * Lists workflow instance IDs with pagination.
+   *
+   * @param continuationToken the continuation token from a previous call, or null for the first page
+   * @param pageSize          the maximum number of instance IDs to return, or null for no limit; must be
+   *                          greater than zero when set
+   * @return a page of workflow instance IDs and an optional continuation token for the next page
+   */
+  public WorkflowInstancePage listInstanceIds(@Nullable String continuationToken, @Nullable Integer pageSize) {
+    if (pageSize != null && pageSize <= 0) {
+      throw new IllegalArgumentException("pageSize must be greater than zero.");
+    }
+    OrchestratorService.ListInstanceIDsResponse response =
+        this.innerClient.listInstanceIds(continuationToken, pageSize);
+    return WorkflowClientConverter.toWorkflowInstancePage(response);
+  }
+
+  /**
+   * Gets the full execution history of a workflow instance.
+   *
+   * @param instanceId the unique ID of the workflow instance to get history for
+   * @return the list of history events for the workflow instance
+   */
+  public List<WorkflowHistoryEvent> getInstanceHistory(String instanceId) {
+    if (instanceId == null || instanceId.isEmpty()) {
+      throw new IllegalArgumentException("instanceId must not be null or empty.");
+    }
+    List<HistoryEvent> events = this.innerClient.getInstanceHistory(instanceId);
+    return WorkflowClientConverter.toWorkflowHistory(events);
+  }
+
+  /**
+   * Reruns a workflow from a history event, creating a new workflow instance.
+   *
+   * @param sourceInstanceId the ID of the source workflow instance to rerun from
+   * @param eventId          the history event ID to rerun from
+   * @return the instance ID of the new workflow instance
+   */
+  public String rerunWorkflowFromEvent(String sourceInstanceId, int eventId) {
+    return this.rerunWorkflowFromEvent(sourceInstanceId, eventId, null);
+  }
+
+  /**
+   * Reruns a workflow from a history event with options, creating a new workflow instance.
+   *
+   * @param sourceInstanceId the ID of the source workflow instance to rerun from
+   * @param eventId          the history event ID to rerun from
+   * @param options          optional rerun configuration; may be null
+   * @return the instance ID of the new workflow instance
+   * @throws IllegalArgumentException if input is set on options without overwriteInput being true
+   */
+  public String rerunWorkflowFromEvent(String sourceInstanceId, int eventId,
+      @Nullable RerunWorkflowFromEventOptions options) {
+    if (sourceInstanceId == null || sourceInstanceId.isEmpty()) {
+      throw new IllegalArgumentException("sourceInstanceId must not be null or empty.");
+    }
+    if (options == null) {
+      return this.innerClient.rerunWorkflowFromEvent(sourceInstanceId, eventId, null, null, false);
+    }
+    if (options.getInput() != null && !options.isOverwriteInput()) {
+      throw new IllegalArgumentException("overwriteInput must be true when input is set.");
+    }
+    return this.innerClient.rerunWorkflowFromEvent(sourceInstanceId, eventId,
+        options.getNewInstanceId(), options.getInput(), options.isOverwriteInput());
   }
 
   /**
