@@ -1811,6 +1811,26 @@ public class DurableTaskClientIT extends IntegrationTestBase {
     }
   }
 
+  @Test
+  void rerunWorkflowFromEventWithOverwriteNullInputDoesNotThrow() throws TimeoutException {
+    final String orchestratorName = "rerunNullInputTest";
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(orchestratorName, ctx -> ctx.complete(ctx.getInput(String.class)))
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName, "hello");
+      client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+
+      String newInstanceId = client.rerunWorkflowFromEvent(instanceId, 0, null, null, true);
+
+      assertNotEquals(instanceId, newInstanceId);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(newInstanceId, defaultTimeout, true);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+    }
+  }
+
 }
 
 

@@ -491,7 +491,10 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setNewInstanceID(newInstanceId);
     }
     if (overwriteInput) {
-      builder.setInput(StringValue.of(this.dataConverter.serialize(input)));
+      String serializedInput = this.dataConverter.serialize(input);
+      if (serializedInput != null) {
+        builder.setInput(StringValue.of(serializedInput));
+      }
     }
     OrchestratorService.RerunWorkflowFromEventResponse response =
         this.sidecarClient.rerunWorkflowFromEvent(builder.build());
