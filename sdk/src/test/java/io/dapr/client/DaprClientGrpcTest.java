@@ -231,27 +231,104 @@ public class DaprClientGrpcTest {
 
   @Test
   public void publishEventContentTypeOverrideTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest -> {
-      if (!"text/plain".equals(publishEventRequest.getDataContentType())) {
-        return false;
-      }
-
-      if (!"\"hello\"".equals(new String(publishEventRequest.getData().toByteArray()))) {
-        return false;
-      }
-      return true;
-    }), any());
-
+    mockPublishEventSuccess();
 
     Mono<Void> result = client.publishEvent(
         new PublishEventRequest("pubsubname", "topic", "hello")
             .setContentType("text/plain"));
     result.block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("text/plain", request.getDataContentType());
+    assertEquals("hello", request.getData().toString(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void publishEventStringInfersTextPlainContentTypeTest() {
+    mockPublishEventSuccess();
+
+    client.publishEvent("pubsubname", "topic", "hello").block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("text/plain", request.getDataContentType());
+    assertEquals("hello", request.getData().toString(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void publishEventNumberInfersTextPlainContentTypeTest() {
+    mockPublishEventSuccess();
+
+    client.publishEvent("pubsubname", "topic", 42).block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("text/plain", request.getDataContentType());
+    assertEquals("42", request.getData().toString(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void publishEventBooleanInfersTextPlainContentTypeTest() {
+    mockPublishEventSuccess();
+
+    client.publishEvent("pubsubname", "topic", true).block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("text/plain", request.getDataContentType());
+    assertEquals("true", request.getData().toString(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void publishEventByteArrayInfersOctetStreamContentTypeTest() {
+    byte[] event = new byte[] {1, 2, 3};
+    mockPublishEventSuccess();
+
+    client.publishEvent("pubsubname", "topic", event).block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("application/octet-stream", request.getDataContentType());
+    assertArrayEquals(event, request.getData().toByteArray());
+  }
+
+  @Test
+  public void publishEventByteArrayPreservesCustomContentTypeTest() {
+    byte[] event = new byte[] {1, 2, 3};
+    mockPublishEventSuccess();
+
+    client.publishEvent(
+        new PublishEventRequest("pubsubname", "topic", event)
+            .setContentType("image/png")).block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("image/png", request.getDataContentType());
+    assertArrayEquals(event, request.getData().toByteArray());
+  }
+
+  @Test
+  public void publishEventCloudEventContentTypeUsesDefaultConverterTest() {
+    mockPublishEventSuccess();
+
+    client.publishEvent(
+        new PublishEventRequest("pubsubname", "topic", "hello")
+            .setContentType("application/cloudevents+json")).block();
+
+    DaprPubsubProtos.PublishEventRequest request = capturePublishEventRequest();
+    assertEquals("application/cloudevents+json", request.getDataContentType());
+    assertEquals("\"hello\"", request.getData().toString(StandardCharsets.UTF_8));
+  }
+
+  private void mockPublishEventSuccess() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(any(), any());
+  }
+
+  private DaprPubsubProtos.PublishEventRequest capturePublishEventRequest() {
+    ArgumentCaptor<DaprPubsubProtos.PublishEventRequest> captor =
+        ArgumentCaptor.forClass(DaprPubsubProtos.PublishEventRequest.class);
+    verify(daprStub).publishEvent(captor.capture(), any());
+    return captor.getValue();
   }
 
   @Test
