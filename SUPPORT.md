@@ -12,7 +12,13 @@ at a given version pins the whole stack, core and Spring, to that single version
 | **1.19.x+** | v1.18            | 4.0.x                             | 17+ | Active — new features and fixes                   |
 | **1.18.x**  | v1.18            | 3.5.x                             | 17+ | Maintenance — best-effort security/critical fixes |
 
-The **core** SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`, `durabletask-client`)
+### Migrating to the unified workflows module
+
+`durabletask-client` has been folded into `dapr-sdk-workflows`, which is a breaking change for
+workflow code. See [MIGRATION.md](MIGRATION.md) for the type mapping, the removed API, and what it
+means for workflows that are already running when you upgrade.
+
+The **core** SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`)
 are framework-agnostic and do not depend on Spring Boot — the Spring Boot column applies only to the
 Spring integration modules (`dapr-sdk-springboot`, `dapr-spring-*`). Core and Spring modules always
 share the same SDK version (the Spring BOM imports `dapr-sdk-bom` at its own version), so they never
