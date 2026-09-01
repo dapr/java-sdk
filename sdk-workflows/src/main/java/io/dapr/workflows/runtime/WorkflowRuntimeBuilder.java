@@ -85,7 +85,7 @@ public class WorkflowRuntimeBuilder {
       synchronized (WorkflowRuntime.class) {
         boolean ownsExecutorService = this.executorService == null;
         if (ownsExecutorService) {
-          this.executorService = DefaultExecutorService.create();
+          this.executorService = DefaultExecutorService.create(this.properties);
         }
         if (instance == null) {
           GrpcChannelKeepalive keepalive = null;
