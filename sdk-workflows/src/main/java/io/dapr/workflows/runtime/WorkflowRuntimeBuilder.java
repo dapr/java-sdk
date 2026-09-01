@@ -14,14 +14,14 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.config.Properties;
-import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
-import io.dapr.durabletask.TaskActivityFactory;
-import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.dapr.workflows.internal.GrpcChannelKeepalive;
+import io.dapr.workflows.task.TaskActivityFactory;
+import io.dapr.workflows.task.orchestration.TaskOrchestrationFactory;
+import io.dapr.workflows.task.worker.DurableTaskGrpcWorkerBuilder;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import org.apache.commons.lang3.StringUtils;
@@ -97,7 +97,8 @@ public class WorkflowRuntimeBuilder {
               "This builder's channel was shut down when its previous WorkflowRuntime was closed. "
                   + "Build the new WorkflowRuntime from a new WorkflowRuntimeBuilder.");
         }
-        if (this.executorService == null) {
+        boolean ownsExecutorService = this.executorService == null;
+        if (ownsExecutorService) {
           this.executorService = Executors.newCachedThreadPool();
         }
         GrpcChannelKeepalive keepalive = null;
@@ -107,7 +108,7 @@ public class WorkflowRuntimeBuilder {
         }
         instance = new WorkflowRuntime(
             this.builder.withExecutorService(this.executorService).build(),
-            this.managedChannel, this.executorService, keepalive);
+            this.managedChannel, this.executorService, keepalive, ownsExecutorService);
       }
     }
 

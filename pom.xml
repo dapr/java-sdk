@@ -752,7 +752,6 @@
     <module>examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
-    <module>durabletask-client</module>
   </modules>
 
   <profiles>
@@ -762,7 +761,7 @@
         <module>sdk-tests</module>
         <module>spring-boot-examples</module>
         <module>spring-boot-sdk-tests</module>
-        <module>durabletask-client</module>
+        <module>sdk-workflows</module>
       </modules>
       <build>
         <plugins>

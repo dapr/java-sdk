@@ -13,48 +13,53 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import io.dapr.workflows.client.WorkflowFailureDetails;
-import io.dapr.workflows.runtime.DefaultWorkflowContext;
+import io.dapr.workflows.task.exception.WorkflowFailureDetails;
 
 import java.time.Duration;
 
-public class WorkflowTaskRetryContext {
-
-  private final DefaultWorkflowContext workflowContext;
+/**
+ * Context data that's provided to {@link WorkflowTaskRetryHandler} implementations.
+ */
+public final class WorkflowTaskRetryContext {
+  private final WorkflowContext orchestrationContext;
   private final int lastAttemptNumber;
   private final WorkflowFailureDetails lastFailure;
   private final Duration totalRetryTime;
 
   /**
-   * Constructor for WorkflowTaskRetryContext.
+   * Creates a retry context.
    *
-   * @param workflowContext The workflow context
-   * @param lastAttemptNumber The number of the previous attempt
-   * @param lastFailure The failure details from the most recent failure
-   * @param totalRetryTime The amount of time spent retrying
+   * <p>Public so the workflow executor in a sibling package can reach it; not intended for
+   * application code.
+   *
+   * @param orchestrationContext the workflow context of the failing task.
+   * @param lastAttemptNumber the number of the attempt that just failed.
+   * @param lastFailure details of the last failure.
+   * @param totalRetryTime how long retries have been running for.
    */
   public WorkflowTaskRetryContext(
-          DefaultWorkflowContext workflowContext,
-          int lastAttemptNumber,
-          WorkflowFailureDetails lastFailure,
-          Duration totalRetryTime) {
-    this.workflowContext = workflowContext;
+      WorkflowContext orchestrationContext,
+      int lastAttemptNumber,
+      WorkflowFailureDetails lastFailure,
+      Duration totalRetryTime) {
+    this.orchestrationContext = orchestrationContext;
     this.lastAttemptNumber = lastAttemptNumber;
     this.lastFailure = lastFailure;
     this.totalRetryTime = totalRetryTime;
   }
 
   /**
-   * Gets the context of the current workflow.
+   * Gets the context of the current orchestration.
    *
-   * <p>The workflow context can be used in retry handlers to schedule timers (via the
-   * {@link DefaultWorkflowContext#createTimer} methods) for implementing delays between retries. It can also be
-   * used to implement time-based retry logic by using the {@link DefaultWorkflowContext#getCurrentInstant} method.
+   * <p>The orchestration context can be used in retry handlers to schedule timers (via the
+   * {@link WorkflowContext#createTimer} methods) for implementing delays between retries. It can also be
+   * used to implement time-based retry logic by using the {@link WorkflowContext#getCurrentInstant} method.
+   * </p>
    *
-   * @return the context of the parent workflow
+   * @return the context of the parent orchestration
    */
-  public DefaultWorkflowContext getWorkflowContext() {
-    return this.workflowContext;
+  public WorkflowContext getWorkflowContext() {
+    return this.orchestrationContext;
   }
 
   /**
@@ -84,5 +89,4 @@ public class WorkflowTaskRetryContext {
   public Duration getTotalRetryTime() {
     return this.totalRetryTime;
   }
-
 }
