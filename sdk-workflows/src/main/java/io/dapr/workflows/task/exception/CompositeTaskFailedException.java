@@ -28,31 +28,40 @@ import java.util.List;
 public class CompositeTaskFailedException extends RuntimeException {
   private final List<Exception> exceptions;
 
-  public CompositeTaskFailedException() {
+  CompositeTaskFailedException() {
     this.exceptions = new ArrayList<>();
   }
 
-  public CompositeTaskFailedException(List<Exception> exceptions) {
+  CompositeTaskFailedException(List<Exception> exceptions) {
     this.exceptions = exceptions;
   }
 
+  /**
+   * Creates a composite failure from the tasks that failed.
+   *
+   * <p>Public because the workflow executor constructs it from another package. Not intended for
+   * application code.
+   *
+   * @param message the exception message.
+   * @param exceptions the individual task failures.
+   */
   public CompositeTaskFailedException(String message, List<Exception> exceptions) {
     super(message);
     this.exceptions = exceptions;
   }
 
-  public CompositeTaskFailedException(String message, Throwable cause, List<Exception> exceptions) {
+  CompositeTaskFailedException(String message, Throwable cause, List<Exception> exceptions) {
     super(message, cause);
     this.exceptions = exceptions;
   }
 
-  public CompositeTaskFailedException(Throwable cause, List<Exception> exceptions) {
+  CompositeTaskFailedException(Throwable cause, List<Exception> exceptions) {
     super(cause);
     this.exceptions = exceptions;
   }
 
-  public CompositeTaskFailedException(String message, Throwable cause, boolean enableSuppression,
-                                      boolean writableStackTrace, List<Exception> exceptions) {
+  CompositeTaskFailedException(String message, Throwable cause, boolean enableSuppression,
+                               boolean writableStackTrace, List<Exception> exceptions) {
     super(message, cause, enableSuppression, writableStackTrace);
     this.exceptions = exceptions;
   }

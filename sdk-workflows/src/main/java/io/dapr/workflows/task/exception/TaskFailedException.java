@@ -27,22 +27,21 @@ public class TaskFailedException extends RuntimeException {
   private final String taskName;
   private final int taskId;
 
-  public TaskFailedException(String taskName, int taskId, WorkflowFailureDetails details) {
-    this(getExceptionMessage(taskName, taskId, details), taskName, taskId, details);
-  }
-
   /**
-   * Creates a task failure with an explicit message.
+   * Creates a task failure with a message derived from the task and failure details.
    *
-   * <p>Public so the workflow executor in a sibling package can reach it; not intended for
+   * <p>Public because the workflow executor constructs it from another package. Not intended for
    * application code.
    *
-   * @param message the exception message.
    * @param taskName the name of the failed task.
    * @param taskId the id of the failed task.
    * @param details details of the failure.
    */
-  public TaskFailedException(String message, String taskName, int taskId, WorkflowFailureDetails details) {
+  public TaskFailedException(String taskName, int taskId, WorkflowFailureDetails details) {
+    this(getExceptionMessage(taskName, taskId, details), taskName, taskId, details);
+  }
+
+  TaskFailedException(String message, String taskName, int taskId, WorkflowFailureDetails details) {
     super(message);
     this.taskName = taskName;
     this.taskId = taskId;
