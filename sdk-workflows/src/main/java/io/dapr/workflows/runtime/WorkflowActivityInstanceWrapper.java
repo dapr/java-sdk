@@ -13,9 +13,9 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.TaskActivity;
-import io.dapr.durabletask.TaskActivityFactory;
 import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.task.TaskActivity;
+import io.dapr.workflows.task.TaskActivityFactory;
 
 /**
  * Wrapper for Durable Task Framework task activity factory.
