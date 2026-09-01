@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import io.dapr.durabletask.PropagatedHistory;
+import io.dapr.workflows.task.history.PropagatedHistory;
 import org.slf4j.Logger;
 
 import java.util.Optional;

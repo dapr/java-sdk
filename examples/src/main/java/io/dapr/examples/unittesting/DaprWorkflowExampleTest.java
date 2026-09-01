@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.examples.unittesting;
 
-import io.dapr.durabletask.Task;
-import io.dapr.durabletask.TaskCanceledException;
+import io.dapr.workflows.task.Task;
+import io.dapr.workflows.task.exception.TaskCanceledException;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;

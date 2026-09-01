@@ -12,15 +12,15 @@ limitations under the License.
 */
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
-import io.dapr.durabletask.TaskActivity;
-import io.dapr.durabletask.TaskActivityFactory;
-import io.dapr.durabletask.TaskOrchestration;
-import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
+import io.dapr.workflows.task.TaskActivity;
+import io.dapr.workflows.task.TaskActivityFactory;
+import io.dapr.workflows.task.TaskOrchestration;
+import io.dapr.workflows.task.orchestration.TaskOrchestrationFactory;
+import io.dapr.workflows.task.worker.DurableTaskGrpcWorkerBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -135,7 +135,7 @@ public class WorkflowRuntimeBuilderTest {
         @Override
         public TaskOrchestration create() {
           W w = new W();
-          return ctx -> w.run(new DefaultWorkflowContext(ctx, w.getClass()));
+          return ctx -> w.run(ctx);
         }
 
         @Override

@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
+import io.dapr.workflows.task.exception.WorkflowFailureDetails;
+
 import javax.annotation.Nullable;
 
 import java.time.Instant;
