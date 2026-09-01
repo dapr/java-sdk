@@ -13,12 +13,10 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.FailureDetails;
-import io.dapr.durabletask.OrchestrationMetadata;
-import io.dapr.durabletask.OrchestrationRuntimeStatus;
-import io.dapr.workflows.client.WorkflowFailureDetails;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.workflows.client.WorkflowState;
+import io.dapr.workflows.task.client.OrchestrationMetadata;
+import io.dapr.workflows.task.exception.WorkflowFailureDetails;
 
 import javax.annotation.Nullable;
 
@@ -46,13 +44,7 @@ public class DefaultWorkflowState implements WorkflowState {
     }
     this.orchestrationMetadata = orchestrationMetadata;
 
-    FailureDetails details = orchestrationMetadata.getFailureDetails();
-
-    if (details != null) {
-      this.failureDetails = new DefaultWorkflowFailureDetails(details);
-    } else {
-      this.failureDetails = null;
-    }
+    this.failureDetails = orchestrationMetadata.getFailureDetails();
   }
 
   /**
@@ -80,9 +72,7 @@ public class DefaultWorkflowState implements WorkflowState {
    * @return the current runtime status of the workflow instance at the time this object was fetched
    */
   public WorkflowRuntimeStatus getRuntimeStatus() {
-    OrchestrationRuntimeStatus status = orchestrationMetadata.getRuntimeStatus();
-
-    return WorkflowRuntimeStatusConverter.fromOrchestrationRuntimeStatus(status);
+    return orchestrationMetadata.getRuntimeStatus();
   }
 
   /**
@@ -125,7 +115,7 @@ public class DefaultWorkflowState implements WorkflowState {
    * Gets the failure details, if any, for the failed workflow instance.
    *
    * <p>This method returns data only if the workflow is in the
-   * {@link OrchestrationRuntimeStatus#FAILED} state,
+   * {@link WorkflowRuntimeStatus#FAILED} state,
    * and only if this instance metadata was fetched with the option to include
    * output data.
    *

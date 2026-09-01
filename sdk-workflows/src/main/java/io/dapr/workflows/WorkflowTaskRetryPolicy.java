@@ -40,11 +40,64 @@ public final class WorkflowTaskRetryPolicy {
       Duration maxRetryInterval,
       Duration retryTimeout
   ) {
+    // Validation lives here rather than only on the Builder because the durable task client's
+    // RetryPolicy validated in its setters, and the adapter that used to sit between the two types
+    // routed every policy through them. With the adapter gone, a policy built through these
+    // constructors would otherwise reach the executor unchecked and fail late - as an NPE part-way
+    // through a replay, or as silently wrong retry timing.
+    if (maxNumberOfAttempts == null) {
+      throw new IllegalArgumentException("maxNumberOfAttempts cannot be null.");
+    }
+    if (maxNumberOfAttempts <= 0) {
+      throw new IllegalArgumentException("The value for maxNumberOfAttempts must be greater than zero.");
+    }
+    if (firstRetryInterval == null) {
+      throw new IllegalArgumentException("firstRetryInterval cannot be null.");
+    }
+    if (firstRetryInterval.isZero() || firstRetryInterval.isNegative()) {
+      throw new IllegalArgumentException("The value for firstRetryInterval must be greater than zero.");
+    }
+    if (backoffCoefficient == null) {
+      throw new IllegalArgumentException("backoffCoefficient cannot be null.");
+    }
+    if (backoffCoefficient < 1.0) {
+      throw new IllegalArgumentException("The value for backoffCoefficient must be greater or equal to 1.0.");
+    }
+
+    // Range-check the RAW arguments, before the null coercion below. Only null means "unset"; an
+    // explicitly supplied Duration.ZERO is a real value, and v1 rejected it because
+    // ZERO < firstRetryInterval. Checking after coercion would silently accept an explicit ZERO and
+    // would also disagree with the Builder, which still rejects it.
+    if (maxRetryInterval != null && maxRetryInterval.compareTo(firstRetryInterval) < 0) {
+      throw new IllegalArgumentException("The value for maxRetryInterval must be greater than or equal to the value "
+          + "for firstRetryInterval.");
+    }
+    if (retryTimeout != null && retryTimeout.compareTo(firstRetryInterval) < 0) {
+      throw new IllegalArgumentException("The value for retryTimeout must be greater than or equal to the value "
+          + "for firstRetryInterval.");
+    }
+
     this.maxNumberOfAttempts = maxNumberOfAttempts;
     this.firstRetryInterval = firstRetryInterval;
     this.backoffCoefficient = backoffCoefficient;
-    this.maxRetryInterval = maxRetryInterval;
-    this.retryTimeout = retryTimeout;
+    // The durable task client's RetryPolicy defaulted these to ZERO, and the adapter that used to
+    // sit between the two types translated "unset" into that default. With the adapter gone, the
+    // coercion has to live here: a null reaching the executor suppresses the retry timer entirely.
+    this.maxRetryInterval = maxRetryInterval == null ? Duration.ZERO : maxRetryInterval;
+    this.retryTimeout = retryTimeout == null ? Duration.ZERO : retryTimeout;
+  }
+
+  /**
+   * Creates a retry policy with the two required settings, leaving the rest at their defaults.
+   *
+   * <p>Carried over from the durable task client's RetryPolicy, whose two-argument constructor
+   * this replaces.
+   *
+   * @param maxNumberOfAttempts Maximum number of attempts to retry the workflow.
+   * @param firstRetryInterval Interval to wait before the first retry.
+   */
+  public WorkflowTaskRetryPolicy(int maxNumberOfAttempts, Duration firstRetryInterval) {
+    this(maxNumberOfAttempts, firstRetryInterval, 1.0, null, null);
   }
 
   public int getMaxNumberOfAttempts() {
