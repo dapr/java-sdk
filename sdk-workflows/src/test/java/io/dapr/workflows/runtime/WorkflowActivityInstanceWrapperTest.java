@@ -1,8 +1,8 @@
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.TaskActivityContext;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
+import io.dapr.workflows.task.TaskActivityContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
