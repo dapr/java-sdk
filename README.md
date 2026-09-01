@@ -52,7 +52,10 @@ IDE setup and the tools needed to work on the SDK itself are under [Development]
 
 Two BOMs are published:
 
-- **`io.dapr:dapr-sdk-bom`** — core SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`, `dapr-sdk-autogen`, `durabletask-client`, `testcontainers-dapr`) plus security-patched transitive dependencies (Netty, Jackson, commons-compress, commons-codec).
+> Upgrading workflow code from a release that still had `durabletask-client`? See
+> [MIGRATION.md](MIGRATION.md).
+
+- **`io.dapr:dapr-sdk-bom`** — core SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`, `dapr-sdk-autogen`, `testcontainers-dapr`) plus security-patched transitive dependencies (Netty, Jackson, commons-compress, commons-codec).
 - **`io.dapr.spring:dapr-spring-bom`** — Spring-specific modules (`dapr-sdk-springboot`, `dapr-spring-*`). Imports `dapr-sdk-bom` transitively, so Spring users only need this single BOM.
 
 `durabletask-client` is the gRPC client and worker for the Durable Task engine that runs Dapr workflows; `dapr-sdk-workflows` pulls it in, so you do not add it yourself.
