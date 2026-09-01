@@ -14,14 +14,15 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.config.Properties;
-import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
-import io.dapr.durabletask.TaskActivityFactory;
-import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
+import io.dapr.workflows.internal.DefaultExecutorService;
 import io.dapr.workflows.internal.GrpcChannelKeepalive;
+import io.dapr.workflows.task.TaskActivityFactory;
+import io.dapr.workflows.task.orchestration.TaskOrchestrationFactory;
+import io.dapr.workflows.task.worker.DurableTaskGrpcWorkerBuilder;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +33,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class WorkflowRuntimeBuilder {
   private ClientInterceptor workflowApiTokenInterceptor;
@@ -83,7 +83,10 @@ public class WorkflowRuntimeBuilder {
   public WorkflowRuntime build() {
     if (instance == null) {
       synchronized (WorkflowRuntime.class) {
-        this.executorService = this.executorService == null ? Executors.newCachedThreadPool() : this.executorService;
+        boolean ownsExecutorService = this.executorService == null;
+        if (ownsExecutorService) {
+          this.executorService = DefaultExecutorService.create();
+        }
         if (instance == null) {
           GrpcChannelKeepalive keepalive = null;
           if (this.properties.getValue(Properties.WORKFLOWS_RUNTIME_APP_KEEP_ALIVE_ENABLED)) {
@@ -92,7 +95,7 @@ public class WorkflowRuntimeBuilder {
           }
           instance = new WorkflowRuntime(
               this.builder.withExecutorService(this.executorService).build(),
-              this.managedChannel, this.executorService, keepalive);
+              this.managedChannel, this.executorService, keepalive, ownsExecutorService);
         }
       }
     }

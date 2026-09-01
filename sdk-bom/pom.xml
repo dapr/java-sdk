@@ -129,11 +129,6 @@
         <artifactId>testcontainers-dapr</artifactId>
         <version>${dapr.sdk.version}</version>
       </dependency>
-      <dependency>
-        <groupId>io.dapr</groupId>
-        <artifactId>durabletask-client</artifactId>
-        <version>${dapr.sdk.version}</version>
-      </dependency>
 
       <!-- ====================================================================== -->
       <!-- Security overrides - Transitive dependency version fixes for CVEs      -->
