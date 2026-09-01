@@ -1,6 +1,6 @@
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.TaskActivityContext;
+import io.dapr.workflows.task.TaskActivityContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;

@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.TaskOrchestration;
+import io.dapr.workflows.task.TaskOrchestration;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

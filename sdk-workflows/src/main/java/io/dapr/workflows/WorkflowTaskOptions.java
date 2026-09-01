@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import io.dapr.durabletask.HistoryPropagationScope;
+import io.dapr.workflows.task.history.HistoryPropagationScope;
 
 public class WorkflowTaskOptions {
 
@@ -78,6 +78,43 @@ public class WorkflowTaskOptions {
     this(null, retryHandler, appId, null);
   }
 
+  /**
+   * Indicates whether a retry policy was configured.
+   *
+   * @return true when a retry policy is set.
+   */
+  public boolean hasRetryPolicy() {
+    return this.retryPolicy != null;
+  }
+
+  /**
+   * Indicates whether a retry handler was configured.
+   *
+   * @return true when a retry handler is set.
+   */
+  public boolean hasRetryHandler() {
+    return this.retryHandler != null;
+  }
+
+  /**
+   * Indicates whether a non-empty target app ID was configured.
+   *
+   * @return true when an app ID is set and not empty.
+   */
+  public boolean hasAppID() {
+    return this.appId != null && !this.appId.isEmpty();
+  }
+
+  /**
+   * Indicates whether a history propagation scope other than NONE was configured.
+   *
+   * @return true when history propagation is requested.
+   */
+  public boolean hasHistoryPropagationScope() {
+    return this.historyPropagationScope != null
+        && this.historyPropagationScope != HistoryPropagationScope.NONE;
+  }
+
   public WorkflowTaskRetryPolicy getRetryPolicy() {
     return retryPolicy;
   }
@@ -123,5 +160,119 @@ public class WorkflowTaskOptions {
    */
   public static WorkflowTaskOptions propagateOwnHistory() {
     return withHistoryPropagation(HistoryPropagationScope.OWN_HISTORY);
+  }
+
+  /**
+   * Creates a builder for {@link WorkflowTaskOptions}.
+   *
+   * @return a new builder.
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /**
+   * Creates an empty {@link WorkflowTaskOptions}.
+   *
+   * @return a new options instance with nothing configured.
+   */
+  public static WorkflowTaskOptions create() {
+    return new WorkflowTaskOptions(null, null, null, null);
+  }
+
+  /**
+   * Creates a {@link WorkflowTaskOptions} from a retry policy.
+   *
+   * @param retryPolicy the retry policy.
+   * @return a new options instance.
+   */
+  public static WorkflowTaskOptions withRetryPolicy(WorkflowTaskRetryPolicy retryPolicy) {
+    return new WorkflowTaskOptions(retryPolicy, null, null, null);
+  }
+
+  /**
+   * Creates a {@link WorkflowTaskOptions} from a retry handler.
+   *
+   * @param retryHandler the retry handler.
+   * @return a new options instance.
+   */
+  public static WorkflowTaskOptions withRetryHandler(WorkflowTaskRetryHandler retryHandler) {
+    return new WorkflowTaskOptions(null, retryHandler, null, null);
+  }
+
+  /**
+   * Creates a {@link WorkflowTaskOptions} targeting another app.
+   *
+   * @param appId the ID of the app to call into.
+   * @return a new options instance.
+   */
+  public static WorkflowTaskOptions withAppID(String appId) {
+    return new WorkflowTaskOptions(null, null, appId, null);
+  }
+
+  /**
+   * Builder for {@link WorkflowTaskOptions}.
+   */
+  public static final class Builder {
+    private WorkflowTaskRetryPolicy retryPolicy;
+    private WorkflowTaskRetryHandler retryHandler;
+    private String appId;
+    private HistoryPropagationScope historyPropagationScope;
+
+    private Builder() {
+    }
+
+    /**
+     * Sets the retry policy.
+     *
+     * @param retryPolicy the retry policy.
+     * @return this builder.
+     */
+    public Builder retryPolicy(WorkflowTaskRetryPolicy retryPolicy) {
+      this.retryPolicy = retryPolicy;
+      return this;
+    }
+
+    /**
+     * Sets the retry handler.
+     *
+     * @param retryHandler the retry handler.
+     * @return this builder.
+     */
+    public Builder retryHandler(WorkflowTaskRetryHandler retryHandler) {
+      this.retryHandler = retryHandler;
+      return this;
+    }
+
+    /**
+     * Sets the target app ID for cross-app calls.
+     *
+     * @param appId the app ID.
+     * @return this builder.
+     */
+    public Builder appID(String appId) {
+      this.appId = appId;
+      return this;
+    }
+
+    /**
+     * Sets the history propagation scope.
+     *
+     * @param scope the scope.
+     * @return this builder.
+     */
+    public Builder historyPropagationScope(HistoryPropagationScope scope) {
+      this.historyPropagationScope = scope;
+      return this;
+    }
+
+    /**
+     * Builds the options.
+     *
+     * @return a new {@link WorkflowTaskOptions}.
+     */
+    public WorkflowTaskOptions build() {
+      return new WorkflowTaskOptions(this.retryPolicy, this.retryHandler, this.appId, this.historyPropagationScope);
+    }
   }
 }
