@@ -183,6 +183,11 @@ is a cached thread pool, exactly as before. You can always supply your own with
 `WorkflowRuntimeBuilder.withExecutorService(...)` — an executor you supply is never shut down by the
 runtime.
 
+Virtual threads are on by default there. To opt out and keep the cached thread pool, set
+`dapr.workflows.virtual.threads.enabled=false` (or `DAPR_WORKFLOWS_VIRTUAL_THREADS_ENABLED=false`).
+The setting only affects the executor the runtime creates for itself; it has no effect on Java 17
+through 20, or on a runtime given an executor via `withExecutorService(...)`.
+
 Virtual threads help **activities**, which run your code and typically block on I/O. Workflow code
 itself is replay-based and does not block, so it sees little benefit. See `SUPPORT.md` for the caveats
 around pinning and unbounded concurrency.

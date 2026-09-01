@@ -13,13 +13,16 @@ limitations under the License.
 
 package io.dapr.workflows.internal;
 
+import io.dapr.config.Properties;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,7 +36,7 @@ public class DefaultExecutorServiceTest {
 
   @Test
   public void createReturnsAUsableExecutor() throws Exception {
-    ExecutorService executorService = DefaultExecutorService.create();
+    ExecutorService executorService = DefaultExecutorService.create(new Properties());
 
     assertNotNull(executorService);
     AtomicBoolean ran = new AtomicBoolean(false);
@@ -45,13 +48,51 @@ public class DefaultExecutorServiceTest {
 
   @Test
   public void threadKindMatchesTheRunningJavaVersion() throws Exception {
-    ExecutorService executorService = DefaultExecutorService.create();
+    ExecutorService executorService = DefaultExecutorService.create(new Properties());
     try {
       boolean virtual = executorService.submit(DefaultExecutorServiceTest::currentThreadIsVirtual)
           .get(5, TimeUnit.SECONDS);
 
       assertEquals(Runtime.version().feature() >= 21, virtual,
           "Java 21+ should produce virtual threads; earlier runtimes should produce platform threads");
+    } finally {
+      executorService.shutdown();
+    }
+  }
+
+  /**
+   * Virtual threads are the default on Java 21+, but an operator can turn them off — for instance
+   * when activity code holds a monitor across a blocking call, which pins a carrier thread on
+   * Java 21 through 23.
+   */
+  @Test
+  public void virtualThreadsCanBeDisabledByConfiguration() throws Exception {
+    Properties optedOut = new Properties(
+        Collections.singletonMap("dapr.workflows.virtual.threads.enabled", "false"));
+
+    ExecutorService executorService = DefaultExecutorService.create(optedOut);
+    try {
+      boolean virtual = executorService.submit(DefaultExecutorServiceTest::currentThreadIsVirtual)
+          .get(5, TimeUnit.SECONDS);
+
+      assertFalse(virtual, "the opt-out must yield platform threads even on Java 21+");
+    } finally {
+      executorService.shutdown();
+    }
+  }
+
+  @Test
+  public void virtualThreadsAreTheDefaultWhenNotDisabled() throws Exception {
+    Properties explicitlyEnabled = new Properties(
+        Collections.singletonMap("dapr.workflows.virtual.threads.enabled", "true"));
+
+    ExecutorService executorService = DefaultExecutorService.create(explicitlyEnabled);
+    try {
+      boolean virtual = executorService.submit(DefaultExecutorServiceTest::currentThreadIsVirtual)
+          .get(5, TimeUnit.SECONDS);
+
+      assertEquals(Runtime.version().feature() >= 21, virtual,
+          "with virtual threads enabled the thread kind must follow the runtime version");
     } finally {
       executorService.shutdown();
     }

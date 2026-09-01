@@ -28,6 +28,11 @@ default is a virtual-thread-per-task executor; on Java 17 through 20 it is a cac
 You can always supply your own with `WorkflowRuntimeBuilder.withExecutorService(...)`, and an
 executor you supply is never shut down by the runtime.
 
+Virtual threads are on by default there. To opt out and keep the cached thread pool, set
+`dapr.workflows.virtual.threads.enabled=false` (or `DAPR_WORKFLOWS_VIRTUAL_THREADS_ENABLED=false`).
+The setting only affects the executor the runtime creates for itself; it has no effect on Java 17
+through 20, or on a runtime given an executor via `withExecutorService(...)`.
+
 Note for Spring Boot users: `spring.threads.virtual.enabled=true` does **not** currently reach the
 workflow runtime. It switches Spring's own executors, but the Dapr auto-configuration does not hand
 the application's task executor to `WorkflowRuntimeBuilder`, so workflow and activity execution is

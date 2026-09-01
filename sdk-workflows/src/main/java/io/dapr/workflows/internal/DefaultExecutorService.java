@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.internal;
 
+import io.dapr.config.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,10 @@ import java.util.concurrent.Executors;
  * {@code Executors.newVirtualThreadPerTaskExecutor()} at compile time. On Java 21 and later
  * that factory is resolved reflectively; on Java 17 through 20 a cached thread pool is used,
  * which is what the workflow runtime has always used.
+ *
+ * <p>Virtual threads are the default on Java 21+ and can be turned off with
+ * {@link Properties#WORKFLOWS_VIRTUAL_THREADS_ENABLED} — useful when activity code holds monitors
+ * across blocking calls, which pins carrier threads on Java 21 through 23.
  *
  * <p>Callers that want explicit control should pass their own executor to
  * {@code WorkflowRuntimeBuilder.withExecutorService(...)} instead of relying on this default.
@@ -45,9 +50,17 @@ public final class DefaultExecutorService {
   /**
    * Creates the default executor for the current runtime.
    *
-   * @return a virtual-thread-per-task executor on Java 21+, otherwise a cached thread pool.
+   * @param properties configuration used to resolve the virtual-threads opt-out.
+   * @return a virtual-thread-per-task executor on Java 21+ unless virtual threads are disabled,
+   *     otherwise a cached thread pool.
    */
-  public static ExecutorService create() {
+  public static ExecutorService create(Properties properties) {
+    if (!properties.getValue(Properties.WORKFLOWS_VIRTUAL_THREADS_ENABLED)) {
+      LOGGER.info("Virtual threads are disabled by configuration, "
+          + "using a cached thread pool for workflow and activity execution");
+      return Executors.newCachedThreadPool();
+    }
+
     if (Runtime.version().feature() >= VIRTUAL_THREADS_SINCE) {
       try {
         Method factory = Executors.class.getMethod("newVirtualThreadPerTaskExecutor");
