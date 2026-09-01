@@ -66,7 +66,10 @@ If using [SDKMAN!](https://sdkman.io), execute `sdk env install` to install the 
 
 Two BOMs are published:
 
-- **`io.dapr:dapr-sdk-bom`** — core SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`, `dapr-sdk-autogen`, `durabletask-client`, `testcontainers-dapr`) plus security-patched transitive dependencies (Netty, Jackson, commons-compress, commons-codec).
+> Upgrading workflow code from a release that still had `durabletask-client`? See
+> [MIGRATION.md](MIGRATION.md).
+
+- **`io.dapr:dapr-sdk-bom`** — core SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`, `dapr-sdk-autogen`, `testcontainers-dapr`) plus security-patched transitive dependencies (Netty, Jackson, commons-compress, commons-codec).
 - **`io.dapr.spring:dapr-spring-bom`** — Spring-specific modules (`dapr-sdk-springboot`, `dapr-spring-*`). Imports `dapr-sdk-bom` transitively, so Spring users only need this single BOM.
 
 Pick the one that matches your project. Importing a BOM ensures you inherit security fixes for transitive dependencies like the Netty CVEs.
