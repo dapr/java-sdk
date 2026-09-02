@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.TaskOrchestration;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.task.TaskOrchestration;
 
 /**
  * Wrapper for Durable Task Framework orchestration factory.
@@ -41,6 +41,6 @@ class WorkflowInstanceWrapper<T extends Workflow> extends WorkflowVersionWrapper
 
   @Override
   public TaskOrchestration create() {
-    return ctx -> workflow.run(new DefaultWorkflowContext(ctx, workflow.getClass()));
+    return ctx -> workflow.run(ctx);
   }
 }

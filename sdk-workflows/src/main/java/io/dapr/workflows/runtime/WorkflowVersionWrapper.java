@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
+import io.dapr.workflows.task.orchestration.TaskOrchestrationFactory;
 
 public abstract class WorkflowVersionWrapper implements TaskOrchestrationFactory {
   private final String versionName;

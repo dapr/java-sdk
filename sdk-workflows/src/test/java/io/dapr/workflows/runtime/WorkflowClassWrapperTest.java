@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
@@ -63,7 +62,7 @@ public class WorkflowClassWrapperTest {
 
   @Test
   public void createWithClass() {
-    TaskOrchestrationContext mockContext = mock(TaskOrchestrationContext.class);
+    WorkflowContext mockContext = mock(WorkflowContext.class);
     WorkflowClassWrapper<TestWorkflow> wrapper = new WorkflowClassWrapper<>(TestWorkflow.class);
 
     when(mockContext.getInstanceId()).thenReturn("uuid");
@@ -73,7 +72,7 @@ public class WorkflowClassWrapperTest {
 
   @Test
   public void createWithClassAndVersion() {
-    TaskOrchestrationContext mockContext = mock(TaskOrchestrationContext.class);
+    WorkflowContext mockContext = mock(WorkflowContext.class);
     WorkflowClassWrapper<TestWorkflow> wrapper = new WorkflowClassWrapper<>("TestWorkflow", TestWorkflow.class, "v1",false);
     when(mockContext.getInstanceId()).thenReturn("uuid");
     wrapper.create().run(mockContext);
@@ -86,7 +85,7 @@ public class WorkflowClassWrapperTest {
       assertThrowsExactly(RuntimeException.class, () -> new WorkflowClassWrapper<>("TestErrorWorkflow", TestErrorWorkflow.class, "v1",false));
 
     WorkflowClassWrapper<TestPrivateWorkflow> wrapper = new WorkflowClassWrapper<>("TestPrivateWorkflow", TestPrivateWorkflow.class, "v2",false);
-    TaskOrchestrationContext mockContext = mock(TaskOrchestrationContext.class);
+    WorkflowContext mockContext = mock(WorkflowContext.class);
     assertThrowsExactly(RuntimeException.class, () -> wrapper.create().run(mockContext));
 
   }

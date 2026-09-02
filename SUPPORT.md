@@ -12,7 +12,46 @@ at a given version pins the whole stack, core and Spring, to that single version
 | **1.19.x+** | v1.18            | 4.0.x                             | 17+ | Active — new features and fixes                   |
 | **1.18.x**  | v1.18            | 3.5.x                             | 17+ | Maintenance — best-effort security/critical fixes |
 
-The **core** SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`, `durabletask-client`)
+### Migrating to the unified workflows module
+
+In **1.19.x**, `durabletask-client` has been folded into `dapr-sdk-workflows`, which is a breaking
+change for workflow code — so upgrading from 1.18.x requires source changes. See
+[MIGRATION.md](MIGRATION.md) for the type mapping, the removed API, and what it means for workflows
+that are already running when you upgrade.
+
+### Java 21 is recommended for workflows
+
+`dapr-sdk-workflows` is compiled for Java 17 and runs on Java 17 or later. **Java 21 or later is
+recommended.**
+
+The workflow runtime executes workflows and activities on an `ExecutorService`. On Java 21+ the
+default is a virtual-thread-per-task executor; on Java 17 through 20 it is a cached thread pool.
+You can always supply your own with `WorkflowRuntimeBuilder.withExecutorService(...)`, and an
+executor you supply is never shut down by the runtime.
+
+Virtual threads are on by default there. To opt out and keep the cached thread pool, set the JVM
+system property `dapr.workflows.virtual.threads.enabled=false` or the environment variable
+`DAPR_WORKFLOWS_VIRTUAL_THREADS_ENABLED=false`. The setting only affects the executor the runtime
+creates for itself; it has no effect on Java 17 through 20, or on a runtime given an executor via
+`withExecutorService(...)`.
+
+Note for Spring Boot users: the auto-configured `WorkflowRuntimeBuilder` also reads
+`dapr.workflows.virtual.threads.enabled` from the Spring `Environment`, so you can set it in
+`application.properties` alongside your other Dapr settings. `spring.threads.virtual.enabled` is a
+separate switch and does **not** reach the workflow runtime: it changes Spring's own executors, and
+the auto-configuration does not hand the application task executor to `WorkflowRuntimeBuilder`. You
+do not need it, because workflows already run on virtual threads by default on Java 21. To put
+workflows on an executor you control, define your own `WorkflowRuntimeBuilder` bean and call
+`withExecutorService(...)`.
+
+Virtual threads help **activities**, which run your code and typically block on I/O. Workflow code
+itself is replay-based and does not block, so it sees little benefit. The SDK holds no monitor on
+the work-item dispatch path and will not pin a carrier thread, but your own activity code can: a
+`synchronized` block around a blocking call will pin on Java 21 through 23. Note also that a
+virtual-thread-per-task executor is unbounded — if your activities hit a bounded resource such as
+a JDBC pool or a rate-limited API, size that resource or supply a bounded executor instead.
+
+The **core** SDK modules (`dapr-sdk`, `dapr-sdk-actors`, `dapr-sdk-workflows`)
 are framework-agnostic and do not depend on Spring Boot — the Spring Boot column applies only to the
 Spring integration modules (`dapr-sdk-springboot`, `dapr-spring-*`). Core and Spring modules always
 share the same SDK version (the Spring BOM imports `dapr-sdk-bom` at its own version), so they never

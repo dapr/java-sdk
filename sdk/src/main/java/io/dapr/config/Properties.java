@@ -204,6 +204,21 @@ public class Properties {
       true);
 
   /**
+   * Enables the virtual-thread-per-task executor that the workflow runtime uses by default when
+   * it creates its own executor on Java 21 or later. Set to false to keep the cached thread pool
+   * used on earlier runtimes, for example when activity code holds monitors across blocking calls
+   * and would pin carrier threads. Has no effect on a runtime given an executor via
+   * WorkflowRuntimeBuilder.withExecutorService, or on Java 17 through 20.
+   * Environment variable: DAPR_WORKFLOWS_VIRTUAL_THREADS_ENABLED
+   * System property: dapr.workflows.virtual.threads.enabled
+   * Default: true
+   */
+  public static final Property<Boolean> WORKFLOWS_VIRTUAL_THREADS_ENABLED = new BooleanProperty(
+      "dapr.workflows.virtual.threads.enabled",
+      "DAPR_WORKFLOWS_VIRTUAL_THREADS_ENABLED",
+      true);
+
+  /**
    * Interval between application-level keepalive pings on the workflow runtime's gRPC channel.
    * Environment variable: DAPR_WORKFLOWS_APP_KEEP_ALIVE_INTERVAL_SECONDS
    * System property: dapr.workflows.app.keep.alive.interval.seconds

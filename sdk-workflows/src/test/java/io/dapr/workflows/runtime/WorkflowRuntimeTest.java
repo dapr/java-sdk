@@ -14,11 +14,11 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 
-import io.dapr.durabletask.DurableTaskGrpcWorker;
-import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.internal.GrpcChannelKeepalive;
+import io.dapr.workflows.task.worker.DurableTaskGrpcWorker;
+import io.dapr.workflows.task.worker.DurableTaskGrpcWorkerBuilder;
 import io.grpc.ManagedChannel;
 import org.junit.jupiter.api.Test;
 
@@ -71,5 +71,31 @@ public class WorkflowRuntimeTest {
             Executors.newCachedThreadPool())) {
       assertDoesNotThrow(runtime::close);
     }
+  }
+
+  @Test
+  public void closeShutsDownAnExecutorItOwns() {
+    DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
+    ExecutorService executorService = Executors.newCachedThreadPool();
+    WorkflowRuntime runtime = new WorkflowRuntime(worker, NetworkUtils.buildGrpcManagedChannel(new Properties()),
+        executorService, null, true);
+
+    runtime.close();
+
+    assertTrue(executorService.isShutdown(), "an executor created by the runtime must be shut down on close()");
+  }
+
+  @Test
+  public void closeLeavesACallerSuppliedExecutorRunning() {
+    DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
+    ExecutorService executorService = Executors.newCachedThreadPool();
+    WorkflowRuntime runtime = new WorkflowRuntime(worker, NetworkUtils.buildGrpcManagedChannel(new Properties()),
+        executorService, null, false);
+
+    runtime.close();
+
+    assertFalse(executorService.isShutdown(),
+        "an executor supplied by the caller must outlive the runtime, so Spring's shared task executor is not killed");
+    executorService.shutdown();
   }
 }
