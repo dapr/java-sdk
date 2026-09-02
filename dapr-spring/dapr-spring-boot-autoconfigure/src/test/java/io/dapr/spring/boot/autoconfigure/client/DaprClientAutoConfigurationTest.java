@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -185,6 +186,37 @@ class DaprClientAutoConfigurationTest {
     Properties result = configuration.createPropertiesFromConnectionDetails(connectionDetails);
 
     assertThat(result.getValue(Properties.API_TOKEN)).isEqualTo(apiToken);
+  }
+
+  @Test
+  @DisplayName("Should read the virtual threads property from the Spring Environment")
+  void shouldReadVirtualThreadsPropertyFromEnvironment() {
+    MockEnvironment environment = new MockEnvironment()
+        .withProperty(Properties.WORKFLOWS_VIRTUAL_THREADS_ENABLED.getName(), "false");
+
+    Properties result = configuration.createWorkflowProperties(connectionDetails, environment);
+
+    assertThat(result.getValue(Properties.WORKFLOWS_VIRTUAL_THREADS_ENABLED)).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should keep the virtual threads default when the Environment does not set it")
+  void shouldKeepVirtualThreadsDefaultWhenEnvironmentDoesNotSetIt() {
+    Properties result = configuration.createWorkflowProperties(connectionDetails, new MockEnvironment());
+
+    assertThat(result.getValue(Properties.WORKFLOWS_VIRTUAL_THREADS_ENABLED)).isTrue();
+  }
+
+  @Test
+  @DisplayName("Should keep the connection details in the workflow properties")
+  void shouldKeepConnectionDetailsInWorkflowProperties() {
+    String grpcEndpoint = "grpc://localhost:5001";
+
+    when(connectionDetails.getGrpcEndpoint()).thenReturn(grpcEndpoint);
+
+    Properties result = configuration.createWorkflowProperties(connectionDetails, new MockEnvironment());
+
+    assertThat(result.getValue(Properties.GRPC_ENDPOINT)).isEqualTo(grpcEndpoint);
   }
 
   private static class TestDaprClientAutoConfiguration extends DaprClientAutoConfiguration {
