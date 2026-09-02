@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
 
 /**
@@ -54,6 +55,19 @@ public final class WorkflowHistoryCache {
 
   private final Object lock = new Object();
   private final Map<String, Entry> entries = new HashMap<>();
+
+  /**
+   * Maps an instance to the completion token of its most recently received dispatch. Cache writes
+   * are gated on it: a runner whose dispatch has been superseded (a redelivery, or a dispatch on a
+   * reconnected stream while the old runner still executes) must not commit its prefix over the
+   * newer dispatch's. The sidecar already discards the stale runner's response by completion
+   * token; without this gate the cache write would still land, and after a continue-as-new the
+   * stale prefix can have the same length as the good one, poisoning the next delta
+   * reconstruction. Deliberately NOT cleared by {@link #reset()}: it must survive reconnects to
+   * fence exactly those still-running handlers. Mirrors the Go reference
+   * (durabletask-go client/worker_history.go).
+   */
+  private final Map<String, String> latestTokens = new ConcurrentHashMap<>();
   private final long ttlNanos;
   private final int maxInstances;
   private final long maxBytes;
@@ -117,9 +131,15 @@ public final class WorkflowHistoryCache {
     // Snapshot so a later mutation by the caller is not observed, and wrap once here rather than on
     // every get(), which is the hot path.
     List<HistoryEvents.HistoryEvent> snapshot = Collections.unmodifiableList(new ArrayList<>(events));
+
+    // Only measure the serialized size when a byte budget is configured. On the default
+    // (unbounded) path this avoids re-serializing the whole history every turn, which would
+    // reintroduce the full-history serialization cost this cache exists to avoid.
     long bytes = 0;
-    for (HistoryEvents.HistoryEvent event : snapshot) {
-      bytes += event.getSerializedSize();
+    if (this.maxBytes > 0) {
+      for (HistoryEvents.HistoryEvent event : snapshot) {
+        bytes += event.getSerializedSize();
+      }
     }
 
     synchronized (this.lock) {
@@ -144,7 +164,44 @@ public final class WorkflowHistoryCache {
     }
   }
 
-  /** Clears the cache; used when the stream reconnects (and starts cold). */
+  /**
+   * Records that {@code completionToken} is the newest dispatch received for the instance.
+   *
+   * @param instanceId      the workflow instance ID
+   * @param completionToken the dispatch's completion token
+   */
+  public void noteDispatch(String instanceId, String completionToken) {
+    this.latestTokens.put(instanceId, completionToken);
+  }
+
+  /**
+   * Reports whether {@code completionToken} still belongs to the newest dispatch received for the
+   * instance. An instance with no recorded dispatch accepts any token, so paths that never call
+   * {@link #noteDispatch(String, String)} keep their previous behavior.
+   *
+   * @param instanceId      the workflow instance ID
+   * @param completionToken the dispatch's completion token
+   * @return whether the dispatch carrying this token is still the newest one
+   */
+  public boolean isLatestDispatch(String instanceId, String completionToken) {
+    String latest = this.latestTokens.get(instanceId);
+    return latest == null || latest.equals(completionToken);
+  }
+
+  /**
+   * Drops the newest-dispatch marker, for instances whose history reached a terminal state.
+   *
+   * @param instanceId the workflow instance ID
+   */
+  public void forgetDispatch(String instanceId) {
+    this.latestTokens.remove(instanceId);
+  }
+
+  /**
+   * Clears the cached histories; used when the stream reconnects (and starts cold). The
+   * newest-dispatch markers survive on purpose: their whole job is to fence runners from the
+   * previous stream that are still executing across the reconnect.
+   */
   public void reset() {
     synchronized (this.lock) {
       this.entries.clear();

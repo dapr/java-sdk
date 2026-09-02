@@ -26,6 +26,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Deterministic tests for the worker's history resolution and cache update, driving
@@ -44,8 +45,14 @@ class OrchestratorRunnerHistoryTest {
   }
 
   private static OrchestratorRunner runner(OrchestratorService.WorkflowRequest request, WorkflowHistoryCache cache) {
+    return runner(request, cache, "");
+  }
+
+  private static OrchestratorRunner runner(
+      OrchestratorService.WorkflowRequest request, WorkflowHistoryCache cache, String completionToken) {
     OrchestratorService.WorkItem workItem = OrchestratorService.WorkItem.newBuilder()
         .setWorkflowRequest(request)
+        .setCompletionToken(completionToken)
         .build();
     return new OrchestratorRunner(workItem, null, null, null, cache);
   }
@@ -110,6 +117,39 @@ class OrchestratorRunnerHistoryTest {
         .build();
     runner.updateHistoryCache("a", events(6), resultWith(completed));
     assertNull(cache.get("a"));
+  }
+
+  @Test
+  void updateCacheIgnoredWhenDispatchSuperseded() {
+    // A runner can outlive its dispatch: the sidecar redelivers the turn (or a reconnected stream
+    // delivers a newer one) while the old runner still executes. The sidecar discards the stale
+    // RESPONSE by completion token, but without the gate the stale cache write would still land
+    // and could overwrite the newer dispatch's prefix. After a continue-as-new the stale prefix
+    // can even have the same length as the good one, so the length check alone cannot catch it.
+    WorkflowHistoryCache cache = new WorkflowHistoryCache(null, 0, 0);
+    OrchestratorService.WorkflowRequest request = OrchestratorService.WorkflowRequest.newBuilder()
+        .setInstanceId("a")
+        .build();
+    OrchestratorActions.WorkflowAction running = OrchestratorActions.WorkflowAction.newBuilder()
+        .setScheduleTask(OrchestratorActions.ScheduleTaskAction.newBuilder())
+        .build();
+
+    cache.noteDispatch("a", "stale-token");
+    cache.noteDispatch("a", "latest-token"); // a newer dispatch for the same instance arrived
+
+    runner(request, cache, "stale-token").updateHistoryCache("a", events(6), resultWith(running));
+    assertNull(cache.get("a"));
+
+    runner(request, cache, "latest-token").updateHistoryCache("a", events(4), resultWith(running));
+    assertEquals(4, cache.get("a").size());
+
+    // A terminal turn from the latest dispatch removes both the entry and the marker.
+    OrchestratorActions.WorkflowAction completed = OrchestratorActions.WorkflowAction.newBuilder()
+        .setCompleteWorkflow(OrchestratorActions.CompleteWorkflowAction.newBuilder())
+        .build();
+    runner(request, cache, "latest-token").updateHistoryCache("a", events(4), resultWith(completed));
+    assertNull(cache.get("a"));
+    assertTrue(cache.isLatestDispatch("a", "any-token"));
   }
 
   @Test

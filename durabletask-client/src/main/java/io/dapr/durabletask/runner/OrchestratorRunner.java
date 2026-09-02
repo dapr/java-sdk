@@ -180,12 +180,20 @@ public class OrchestratorRunner extends DurableRunner {
    * entry once the instance ends. A CompleteWorkflow action covers completed/failed/terminated/
    * continued-as-new; a TerminateWorkflow action targets a different instance and is deliberately
    * not treated as a reset.
+   *
+   * <p>Skipped when this dispatch has been superseded (a redelivery, or a dispatch on a
+   * reconnected stream while this runner was still executing): the sidecar discards the stale
+   * response by completion token, but the cache write would otherwise overwrite the newer
+   * dispatch's prefix and poison the next delta reconstruction. The length check does not always
+   * catch this: after a continue-as-new the stale prefix can have the same length as the good
+   * one.</p>
    */
   void updateHistoryCache(
       String instanceId,
       List<HistoryEvents.HistoryEvent> pastEvents,
       TaskOrchestratorResult result) {
-    if (this.historyCache == null) {
+    if (this.historyCache == null
+        || !this.historyCache.isLatestDispatch(instanceId, workItem.getCompletionToken())) {
       return;
     }
 
@@ -193,6 +201,7 @@ public class OrchestratorRunner extends DurableRunner {
         .anyMatch(OrchestratorActions.WorkflowAction::hasCompleteWorkflow);
     if (ended) {
       this.historyCache.remove(instanceId);
+      this.historyCache.forgetDispatch(instanceId);
     } else {
       this.historyCache.put(instanceId, pastEvents);
     }

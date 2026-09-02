@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -110,7 +111,8 @@ class WorkflowHistoryCacheTest {
 
   @Test
   void byteAccountingTracksReplaceAndRemove() {
-    WorkflowHistoryCache cache = new WorkflowHistoryCache(null, 0, 0);
+    // A budget large enough that nothing is evicted; accounting only runs when one is configured.
+    WorkflowHistoryCache cache = new WorkflowHistoryCache(null, 0, 1024 * 1024);
 
     cache.put("a", events(3));
     cache.put("b", events(2));
@@ -124,6 +126,40 @@ class WorkflowHistoryCacheTest {
 
     cache.reset();
     assertEquals(0, cache.totalBytes());
+  }
+
+  @Test
+  void unboundedCacheSkipsByteAccounting() {
+    // Measuring the serialized size on the default (unbounded) path would re-serialize the whole
+    // history every turn, reintroducing the very cost this cache exists to avoid. The Go
+    // reference guards it the same way (durabletask-go client/worker_history.go).
+    WorkflowHistoryCache cache = new WorkflowHistoryCache(null, 0, 0);
+
+    cache.put("a", events(3));
+    cache.put("b", events(2));
+
+    assertEquals(2, cache.size()); // still cached and usable...
+    assertNotNull(cache.get("a"));
+    assertEquals(0, cache.totalBytes()); // ...just not measured
+  }
+
+  @Test
+  void resetKeepsNewestDispatchMarkers() {
+    // reset() runs on stream reconnect, but a runner from the previous stream can still be
+    // executing. The marker is what fences that runner's late cache write, so it must survive
+    // the reset that its stream's death triggered.
+    WorkflowHistoryCache cache = new WorkflowHistoryCache(null, 0, 0);
+
+    cache.noteDispatch("a", "token-1");
+    cache.noteDispatch("a", "token-2");
+    cache.reset();
+
+    assertFalse(cache.isLatestDispatch("a", "token-1"));
+    assertTrue(cache.isLatestDispatch("a", "token-2"));
+
+    // A terminal turn clears the marker; an instance with no marker accepts any token.
+    cache.forgetDispatch("a");
+    assertTrue(cache.isLatestDispatch("a", "token-1"));
   }
 
   @Test

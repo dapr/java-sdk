@@ -233,6 +233,10 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
               logger.log(Level.FINEST, "Processing orchestrator request for instance: {0}",
                   orchestratorRequest.getInstanceId());
 
+              if (this.historyCache != null) {
+                this.historyCache.noteDispatch(
+                    orchestratorRequest.getInstanceId(), workItem.getCompletionToken());
+              }
               this.workerPool.submit(
                   new OrchestratorRunner(workItem, taskOrchestrationExecutor, sidecarClient, tracer,
                       historyCache, teardownStream));
