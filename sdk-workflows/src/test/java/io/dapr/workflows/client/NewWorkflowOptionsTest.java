@@ -18,11 +18,18 @@ public class NewWorkflowOptionsTest {
     workflowOption.setVersion(version)
         .setInstanceId(instanceId)
         .setInput(input)
-        .setStartTime(startTime);
+        .setStartTime(startTime)
+        .setEnforceUniqueInstanceId(true);
 
     Assertions.assertEquals(version, workflowOption.getVersion());
     Assertions.assertEquals(instanceId, workflowOption.getInstanceId());
     Assertions.assertEquals(input, workflowOption.getInput());
     Assertions.assertEquals(startTime, workflowOption.getStartTime());
+    Assertions.assertTrue(workflowOption.isEnforceUniqueInstanceId());
+  }
+
+  @Test
+  void testEnforceUniqueInstanceIdDefaultsToFalse() {
+    Assertions.assertFalse(new NewWorkflowOptions().isEnforceUniqueInstanceId());
   }
 }

@@ -533,6 +533,8 @@ public class DaprWorkflowClient implements AutoCloseable {
       instanceOptions.setStartTime(options.getStartTime());
     }
 
+    instanceOptions.setEnforceUniqueInstanceId(options.isEnforceUniqueInstanceId());
+
     return instanceOptions;
   }
 

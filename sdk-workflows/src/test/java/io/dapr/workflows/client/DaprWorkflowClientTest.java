@@ -39,10 +39,12 @@ import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -264,6 +266,28 @@ public class DaprWorkflowClientTest {
 
     assertEquals(expectedStartTime, captor.getValue().getStartTime());
     assertEquals(expectedInput, captor.getValue().getInput());
+    assertFalse(captor.getValue().isEnforceUniqueInstanceId());
+  }
+
+  @Test
+  public void scheduleNewWorkflowWithEnforceUniqueInstanceId() {
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    String expectedInstanceId = "uniqueInstance";
+    NewWorkflowOptions newWorkflowOptions = new NewWorkflowOptions()
+        .setInstanceId(expectedInstanceId)
+        .setEnforceUniqueInstanceId(true);
+
+    client.scheduleNewWorkflow(TestWorkflow.class, newWorkflowOptions);
+
+    ArgumentCaptor<NewOrchestrationInstanceOptions> captor = ArgumentCaptor.forClass(
+        NewOrchestrationInstanceOptions.class
+    );
+
+    verify(mockInnerClient, times(1))
+        .scheduleNewOrchestrationInstance(eq(expectedName), captor.capture());
+
+    assertEquals(expectedInstanceId, captor.getValue().getInstanceId());
+    assertTrue(captor.getValue().isEnforceUniqueInstanceId());
   }
 
   @Test
