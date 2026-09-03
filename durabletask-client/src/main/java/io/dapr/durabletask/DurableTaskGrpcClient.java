@@ -204,6 +204,10 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setScheduledStartTimestamp(ts);
     }
 
+    if (options.isEnforceUniqueInstanceId()) {
+      builder.setEnforceUniqueInstanceId(true);
+    }
+
     Span span = null;
     if (this.tracer != null) {
       span = this.tracer.spanBuilder("create_orchestration:" + orchestratorName)

@@ -24,6 +24,7 @@ public class NewWorkflowOptions {
   private String instanceId;
   private Object input;
   private Instant startTime;
+  private boolean enforceUniqueInstanceId;
 
   /**
    * Sets the version of the workflow to start.
@@ -77,6 +78,24 @@ public class NewWorkflowOptions {
   }
 
   /**
+   * Sets whether the instance ID of the new workflow must be unique.
+   *
+   * <p>When enabled, scheduling fails with a {@link WorkflowInstanceAlreadyExistsException}
+   * if a workflow instance with the same ID already exists, regardless of whether that
+   * instance is still running or has already completed. By default, scheduling a workflow
+   * with the instance ID of a completed instance restarts that instance.
+   *
+   * <p>Requires a Dapr runtime that supports this option.
+   *
+   * @param enforceUniqueInstanceId whether to reject instance IDs that already exist
+   * @return this {@link NewWorkflowOptions} object
+   */
+  public NewWorkflowOptions setEnforceUniqueInstanceId(boolean enforceUniqueInstanceId) {
+    this.enforceUniqueInstanceId = enforceUniqueInstanceId;
+    return this;
+  }
+
+  /**
    * Gets the user-specified version of the new workflow.
    *
    * @return the user-specified version of the new workflow.
@@ -110,6 +129,15 @@ public class NewWorkflowOptions {
    */
   public Instant getStartTime() {
     return this.startTime;
+  }
+
+  /**
+   * Gets whether the instance ID of the new workflow must be unique.
+   *
+   * @return true if instance IDs that already exist are rejected, false otherwise
+   */
+  public boolean isEnforceUniqueInstanceId() {
+    return this.enforceUniqueInstanceId;
   }
 
 }
