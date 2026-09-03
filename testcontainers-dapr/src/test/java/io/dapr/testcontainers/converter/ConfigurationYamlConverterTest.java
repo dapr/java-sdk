@@ -17,6 +17,8 @@ import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.ListEntry;
+import io.dapr.testcontainers.MtlsConfigurationSettings;
+import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 class ConfigurationYamlConverterTest {
   private final Yaml MAPPER = YamlMapperFactory.create();
@@ -80,6 +84,135 @@ class ConfigurationYamlConverterTest {
         + "    handlers:\n"
         + "    - name: alias\n"
         + "      type: middleware.http.routeralias\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMtlsToYaml() {
+    Map<String, String> jwksOptions = new LinkedHashMap<>();
+    jwksOptions.put("minRefreshInterval", "2m");
+    jwksOptions.put("requestTimeout", "1m");
+    jwksOptions.put("source", "https://localhost:1234/");
+
+    List<MtlsTokenValidator> tokenValidators = new ArrayList<>();
+    tokenValidators.add(new MtlsTokenValidator("jwks", jwksOptions));
+    tokenValidators.add(new MtlsTokenValidator("insecure"));
+
+    MtlsConfigurationSettings mtls = new MtlsConfigurationSettings(
+        true,
+        "24h",
+        "15m",
+        "localhost:50001",
+        "cluster.local",
+        tokenValidators
+    );
+
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withConfiguration(new Configuration("my-config", null, null, mtls))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  mtls:\n"
+        + "    enabled: true\n"
+        + "    workloadCertTTL: 24h\n"
+        + "    allowedClockSkew: 15m\n"
+        + "    sentryAddress: localhost:50001\n"
+        + "    controlPlaneTrustDomain: cluster.local\n"
+        + "    tokenValidators:\n"
+        + "    - name: jwks\n"
+        + "      options:\n"
+        + "        minRefreshInterval: 2m\n"
+        + "        requestTimeout: 1m\n"
+        + "        source: https://localhost:1234/\n"
+        + "    - name: insecure\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMinimalMtlsToYaml() {
+    MtlsConfigurationSettings mtls = new MtlsConfigurationSettings(true, "24h", "15m");
+
+    Configuration configuration = new Configuration("my-config", null, null, mtls);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  mtls:\n"
+        + "    enabled: true\n"
+        + "    workloadCertTTL: 24h\n"
+        + "    allowedClockSkew: 15m\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMtlsWithoutTokenValidatorsToYaml() {
+    MtlsConfigurationSettings mtls = new MtlsConfigurationSettings(
+        true,
+        "24h",
+        "15m",
+        "localhost:50001",
+        "cluster.local"
+    );
+
+    Configuration configuration = new Configuration("my-config", null, null, mtls);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  mtls:\n"
+        + "    enabled: true\n"
+        + "    workloadCertTTL: 24h\n"
+        + "    allowedClockSkew: 15m\n"
+        + "    sentryAddress: localhost:50001\n"
+        + "    controlPlaneTrustDomain: cluster.local\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithEmptyMtlsTokenValidatorsToYaml() {
+    MtlsConfigurationSettings mtls = new MtlsConfigurationSettings(
+        false,
+        null,
+        null,
+        null,
+        null,
+        new ArrayList<>()
+    );
+
+    Configuration configuration = new Configuration("my-config", null, null, mtls);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  mtls:\n"
+        + "    enabled: false\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
