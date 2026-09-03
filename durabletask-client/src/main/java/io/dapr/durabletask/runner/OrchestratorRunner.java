@@ -16,7 +16,10 @@ package io.dapr.durabletask.runner;
 import com.google.protobuf.StringValue;
 import io.dapr.durabletask.TaskOrchestrationExecutor;
 import io.dapr.durabletask.TaskOrchestratorResult;
+import io.dapr.durabletask.WorkflowHistoryCache;
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents;
 import io.dapr.durabletask.implementation.protobuf.Orchestration;
+import io.dapr.durabletask.implementation.protobuf.OrchestratorActions;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
 import io.grpc.StatusRuntimeException;
@@ -25,6 +28,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,6 +38,10 @@ public class OrchestratorRunner extends DurableRunner {
 
   private final OrchestratorService.WorkflowRequest orchestratorRequest;
   private final TaskOrchestrationExecutor taskOrchestrationExecutor;
+  @Nullable
+  private final WorkflowHistoryCache historyCache;
+  @Nullable
+  private final Runnable teardownStream;
 
   /**
    * Constructs a new instance of the OrchestratorRunner class.
@@ -41,25 +50,74 @@ public class OrchestratorRunner extends DurableRunner {
    * @param taskOrchestrationExecutor The executor responsible for running task orchestration logic.
    * @param sidecarClient             The gRPC stub for communication with the Task Hub sidecar service.
    * @param tracer                    An optional tracer used for distributed tracing, can be null.
+   * @param historyCache              The per-stream committed-history cache for stateful-history
+   *                                  delta work items, or null when the optimization is disabled.
    */
   public OrchestratorRunner(
       OrchestratorService.WorkItem workItem,
       TaskOrchestrationExecutor taskOrchestrationExecutor,
       TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient,
-      @Nullable Tracer tracer) {
+      @Nullable Tracer tracer,
+      @Nullable WorkflowHistoryCache historyCache) {
+
+    this(workItem, taskOrchestrationExecutor, sidecarClient, tracer, historyCache, null);
+  }
+
+  /**
+   * Constructs a new instance of the OrchestratorRunner class.
+   *
+   * @param workItem                  The work item containing details about the orchestrator task to be executed.
+   * @param taskOrchestrationExecutor The executor responsible for running task orchestration logic.
+   * @param sidecarClient             The gRPC stub for communication with the Task Hub sidecar service.
+   * @param tracer                    An optional tracer used for distributed tracing, can be null.
+   * @param historyCache              The per-stream committed-history cache for stateful-history
+   *                                  delta work items, or null when the optimization is disabled.
+   * @param teardownStream            Drops the work-item stream this item arrived on, so the sidecar
+   *                                  cancels and redelivers its pending items. Invoked when the
+   *                                  history cannot be resolved. May be null.
+   */
+  public OrchestratorRunner(
+      OrchestratorService.WorkItem workItem,
+      TaskOrchestrationExecutor taskOrchestrationExecutor,
+      TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient,
+      @Nullable Tracer tracer,
+      @Nullable WorkflowHistoryCache historyCache,
+      @Nullable Runnable teardownStream) {
 
     super(workItem, sidecarClient, tracer);
     this.orchestratorRequest = workItem.getWorkflowRequest();
     this.taskOrchestrationExecutor = taskOrchestrationExecutor;
+    this.historyCache = historyCache;
+    this.teardownStream = teardownStream;
   }
 
   @Override
   public void run() {
+    String instanceId = orchestratorRequest.getInstanceId();
+
+    List<HistoryEvents.HistoryEvent> pastEvents;
+    try {
+      pastEvents = resolvePastEvents(instanceId);
+    } catch (StatusRuntimeException e) {
+      // The cache-miss fallback fetch failed and there is no per-item NACK. Abandon this work item
+      // rather than completing the turn with an incomplete history, and drop the stream it arrived
+      // on: the sidecar cancels this stream's pending items and redelivers them promptly, as a
+      // full-history send on the next (cold) stream. Without the teardown, redelivery would have to
+      // wait for the work item's lease to lapse.
+      logException(e);
+      if (this.teardownStream != null) {
+        this.teardownStream.run();
+      }
+      return;
+    }
+
     TaskOrchestratorResult taskOrchestratorResult = taskOrchestrationExecutor.execute(
-        orchestratorRequest.getPastEventsList(),
+        pastEvents,
         orchestratorRequest.getNewEventsList(),
         orchestratorRequest.hasPropagatedHistory()
             ? orchestratorRequest.getPropagatedHistory() : null);
+
+    updateHistoryCache(instanceId, pastEvents, taskOrchestratorResult);
 
     var versionBuilder = Orchestration.WorkflowVersion.newBuilder();
 
@@ -86,6 +144,66 @@ public class OrchestratorRunner extends DurableRunner {
           orchestratorRequest.getInstanceId());
     } catch (StatusRuntimeException e) {
       this.logException(e);
+    }
+  }
+
+  /**
+   * Reconstructs the full committed history to replay. For a full send it is simply the request's
+   * pastEvents; for a delta send (cachedHistory) it is the cached prefix plus the delta, falling
+   * back to a GetInstanceHistory fetch on any cache miss.
+   */
+  List<HistoryEvents.HistoryEvent> resolvePastEvents(String instanceId) {
+    if (this.historyCache == null || !orchestratorRequest.hasCachedHistory()) {
+      return orchestratorRequest.getPastEventsList();
+    }
+
+    List<HistoryEvents.HistoryEvent> cached = this.historyCache.get(instanceId);
+    int expected = orchestratorRequest.getCachedHistory().getEventCount();
+    if (cached != null && cached.size() == expected) {
+      List<HistoryEvents.HistoryEvent> full =
+          new ArrayList<>(cached.size() + orchestratorRequest.getPastEventsCount());
+      full.addAll(cached);
+      full.addAll(orchestratorRequest.getPastEventsList());
+      return full;
+    }
+
+    // Cache miss: recover the full committed history from the sidecar. NewEvents is applied on
+    // top of this by the executor, so only the committed past is needed here.
+    OrchestratorService.GetInstanceHistoryResponse historyResponse = this.sidecarClient.getInstanceHistory(
+        OrchestratorService.GetInstanceHistoryRequest.newBuilder().setInstanceId(instanceId).build());
+    return historyResponse.getEventsList();
+  }
+
+  /**
+   * Refreshes the per-stream cache after a turn so the next turn can be served as a delta. Caches
+   * only the committed history just replayed (never the not-yet-committed NewEvents), and drops the
+   * entry once the instance ends. A CompleteWorkflow action covers completed/failed/terminated/
+   * continued-as-new; a TerminateWorkflow action targets a different instance and is deliberately
+   * not treated as a reset.
+   *
+   * <p>Skipped when this dispatch has been superseded (a redelivery, or a dispatch on a
+   * reconnected stream while this runner was still executing): the sidecar discards the stale
+   * response by completion token, but the cache write would otherwise overwrite the newer
+   * dispatch's prefix and poison the next delta reconstruction. The length check does not always
+   * catch this: after a continue-as-new the stale prefix can have the same length as the good
+   * one.</p>
+   */
+  void updateHistoryCache(
+      String instanceId,
+      List<HistoryEvents.HistoryEvent> pastEvents,
+      TaskOrchestratorResult result) {
+    if (this.historyCache == null
+        || !this.historyCache.isLatestDispatch(instanceId, workItem.getCompletionToken())) {
+      return;
+    }
+
+    boolean ended = result.getActions().stream()
+        .anyMatch(OrchestratorActions.WorkflowAction::hasCompleteWorkflow);
+    if (ended) {
+      this.historyCache.remove(instanceId);
+      this.historyCache.forgetDispatch(instanceId);
+    } else {
+      this.historyCache.put(instanceId, pastEvents);
     }
   }
 }

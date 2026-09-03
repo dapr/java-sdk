@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.durabletask;
 
 import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
+import io.grpc.Channel;
 import org.junit.jupiter.api.AfterEach;
 
 import java.time.Duration;
@@ -52,6 +53,20 @@ public class IntegrationTestBase {
 
     public TestDurableTaskWorkerBuilder setMaximumTimerInterval(Duration maximumTimerInterval) {
       this.innerBuilder.maximumTimerInterval(maximumTimerInterval);
+      return this;
+    }
+
+    /**
+     * Routes the worker over a caller-supplied channel, so a test can attach a
+     * {@link io.grpc.ClientInterceptor} and observe what the sidecar actually puts on the wire.
+     */
+    public TestDurableTaskWorkerBuilder grpcChannel(Channel channel) {
+      this.innerBuilder.grpcChannel(channel);
+      return this;
+    }
+
+    public TestDurableTaskWorkerBuilder disableStatefulHistory(boolean disableStatefulHistory) {
+      this.innerBuilder.disableStatefulHistory(disableStatefulHistory);
       return this;
     }
 
