@@ -985,3 +985,50 @@ The client log:
 Started a new external-event model workflow with instance ID: 23410d96-1afe-4698-9fcd-c01c1e0db255
 workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
 ```
+
+### Workflow Management (List, History, Rerun) Pattern
+
+The `DaprWorkflowClient` can list workflow instance IDs, read a workflow instance's full
+execution history, and rerun a workflow from a specific history event. This example shows
+all three operations.
+
+<!-- STEP
+name: Run Workflow Management Worker
+match_order: none
+expected_stdout_lines:
+  - "Start workflow runtime"
+background: true
+sleep: 20
+timeout_seconds: 45
+-->
+
+Run the worker:
+
+```sh
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.management.DemoWorkflowManagementWorker
+```
+
+<!-- END_STEP -->
+
+<!-- STEP
+name: Run Workflow Management Client
+match_order: none
+expected_stdout_lines:
+  - "Started a new workflow with instance ID"
+  - "Workflow completed with result"
+  - "Reran workflow from event"
+  - "Listed"
+timeout_seconds: 60
+-->
+
+In a separate terminal, run the client:
+
+```sh
+dapr run --app-id demoworkflowclient --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.management.DemoWorkflowManagementClient
+```
+
+<!-- END_STEP -->
+
+The client output shows the started instance ID, the completed result, the list of history
+events (each with its event ID, type, and timestamp), the new instance ID from the rerun,
+and the count of listed instance IDs.

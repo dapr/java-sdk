@@ -13,9 +13,13 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
+import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+
 import javax.annotation.Nullable;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -318,4 +322,35 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param reason     the reason for resuming the orchestration instance
    */
   public abstract void resumeInstance(String instanceId, @Nullable String reason);
+
+  /**
+   * Lists workflow instance IDs with optional pagination.
+   *
+   * @param continuationToken the continuation token from a previous call, or null for the first page
+   * @param pageSize          the maximum number of instance IDs to return, or null for no limit
+   * @return the raw list-instance-IDs response from the sidecar
+   */
+  public abstract OrchestratorService.ListInstanceIDsResponse listInstanceIds(
+      @Nullable String continuationToken, @Nullable Integer pageSize);
+
+  /**
+   * Gets the full execution history of a workflow instance.
+   *
+   * @param instanceId the ID of the workflow instance to get history for
+   * @return the list of history events for the workflow instance
+   */
+  public abstract List<HistoryEvent> getInstanceHistory(String instanceId);
+
+  /**
+   * Reruns a workflow from a specific history event, creating a new workflow instance.
+   *
+   * @param sourceInstanceId the ID of the source workflow instance to rerun from
+   * @param eventId          the history event ID to rerun from
+   * @param newInstanceId    the instance ID to use for the new instance, or null for a random ID
+   * @param input            the input applied at the next activity event, used only when overwriteInput is true
+   * @param overwriteInput   true to overwrite the input at the rerun point with input
+   * @return the instance ID of the new workflow instance
+   */
+  public abstract String rerunWorkflowFromEvent(String sourceInstanceId, int eventId,
+      @Nullable String newInstanceId, @Nullable Object input, boolean overwriteInput);
 }

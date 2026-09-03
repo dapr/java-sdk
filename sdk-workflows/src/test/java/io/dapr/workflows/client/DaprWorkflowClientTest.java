@@ -13,12 +13,16 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
+import com.google.protobuf.Timestamp;
 import io.dapr.config.Properties;
 import io.dapr.durabletask.DurableTaskClient;
 import io.dapr.durabletask.DurableTaskGrpcClientBuilder;
 import io.dapr.durabletask.NewOrchestrationInstanceOptions;
 import io.dapr.durabletask.OrchestrationMetadata;
 import io.dapr.durabletask.OrchestrationRuntimeStatus;
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents;
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
+import io.dapr.durabletask.implementation.protobuf.OrchestratorService.ListInstanceIDsResponse;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
@@ -36,14 +40,18 @@ import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
@@ -364,6 +372,91 @@ public class DaprWorkflowClientTest {
     String expectedArgument = "TestWorkflowInstanceId";
     client.purgeWorkflow(expectedArgument);
     verify(mockInnerClient, times(1)).purgeInstance(expectedArgument);
+  }
+
+  @Test
+  public void listInstanceIds() {
+    ListInstanceIDsResponse response = ListInstanceIDsResponse.newBuilder()
+        .addInstanceIds("id-1").addInstanceIds("id-2")
+        .setContinuationToken("next-token")
+        .build();
+    when(mockInnerClient.listInstanceIds("tok", 50)).thenReturn(response);
+
+    WorkflowInstancePage page = client.listInstanceIds("tok", 50);
+
+    verify(mockInnerClient, times(1)).listInstanceIds("tok", 50);
+    assertEquals(Arrays.asList("id-1", "id-2"), page.getInstanceIds());
+    assertEquals("next-token", page.getContinuationToken());
+  }
+
+  @Test
+  public void listInstanceIdsNoArgs() {
+    ListInstanceIDsResponse response = ListInstanceIDsResponse.newBuilder().addInstanceIds("id-1").build();
+    when(mockInnerClient.listInstanceIds(null, null)).thenReturn(response);
+
+    WorkflowInstancePage page = client.listInstanceIds();
+
+    verify(mockInnerClient, times(1)).listInstanceIds(null, null);
+    assertEquals(Arrays.asList("id-1"), page.getInstanceIds());
+    assertNull(page.getContinuationToken());
+  }
+
+  @Test
+  public void listInstanceIdsRejectsNonPositivePageSize() {
+    assertThrows(IllegalArgumentException.class, () -> client.listInstanceIds(null, 0));
+    verify(mockInnerClient, never()).listInstanceIds(any(), any());
+  }
+
+  @Test
+  public void getInstanceHistory() {
+    HistoryEvent event = HistoryEvent.newBuilder()
+        .setEventId(1)
+        .setTimestamp(Timestamp.newBuilder().setSeconds(10).build())
+        .setExecutionStarted(HistoryEvents.ExecutionStartedEvent.getDefaultInstance())
+        .build();
+    when(mockInnerClient.getInstanceHistory("wf-1")).thenReturn(Arrays.asList(event));
+
+    List<WorkflowHistoryEvent> history = client.getInstanceHistory("wf-1");
+
+    verify(mockInnerClient, times(1)).getInstanceHistory("wf-1");
+    assertEquals(1, history.size());
+    assertEquals(1, history.get(0).getEventId());
+    assertEquals(WorkflowHistoryEventType.EXECUTION_STARTED, history.get(0).getEventType());
+  }
+
+  @Test
+  public void getInstanceHistoryRejectsEmptyId() {
+    assertThrows(IllegalArgumentException.class, () -> client.getInstanceHistory(""));
+    verify(mockInnerClient, never()).getInstanceHistory(any());
+  }
+
+  @Test
+  public void rerunWorkflowFromEvent() {
+    when(mockInnerClient.rerunWorkflowFromEvent("src", 2, null, null, false)).thenReturn("new-id");
+
+    String newId = client.rerunWorkflowFromEvent("src", 2);
+
+    verify(mockInnerClient, times(1)).rerunWorkflowFromEvent("src", 2, null, null, false);
+    assertEquals("new-id", newId);
+  }
+
+  @Test
+  public void rerunWorkflowFromEventWithOptions() {
+    RerunWorkflowFromEventOptions options = new RerunWorkflowFromEventOptions()
+        .setNewInstanceId("target").setInput("payload").setOverwriteInput(true);
+    when(mockInnerClient.rerunWorkflowFromEvent("src", 3, "target", "payload", true)).thenReturn("target");
+
+    String newId = client.rerunWorkflowFromEvent("src", 3, options);
+
+    verify(mockInnerClient, times(1)).rerunWorkflowFromEvent("src", 3, "target", "payload", true);
+    assertEquals("target", newId);
+  }
+
+  @Test
+  public void rerunWorkflowFromEventRejectsInputWithoutOverwrite() {
+    RerunWorkflowFromEventOptions options = new RerunWorkflowFromEventOptions().setInput("payload");
+    assertThrows(IllegalArgumentException.class, () -> client.rerunWorkflowFromEvent("src", 1, options));
+    verify(mockInnerClient, never()).rerunWorkflowFromEvent(any(), anyInt(), any(), any(), anyBoolean());
   }
 
   @Test

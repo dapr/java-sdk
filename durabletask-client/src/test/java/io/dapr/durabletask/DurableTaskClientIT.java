@@ -40,6 +40,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents;
+import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -1744,6 +1747,88 @@ public class DurableTaskClientIT extends IntegrationTestBase {
       throw new RuntimeException(e);
     }
 
+  }
+
+  @Test
+  void getInstanceHistoryReturnsEvents() throws TimeoutException {
+    final String orchestratorName = "historyTest";
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(orchestratorName, ctx -> ctx.complete(ctx.getInput(String.class)))
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName, "hello");
+      client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+
+      List<HistoryEvents.HistoryEvent> history = client.getInstanceHistory(instanceId);
+
+      assertFalse(history.isEmpty());
+    }
+  }
+
+  @Test
+  void listInstanceIdsReturnsScheduledInstance() throws TimeoutException {
+    final String orchestratorName = "listTest";
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(orchestratorName, ctx -> ctx.complete(ctx.getInput(String.class)))
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName, "hello");
+      client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+
+      List<String> ids = new ArrayList<>();
+      String token = null;
+      do {
+        OrchestratorService.ListInstanceIDsResponse page = client.listInstanceIds(token, 100);
+        ids.addAll(page.getInstanceIdsList());
+        token = page.hasContinuationToken() ? page.getContinuationToken() : null;
+      } while (token != null);
+
+      assertTrue(ids.contains(instanceId));
+    }
+  }
+
+  @Test
+  void rerunWorkflowFromEventCreatesNewInstance() throws TimeoutException {
+    final String orchestratorName = "rerunTest";
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(orchestratorName, ctx -> ctx.complete(ctx.getInput(String.class)))
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName, "hello");
+      client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+
+      String newInstanceId = client.rerunWorkflowFromEvent(instanceId, 0, null, null, false);
+
+      assertNotEquals(instanceId, newInstanceId);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(newInstanceId, defaultTimeout, true);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+    }
+  }
+
+  @Test
+  void rerunWorkflowFromEventWithOverwriteNullInputDoesNotThrow() throws TimeoutException {
+    final String orchestratorName = "rerunNullInputTest";
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+            .addOrchestrator(orchestratorName, ctx -> ctx.complete(ctx.getInput(String.class)))
+            .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName, "hello");
+      client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+
+      String newInstanceId = client.rerunWorkflowFromEvent(instanceId, 0, null, null, true);
+
+      assertNotEquals(instanceId, newInstanceId);
+      OrchestrationMetadata instance = client.waitForInstanceCompletion(newInstanceId, defaultTimeout, true);
+      assertEquals(OrchestrationRuntimeStatus.COMPLETED, instance.getRuntimeStatus());
+    }
   }
 
 }
