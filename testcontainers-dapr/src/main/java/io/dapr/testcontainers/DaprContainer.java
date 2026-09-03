@@ -43,6 +43,7 @@ import java.util.Set;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SENTRY_IMAGE_TAG;
 
 public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DaprContainer.class);
@@ -67,12 +68,15 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
   private String schedulerService = "scheduler";
+  private String sentryService = "sentry";
   private DockerImageName placementDockerImageName = DockerImageName.parse(DAPR_PLACEMENT_IMAGE_TAG);
   private DockerImageName schedulerDockerImageName = DockerImageName.parse(DAPR_SCHEDULER_IMAGE_TAG);
+  private DockerImageName sentryDockerImageName = DockerImageName.parse(DAPR_SENTRY_IMAGE_TAG);
 
   private Configuration configuration;
   private DaprPlacementContainer placementContainer;
   private DaprSchedulerContainer schedulerContainer;
+  private DaprSentryContainer sentryContainer;
   private String appName;
   private Integer appPort;
   private DaprProtocol appProtocol = DaprProtocol.HTTP; // default from docs
@@ -82,6 +86,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private Integer appHealthCheckThreshold = 3; //default from docs
   private boolean shouldReusePlacement;
   private boolean shouldReuseScheduler;
+  private boolean shouldReuseSentry;
 
   /**
    * Creates a new Dapr container.
@@ -171,6 +176,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
+  public DaprContainer withSentryService(String sentryService) {
+    this.sentryService = sentryService;
+    return this;
+  }
+
   public DaprContainer withAppName(String appName) {
     this.appName = appName;
     return this;
@@ -221,6 +231,21 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
+  public DaprContainer withSentryImage(DockerImageName sentryDockerImageName) {
+    this.sentryDockerImageName = sentryDockerImageName;
+    return this;
+  }
+
+  public DaprContainer withSentryImage(String sentryDockerImageName) {
+    this.sentryDockerImageName = DockerImageName.parse(sentryDockerImageName);
+    return this;
+  }
+
+  public DaprContainer withReusableSentry(boolean shouldReuseSentry) {
+    this.shouldReuseSentry = shouldReuseSentry;
+    return this;
+  }
+
   public DaprContainer withPlacementContainer(DaprPlacementContainer placementContainer) {
     this.placementContainer = placementContainer;
     return this;
@@ -229,6 +254,29 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   public DaprContainer withSchedulerContainer(DaprSchedulerContainer schedulerContainer) {
     this.schedulerContainer = schedulerContainer;
     return this;
+  }
+
+  /**
+   * Sets the Sentry container used as certificate authority when mTLS is enabled in the {@link Configuration}.
+   * When not set, a Sentry container is created automatically with the same configuration.
+   * @param sentryContainer Sentry container.
+   * @return this container.
+   */
+  public DaprContainer withSentryContainer(DaprSentryContainer sentryContainer) {
+    this.sentryContainer = sentryContainer;
+    return this;
+  }
+
+  /**
+   * Returns true when the {@link Configuration} enables mTLS. In that case a Sentry container is used as
+   * certificate authority, the placement and scheduler services are started with TLS enabled, and daprd is
+   * started with {@code --enable-mtls}.
+   * @return whether mTLS is enabled.
+   */
+  public boolean isMtlsEnabled() {
+    return configuration != null
+        && configuration.getMtls() != null
+        && Boolean.TRUE.equals(configuration.getMtls().getEnabled());
   }
 
   public DaprContainer withComponent(Component component) {
@@ -292,11 +340,50 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       withNetwork(Network.newNetwork());
     }
 
+    boolean mtlsEnabled = isMtlsEnabled();
+    String sentryAddress = null;
+    String trustDomain = null;
+    String trustAnchors = null;
+
+    if (mtlsEnabled) {
+      MtlsConfigurationSettings mtls = configuration.getMtls();
+      trustDomain = mtls.getControlPlaneTrustDomain() != null
+              ? mtls.getControlPlaneTrustDomain()
+              : DaprSentryContainer.DEFAULT_TRUST_DOMAIN;
+
+      if (this.sentryContainer == null) {
+        this.sentryContainer = new DaprSentryContainer(this.sentryDockerImageName)
+                .withNetwork(getNetwork())
+                .withNetworkAliases(sentryService)
+                .withConfiguration(configuration)
+                .withTrustDomain(trustDomain)
+                .withDaprLogLevel(daprLogLevel)
+                .withReuse(this.shouldReuseSentry);
+      }
+
+      // Sentry must be running before the other services start, as they need the trust anchors it issues.
+      this.sentryContainer.start();
+
+      sentryAddress = mtls.getSentryAddress() != null
+              ? mtls.getSentryAddress()
+              : sentryService + ":" + this.sentryContainer.getPort();
+      trustAnchors = this.sentryContainer.getTrustAnchors();
+    }
+
     if (this.placementContainer == null) {
       this.placementContainer = new DaprPlacementContainer(this.placementDockerImageName)
               .withNetwork(getNetwork())
               .withNetworkAliases(placementService)
               .withReuse(this.shouldReusePlacement);
+
+      if (mtlsEnabled) {
+        this.placementContainer
+                .withTlsEnabled(true)
+                .withSentryAddress(sentryAddress)
+                .withTrustDomain(trustDomain)
+                .withTrustAnchors(trustAnchors);
+      }
+
       this.placementContainer.start();
     }
 
@@ -305,6 +392,15 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
               .withNetwork(getNetwork())
               .withNetworkAliases(schedulerService)
               .withReuse(this.shouldReuseScheduler);
+
+      if (mtlsEnabled) {
+        this.schedulerContainer
+                .withTlsEnabled(true)
+                .withSentryAddress(sentryAddress)
+                .withTrustDomain(trustDomain)
+                .withTrustAnchors(trustAnchors);
+      }
+
       this.schedulerContainer.start();
     }
 
@@ -352,6 +448,15 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     if (configuration != null) {
       cmds.add("--config");
       cmds.add("/dapr-resources/" + configuration.getName() + ".yaml");
+    }
+
+    if (mtlsEnabled) {
+      cmds.add("--enable-mtls");
+      cmds.add("--sentry-address");
+      cmds.add(sentryAddress);
+      cmds.add("--control-plane-trust-domain");
+      cmds.add(trustDomain);
+      withEnv("DAPR_TRUST_ANCHORS", trustAnchors);
     }
 
     cmds.add("--log-level");
@@ -410,7 +515,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       withCopyToContainer(Transferable.of(endpointYaml), "/dapr-resources/" + endpoint.getName() + ".yaml");
     }
 
-    dependsOn(placementContainer, schedulerContainer);
+    if (sentryContainer != null) {
+      dependsOn(placementContainer, schedulerContainer, sentryContainer);
+    } else {
+      dependsOn(placementContainer, schedulerContainer);
+    }
   }
 
   public String getAppName() {
@@ -449,6 +558,18 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return placementService;
   }
 
+  public String getSchedulerService() {
+    return schedulerService;
+  }
+
+  public String getSentryService() {
+    return sentryService;
+  }
+
+  public DaprSentryContainer getSentryContainer() {
+    return sentryContainer;
+  }
+
   public static DockerImageName getDefaultImageName() {
     return DEFAULT_IMAGE_NAME;
   }
@@ -459,6 +580,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DockerImageName getSchedulerDockerImageName() {
     return schedulerDockerImageName;
+  }
+
+  public DockerImageName getSentryDockerImageName() {
+    return sentryDockerImageName;
   }
 
   // Required by spotbugs plugin

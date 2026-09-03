@@ -16,11 +16,14 @@ package io.dapr.testcontainers.converter;
 import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.ListEntry;
+import io.dapr.testcontainers.MtlsConfigurationSettings;
+import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import io.dapr.testcontainers.ZipkinTracingConfigurationSettings;
 import org.yaml.snakeyaml.Yaml;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,8 +90,41 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
 
     }
 
+    MtlsConfigurationSettings mtls = configuration.getMtls();
+    if (mtls != null) {
+      Map<String, Object> mtlsMap = new LinkedHashMap<>();
+
+      putIfNotNull(mtlsMap, "enabled", mtls.getEnabled());
+      putIfNotNull(mtlsMap, "workloadCertTTL", mtls.getWorkloadCertTtl());
+      putIfNotNull(mtlsMap, "allowedClockSkew", mtls.getAllowedClockSkew());
+      putIfNotNull(mtlsMap, "sentryAddress", mtls.getSentryAddress());
+      putIfNotNull(mtlsMap, "controlPlaneTrustDomain", mtls.getControlPlaneTrustDomain());
+
+      List<MtlsTokenValidator> tokenValidators = mtls.getTokenValidators();
+      if (tokenValidators != null && !tokenValidators.isEmpty()) {
+        List<Map<String, Object>> tokenValidatorsList = new ArrayList<>();
+
+        for (MtlsTokenValidator tokenValidator : tokenValidators) {
+          Map<String, Object> tokenValidatorMap = new LinkedHashMap<>();
+          tokenValidatorMap.put("name", tokenValidator.getName());
+          putIfNotNull(tokenValidatorMap, "options", tokenValidator.getOptions());
+          tokenValidatorsList.add(tokenValidatorMap);
+        }
+
+        mtlsMap.put("tokenValidators", tokenValidatorsList);
+      }
+
+      configurationSpec.put("mtls", mtlsMap);
+    }
+
     configurationProps.put("spec", configurationSpec);
 
     return mapper.dumpAsMap(configurationProps);
+  }
+
+  private static void putIfNotNull(Map<String, Object> map, String key, Object value) {
+    if (value != null) {
+      map.put(key, value);
+    }
   }
 }
