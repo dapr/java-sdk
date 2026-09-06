@@ -1005,7 +1005,7 @@ timeout_seconds: 45
 Run the worker:
 
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.management.DemoWorkflowManagementWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50003 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.management.DemoWorkflowManagementWorker 50003
 ```
 
 <!-- END_STEP -->
@@ -1021,10 +1021,12 @@ expected_stdout_lines:
 timeout_seconds: 60
 -->
 
-In a separate terminal, run the client:
+In a separate terminal, run the client. It connects to the worker's sidecar on
+gRPC port 50003, so the workflow it schedules runs on the worker:
 
 ```sh
-dapr run --app-id demoworkflowclient --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.management.DemoWorkflowManagementClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.management.DemoWorkflowManagementClient 50003
+dapr stop --app-id demoworkflowworker
 ```
 
 <!-- END_STEP -->
