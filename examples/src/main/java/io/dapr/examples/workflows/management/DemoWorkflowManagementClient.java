@@ -45,11 +45,17 @@ public class DemoWorkflowManagementClient {
             event.getEventId(), event.getEventType(), event.getTimestamp());
       }
 
-      // Rerun the workflow from the first history event.
-      int firstEventId = history.get(0).getEventId();
-      String rerunId = client.rerunWorkflowFromEvent(instanceId, firstEventId,
+      // Rerun the workflow from the activity's scheduled event. Lifecycle events
+      // (for example WORKFLOW_STARTED) carry event ID -1 and cannot be rerun; only
+      // events with a non-negative ID, such as a scheduled activity, are valid targets.
+      int rerunEventId = history.stream()
+          .mapToInt(WorkflowHistoryEvent::getEventId)
+          .filter(id -> id >= 0)
+          .findFirst()
+          .orElseThrow(() -> new IllegalStateException("No rerunnable history event found"));
+      String rerunId = client.rerunWorkflowFromEvent(instanceId, rerunEventId,
           new RerunWorkflowFromEventOptions().setInput("Osaka").setOverwriteInput(true));
-      System.out.printf("Reran workflow from event %d as new instance: %s%n", firstEventId, rerunId);
+      System.out.printf("Reran workflow from event %d as new instance: %s%n", rerunEventId, rerunId);
       client.waitForWorkflowCompletion(rerunId, null, true);
 
       // List workflow instance IDs (first page).
