@@ -31,13 +31,17 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_PLACEMENT_EDGE_IMAGE_TAG;
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_EDGE_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_SCHEDULER_EDGE_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,26 +75,34 @@ public class WorkflowsMultiAppCrossAppOperationsIT {
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
+  // The containers assert the image is the release one they pin, so each edge build has to be
+  // declared as a substitute for it explicitly.
+  private static final DockerImageName EDGE_DAPRD_IMAGE = DockerImageName.parse(DAPR_RUNTIME_EDGE_IMAGE_TAG)
+      .asCompatibleSubstituteFor(DAPR_RUNTIME_IMAGE_TAG);
+  private static final DockerImageName EDGE_PLACEMENT_IMAGE = DockerImageName.parse(DAPR_PLACEMENT_EDGE_IMAGE_TAG)
+      .asCompatibleSubstituteFor(DAPR_PLACEMENT_IMAGE_TAG);
+  private static final DockerImageName EDGE_SCHEDULER_IMAGE = DockerImageName.parse(DAPR_SCHEDULER_EDGE_IMAGE_TAG)
+      .asCompatibleSubstituteFor(DAPR_SCHEDULER_IMAGE_TAG);
+
   @Container
-  private final static DaprPlacementContainer sharedPlacementContainer = new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)
+  private final static DaprPlacementContainer sharedPlacementContainer = new DaprPlacementContainer(EDGE_PLACEMENT_IMAGE)
       .withNetwork(DAPR_NETWORK)
       .withNetworkAliases("placement")
       .withReuse(false);
 
   @Container
-  private final static DaprSchedulerContainer sharedSchedulerContainer = new DaprSchedulerContainer(DAPR_SCHEDULER_IMAGE_TAG)
+  private final static DaprSchedulerContainer sharedSchedulerContainer = new DaprSchedulerContainer(EDGE_SCHEDULER_IMAGE)
       .withNetwork(DAPR_NETWORK)
       .withNetworkAliases("scheduler")
       .withReuse(false);
 
   // Caller app sidecar. The test JVM's workflow client connects to this one.
   //
-  // Both sidecars run the edge image: cross-app client operations are not in any release yet, and a
+  // The stack runs the edge images: cross-app client operations are not in any release yet, and a
   // release daprd ignores the app ID and applies every operation to the caller's own app, which
-  // would make this test fail rather than skip. Placement and scheduler stay on the release images
-  // because the feature lives entirely in daprd.
+  // would make this test fail rather than skip.
   @Container
-  private final static DaprContainer CALLER_SIDECAR = new DaprContainer(DAPR_RUNTIME_EDGE_IMAGE_TAG)
+  private final static DaprContainer CALLER_SIDECAR = new DaprContainer(EDGE_DAPRD_IMAGE)
       .withAppName(CALLER_APP_ID)
       .withNetwork(DAPR_NETWORK)
       .withNetworkAliases("caller-sidecar")
@@ -104,7 +116,7 @@ public class WorkflowsMultiAppCrossAppOperationsIT {
 
   // Host app sidecar. This is the app that owns and runs the workflow instances.
   @Container
-  private final static DaprContainer HOST_SIDECAR = new DaprContainer(DAPR_RUNTIME_EDGE_IMAGE_TAG)
+  private final static DaprContainer HOST_SIDECAR = new DaprContainer(EDGE_DAPRD_IMAGE)
       .withAppName(HOST_APP_ID)
       .withNetwork(DAPR_NETWORK)
       .withNetworkAliases("host-sidecar")
