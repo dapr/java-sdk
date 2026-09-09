@@ -227,6 +227,23 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
+   * Suspend the workflow associated with the provided instance id, owned by another app.
+   *
+   * <p>Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the operation applies to the local app instead.
+   *
+   * @param workflowInstanceId Workflow instance id to suspend.
+   * @param reason             reason for suspending the workflow instance.
+   * @param appId              ID of the app that owns the workflow instance. May be null to target the local app.
+   */
+  public void suspendWorkflow(String workflowInstanceId, @Nullable String reason, @Nullable String appId) {
+    this.innerClient.suspendInstance(workflowInstanceId, reason, appId);
+  }
+
+  /**
    * Resume the workflow associated with the provided instance id.
    *
    * @param workflowInstanceId Workflow instance id to resume.
@@ -237,6 +254,23 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
+   * Resume the workflow associated with the provided instance id, owned by another app.
+   *
+   * <p>Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the operation applies to the local app instead.
+   *
+   * @param workflowInstanceId Workflow instance id to resume.
+   * @param reason             reason for resuming the workflow instance.
+   * @param appId              ID of the app that owns the workflow instance. May be null to target the local app.
+   */
+  public void resumeWorkflow(String workflowInstanceId, @Nullable String reason, @Nullable String appId) {
+    this.innerClient.resumeInstance(workflowInstanceId, reason, appId);
+  }
+
+  /**
    * Terminates the workflow associated with the provided instance id.
    *
    * @param workflowInstanceId Workflow instance id to terminate.
@@ -244,6 +278,23 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   public void terminateWorkflow(String workflowInstanceId, @Nullable Object output) {
     this.innerClient.terminate(workflowInstanceId, output);
+  }
+
+  /**
+   * Terminates the workflow associated with the provided instance id, owned by another app.
+   *
+   * <p>Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the operation applies to the local app instead.
+   *
+   * @param workflowInstanceId Workflow instance id to terminate.
+   * @param output             the optional output to set for the terminated orchestration instance.
+   * @param appId              ID of the app that owns the workflow instance. May be null to target the local app.
+   */
+  public void terminateWorkflow(String workflowInstanceId, @Nullable Object output, @Nullable String appId) {
+    this.innerClient.terminate(workflowInstanceId, output, appId);
   }
 
   /**
@@ -274,6 +325,28 @@ public class DaprWorkflowClient implements AutoCloseable {
   @Nullable
   public WorkflowState getWorkflowState(String instanceId, boolean getInputsAndOutputs) {
     OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
+
+    return metadata == null ? null : new DefaultWorkflowState(metadata);
+  }
+
+  /**
+   * Fetches workflow instance metadata from the durable store of another app.
+   *
+   * <p>Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the operation applies to the local app instead.
+   *
+   * @param instanceId          the unique ID of the workflow instance to fetch
+   * @param getInputsAndOutputs <code>true</code> to fetch the workflow instance's
+   *                            inputs, outputs, and custom status, or <code>false</code> to omit them
+   * @param appId               ID of the app that owns the workflow instance. May be null to target the local app.
+   * @return a metadata record that describes the workflow instance and it execution status, or a default instance
+   */
+  @Nullable
+  public WorkflowState getWorkflowState(String instanceId, boolean getInputsAndOutputs, @Nullable String appId) {
+    OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs, appId);
 
     return metadata == null ? null : new DefaultWorkflowState(metadata);
   }
@@ -329,6 +402,34 @@ public class DaprWorkflowClient implements AutoCloseable {
       throws TimeoutException {
 
     OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
+
+    return metadata == null ? null : new DefaultWorkflowState(metadata);
+  }
+
+  /**
+   * Waits for a workflow owned by another app to start running.
+   *
+   * <p>See {@link #waitForWorkflowStart(String, Duration, boolean)} for the wait semantics.
+   * Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the operation applies to the local app instead.
+   *
+   * @param instanceId          the unique ID of the workflow instance to wait for
+   * @param timeout             the amount of time to wait for the workflow instance to start
+   * @param getInputsAndOutputs true to fetch the workflow instance's
+   *                            inputs, outputs, and custom status, or false to omit them
+   * @param appId               ID of the app that owns the workflow instance. May be null to target the local app.
+   * @return the workflow instance metadata or null if no such instance is found
+   * @throws TimeoutException when the workflow instance is not started within the specified amount of time
+   */
+  @Nullable
+  public WorkflowState waitForWorkflowStart(String instanceId, Duration timeout, boolean getInputsAndOutputs,
+                                            @Nullable String appId) throws TimeoutException {
+
+    OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs,
+        appId);
 
     return metadata == null ? null : new DefaultWorkflowState(metadata);
   }
@@ -393,6 +494,33 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
+   * Waits for a workflow owned by another app to complete.
+   *
+   * <p>See {@link #waitForWorkflowCompletion(String, Duration, boolean)} for the wait semantics.
+   * Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the operation applies to the local app instead.
+   *
+   * @param instanceId          the unique ID of the workflow instance to wait for
+   * @param timeout             the amount of time to wait for the workflow instance to complete
+   * @param getInputsAndOutputs true to fetch the workflow instance's inputs, outputs, and custom
+   *                            status, or false to omit them
+   * @param appId               ID of the app that owns the workflow instance. May be null to target the local app.
+   * @return the workflow instance metadata or null if no such instance is found
+   * @throws TimeoutException when the workflow instance is not completed within the specified amount of time
+   */
+  @Nullable
+  public WorkflowState waitForWorkflowCompletion(String instanceId, Duration timeout, boolean getInputsAndOutputs,
+                                                 @Nullable String appId) throws TimeoutException {
+
+    OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
+        getInputsAndOutputs, appId);
+    return metadata == null ? null : new DefaultWorkflowState(metadata);
+  }
+
+  /**
    * Sends an event notification message to awaiting workflow instance.
    *
    * @param workflowInstanceId The ID of the workflow instance that will handle the event.
@@ -401,6 +529,24 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   public void raiseEvent(String workflowInstanceId, String eventName, Object eventPayload) {
     this.innerClient.raiseEvent(workflowInstanceId, eventName, eventPayload);
+  }
+
+  /**
+   * Sends an event notification message to a waiting workflow instance owned by another app.
+   *
+   * <p>Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the operation applies to the local app instead.
+   *
+   * @param workflowInstanceId The ID of the workflow instance that will handle the event.
+   * @param eventName          The name of the event. Event names are case-insensitive.
+   * @param eventPayload       The serializable data payload to include with the event.
+   * @param appId              ID of the app that owns the workflow instance. May be null to target the local app.
+   */
+  public void raiseEvent(String workflowInstanceId, String eventName, Object eventPayload, @Nullable String appId) {
+    this.innerClient.raiseEvent(workflowInstanceId, eventName, eventPayload, appId);
   }
 
   /**
@@ -429,6 +575,29 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   public boolean purgeWorkflow(String workflowInstanceId) {
     PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
+
+    if (result != null) {
+      return result.getDeletedInstanceCount() > 0;
+    }
+
+    return false;
+  }
+
+  /**
+   * Purges workflow instance state from the workflow state store of another app.
+   *
+   * <p>Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the operation applies to the local app instead.
+   *
+   * @param workflowInstanceId The unique ID of the workflow instance to purge.
+   * @param appId              ID of the app that owns the workflow instance. May be null to target the local app.
+   * @return Return true if the workflow state was found and purged successfully otherwise false.
+   */
+  public boolean purgeWorkflow(String workflowInstanceId, @Nullable String appId) {
+    PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId, appId);
 
     if (result != null) {
       return result.getDeletedInstanceCount() > 0;
@@ -534,6 +703,9 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
 
     instanceOptions.setEnforceUniqueInstanceId(options.isEnforceUniqueInstanceId());
+    if (options.getAppId() != null) {
+      instanceOptions.setAppID(options.getAppId());
+    }
 
     return instanceOptions;
   }

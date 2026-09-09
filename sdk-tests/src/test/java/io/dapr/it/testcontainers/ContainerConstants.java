@@ -4,6 +4,9 @@ import io.dapr.testcontainers.DaprContainerConstants;
 
 public interface ContainerConstants {
   String DAPR_RUNTIME_IMAGE_TAG = DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+  // Built from dapr/dapr master. Needed by tests covering runtime features that no release
+  // carries yet, where the pinned release image would silently ignore the new request fields.
+  String DAPR_RUNTIME_EDGE_IMAGE_TAG = "daprio/daprd:edge";
   String DAPR_PLACEMENT_IMAGE_TAG = DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
   String DAPR_SCHEDULER_IMAGE_TAG = DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
   String TOXI_PROXY_IMAGE_TAG = "ghcr.io/shopify/toxiproxy:2.5.0";

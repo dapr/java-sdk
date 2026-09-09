@@ -208,6 +208,10 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setEnforceUniqueInstanceId(true);
     }
 
+    if (options.hasAppID()) {
+      builder.setRouter(buildTaskRouter(options.getAppID()));
+    }
+
     Span span = null;
     if (this.tracer != null) {
       span = this.tracer.spanBuilder("create_orchestration:" + orchestratorName)
@@ -270,8 +274,18 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
     return traceContext.build();
   }
 
+  /**
+   * Builds a router that targets the given app. Only the target app ID is set by the client;
+   * the sidecar stamps the source app ID.
+   */
+  private static Orchestration.TaskRouter buildTaskRouter(String appID) {
+    return Orchestration.TaskRouter.newBuilder()
+        .setTargetAppID(appID)
+        .build();
+  }
+
   @Override
-  public void raiseEvent(String instanceId, String eventName, Object eventPayload) {
+  public void raiseEvent(String instanceId, String eventName, Object eventPayload, @Nullable String appID) {
     Helpers.throwIfArgumentNull(instanceId, "instanceId");
     Helpers.throwIfArgumentNull(eventName, "eventName");
 
@@ -283,28 +297,39 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setInput(StringValue.of(serializedPayload));
     }
 
+    if (appID != null) {
+      builder.setRouter(buildTaskRouter(appID));
+    }
+
     OrchestratorService.RaiseEventRequest request = builder.build();
     this.sidecarClient.raiseEvent(request);
 
   }
 
   @Override
-  public OrchestrationMetadata getInstanceMetadata(String instanceId, boolean getInputsAndOutputs) {
-    OrchestratorService.GetInstanceRequest request = OrchestratorService.GetInstanceRequest.newBuilder()
+  public OrchestrationMetadata getInstanceMetadata(String instanceId, boolean getInputsAndOutputs,
+                                                   @Nullable String appID) {
+    OrchestratorService.GetInstanceRequest.Builder builder = OrchestratorService.GetInstanceRequest.newBuilder()
         .setInstanceId(instanceId)
-        .setGetInputsAndOutputs(getInputsAndOutputs)
-        .build();
+        .setGetInputsAndOutputs(getInputsAndOutputs);
+    if (appID != null) {
+      builder.setRouter(buildTaskRouter(appID));
+    }
+    OrchestratorService.GetInstanceRequest request = builder.build();
     OrchestratorService.GetInstanceResponse response = this.sidecarClient.getInstance(request);
     return new OrchestrationMetadata(response, this.dataConverter, request.getGetInputsAndOutputs());
   }
 
   @Override
-  public OrchestrationMetadata waitForInstanceStart(String instanceId, Duration timeout, boolean getInputsAndOutputs)
-      throws TimeoutException {
-    OrchestratorService.GetInstanceRequest request = OrchestratorService.GetInstanceRequest.newBuilder()
+  public OrchestrationMetadata waitForInstanceStart(String instanceId, Duration timeout, boolean getInputsAndOutputs,
+                                                    @Nullable String appID) throws TimeoutException {
+    OrchestratorService.GetInstanceRequest.Builder requestBuilder = OrchestratorService.GetInstanceRequest.newBuilder()
         .setInstanceId(instanceId)
-        .setGetInputsAndOutputs(getInputsAndOutputs)
-        .build();
+        .setGetInputsAndOutputs(getInputsAndOutputs);
+    if (appID != null) {
+      requestBuilder.setRouter(buildTaskRouter(appID));
+    }
+    OrchestratorService.GetInstanceRequest request = requestBuilder.build();
 
     if (timeout == null || timeout.isNegative() || timeout.isZero()) {
       timeout = Duration.ofMinutes(10);
@@ -328,11 +353,15 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
 
   @Override
   public OrchestrationMetadata waitForInstanceCompletion(String instanceId, Duration timeout,
-                                                         boolean getInputsAndOutputs) throws TimeoutException {
-    OrchestratorService.GetInstanceRequest request = OrchestratorService.GetInstanceRequest.newBuilder()
+                                                         boolean getInputsAndOutputs,
+                                                         @Nullable String appID) throws TimeoutException {
+    OrchestratorService.GetInstanceRequest.Builder requestBuilder = OrchestratorService.GetInstanceRequest.newBuilder()
         .setInstanceId(instanceId)
-        .setGetInputsAndOutputs(getInputsAndOutputs)
-        .build();
+        .setGetInputsAndOutputs(getInputsAndOutputs);
+    if (appID != null) {
+      requestBuilder.setRouter(buildTaskRouter(appID));
+    }
+    OrchestratorService.GetInstanceRequest request = requestBuilder.build();
 
     if (timeout == null || timeout.isNegative() || timeout.isZero()) {
       timeout = Duration.ofMinutes(10);
@@ -355,7 +384,7 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
   }
 
   @Override
-  public void terminate(String instanceId, @Nullable Object output) {
+  public void terminate(String instanceId, @Nullable Object output, @Nullable String appID) {
     Helpers.throwIfArgumentNull(instanceId, "instanceId");
     String serializeOutput = this.dataConverter.serialize(output);
     this.logger.fine(() -> String.format(
@@ -367,16 +396,21 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
     if (serializeOutput != null) {
       builder.setOutput(StringValue.of(serializeOutput));
     }
+    if (appID != null) {
+      builder.setRouter(buildTaskRouter(appID));
+    }
     this.sidecarClient.terminateInstance(builder.build());
   }
 
   @Override
-  public PurgeResult purgeInstance(String instanceId) {
-    OrchestratorService.PurgeInstancesRequest request = OrchestratorService.PurgeInstancesRequest.newBuilder()
-        .setInstanceId(instanceId)
-        .build();
+  public PurgeResult purgeInstance(String instanceId, @Nullable String appID) {
+    OrchestratorService.PurgeInstancesRequest.Builder builder = OrchestratorService.PurgeInstancesRequest.newBuilder()
+        .setInstanceId(instanceId);
+    if (appID != null) {
+      builder.setRouter(buildTaskRouter(appID));
+    }
 
-    OrchestratorService.PurgeInstancesResponse response = this.sidecarClient.purgeInstances(request);
+    OrchestratorService.PurgeInstancesResponse response = this.sidecarClient.purgeInstances(builder.build());
     return toPurgeResult(response);
   }
 
@@ -414,28 +448,34 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
   }
 
   @Override
-  public void suspendInstance(String instanceId, @Nullable String reason) {
+  public void suspendInstance(String instanceId, @Nullable String reason, @Nullable String appID) {
     OrchestratorService.SuspendRequest.Builder suspendRequestBuilder = OrchestratorService.SuspendRequest.newBuilder();
     suspendRequestBuilder.setInstanceId(instanceId);
     if (reason != null) {
       suspendRequestBuilder.setReason(StringValue.of(reason));
     }
+    if (appID != null) {
+      suspendRequestBuilder.setRouter(buildTaskRouter(appID));
+    }
     this.sidecarClient.suspendInstance(suspendRequestBuilder.build());
   }
 
   @Override
-  public void resumeInstance(String instanceId, @Nullable String reason) {
+  public void resumeInstance(String instanceId, @Nullable String reason, @Nullable String appID) {
     OrchestratorService.ResumeRequest.Builder resumeRequestBuilder = OrchestratorService.ResumeRequest.newBuilder();
     resumeRequestBuilder.setInstanceId(instanceId);
     if (reason != null) {
       resumeRequestBuilder.setReason(StringValue.of(reason));
     }
+    if (appID != null) {
+      resumeRequestBuilder.setRouter(buildTaskRouter(appID));
+    }
     this.sidecarClient.resumeInstance(resumeRequestBuilder.build());
   }
 
   @Override
-  public String restartInstance(String instanceId, boolean restartWithNewInstanceId) {
-    OrchestrationMetadata metadata = this.getInstanceMetadata(instanceId, true);
+  public String restartInstance(String instanceId, boolean restartWithNewInstanceId, @Nullable String appID) {
+    OrchestrationMetadata metadata = this.getInstanceMetadata(instanceId, true, appID);
     if (!metadata.isInstanceFound()) {
       throw new IllegalArgumentException(new StringBuilder()
           .append("An orchestration with instanceId ")
@@ -443,13 +483,15 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
           .append(" was not found.").toString());
     }
 
-    if (restartWithNewInstanceId) {
-      return this.scheduleNewOrchestrationInstance(metadata.getName(),
-          this.dataConverter.deserialize(metadata.getSerializedInput(), Object.class));
-    } else {
-      return this.scheduleNewOrchestrationInstance(metadata.getName(),
-          this.dataConverter.deserialize(metadata.getSerializedInput(), Object.class), metadata.getInstanceId());
+    NewOrchestrationInstanceOptions options = new NewOrchestrationInstanceOptions()
+        .setInput(this.dataConverter.deserialize(metadata.getSerializedInput(), Object.class));
+    if (!restartWithNewInstanceId) {
+      options.setInstanceId(metadata.getInstanceId());
     }
+    if (appID != null) {
+      options.setAppID(appID);
+    }
+    return this.scheduleNewOrchestrationInstance(metadata.getName(), options);
   }
 
   private PurgeResult toPurgeResult(OrchestratorService.PurgeInstancesResponse response) {

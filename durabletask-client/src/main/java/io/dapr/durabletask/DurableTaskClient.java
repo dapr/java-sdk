@@ -127,7 +127,29 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param eventName    the case-insensitive name of the event
    * @param eventPayload the serializable data payload to include with the event
    */
-  public abstract void raiseEvent(String instanceId, String eventName, @Nullable Object eventPayload);
+  public void raiseEvent(String instanceId, String eventName, @Nullable Object eventPayload) {
+    this.raiseEvent(instanceId, eventName, eventPayload, null);
+  }
+
+  /**
+   * Sends an event notification message with a payload to a waiting orchestration instance owned by another app.
+   *
+   * <p>See {@link #raiseEvent(String, String, Object)} for the event delivery semantics.</p>
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the event is raised on the local app instead.</p>
+   *
+   * @param instanceId   the ID of the orchestration instance that will handle the event
+   * @param eventName    the case-insensitive name of the event
+   * @param eventPayload the serializable data payload to include with the event
+   * @param appID        the ID of the app that owns the target orchestration instance, used for cross-app
+   *                     routing. May be null to target the local app.
+   */
+  public abstract void raiseEvent(
+      String instanceId,
+      String eventName,
+      @Nullable Object eventPayload,
+      @Nullable String appID);
 
   /**
    * Fetches orchestration instance metadata from the configured durable store.
@@ -140,7 +162,30 @@ public abstract class DurableTaskClient implements AutoCloseable {
    *     {@link OrchestrationMetadata#isInstanceFound()} to check if an instance is found.
    */
   @Nullable
-  public abstract OrchestrationMetadata getInstanceMetadata(String instanceId, boolean getInputsAndOutputs);
+  public OrchestrationMetadata getInstanceMetadata(String instanceId, boolean getInputsAndOutputs) {
+    return this.getInstanceMetadata(instanceId, getInputsAndOutputs, null);
+  }
+
+  /**
+   * Fetches orchestration instance metadata from the durable store of another app.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the metadata is fetched from the local app instead.</p>
+   *
+   * @param instanceId          the unique ID of the orchestration instance to fetch
+   * @param getInputsAndOutputs <code>true</code> to fetch the orchestration instance's inputs, outputs, and custom
+   *                            status, or <code>false</code> to omit them
+   * @param appID               the ID of the app that owns the target orchestration instance, used for cross-app
+   *                            routing. May be null to target the local app.
+   * @return a metadata record that describes the orchestration instance and its execution status, or
+   *     a default instance if no such instance is found. Please refer to method
+   *     {@link OrchestrationMetadata#isInstanceFound()} to check if an instance is found.
+   */
+  @Nullable
+  public abstract OrchestrationMetadata getInstanceMetadata(
+      String instanceId,
+      boolean getInputsAndOutputs,
+      @Nullable String appID);
 
   /**
    * Waits for an orchestration to start running and returns an {@link OrchestrationMetadata} object that contains
@@ -181,10 +226,36 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @throws TimeoutException when the orchestration instance is not started within the specified amount of time
    */
   @Nullable
+  public OrchestrationMetadata waitForInstanceStart(
+      String instanceId,
+      Duration timeout,
+      boolean getInputsAndOutputs) throws TimeoutException {
+    return this.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs, null);
+  }
+
+  /**
+   * Waits for an orchestration instance owned by another app to start running.
+   *
+   * <p>See {@link #waitForInstanceStart(String, Duration, boolean)} for the wait semantics.</p>
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the wait applies to the local app instead.</p>
+   *
+   * @param instanceId          the unique ID of the orchestration instance to wait for
+   * @param timeout             the amount of time to wait for the orchestration instance to start
+   * @param getInputsAndOutputs <code>true</code> to fetch the orchestration instance's inputs, outputs, and custom
+   *                            status, or <code>false</code> to omit them
+   * @param appID               the ID of the app that owns the target orchestration instance, used for cross-app
+   *                            routing. May be null to target the local app.
+   * @return the orchestration instance metadata or <code>null</code> if no such instance is found
+   * @throws TimeoutException when the orchestration instance is not started within the specified amount of time
+   */
+  @Nullable
   public abstract OrchestrationMetadata waitForInstanceStart(
       String instanceId,
       Duration timeout,
-      boolean getInputsAndOutputs) throws TimeoutException;
+      boolean getInputsAndOutputs,
+      @Nullable String appID) throws TimeoutException;
 
   /**
    * Waits for an orchestration to complete and returns an {@link OrchestrationMetadata} object that contains
@@ -208,10 +279,36 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @throws TimeoutException when the orchestration instance is not completed within the specified amount of time
    */
   @Nullable
+  public OrchestrationMetadata waitForInstanceCompletion(
+      String instanceId,
+      Duration timeout,
+      boolean getInputsAndOutputs) throws TimeoutException {
+    return this.waitForInstanceCompletion(instanceId, timeout, getInputsAndOutputs, null);
+  }
+
+  /**
+   * Waits for an orchestration instance owned by another app to complete.
+   *
+   * <p>See {@link #waitForInstanceCompletion(String, Duration, boolean)} for the wait semantics.</p>
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the wait applies to the local app instead.</p>
+   *
+   * @param instanceId          the unique ID of the orchestration instance to wait for
+   * @param timeout             the amount of time to wait for the orchestration instance to complete
+   * @param getInputsAndOutputs <code>true</code> to fetch the orchestration instance's inputs, outputs, and custom
+   *                            status, or <code>false</code> to omit them
+   * @param appID               the ID of the app that owns the target orchestration instance, used for cross-app
+   *                            routing. May be null to target the local app.
+   * @return the orchestration instance metadata or <code>null</code> if no such instance is found
+   * @throws TimeoutException when the orchestration instance is not completed within the specified amount of time
+   */
+  @Nullable
   public abstract OrchestrationMetadata waitForInstanceCompletion(
       String instanceId,
       Duration timeout,
-      boolean getInputsAndOutputs) throws TimeoutException;
+      boolean getInputsAndOutputs,
+      @Nullable String appID) throws TimeoutException;
 
   /**
    * Terminates a running orchestration instance and updates its runtime status to <code>Terminated</code>.
@@ -234,7 +331,25 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param output     the optional output to set for the terminated orchestration instance.
    *                   This value must be serializable.
    */
-  public abstract void terminate(String instanceId, @Nullable Object output);
+  public void terminate(String instanceId, @Nullable Object output) {
+    this.terminate(instanceId, output, null);
+  }
+
+  /**
+   * Terminates a running orchestration instance owned by another app.
+   *
+   * <p>See {@link #terminate(String, Object)} for the termination semantics.</p>
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the instance is terminated on the local app instead.</p>
+   *
+   * @param instanceId the unique ID of the orchestration instance to terminate
+   * @param output     the optional output to set for the terminated orchestration instance.
+   *                   This value must be serializable.
+   * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
+   *                   routing. May be null to target the local app.
+   */
+  public abstract void terminate(String instanceId, @Nullable Object output, @Nullable String appID);
 
   /**
    * Purges orchestration instance metadata from the durable store.
@@ -252,7 +367,24 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param instanceId the unique ID of the orchestration instance to purge
    * @return the result of the purge operation, including the number of purged orchestration instances (0 or 1)
    */
-  public abstract PurgeResult purgeInstance(String instanceId);
+  public PurgeResult purgeInstance(String instanceId) {
+    return this.purgeInstance(instanceId, null);
+  }
+
+  /**
+   * Purges orchestration instance metadata from the durable store of another app.
+   *
+   * <p>See {@link #purgeInstance(String)} for the purge semantics.</p>
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the instance is purged from the local app instead.</p>
+   *
+   * @param instanceId the unique ID of the orchestration instance to purge
+   * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
+   *                   routing. May be null to target the local app.
+   * @return the result of the purge operation, including the number of purged orchestration instances (0 or 1)
+   */
+  public abstract PurgeResult purgeInstance(String instanceId, @Nullable String appID);
 
   /**
    * Purges orchestration instance metadata from the durable store using a filter that determines which instances to
@@ -283,7 +415,28 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @return the ID of the scheduled orchestration instance, which is either <code>instanceId</code> or randomly
    *     generated depending on the value of <code>restartWithNewInstanceId</code>
    */
-  public abstract String restartInstance(String instanceId, boolean restartWithNewInstanceId);
+  public String restartInstance(String instanceId, boolean restartWithNewInstanceId) {
+    return this.restartInstance(instanceId, restartWithNewInstanceId, null);
+  }
+
+  /**
+   * Restarts an existing orchestration instance owned by another app with the original input.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the instance is restarted on the local app instead.</p>
+   *
+   * @param instanceId               the ID of the previously run orchestration instance to restart.
+   * @param restartWithNewInstanceId <code>true</code> to restart the orchestration instance with a new instance ID
+   *                                 <code>false</code> to restart the orchestration instance with same instance ID
+   * @param appID                    the ID of the app that owns the target orchestration instance, used for
+   *                                 cross-app routing. May be null to target the local app.
+   * @return the ID of the scheduled orchestration instance, which is either <code>instanceId</code> or randomly
+   *     generated depending on the value of <code>restartWithNewInstanceId</code>
+   */
+  public abstract String restartInstance(
+      String instanceId,
+      boolean restartWithNewInstanceId,
+      @Nullable String appID);
 
   /**
    * Suspends a running orchestration instance.
@@ -300,7 +453,22 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param instanceId the ID of the orchestration instance to suspend
    * @param reason     the reason for suspending the orchestration instance
    */
-  public abstract void suspendInstance(String instanceId, @Nullable String reason);
+  public void suspendInstance(String instanceId, @Nullable String reason) {
+    this.suspendInstance(instanceId, reason, null);
+  }
+
+  /**
+   * Suspends a running orchestration instance owned by another app.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the instance is suspended on the local app instead.</p>
+   *
+   * @param instanceId the ID of the orchestration instance to suspend
+   * @param reason     the reason for suspending the orchestration instance
+   * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
+   *                   routing. May be null to target the local app.
+   */
+  public abstract void suspendInstance(String instanceId, @Nullable String reason, @Nullable String appID);
 
   /**
    * Resumes a running orchestration instance.
@@ -317,5 +485,20 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param instanceId the ID of the orchestration instance to resume
    * @param reason     the reason for resuming the orchestration instance
    */
-  public abstract void resumeInstance(String instanceId, @Nullable String reason);
+  public void resumeInstance(String instanceId, @Nullable String reason) {
+    this.resumeInstance(instanceId, reason, null);
+  }
+
+  /**
+   * Resumes a running orchestration instance owned by another app.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the instance is resumed on the local app instead.</p>
+   *
+   * @param instanceId the ID of the orchestration instance to resume
+   * @param reason     the reason for resuming the orchestration instance
+   * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
+   *                   routing. May be null to target the local app.
+   */
+  public abstract void resumeInstance(String instanceId, @Nullable String reason, @Nullable String appID);
 }
