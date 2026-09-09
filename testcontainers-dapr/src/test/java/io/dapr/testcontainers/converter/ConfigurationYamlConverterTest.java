@@ -13,10 +13,12 @@ limitations under the License.
 
 package io.dapr.testcontainers.converter;
 
+import io.dapr.testcontainers.ApiLoggingConfigurationSettings;
 import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.ListEntry;
+import io.dapr.testcontainers.LoggingConfigurationSettings;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
@@ -235,6 +237,105 @@ class ConfigurationYamlConverterTest {
         + "spec:\n"
         + "  mtls:\n"
         + "    enabled: false\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithLoggingToYaml() {
+    ApiLoggingConfigurationSettings apiLogging = new ApiLoggingConfigurationSettings(true, true, true);
+    LoggingConfigurationSettings logging = new LoggingConfigurationSettings(apiLogging);
+
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withConfiguration(new Configuration("my-config", null, null, null, logging))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  logging:\n"
+        + "    apiLogging:\n"
+        + "      enabled: true\n"
+        + "      obfuscateURLs: true\n"
+        + "      omitHealthChecks: true\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMinimalLoggingToYaml() {
+    LoggingConfigurationSettings logging = new LoggingConfigurationSettings(
+        new ApiLoggingConfigurationSettings(true)
+    );
+
+    Configuration configuration = new Configuration("my-config", null, null, null, logging);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  logging:\n"
+        + "    apiLogging:\n"
+        + "      enabled: true\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithLoggingAndMtlsToYaml() {
+    MtlsConfigurationSettings mtls = new MtlsConfigurationSettings(true, "24h", "15m");
+    LoggingConfigurationSettings logging = new LoggingConfigurationSettings(
+        new ApiLoggingConfigurationSettings(true, false, true)
+    );
+
+    Configuration configuration = new Configuration("my-config", null, null, mtls, logging);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  mtls:\n"
+        + "    enabled: true\n"
+        + "    workloadCertTTL: 24h\n"
+        + "    allowedClockSkew: 15m\n"
+        + "  logging:\n"
+        + "    apiLogging:\n"
+        + "      enabled: true\n"
+        + "      obfuscateURLs: false\n"
+        + "      omitHealthChecks: true\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithLoggingWithoutApiLoggingToYaml() {
+    LoggingConfigurationSettings logging = new LoggingConfigurationSettings(null);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, logging);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  logging: {}\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
