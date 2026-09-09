@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
@@ -45,7 +44,7 @@ public class WorkflowInstanceWrapperTest {
 
   @Test
   public void createWithInstance() {
-    TaskOrchestrationContext mockContext = mock(TaskOrchestrationContext.class);
+    WorkflowContext mockContext = mock(WorkflowContext.class);
     WorkflowInstanceWrapper<TestWorkflow> wrapper = new WorkflowInstanceWrapper<>(new TestWorkflow());
 
     when(mockContext.getInstanceId()).thenReturn("uuid");

@@ -33,6 +33,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -132,8 +133,9 @@ public class DaprClientAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  WorkflowRuntimeBuilder daprWorkflowRuntimeBuilder(DaprConnectionDetails daprConnectionDetails) {
-    Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+  WorkflowRuntimeBuilder daprWorkflowRuntimeBuilder(DaprConnectionDetails daprConnectionDetails,
+                                                   Environment environment) {
+    Properties properties = createWorkflowProperties(daprConnectionDetails, environment);
 
     return new WorkflowRuntimeBuilder(properties);
   }
@@ -152,6 +154,36 @@ public class DaprClientAutoConfiguration {
    * @return the Properties object
    */
   protected Properties createPropertiesFromConnectionDetails(DaprConnectionDetails daprConnectionDetails) {
+    return new Properties(createPropertyOverrides(daprConnectionDetails));
+  }
+
+  /**
+   * Creates a Properties object for the workflow runtime, layering the Spring Environment on top of
+   * the connection details.
+   *
+   * <p>The runtime resolves {@link Properties#WORKFLOWS_VIRTUAL_THREADS_ENABLED} through the SDK
+   * Properties, which consults only JVM system properties and environment variables. Reading it
+   * from the Environment here lets it be set in application.properties like any other Spring
+   * property. When it is set nowhere the override is omitted, so the SDK default still applies.
+   *
+   * @param daprConnectionDetails the DaprConnectionDetails
+   * @param environment the Spring Environment
+   * @return the Properties object
+   */
+  protected Properties createWorkflowProperties(DaprConnectionDetails daprConnectionDetails,
+                                                Environment environment) {
+    Map<String, String> propertyOverrides = createPropertyOverrides(daprConnectionDetails);
+    String propertyName = Properties.WORKFLOWS_VIRTUAL_THREADS_ENABLED.getName();
+    String virtualThreadsEnabled = environment.getProperty(propertyName);
+
+    if (virtualThreadsEnabled != null) {
+      propertyOverrides.put(propertyName, virtualThreadsEnabled);
+    }
+
+    return new Properties(propertyOverrides);
+  }
+
+  private Map<String, String> createPropertyOverrides(DaprConnectionDetails daprConnectionDetails) {
     Map<String, String> propertyOverrides = new HashMap<>();
     String httpEndpoint = daprConnectionDetails.getHttpEndpoint();
 
@@ -182,7 +214,7 @@ public class DaprClientAutoConfiguration {
       propertyOverrides.put(Properties.API_TOKEN.getName(), apiToken);
     }
 
-    return new Properties(propertyOverrides);
+    return propertyOverrides;
   }
 
 }

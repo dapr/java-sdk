@@ -13,9 +13,9 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.PropagatedHistory;
-import io.dapr.durabletask.TaskActivityContext;
 import io.dapr.workflows.WorkflowActivityContext;
+import io.dapr.workflows.task.TaskActivityContext;
+import io.dapr.workflows.task.history.PropagatedHistory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
