@@ -995,6 +995,7 @@ all three operations.
 <!-- STEP
 name: Run Workflow Management Worker
 match_order: none
+output_match_mode: substring
 expected_stdout_lines:
   - "Start workflow runtime"
 background: true
@@ -1013,6 +1014,7 @@ dapr run --app-id demoworkflowworker --resources-path ./components/workflows --d
 <!-- STEP
 name: Run Workflow Management Client
 match_order: none
+output_match_mode: substring
 expected_stdout_lines:
   - "Started a new workflow with instance ID"
   - "Workflow completed with result"
