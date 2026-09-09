@@ -61,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 @Testcontainers
 @Tag("testcontainers")
+@Tag("dapr-head")
 public class WorkflowsMultiAppCrossAppOperationsIT {
 
   private static final String CALLER_APP_ID = "crossapp-caller";

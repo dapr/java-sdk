@@ -162,7 +162,8 @@ public class NewWorkflowOptions {
   /**
    * Gets the configured app ID of the app that will run the new workflow.
    *
-   * @return the configured app ID, or null when the workflow runs on the local app.
+   * @return the configured app ID, or null when none was set. A null or empty value runs the workflow on the
+   *     local app.
    */
   public String getAppId() {
     return this.appId;

@@ -314,6 +314,13 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${failsafe.version}</version>
+        <configuration>
+          <!--
+            Tests tagged dapr-head need a daprd built from dapr/dapr master, so they cannot run
+            against the release image the default suite pins. The dapr-head profile runs them.
+          -->
+          <excludedGroups>dapr-head</excludedGroups>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -329,6 +336,27 @@
       <properties>
         <springboot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</springboot.version>
       </properties>
+    </profile>
+
+    <!--
+      Runs only the tests that require a daprd built from dapr/dapr master, covering runtime
+      features no release carries yet.
+    -->
+    <profile>
+      <id>dapr-head</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>${failsafe.version}</version>
+            <configuration>
+              <groups>dapr-head</groups>
+              <excludedGroups combine.self="override"/>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>
