@@ -127,9 +127,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param eventName    the case-insensitive name of the event
    * @param eventPayload the serializable data payload to include with the event
    */
-  public void raiseEvent(String instanceId, String eventName, @Nullable Object eventPayload) {
-    this.raiseEvent(instanceId, eventName, eventPayload, null);
-  }
+  public abstract void raiseEvent(String instanceId, String eventName, @Nullable Object eventPayload);
 
   /**
    * Sends an event notification message with a payload to a waiting orchestration instance owned by another app.
@@ -145,11 +143,14 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param appID        the ID of the app that owns the target orchestration instance, used for cross-app
    *                     routing. May be null to target the local app.
    */
-  public abstract void raiseEvent(
+  public void raiseEvent(
       String instanceId,
       String eventName,
       @Nullable Object eventPayload,
-      @Nullable String appID);
+      @Nullable String appID) {
+    requireLocalRouting(appID);
+    this.raiseEvent(instanceId, eventName, eventPayload);
+  }
 
   /**
    * Fetches orchestration instance metadata from the configured durable store.
@@ -162,9 +163,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    *     {@link OrchestrationMetadata#isInstanceFound()} to check if an instance is found.
    */
   @Nullable
-  public OrchestrationMetadata getInstanceMetadata(String instanceId, boolean getInputsAndOutputs) {
-    return this.getInstanceMetadata(instanceId, getInputsAndOutputs, null);
-  }
+  public abstract OrchestrationMetadata getInstanceMetadata(String instanceId, boolean getInputsAndOutputs);
 
   /**
    * Fetches orchestration instance metadata from the durable store of another app.
@@ -182,10 +181,13 @@ public abstract class DurableTaskClient implements AutoCloseable {
    *     {@link OrchestrationMetadata#isInstanceFound()} to check if an instance is found.
    */
   @Nullable
-  public abstract OrchestrationMetadata getInstanceMetadata(
+  public OrchestrationMetadata getInstanceMetadata(
       String instanceId,
       boolean getInputsAndOutputs,
-      @Nullable String appID);
+      @Nullable String appID) {
+    requireLocalRouting(appID);
+    return this.getInstanceMetadata(instanceId, getInputsAndOutputs);
+  }
 
   /**
    * Waits for an orchestration to start running and returns an {@link OrchestrationMetadata} object that contains
@@ -226,12 +228,10 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @throws TimeoutException when the orchestration instance is not started within the specified amount of time
    */
   @Nullable
-  public OrchestrationMetadata waitForInstanceStart(
+  public abstract OrchestrationMetadata waitForInstanceStart(
       String instanceId,
       Duration timeout,
-      boolean getInputsAndOutputs) throws TimeoutException {
-    return this.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs, null);
-  }
+      boolean getInputsAndOutputs) throws TimeoutException;
 
   /**
    * Waits for an orchestration instance owned by another app to start running.
@@ -251,11 +251,14 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @throws TimeoutException when the orchestration instance is not started within the specified amount of time
    */
   @Nullable
-  public abstract OrchestrationMetadata waitForInstanceStart(
+  public OrchestrationMetadata waitForInstanceStart(
       String instanceId,
       Duration timeout,
       boolean getInputsAndOutputs,
-      @Nullable String appID) throws TimeoutException;
+      @Nullable String appID) throws TimeoutException {
+    requireLocalRouting(appID);
+    return this.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
+  }
 
   /**
    * Waits for an orchestration to complete and returns an {@link OrchestrationMetadata} object that contains
@@ -279,12 +282,10 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @throws TimeoutException when the orchestration instance is not completed within the specified amount of time
    */
   @Nullable
-  public OrchestrationMetadata waitForInstanceCompletion(
+  public abstract OrchestrationMetadata waitForInstanceCompletion(
       String instanceId,
       Duration timeout,
-      boolean getInputsAndOutputs) throws TimeoutException {
-    return this.waitForInstanceCompletion(instanceId, timeout, getInputsAndOutputs, null);
-  }
+      boolean getInputsAndOutputs) throws TimeoutException;
 
   /**
    * Waits for an orchestration instance owned by another app to complete.
@@ -304,11 +305,14 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @throws TimeoutException when the orchestration instance is not completed within the specified amount of time
    */
   @Nullable
-  public abstract OrchestrationMetadata waitForInstanceCompletion(
+  public OrchestrationMetadata waitForInstanceCompletion(
       String instanceId,
       Duration timeout,
       boolean getInputsAndOutputs,
-      @Nullable String appID) throws TimeoutException;
+      @Nullable String appID) throws TimeoutException {
+    requireLocalRouting(appID);
+    return this.waitForInstanceCompletion(instanceId, timeout, getInputsAndOutputs);
+  }
 
   /**
    * Terminates a running orchestration instance and updates its runtime status to <code>Terminated</code>.
@@ -331,9 +335,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param output     the optional output to set for the terminated orchestration instance.
    *                   This value must be serializable.
    */
-  public void terminate(String instanceId, @Nullable Object output) {
-    this.terminate(instanceId, output, null);
-  }
+  public abstract void terminate(String instanceId, @Nullable Object output);
 
   /**
    * Terminates a running orchestration instance owned by another app.
@@ -349,7 +351,10 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
    *                   routing. May be null to target the local app.
    */
-  public abstract void terminate(String instanceId, @Nullable Object output, @Nullable String appID);
+  public void terminate(String instanceId, @Nullable Object output, @Nullable String appID) {
+    requireLocalRouting(appID);
+    this.terminate(instanceId, output);
+  }
 
   /**
    * Purges orchestration instance metadata from the durable store.
@@ -367,9 +372,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param instanceId the unique ID of the orchestration instance to purge
    * @return the result of the purge operation, including the number of purged orchestration instances (0 or 1)
    */
-  public PurgeResult purgeInstance(String instanceId) {
-    return this.purgeInstance(instanceId, null);
-  }
+  public abstract PurgeResult purgeInstance(String instanceId);
 
   /**
    * Purges orchestration instance metadata from the durable store of another app.
@@ -384,7 +387,10 @@ public abstract class DurableTaskClient implements AutoCloseable {
    *                   routing. May be null to target the local app.
    * @return the result of the purge operation, including the number of purged orchestration instances (0 or 1)
    */
-  public abstract PurgeResult purgeInstance(String instanceId, @Nullable String appID);
+  public PurgeResult purgeInstance(String instanceId, @Nullable String appID) {
+    requireLocalRouting(appID);
+    return this.purgeInstance(instanceId);
+  }
 
   /**
    * Purges orchestration instance metadata from the durable store using a filter that determines which instances to
@@ -415,9 +421,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @return the ID of the scheduled orchestration instance, which is either <code>instanceId</code> or randomly
    *     generated depending on the value of <code>restartWithNewInstanceId</code>
    */
-  public String restartInstance(String instanceId, boolean restartWithNewInstanceId) {
-    return this.restartInstance(instanceId, restartWithNewInstanceId, null);
-  }
+  public abstract String restartInstance(String instanceId, boolean restartWithNewInstanceId);
 
   /**
    * Restarts an existing orchestration instance owned by another app with the original input.
@@ -433,10 +437,13 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @return the ID of the scheduled orchestration instance, which is either <code>instanceId</code> or randomly
    *     generated depending on the value of <code>restartWithNewInstanceId</code>
    */
-  public abstract String restartInstance(
+  public String restartInstance(
       String instanceId,
       boolean restartWithNewInstanceId,
-      @Nullable String appID);
+      @Nullable String appID) {
+    requireLocalRouting(appID);
+    return this.restartInstance(instanceId, restartWithNewInstanceId);
+  }
 
   /**
    * Suspends a running orchestration instance.
@@ -453,9 +460,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param instanceId the ID of the orchestration instance to suspend
    * @param reason     the reason for suspending the orchestration instance
    */
-  public void suspendInstance(String instanceId, @Nullable String reason) {
-    this.suspendInstance(instanceId, reason, null);
-  }
+  public abstract void suspendInstance(String instanceId, @Nullable String reason);
 
   /**
    * Suspends a running orchestration instance owned by another app.
@@ -468,7 +473,10 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
    *                   routing. May be null to target the local app.
    */
-  public abstract void suspendInstance(String instanceId, @Nullable String reason, @Nullable String appID);
+  public void suspendInstance(String instanceId, @Nullable String reason, @Nullable String appID) {
+    requireLocalRouting(appID);
+    this.suspendInstance(instanceId, reason);
+  }
 
   /**
    * Resumes a running orchestration instance.
@@ -485,9 +493,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param instanceId the ID of the orchestration instance to resume
    * @param reason     the reason for resuming the orchestration instance
    */
-  public void resumeInstance(String instanceId, @Nullable String reason) {
-    this.resumeInstance(instanceId, reason, null);
-  }
+  public abstract void resumeInstance(String instanceId, @Nullable String reason);
 
   /**
    * Resumes a running orchestration instance owned by another app.
@@ -500,5 +506,19 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
    *                   routing. May be null to target the local app.
    */
-  public abstract void resumeInstance(String instanceId, @Nullable String reason, @Nullable String appID);
+  public void resumeInstance(String instanceId, @Nullable String reason, @Nullable String appID) {
+    requireLocalRouting(appID);
+    this.resumeInstance(instanceId, reason);
+  }
+
+  /**
+   * Rejects a cross-app target on a client that does not implement cross-app routing. Implementations that
+   * support it override the app ID overloads, so this is only reached on ones that do not.
+   */
+  private static void requireLocalRouting(@Nullable String appID) {
+    if (appID != null && !appID.isEmpty()) {
+      throw new UnsupportedOperationException(
+          "cross-app workflow operations are not supported by this DurableTaskClient implementation");
+    }
+  }
 }

@@ -342,7 +342,8 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param getInputsAndOutputs <code>true</code> to fetch the workflow instance's
    *                            inputs, outputs, and custom status, or <code>false</code> to omit them
    * @param appId               ID of the app that owns the workflow instance. May be null to target the local app.
-   * @return a metadata record that describes the workflow instance and it execution status, or a default instance
+   * @return a metadata record that describes the workflow instance and its execution status, or null when no such
+   *     instance is found
    */
   @Nullable
   public WorkflowState getWorkflowState(String instanceId, boolean getInputsAndOutputs, @Nullable String appId) {

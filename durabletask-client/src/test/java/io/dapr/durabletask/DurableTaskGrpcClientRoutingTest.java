@@ -357,4 +357,25 @@ class DurableTaskGrpcClientRoutingTest {
     assertTrue(createRequest.get().hasRouter());
     assertTargetsApp(createRequest.get().getRouter());
   }
+
+  @Test
+  void emptyAppIdIsTreatedAsLocalRouting() {
+    client.raiseEvent(INSTANCE_ID, "testEvent", "payload", "");
+    assertFalse(raiseEventRequest.get().hasRouter());
+
+    client.getInstanceMetadata(INSTANCE_ID, true, "");
+    assertFalse(getInstanceRequest.get().hasRouter());
+
+    client.terminate(INSTANCE_ID, null, "");
+    assertFalse(terminateRequest.get().hasRouter());
+
+    client.suspendInstance(INSTANCE_ID, null, "");
+    assertFalse(suspendRequest.get().hasRouter());
+
+    client.resumeInstance(INSTANCE_ID, null, "");
+    assertFalse(resumeRequest.get().hasRouter());
+
+    client.purgeInstance(INSTANCE_ID, "");
+    assertFalse(purgeRequest.get().hasRouter());
+  }
 }
