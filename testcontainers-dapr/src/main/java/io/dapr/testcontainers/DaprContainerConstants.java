@@ -19,5 +19,6 @@ public interface DaprContainerConstants {
   String DAPR_RUNTIME_IMAGE_TAG = "daprio/daprd:" + DAPR_VERSION;
   String DAPR_PLACEMENT_IMAGE_TAG = "daprio/placement:" + DAPR_VERSION;
   String DAPR_SCHEDULER_IMAGE_TAG = "daprio/scheduler:" + DAPR_VERSION;
+  String DAPR_SENTRY_IMAGE_TAG = "daprio/sentry:" + DAPR_VERSION;
   String DAPR_WORKFLOWS_DASHBOARD = "ghcr.io/diagridio/diagrid-dashboard:" + DAPR_WORKFLOWS_DASHBOARD_VERSION;
 }

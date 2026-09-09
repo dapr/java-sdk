@@ -14,7 +14,11 @@ limitations under the License.
 package io.dapr.testcontainers;
 
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Test container for Dapr placement service.
@@ -22,7 +26,12 @@ import org.testcontainers.utility.DockerImageName;
 public class DaprPlacementContainer extends GenericContainer<DaprPlacementContainer> {
 
   private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("daprio/placement");
+  private static final String TRUST_ANCHORS_FILE = "/var/run/secrets/dapr.io/tls/ca.crt";
   private int placementPort = 50005;
+  private boolean tlsEnabled;
+  private String sentryAddress;
+  private String trustDomain;
+  private String trustAnchors;
 
   /**
    * Creates a new Dapr placement container.
@@ -46,7 +55,41 @@ public class DaprPlacementContainer extends GenericContainer<DaprPlacementContai
   @Override
   protected void configure() {
     super.configure();
-    withCommand("./placement", "-port", Integer.toString(placementPort));
+    List<String> cmds = new ArrayList<>();
+    cmds.add("./placement");
+    cmds.add("-port");
+    cmds.add(Integer.toString(placementPort));
+    cmds.addAll(tlsCommandArguments());
+
+    withCommand(cmds.toArray(new String[]{}));
+  }
+
+  private List<String> tlsCommandArguments() {
+    List<String> cmds = new ArrayList<>();
+
+    if (!tlsEnabled) {
+      return cmds;
+    }
+
+    cmds.add("--tls-enabled");
+
+    if (sentryAddress != null) {
+      cmds.add("--sentry-address");
+      cmds.add(sentryAddress);
+    }
+
+    if (trustDomain != null) {
+      cmds.add("--trust-domain");
+      cmds.add(trustDomain);
+    }
+
+    if (trustAnchors != null) {
+      withCopyToContainer(Transferable.of(trustAnchors), TRUST_ANCHORS_FILE);
+      cmds.add("--trust-anchors-file");
+      cmds.add(TRUST_ANCHORS_FILE);
+    }
+
+    return cmds;
   }
 
   public static DockerImageName getDefaultImageName() {
@@ -60,6 +103,48 @@ public class DaprPlacementContainer extends GenericContainer<DaprPlacementContai
 
   public int getPort() {
     return placementPort;
+  }
+
+  /**
+   * Enables TLS on the placement gRPC server. Requires a Sentry address and the trust anchors issued by Sentry.
+   * @param tlsEnabled whether TLS is enabled.
+   * @return this container.
+   */
+  public DaprPlacementContainer withTlsEnabled(boolean tlsEnabled) {
+    this.tlsEnabled = tlsEnabled;
+    return this;
+  }
+
+  public DaprPlacementContainer withSentryAddress(String sentryAddress) {
+    this.sentryAddress = sentryAddress;
+    return this;
+  }
+
+  public DaprPlacementContainer withTrustDomain(String trustDomain) {
+    this.trustDomain = trustDomain;
+    return this;
+  }
+
+  /**
+   * Sets the PEM encoded trust anchors (root CA certificate) issued by Sentry.
+   * @param trustAnchors PEM encoded trust anchors.
+   * @return this container.
+   */
+  public DaprPlacementContainer withTrustAnchors(String trustAnchors) {
+    this.trustAnchors = trustAnchors;
+    return this;
+  }
+
+  public boolean isTlsEnabled() {
+    return tlsEnabled;
+  }
+
+  public String getSentryAddress() {
+    return sentryAddress;
+  }
+
+  public String getTrustDomain() {
+    return trustDomain;
   }
 
   // Required by spotbugs plugin
