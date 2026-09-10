@@ -1,0 +1,171 @@
+/*
+ * Copyright 2026 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package io.dapr.quarkus.langchain4j.agent.activities;
+
+import io.dapr.quarkus.langchain4j.agent.AgentRunContext;
+import io.dapr.quarkus.langchain4j.agent.DaprAgentRunRegistry;
+import io.dapr.quarkus.langchain4j.agent.DaprChatModelWrapper;
+import io.dapr.quarkus.langchain4j.agent.DaprToolCallInterceptor;
+import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivityContext;
+import io.quarkiverse.dapr.workflows.ActivityMetadata;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.jboss.logging.Logger;
+
+import java.lang.reflect.InvocationTargetException;
+/**
+ * Dapr Workflow Activity that executes a single {@code ChatModel.chat(ChatRequest)} call on
+ * behalf of a running {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow}.
+ *
+ * <h2>How it works</h2>
+ * <ol>
+ *   <li>Receives {@link LlmCallInput} with the {@code agentRunId}, {@code llmCallId},
+ *       {@code methodName}, and the serialized {@code prompt} (messages sent to the LLM).</li>
+ *   <li>Looks up the {@link AgentRunContext} from {@link DaprAgentRunRegistry}.</li>
+ *   <li>Retrieves the {@link AgentRunContext.PendingCall} registered by
+ *       {@link io.dapr.quarkus.langchain4j.agent.DaprChatModelDecorator}.</li>
+ *   <li>Sets {@link DaprToolCallInterceptor#IS_ACTIVITY_CALL} on this thread so that
+ *       {@code DaprChatModelDecorator} passes through to {@code delegate.chat()} when
+ *       re-invoked via reflection on the stored decorator instance.</li>
+ *   <li>Invokes the {@code ChatModel} method via reflection on the decorator instance.</li>
+ *   <li>Extracts the response text from the {@code ChatResponse} via reflection
+ *       ({@code aiMessage().text()}) and returns a {@link LlmCallOutput} containing the
+ *       method name and response text — stored in the Dapr workflow history.</li>
+ *   <li>Completes the {@code CompletableFuture} in the pending call, unblocking
+ *       the agent thread waiting in {@code DaprChatModelDecorator.chat()}.</li>
+ * </ol>
+ */
+
+@ApplicationScoped
+@ActivityMetadata(name = "llm-call")
+public class LlmCallActivity implements WorkflowActivity {
+
+  private static final Logger LOG = Logger.getLogger(LlmCallActivity.class);
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Object run(WorkflowActivityContext ctx) {
+    LlmCallInput input = ctx.getInput(LlmCallInput.class);
+
+    LOG.infof("[AgentRun:%s][LlmCall:%s] LlmCallActivity started — method=%s",
+        input.agentRunId(), input.llmCallId(), input.methodName());
+    if (input.prompt() != null) {
+      LOG.debugf("[AgentRun:%s][LlmCall:%s] Prompt:\n%s",
+          input.agentRunId(), input.llmCallId(), input.prompt());
+    }
+
+    AgentRunContext runCtx = DaprAgentRunRegistry.get(input.agentRunId());
+    if (runCtx == null) {
+      throw new IllegalStateException(
+          "No AgentRunContext found for agentRunId: " + input.agentRunId()
+              + ". Registered IDs: " + DaprAgentRunRegistry.getRegisteredIds());
+    }
+
+    AgentRunContext.PendingCall pendingCall = runCtx.getPendingCall(input.llmCallId());
+    if (pendingCall == null) {
+      throw new IllegalStateException(
+          "No PendingCall found for llmCallId: " + input.llmCallId()
+              + " in agentRunId: " + input.agentRunId());
+    }
+
+    LOG.infof("[AgentRun:%s][LlmCall:%s] PRE-invoke target=%s method=%s",
+        input.agentRunId(), input.llmCallId(),
+        pendingCall.target().getClass().getSimpleName(), pendingCall.method().getName());
+
+    DaprToolCallInterceptor.IS_ACTIVITY_CALL.set(Boolean.TRUE);
+    try {
+      Object result = pendingCall.method().invoke(pendingCall.target(), pendingCall.args());
+      LOG.infof("[AgentRun:%s][LlmCall:%s] POST-invoke — got result, completing future",
+          input.agentRunId(), input.llmCallId());
+      String responseText = extractResponseText(result);
+      runCtx.completeCall(input.llmCallId(), result);
+      LOG.infof("[AgentRun:%s][LlmCall:%s] POST-completeCall — future resolved",
+          input.agentRunId(), input.llmCallId());
+      // Resolve the actual ChatModel class name for observability
+      String chatModelClass = resolveChatModelClass(pendingCall.target());
+      return new LlmCallOutput(input.methodName(), input.prompt(), responseText, chatModelClass);
+    } catch (InvocationTargetException ite) {
+      Throwable cause = ite.getCause() != null ? ite.getCause() : ite;
+      LOG.errorf("[AgentRun:%s][LlmCall:%s] LLM call failed: %s — %s",
+          input.agentRunId(), input.llmCallId(), pendingCall.method().getName(), cause.getMessage());
+      runCtx.failCall(input.llmCallId(), cause);
+      throw new RuntimeException("LLM call failed: " + pendingCall.method().getName(), cause);
+    } catch (Exception e) {
+      LOG.errorf("[AgentRun:%s][LlmCall:%s] LLM call failed: %s — %s",
+          input.agentRunId(), input.llmCallId(), pendingCall.method().getName(), e.getMessage());
+      runCtx.failCall(input.llmCallId(), e);
+      throw new RuntimeException("LLM call failed: " + pendingCall.method().getName(), e);
+    } finally {
+      DaprToolCallInterceptor.IS_ACTIVITY_CALL.remove();
+    }
+  }
+
+  /**
+   * Extracts the AI response text from a {@code ChatResponse} object using reflection,
+   * avoiding a hard compile-time dependency on a specific LangChain4j package path.
+   * Calls {@code chatResponse.aiMessage().text()} if available; falls back to
+   * {@code String.valueOf(result)} otherwise.
+   */
+  private String extractResponseText(Object result) {
+    if (result == null) {
+      return null;
+    }
+    try {
+      Object aiMessage = result.getClass().getMethod("aiMessage").invoke(result);
+      if (aiMessage != null) {
+        Object text = aiMessage.getClass().getMethod("text").invoke(aiMessage);
+        if (text != null) {
+          return String.valueOf(text);
+        }
+        // text is null — check if the LLM returned tool execution requests
+        Object toolRequests = aiMessage.getClass()
+            .getMethod("toolExecutionRequests").invoke(aiMessage);
+        if (toolRequests instanceof java.util.List<?> list && !list.isEmpty()) {
+          StringBuilder sb = new StringBuilder("[tool_calls: ");
+          for (int i = 0; i < list.size(); i++) {
+            if (i > 0) {
+              sb.append(", ");
+            }
+            Object req = list.get(i);
+            Object name = req.getClass().getMethod("name").invoke(req);
+            sb.append(name);
+          }
+          sb.append("]");
+          return sb.toString();
+        }
+        return null;
+      }
+    } catch (ReflectiveOperationException ignored) {
+      // Not a ChatResponse or missing expected methods — fall through.
+    }
+    return String.valueOf(result);
+  }
+
+  /**
+   * Resolves the actual ChatModel provider name from the CDI container.
+   * Skips the Dapr wrapper/decorator beans to find the underlying provider
+   * (e.g., "DaprConversationChatModel", "OllamaChatModel").
+   */
+  private String resolveChatModelClass(Object target) {
+    try {
+      DaprChatModelWrapper wrapper = io.quarkus.arc.Arc.container()
+          .instance(DaprChatModelWrapper.class).get();
+      return wrapper.getDelegateClassName();
+    } catch (Exception ignored) {
+      return "unknown";
+    }
+  }
+}

@@ -63,4 +63,18 @@
         <Package name="~io\.dapr.*"/>
         <Bug pattern="NP_UNWRITTEN_FIELD"/>
     </Match>
+
+    <!--Quarkus extension uses io.quarkiverse.dapr.* packages — apply same exclusions-->
+    <Match>
+        <Package name="~io\.quarkiverse\.dapr.*"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.quarkiverse\.dapr.*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="~io\.quarkiverse\.dapr.*"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
 </FindBugsFilter>

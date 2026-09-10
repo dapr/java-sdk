@@ -1,0 +1,486 @@
+/*
+ * Copyright 2026 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package io.dapr.quarkus.langchain4j.workflow;
+
+import dev.langchain4j.agentic.Agent;
+import dev.langchain4j.agentic.planner.Action;
+import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
+import dev.langchain4j.agentic.planner.InitPlanningContext;
+import dev.langchain4j.agentic.planner.Planner;
+import dev.langchain4j.agentic.planner.PlanningContext;
+import dev.langchain4j.agentic.scope.AgentInvocation;
+import dev.langchain4j.agentic.scope.AgenticScope;
+import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
+import io.dapr.quarkus.langchain4j.agent.AgentRunBindingRegistry;
+import io.dapr.quarkus.langchain4j.agent.AgentRunContext;
+import io.dapr.quarkus.langchain4j.agent.DaprAgentContextHolder;
+import io.dapr.quarkus.langchain4j.agent.DaprAgentRunRegistry;
+import io.dapr.quarkus.langchain4j.agent.workflow.AgentEvent;
+import io.dapr.quarkus.langchain4j.workflow.orchestration.OrchestrationInput;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.client.DaprWorkflowClient;
+import org.jboss.logging.Logger;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+
+/**
+ * Core planner that bridges Langchain4j's agentic {@link Planner} framework with
+ * Dapr Workflows. Uses a lockstep synchronization pattern (BlockingQueue + CompletableFuture)
+ * to coordinate between Dapr Workflow execution and Langchain4j's agent planning loop.
+ */
+public class DaprWorkflowPlanner implements Planner {
+
+  private static final Logger LOG = Logger.getLogger(DaprWorkflowPlanner.class);
+
+  /**
+   * Metadata extracted from an {@link AgentInstance} for propagation to
+   * the per-agent {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow}.
+   *
+   * @param agentName      human-readable name from {@code @Agent(name)} or the instance name
+   * @param userMessage    the {@code @UserMessage} template text, or {@code null} if not annotated
+   * @param systemMessage  the {@code @SystemMessage} template text, or {@code null} if not annotated
+   */
+  public record AgentMetadata(String agentName, String userMessage, String systemMessage) {
+  }
+
+  /**
+   * Exchange record used for thread synchronization between the Dapr Workflow
+   * thread (via activities) and the Langchain4j planner thread.
+   * A null agent signals workflow completion (sentinel).
+   * The {@code agentRunId} is forwarded to the planner so it can set
+   * {@link DaprAgentContextHolder} on the executing thread before tool calls begin.
+   */
+  @SuppressWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
+  public record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation, String agentRunId) {
+  }
+
+  private final String plannerId;
+  private final Class<? extends Workflow> workflowClass;
+  private final String description;
+  private final AgenticSystemTopology topology;
+  private final DaprWorkflowClient workflowClient;
+  private final String resolvedWorkflowName;
+
+  private final BlockingQueue<AgentExchange> agentExchangeQueue = new LinkedBlockingQueue<>();
+  private final ReentrantLock batchLock = new ReentrantLock();
+  private volatile boolean workflowDone = false;
+
+  private List<AgentInstance> agents = Collections.emptyList();
+  private AgenticScope agenticScope;
+
+  // Loop configuration
+  private int maxIterations = Integer.MAX_VALUE;
+  private BiPredicate<AgenticScope, Integer> exitCondition;
+  private boolean testExitAtLoopEnd;
+
+  // Conditional configuration
+  private Map<Integer, Predicate<AgenticScope>> conditions = Collections.emptyMap();
+
+  // Pending exchanges keyed by AgentInstance.agentId(). nextAction() correlates each
+  // completion via PlanningContext.previousAgentInvocation().agentId() — completion
+  // order is arbitrary in parallel execution, so FIFO correlation is incorrect.
+  private final ConcurrentHashMap<String, AgentExchange> pendingByAgentId = new ConcurrentHashMap<>();
+
+  // Idempotency guard: agent-call is a durable activity (at-least-once delivery), so
+  // a redelivered submission for the same agentRunId must not enqueue the agent twice.
+  private final ConcurrentHashMap<String, CompletableFuture<Void>> submissionsByRunId = new ConcurrentHashMap<>();
+
+  /**
+   * Creates a new DaprWorkflowPlanner.
+   *
+   * @param workflowClass  the Dapr workflow class to schedule
+   * @param description    a human-readable description
+   * @param topology       the agentic system topology
+   * @param workflowClient the Dapr workflow client
+   */
+  public DaprWorkflowPlanner(Class<? extends Workflow> workflowClass, String description,
+      AgenticSystemTopology topology, DaprWorkflowClient workflowClient) {
+    this.plannerId = UUID.randomUUID().toString();
+    this.workflowClass = workflowClass;
+    this.description = description;
+    this.topology = topology;
+    this.workflowClient = workflowClient;
+    this.resolvedWorkflowName = DaprAgentServiceUtil.agentWorkflowName(description);
+  }
+
+  @Override
+  public AgenticSystemTopology topology() {
+    return topology;
+  }
+
+  @Override
+  public void init(InitPlanningContext initPlanningContext) {
+    this.agents = new ArrayList<>(initPlanningContext.subagents());
+    this.agenticScope = initPlanningContext.agenticScope();
+    DaprPlannerRegistry.register(plannerId, this);
+  }
+
+  @Override
+  public Action firstAction(PlanningContext planningContext) {
+    OrchestrationInput input = new OrchestrationInput(
+        plannerId,
+        agents.size(),
+        maxIterations,
+        testExitAtLoopEnd);
+
+    workflowClient.scheduleNewWorkflow(resolvedWorkflowName, input, plannerId);
+    return internalNextAction();
+  }
+
+  @Override
+  public Action nextAction(PlanningContext planningContext) {
+    // Clear the per-agent Dapr context now that the previous agent has finished.
+    DaprAgentContextHolder.clear();
+
+    // Correlate the completion to its exchange by agent identity. LangChain4j calls
+    // nextAction() once per finished agent (from separate threads in parallel
+    // execution) and tells us WHICH agent finished via previousAgentInvocation.
+    AgentInvocation finished = planningContext != null
+        ? planningContext.previousAgentInvocation() : null;
+    AgentExchange exchange = finished != null
+        ? pendingByAgentId.remove(finished.agentId()) : null;
+
+    if (finished != null && exchange == null) {
+      LOG.warnf("[Planner:%s] No pending exchange for completed agent %s (agentId=%s)",
+          plannerId, finished.agentName(), finished.agentId());
+    }
+
+    if (exchange != null) {
+      if (exchange.continuation() != null) {
+        exchange.continuation().complete(null);
+      }
+      try {
+        // Send "done" to this agent's AgentRunWorkflow
+        workflowClient.raiseEvent(exchange.agentRunId(), "agent-event",
+            new AgentEvent("done", null, null, null));
+        LOG.infof("[Planner:%s] Sent done event to AgentRunWorkflow — agentRunId=%s",
+            plannerId, exchange.agentRunId());
+        DaprAgentRunRegistry.unregister(exchange.agentRunId());
+        // Signal the orchestration workflow that this agent has completed
+        workflowClient.raiseEvent(plannerId, "agent-complete-" + exchange.agentRunId(), null);
+        LOG.infof("[Planner:%s] Raised agent-complete event — agentRunId=%s",
+            plannerId, exchange.agentRunId());
+      } catch (Exception ex) {
+        LOG.warnf("[Planner:%s] Failed to signal agent completion for agentRunId=%s: %s",
+            plannerId, exchange.agentRunId(), ex.getMessage());
+      }
+    }
+
+    return internalNextAction();
+  }
+
+  /**
+   * Core synchronization: drains the agent exchange queue and batches
+   * agent calls for Langchain4j to execute.
+   *
+   * <p>Uses a {@link ReentrantLock} so that exactly one thread blocks on the exchange
+   * queue while other threads (from LangChain4j's parallel executor) return
+   * {@code done()} immediately. LangChain4j's {@code composeActions()} correctly
+   * merges {@code done() + call(batch) → call(batch)} and
+   * {@code done() + done() → done()}, so the composed result is always correct.
+   *
+   * <p>For sequential (single-agent) batches, sets {@link DaprAgentContextHolder} so that
+   * {@link io.dapr.quarkus.langchain4j.agent.DaprToolCallInterceptor} can route any
+   * {@code @Tool} calls made by the agent through the corresponding
+   * {@link io.dapr.quarkus.langchain4j.agent.workflow.AgentRunWorkflow}.
+   */
+  private Action internalNextAction() {
+    if (workflowDone) {
+      return done();
+    }
+
+    // Only one thread should block waiting for the next batch.
+    // Other threads return done() — LangChain4j's composeActions() ensures
+    // done() + call(batch) → call(batch), so the batch is not lost.
+    if (!batchLock.tryLock()) {
+      return done();
+    }
+
+    try {
+      if (workflowDone) {
+        return done();
+      }
+
+      // Drain all queued agent exchanges
+      List<AgentExchange> exchanges = new ArrayList<>();
+      try {
+        // Block for the first one
+        LOG.debugf("[Planner:%s] Waiting for agent exchanges on queue...", plannerId);
+        AgentExchange first = agentExchangeQueue.take();
+        exchanges.add(first);
+        // Drain any additional ones that arrived
+        agentExchangeQueue.drainTo(exchanges);
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+        workflowDone = true;
+        cleanup();
+        return done();
+      }
+
+      // Check for sentinel (null agent = workflow completed)
+      List<AgentInstance> batch = new ArrayList<>();
+      for (AgentExchange exchange : exchanges) {
+        if (exchange.agent() == null) {
+          workflowDone = true;
+          cleanup();
+          return done();
+        }
+        batch.add(exchange.agent());
+      }
+
+      if (batch.isEmpty()) {
+        workflowDone = true;
+        cleanup();
+        return done();
+      }
+
+      // Register all exchanges by agent identity. nextAction() is called once per
+      // finished agent (possibly from different threads) and removes the matching
+      // entry. No clear(): entries from a previous batch that have not been signaled
+      // yet must survive a staggered drain.
+      for (AgentExchange exchange : exchanges) {
+        pendingByAgentId.put(exchange.agent().agentId(), exchange);
+      }
+
+      // For sequential execution (single agent), set the Dapr agent context so that
+      // DaprToolCallInterceptor can route @Tool calls through the AgentRunWorkflow.
+      // The agent runs on this very thread, so its name-binding will never be claimed
+      // by the generated decorator — remove it, or a later run of the same agent name
+      // (next loop iteration, next request) would claim this run's dead ID.
+      if (exchanges.size() == 1 && exchanges.get(0).agentRunId() != null) {
+        DaprAgentContextHolder.set(exchanges.get(0).agentRunId());
+        AgentRunBindingRegistry.remove(
+            exchanges.get(0).agent().name(), exchanges.get(0).agentRunId());
+      }
+
+      return call(batch);
+    } finally {
+      batchLock.unlock();
+    }
+  }
+
+  /**
+   * Called by {@link io.dapr.quarkus.langchain4j.workflow.orchestration.activities.AgentExecutionActivity}
+   * to submit an agent for execution and wait for completion.
+   *
+   * @param agent      the agent to execute
+   * @param agentRunId unique ID for this agent's per-run Dapr Workflow; forwarded to the
+   *                   planner so it can set {@link DaprAgentContextHolder} on the executing thread
+   * @return a future that completes when the planner has processed this agent
+   */
+  public CompletableFuture<Void> executeAgent(AgentInstance agent, String agentRunId) {
+    if (agentRunId == null) {
+      // No run id to dedupe on — submit directly.
+      CompletableFuture<Void> future = new CompletableFuture<>();
+      agentExchangeQueue.add(new AgentExchange(agent, future, null));
+      return future;
+    }
+    // Idempotent by agentRunId: agent-call activities are delivered at-least-once,
+    // and a redelivery must not run the agent a second time. Registering the run
+    // context and the name-binding inside the same guard keeps redeliveries from
+    // re-creating them after the run completed and was unregistered — a stale
+    // re-bind would hand this run's dead ID to a later run of the same agent name.
+    return submissionsByRunId.computeIfAbsent(agentRunId, id -> {
+      DaprAgentRunRegistry.register(id, new AgentRunContext(id));
+      AgentRunBindingRegistry.bind(agent.name(), id);
+      CompletableFuture<Void> future = new CompletableFuture<>();
+      agentExchangeQueue.add(new AgentExchange(agent, future, id));
+      return future;
+    });
+  }
+
+  /**
+   * Signals workflow completion by posting a sentinel to the queue.
+   */
+  public void signalWorkflowComplete() {
+    LOG.infof("[Planner:%s] signalWorkflowComplete() — posting sentinel to queue", plannerId);
+    agentExchangeQueue.add(new AgentExchange(null, null, null));
+  }
+
+  /**
+   * Returns the agent at the given index.
+   *
+   * @param index the agent index
+   * @return the agent instance
+   */
+  public AgentInstance getAgent(int index) {
+    return agents.get(index);
+  }
+
+  /**
+   * Extracts metadata (name, user message template, system message template) from
+   * the {@link AgentInstance} at the given index.
+   *
+   * <p>The system and user message templates are extracted via reflection on the
+   * {@code @Agent}-annotated methods of {@link AgentInstance#type()}. If no annotated
+   * method is found, or the agent type is not reflectable, the messages will be {@code null}.
+   *
+   * @param index the index of the agent
+   * @return the agent metadata
+   */
+  public AgentMetadata getAgentMetadata(int index) {
+    AgentInstance agent = agents.get(index);
+    String agentName = agent.name();
+    String um = null;
+    String sm = null;
+
+    try {
+      Class<?> agentType = agent.type();
+      if (agentType != null) {
+        for (Method method : agentType.getMethods()) {
+          if (method.isAnnotationPresent(Agent.class)) {
+            UserMessage userAnnotation = method.getAnnotation(UserMessage.class);
+            if (userAnnotation != null && userAnnotation.value().length > 0) {
+              um = String.join("\n", userAnnotation.value());
+            }
+            SystemMessage systemAnnotation = method.getAnnotation(SystemMessage.class);
+            if (systemAnnotation != null && systemAnnotation.value().length > 0) {
+              sm = String.join("\n", systemAnnotation.value());
+            }
+            break;
+          }
+        }
+      }
+    } catch (Exception ex) {
+      LOG.debugf("Could not extract prompt metadata from agent type for agent=%s: %s",
+          agentName, ex.getMessage());
+    }
+
+    return new AgentMetadata(agentName, um, sm);
+  }
+
+  /**
+   * Returns the agentic scope.
+   *
+   * @return the agentic scope
+   */
+  @SuppressWarnings("EI_EXPOSE_REP")
+  public AgenticScope getAgenticScope() {
+    return agenticScope;
+  }
+
+  /**
+   * Evaluates the exit condition for loop workflows.
+   *
+   * @param iteration the current iteration number
+   * @return true if the loop should exit
+   */
+  public boolean checkExitCondition(int iteration) {
+    if (exitCondition == null) {
+      return false;
+    }
+    return exitCondition.test(agenticScope, iteration);
+  }
+
+  /**
+   * Evaluates whether a conditional agent should execute.
+   *
+   * @param agentIndex the index of the agent
+   * @return true if the agent should execute
+   */
+  public boolean checkCondition(int agentIndex) {
+    if (conditions == null || !conditions.containsKey(agentIndex)) {
+      return true; // no condition means always execute
+    }
+    return conditions.get(agentIndex).test(agenticScope);
+  }
+
+  /**
+   * Returns the planner ID.
+   *
+   * @return the planner ID
+   */
+  public String getPlannerId() {
+    return plannerId;
+  }
+
+  /**
+   * Returns the number of agents.
+   *
+   * @return the number of agents
+   */
+  public int getAgentCount() {
+    return agents.size();
+  }
+
+  // Configuration setters (called by agent service builders)
+
+  /**
+   * Sets the maximum number of iterations.
+   *
+   * @param maxIterations the max iterations
+   */
+  public void setMaxIterations(int maxIterations) {
+    this.maxIterations = maxIterations;
+  }
+
+  /**
+   * Sets the exit condition predicate.
+   *
+   * @param exitCondition the exit condition
+   */
+  public void setExitCondition(BiPredicate<AgenticScope, Integer> exitCondition) {
+    this.exitCondition = exitCondition;
+  }
+
+  /**
+   * Sets whether to test the exit condition at loop end.
+   *
+   * @param testExitAtLoopEnd true to test at loop end
+   */
+  public void setTestExitAtLoopEnd(boolean testExitAtLoopEnd) {
+    this.testExitAtLoopEnd = testExitAtLoopEnd;
+  }
+
+  /**
+   * Sets the conditions map for conditional agents.
+   *
+   * @param conditions the conditions map
+   */
+  public void setConditions(Map<Integer, Predicate<AgenticScope>> conditions) {
+    this.conditions = conditions == null ? Collections.emptyMap() : Map.copyOf(conditions);
+  }
+
+  private void cleanup() {
+    DaprAgentContextHolder.clear();
+    // Release any straggler continuations so no activity thread stays blocked.
+    pendingByAgentId.values().forEach(ex -> {
+      if (ex.continuation() != null) {
+        ex.continuation().complete(null);
+      }
+    });
+    pendingByAgentId.clear();
+    submissionsByRunId.clear();
+    // Purge any unclaimed name-bindings from this orchestration (e.g. after an aborted
+    // run) so they cannot be claimed by a later run of the same agent names.
+    for (AgentInstance agent : agents) {
+      AgentRunBindingRegistry.purge(agent.name(), plannerId + ":");
+    }
+    DaprPlannerRegistry.unregister(plannerId);
+  }
+}
