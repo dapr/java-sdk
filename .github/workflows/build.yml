@@ -153,6 +153,41 @@ jobs:
         name: surefire-report-spring-boot-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: spring-boot-sdk-tests/target/surefire-reports
 
+  # Tests tagged dapr-head cover runtime features that no dapr release carries yet, so they run
+  # against daprd built from dapr/dapr master rather than the release image the default suite pins.
+  # Kept out of the build job so a change in that moving image cannot fail unrelated pull requests.
+  build-dapr-head:
+    name: "Integration tests against dapr master"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    env:
+      JDK_VER: 17
+    steps:
+    - uses: actions/checkout@v7
+    - name: Check Docker version
+      run: docker version
+    - name: Set up OpenJDK ${{ env.JDK_VER }}
+      uses: actions/setup-java@v6
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JDK_VER }}
+    - name: Clean up and install sdk
+      run: ./mvnw clean install -B -q -DskipTests
+    - name: Integration tests against dapr master
+      id: dapr_head_tests
+      uses: nick-fields/retry@v4
+      with:
+        max_attempts: 2
+        timeout_minutes: 20
+        retry_wait_seconds: 15
+        command: ./mvnw -B -pl sdk-tests -Pintegration-tests,dapr-head dependency:copy-dependencies verify
+    - name: Upload failsafe test report on failure
+      if: ${{ failure() && steps.dapr_head_tests.conclusion == 'failure' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: failsafe-report-dapr-head-jdk${{ env.JDK_VER }}
+        path: sdk-tests/target/failsafe-reports
 
   publish:
     runs-on: ubuntu-latest
