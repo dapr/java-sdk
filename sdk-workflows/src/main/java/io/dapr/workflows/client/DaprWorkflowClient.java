@@ -484,8 +484,9 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Reruns a workflow from a history event, creating a new workflow instance.
    *
    * @param sourceInstanceId the ID of the source workflow instance to rerun from
-   * @param eventId          the history event ID to rerun from
+   * @param eventId          the history event ID to rerun from; must not be negative
    * @return the instance ID of the new workflow instance
+   * @throws IllegalArgumentException if sourceInstanceId is null or empty, or eventId is negative
    */
   public String rerunWorkflowFromEvent(String sourceInstanceId, int eventId) {
     return this.rerunWorkflowFromEvent(sourceInstanceId, eventId, null);
@@ -495,15 +496,19 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Reruns a workflow from a history event with options, creating a new workflow instance.
    *
    * @param sourceInstanceId the ID of the source workflow instance to rerun from
-   * @param eventId          the history event ID to rerun from
+   * @param eventId          the history event ID to rerun from; must not be negative
    * @param options          optional rerun configuration; may be null
    * @return the instance ID of the new workflow instance
-   * @throws IllegalArgumentException if input is set on options without overwriteInput being true
+   * @throws IllegalArgumentException if sourceInstanceId is null or empty, if eventId is negative,
+   *                                  or if input is set on options without overwriteInput being true
    */
   public String rerunWorkflowFromEvent(String sourceInstanceId, int eventId,
       @Nullable RerunWorkflowFromEventOptions options) {
     if (sourceInstanceId == null || sourceInstanceId.isEmpty()) {
       throw new IllegalArgumentException("sourceInstanceId must not be null or empty.");
+    }
+    if (eventId < 0) {
+      throw new IllegalArgumentException("eventId must not be negative.");
     }
     if (options == null) {
       return this.innerClient.rerunWorkflowFromEvent(sourceInstanceId, eventId, null, null, false);

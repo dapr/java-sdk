@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Dapr Authors
+ * Copyright 2026 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -64,12 +64,13 @@ final class WorkflowClientConverter {
       case TASKFAILED:
         return WorkflowHistoryEventType.TASK_FAILED;
       case CHILDWORKFLOWINSTANCECREATED:
-      case DETACHEDWORKFLOWINSTANCECREATED:
         return WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_CREATED;
       case CHILDWORKFLOWINSTANCECOMPLETED:
         return WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_COMPLETED;
       case CHILDWORKFLOWINSTANCEFAILED:
         return WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_FAILED;
+      case DETACHEDWORKFLOWINSTANCECREATED:
+        return WorkflowHistoryEventType.DETACHED_WORKFLOW_INSTANCE_CREATED;
       case TIMERCREATED:
         return WorkflowHistoryEventType.TIMER_CREATED;
       case TIMERFIRED:

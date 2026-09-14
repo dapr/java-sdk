@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Dapr Authors
+ * Copyright 2026 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,12 +54,14 @@ public class WorkflowClientConverterTest {
     // Child workflow events
     assertEquals(WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_CREATED,
         WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.CHILDWORKFLOWINSTANCECREATED));
-    assertEquals(WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_CREATED,
-        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.DETACHEDWORKFLOWINSTANCECREATED));
     assertEquals(WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_COMPLETED,
         WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.CHILDWORKFLOWINSTANCECOMPLETED));
     assertEquals(WorkflowHistoryEventType.CHILD_WORKFLOW_INSTANCE_FAILED,
         WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.CHILDWORKFLOWINSTANCEFAILED));
+
+    // Detached workflow events
+    assertEquals(WorkflowHistoryEventType.DETACHED_WORKFLOW_INSTANCE_CREATED,
+        WorkflowClientConverter.toEventType(HistoryEvent.EventTypeCase.DETACHEDWORKFLOWINSTANCECREATED));
 
     // Timer events
     assertEquals(WorkflowHistoryEventType.TIMER_CREATED,

@@ -460,6 +460,19 @@ public class DaprWorkflowClientTest {
   }
 
   @Test
+  public void rerunWorkflowFromEventRejectsNegativeEventId() {
+    assertThrows(IllegalArgumentException.class, () -> client.rerunWorkflowFromEvent("src", -1));
+    verify(mockInnerClient, never()).rerunWorkflowFromEvent(any(), anyInt(), any(), any(), anyBoolean());
+  }
+
+  @Test
+  public void rerunWorkflowFromEventWithOptionsRejectsNegativeEventId() {
+    RerunWorkflowFromEventOptions options = new RerunWorkflowFromEventOptions().setNewInstanceId("target");
+    assertThrows(IllegalArgumentException.class, () -> client.rerunWorkflowFromEvent("src", -1, options));
+    verify(mockInnerClient, never()).rerunWorkflowFromEvent(any(), anyInt(), any(), any(), anyBoolean());
+  }
+
+  @Test
   public void close() throws InterruptedException {
     client.close();
     verify(mockInnerClient, times(1)).close();
