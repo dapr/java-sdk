@@ -384,6 +384,7 @@ public class DaprWorkflowClient implements AutoCloseable {
     return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
   }
 
+
   /**
    * Waits for a workflow to start running and returns an
    * {@link WorkflowState} object that contains metadata about the started
@@ -467,6 +468,7 @@ public class DaprWorkflowClient implements AutoCloseable {
         getInputsAndOutputs);
     return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
   }
+
 
   /**
    * Waits for an workflow to complete and returns an {@link WorkflowState} object that contains
@@ -571,22 +573,6 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Purges workflow instance state from the workflow state store.
-   *
-   * @param workflowInstanceId The unique ID of the workflow instance to purge.
-   * @return Return true if the workflow state was found and purged successfully otherwise false.
-   */
-  public boolean purgeWorkflow(String workflowInstanceId) {
-    PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
-
-    if (result != null) {
-      return result.getDeletedInstanceCount() > 0;
-    }
-
-    return false;
-  }
-
-  /**
    * Lists workflow instance IDs. Returns the first page with no size limit.
    *
    * @return a page of workflow instance IDs
@@ -681,6 +667,22 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   public boolean purgeWorkflow(String workflowInstanceId, @Nullable String appId) {
     PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId, appId);
+
+    if (result != null) {
+      return result.getDeletedInstanceCount() > 0;
+    }
+
+    return false;
+  }
+
+  /**
+   * Purges workflow instance state from the workflow state store.
+   *
+   * @param workflowInstanceId The unique ID of the workflow instance to purge.
+   * @return Return true if the workflow state was found and purged successfully otherwise false.
+   */
+  public boolean purgeWorkflow(String workflowInstanceId) {
+    PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
 
     if (result != null) {
       return result.getDeletedInstanceCount() > 0;
