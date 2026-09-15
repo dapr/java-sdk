@@ -494,6 +494,9 @@ public class DaprWorkflowClientTest {
     RerunWorkflowFromEventOptions options = new RerunWorkflowFromEventOptions().setNewInstanceId("target");
     assertThrows(IllegalArgumentException.class, () -> client.rerunWorkflowFromEvent("src", -1, options));
     verify(mockInnerClient, never()).rerunWorkflowFromEvent(any(), anyInt(), any(), any(), anyBoolean());
+  }
+
+  @Test
   public void scheduleNewWorkflowWithAppIdOption() {
     String expectedName = TestWorkflow.class.getCanonicalName();
     String expectedAppId = "targetApp";
