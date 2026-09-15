@@ -1745,7 +1745,6 @@ public class DurableTaskClientIT extends IntegrationTestBase {
     }
 
   }
-
 }
 
 

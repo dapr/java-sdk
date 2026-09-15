@@ -13,9 +13,13 @@ limitations under the License.
 
 package io.dapr.durabletask;
 
+import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
+import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+
 import javax.annotation.Nullable;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -446,6 +450,39 @@ public abstract class DurableTaskClient implements AutoCloseable {
   }
 
   /**
+   * Resumes a running orchestration instance.
+   *
+   * @param instanceId the ID of the orchestration instance to resume
+   * @param reason     the reason for resuming the orchestration instance
+   */
+  public abstract void resumeInstance(String instanceId, @Nullable String reason);
+
+  /**
+   * Resumes a running orchestration instance.
+   *
+   * @param instanceId the ID of the orchestration instance to resume
+   */
+  public void resumeInstance(String instanceId) {
+    this.resumeInstance(instanceId, null);
+  }
+  
+  /**
+   * Resumes a running orchestration instance owned by another app.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the instance is resumed on the local app instead.</p>
+   *
+   * @param instanceId the ID of the orchestration instance to resume
+   * @param reason     the reason for resuming the orchestration instance
+   * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
+   *                   routing. May be null to target the local app.
+   */
+  public void resumeInstance(String instanceId, @Nullable String reason, @Nullable String appID) {
+    requireLocalRouting(appID);
+    this.resumeInstance(instanceId, reason);
+  }
+
+  /**
    * Suspends a running orchestration instance.
    *
    * @param instanceId the ID of the orchestration instance to suspend
@@ -479,37 +516,35 @@ public abstract class DurableTaskClient implements AutoCloseable {
   }
 
   /**
-   * Resumes a running orchestration instance.
+   * Lists workflow instance IDs with optional pagination.
    *
-   * @param instanceId the ID of the orchestration instance to resume
+   * @param continuationToken the continuation token from a previous call, or null for the first page
+   * @param pageSize          the maximum number of instance IDs to return, or null for no limit
+   * @return the raw list-instance-IDs response from the sidecar
    */
-  public void resumeInstance(String instanceId) {
-    this.resumeInstance(instanceId, null);
-  }
+  public abstract OrchestratorService.ListInstanceIDsResponse listInstanceIds(
+      @Nullable String continuationToken, @Nullable Integer pageSize);
 
   /**
-   * Resumes a running orchestration instance.
+   * Gets the full execution history of a workflow instance.
    *
-   * @param instanceId the ID of the orchestration instance to resume
-   * @param reason     the reason for resuming the orchestration instance
+   * @param instanceId the ID of the workflow instance to get history for
+   * @return the list of history events for the workflow instance
    */
-  public abstract void resumeInstance(String instanceId, @Nullable String reason);
+  public abstract List<HistoryEvent> getInstanceHistory(String instanceId);
 
   /**
-   * Resumes a running orchestration instance owned by another app.
+   * Reruns a workflow from a specific history event, creating a new workflow instance.
    *
-   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
-   * ignored and the instance is resumed on the local app instead.</p>
-   *
-   * @param instanceId the ID of the orchestration instance to resume
-   * @param reason     the reason for resuming the orchestration instance
-   * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
-   *                   routing. May be null to target the local app.
+   * @param sourceInstanceId the ID of the source workflow instance to rerun from
+   * @param eventId          the history event ID to rerun from
+   * @param newInstanceId    the instance ID to use for the new instance, or null for a random ID
+   * @param input            the input applied at the next activity event, used only when overwriteInput is true
+   * @param overwriteInput   true to overwrite the input at the rerun point with input
+   * @return the instance ID of the new workflow instance
    */
-  public void resumeInstance(String instanceId, @Nullable String reason, @Nullable String appID) {
-    requireLocalRouting(appID);
-    this.resumeInstance(instanceId, reason);
-  }
+  public abstract String rerunWorkflowFromEvent(String sourceInstanceId, int eventId,
+      @Nullable String newInstanceId, @Nullable Object input, boolean overwriteInput);
 
   /**
    * Rejects a cross-app target on a client that does not implement cross-app routing. Implementations that
