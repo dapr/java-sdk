@@ -1,0 +1,82 @@
+name: Quarkus Agentic Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - release-quarkus-*
+    paths:
+      - 'quarkus/**'
+    tags:
+      - quarkus-v*
+
+  pull_request:
+    branches:
+      - master
+      - release-quarkus-*
+    paths:
+      - 'quarkus/**'
+
+jobs:
+  build:
+    name: "Build & Test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      JDK_VER: 17
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JDK_VER }}
+      - name: Build quarkus modules
+        run: |
+          cd quarkus
+          ../mvnw clean install -B -q -DskipITs=true
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: quarkus-test-reports
+          path: quarkus/**/target/surefire-reports/
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [ build ]
+    timeout-minutes: 30
+    env:
+      JDK_VER: 17
+      OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
+      OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
+      GPG_KEY: ${{ secrets.GPG_KEY }}
+      GPG_PWD: ${{ secrets.GPG_PWD }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JDK_VER }}
+      - name: Get quarkus version
+        run: |
+          QUARKUS_VERSION=$(./mvnw -B -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec -f quarkus/pom.xml)
+          echo "QUARKUS_VERSION=$QUARKUS_VERSION" >> $GITHUB_ENV
+      - name: Is SNAPSHOT release ?
+        if: contains(github.ref, 'master') && contains(env.QUARKUS_VERSION, '-SNAPSHOT')
+        run: |
+          echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
+      - name: Is Release version ?
+        if: startsWith(github.ref, 'refs/tags/quarkus-v') && !contains(env.QUARKUS_VERSION, '-SNAPSHOT')
+        run: |
+          echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
+      - name: Publish to ossrh
+        if: env.DEPLOY_OSSRH == 'true'
+        run: |
+          echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
+          export GPG_TTY=$(tty)
+          gpg --batch --import private-key.gpg
+          cd quarkus
+          ../mvnw -V -B -Dgpg.skip=false -DskipTests -s ../settings.xml deploy
