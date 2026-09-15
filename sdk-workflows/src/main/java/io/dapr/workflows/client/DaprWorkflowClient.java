@@ -666,6 +666,8 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
     return this.innerClient.rerunWorkflowFromEvent(sourceInstanceId, eventId,
         options.getNewInstanceId(), options.getInput(), options.isOverwriteInput());
+
+  /**
    * Purges workflow instance state from the workflow state store of another app.
    *
    * <p>Permission to operate on workflows owned by another app is governed by the target app's
