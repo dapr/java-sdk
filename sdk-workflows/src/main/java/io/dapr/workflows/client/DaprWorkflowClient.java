@@ -384,7 +384,6 @@ public class DaprWorkflowClient implements AutoCloseable {
     return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
   }
 
-
   /**
    * Waits for a workflow to start running and returns an
    * {@link WorkflowState} object that contains metadata about the started
@@ -468,7 +467,6 @@ public class DaprWorkflowClient implements AutoCloseable {
         getInputsAndOutputs);
     return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
   }
-
 
   /**
    * Waits for an workflow to complete and returns an {@link WorkflowState} object that contains
