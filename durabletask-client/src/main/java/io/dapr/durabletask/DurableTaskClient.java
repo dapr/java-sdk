@@ -529,6 +529,8 @@ public abstract class DurableTaskClient implements AutoCloseable {
    */
   public abstract String rerunWorkflowFromEvent(String sourceInstanceId, int eventId,
       @Nullable String newInstanceId, @Nullable Object input, boolean overwriteInput);
+
+  /**
    * Resumes a running orchestration instance owned by another app.
    *
    * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
