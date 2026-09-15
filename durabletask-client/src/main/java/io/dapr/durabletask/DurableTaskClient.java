@@ -450,6 +450,39 @@ public abstract class DurableTaskClient implements AutoCloseable {
   }
 
   /**
+   * Resumes a running orchestration instance.
+   *
+   * @param instanceId the ID of the orchestration instance to resume
+   * @param reason     the reason for resuming the orchestration instance
+   */
+  public abstract void resumeInstance(String instanceId, @Nullable String reason);
+
+  /**
+   * Resumes a running orchestration instance.
+   *
+   * @param instanceId the ID of the orchestration instance to resume
+   */
+  public void resumeInstance(String instanceId) {
+    this.resumeInstance(instanceId, null);
+  }
+  
+  /**
+   * Resumes a running orchestration instance owned by another app.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the instance is resumed on the local app instead.</p>
+   *
+   * @param instanceId the ID of the orchestration instance to resume
+   * @param reason     the reason for resuming the orchestration instance
+   * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
+   *                   routing. May be null to target the local app.
+   */
+  public void resumeInstance(String instanceId, @Nullable String reason, @Nullable String appID) {
+    requireLocalRouting(appID);
+    this.resumeInstance(instanceId, reason);
+  }
+
+  /**
    * Suspends a running orchestration instance.
    *
    * @param instanceId the ID of the orchestration instance to suspend
@@ -483,23 +516,6 @@ public abstract class DurableTaskClient implements AutoCloseable {
   }
 
   /**
-   * Resumes a running orchestration instance.
-   *
-   * @param instanceId the ID of the orchestration instance to resume
-   */
-  public void resumeInstance(String instanceId) {
-    this.resumeInstance(instanceId, null);
-  }
-
-  /**
-   * Resumes a running orchestration instance.
-   *
-   * @param instanceId the ID of the orchestration instance to resume
-   * @param reason     the reason for resuming the orchestration instance
-   */
-  public abstract void resumeInstance(String instanceId, @Nullable String reason);
-
-  /**
    * Lists workflow instance IDs with optional pagination.
    *
    * @param continuationToken the continuation token from a previous call, or null for the first page
@@ -529,22 +545,6 @@ public abstract class DurableTaskClient implements AutoCloseable {
    */
   public abstract String rerunWorkflowFromEvent(String sourceInstanceId, int eventId,
       @Nullable String newInstanceId, @Nullable Object input, boolean overwriteInput);
-
-  /**
-   * Resumes a running orchestration instance owned by another app.
-   *
-   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
-   * ignored and the instance is resumed on the local app instead.</p>
-   *
-   * @param instanceId the ID of the orchestration instance to resume
-   * @param reason     the reason for resuming the orchestration instance
-   * @param appID      the ID of the app that owns the target orchestration instance, used for cross-app
-   *                   routing. May be null to target the local app.
-   */
-  public void resumeInstance(String instanceId, @Nullable String reason, @Nullable String appID) {
-    requireLocalRouting(appID);
-    this.resumeInstance(instanceId, reason);
-  }
 
   /**
    * Rejects a cross-app target on a client that does not implement cross-app routing. Implementations that
