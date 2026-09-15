@@ -24,6 +24,8 @@ public class NewWorkflowOptions {
   private String instanceId;
   private Object input;
   private Instant startTime;
+  private boolean enforceUniqueInstanceId;
+  private String appId;
 
   /**
    * Sets the version of the workflow to start.
@@ -77,6 +79,42 @@ public class NewWorkflowOptions {
   }
 
   /**
+   * Sets whether the instance ID of the new workflow must be unique.
+   *
+   * <p>When enabled, scheduling fails with a {@link WorkflowInstanceAlreadyExistsException}
+   * if a workflow instance with the same ID already exists, regardless of whether that
+   * instance is still running or has already completed. By default, scheduling a workflow
+   * with the instance ID of a completed instance restarts that instance.
+   *
+   * <p>Requires a Dapr runtime that supports this option.
+   *
+   * @param enforceUniqueInstanceId whether to reject instance IDs that already exist
+   * @return this {@link NewWorkflowOptions} object
+   */
+  public NewWorkflowOptions setEnforceUniqueInstanceId(boolean enforceUniqueInstanceId) {
+    this.enforceUniqueInstanceId = enforceUniqueInstanceId;
+    return this;
+  }
+
+  /**
+   * Sets the app ID of the app that will run the new workflow.
+   *
+   * <p>By default, workflows are scheduled on the app that starts them. This method can be used to
+   * schedule the workflow on a different app. The target app must allow the calling app to schedule
+   * workflows on it: permission is governed by the target app's WorkflowAccessPolicy.
+   *
+   * <p>Requires a Dapr runtime with cross-app workflow support; against an older runtime the target app ID is
+   * ignored and the workflow is scheduled on the local app instead.
+   *
+   * @param appId the ID of the app that will run the new workflow
+   * @return this {@link NewWorkflowOptions} object
+   */
+  public NewWorkflowOptions setAppId(String appId) {
+    this.appId = appId;
+    return this;
+  }
+
+  /**
    * Gets the user-specified version of the new workflow.
    *
    * @return the user-specified version of the new workflow.
@@ -110,6 +148,25 @@ public class NewWorkflowOptions {
    */
   public Instant getStartTime() {
     return this.startTime;
+  }
+
+  /**
+   * Gets whether the instance ID of the new workflow must be unique.
+   *
+   * @return true if instance IDs that already exist are rejected, false otherwise
+   */
+  public boolean isEnforceUniqueInstanceId() {
+    return this.enforceUniqueInstanceId;
+  }
+
+  /**
+   * Gets the configured app ID of the app that will run the new workflow.
+   *
+   * @return the configured app ID, or null when none was set. A null or empty value runs the workflow on the
+   *     local app.
+   */
+  public String getAppId() {
+    return this.appId;
   }
 
 }

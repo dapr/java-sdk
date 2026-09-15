@@ -24,6 +24,7 @@ public final class NewOrchestrationInstanceOptions {
   private Object input;
   private Instant startTime;
   private String appID; // Target app ID for cross-app workflow routing
+  private boolean enforceUniqueInstanceId;
 
   /**
    * Default constructor for the {@link NewOrchestrationInstanceOptions} class.
@@ -92,6 +93,20 @@ public final class NewOrchestrationInstanceOptions {
   }
 
   /**
+   * Sets whether the instance ID of the new orchestration must be unique.
+   * When enabled, scheduling fails with an {@code ALREADY_EXISTS} gRPC status if an orchestration
+   * instance with the same ID already exists, regardless of whether that instance is still running
+   * or has already completed. By default, scheduling over a completed instance restarts it.
+   *
+   * @param enforceUniqueInstanceId whether to reject instance IDs that already exist
+   * @return this {@link NewOrchestrationInstanceOptions} object
+   */
+  public NewOrchestrationInstanceOptions setEnforceUniqueInstanceId(boolean enforceUniqueInstanceId) {
+    this.enforceUniqueInstanceId = enforceUniqueInstanceId;
+    return this;
+  }
+
+  /**
    * Gets the user-specified version of the new orchestration.
    *
    * @return the user-specified version of the new orchestration.
@@ -134,6 +149,15 @@ public final class NewOrchestrationInstanceOptions {
    */
   public String getAppID() {
     return this.appID;
+  }
+
+  /**
+   * Gets whether the instance ID of the new orchestration must be unique.
+   *
+   * @return true if instance IDs that already exist are rejected, false otherwise
+   */
+  public boolean isEnforceUniqueInstanceId() {
+    return this.enforceUniqueInstanceId;
   }
 
   /**

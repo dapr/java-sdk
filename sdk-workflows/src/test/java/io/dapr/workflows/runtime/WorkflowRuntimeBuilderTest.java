@@ -12,6 +12,7 @@ limitations under the License.
 */
 package io.dapr.workflows.runtime;
 
+import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.durabletask.TaskActivity;
 import io.dapr.durabletask.TaskActivityFactory;
 import io.dapr.durabletask.TaskOrchestration;
@@ -26,6 +27,8 @@ import org.slf4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.eq;
@@ -194,5 +197,45 @@ public class WorkflowRuntimeBuilderTest {
         throw new RuntimeException(e);
       }
     });
+  }
+
+  /**
+   * Reads a field off the wrapped {@link DurableTaskGrpcWorkerBuilder}. The stateful-history
+   * options are package-visible on the durabletask builder, so a test in this package cannot
+   * observe them any other way.
+   */
+  private static Object innerBuilderField(WorkflowRuntimeBuilder runtimeBuilder, String name)
+      throws Exception {
+    Field builderField = WorkflowRuntimeBuilder.class.getDeclaredField("builder");
+    builderField.setAccessible(true);
+    Object innerBuilder = builderField.get(runtimeBuilder);
+
+    Field target = innerBuilder.getClass().getDeclaredField(name);
+    target.setAccessible(true);
+    return target.get(innerBuilder);
+  }
+
+  @Test
+  public void statefulHistoryIsEnabledByDefault() throws Exception {
+    var runtimeBuilder = new WorkflowRuntimeBuilder();
+
+    Assertions.assertEquals(false, innerBuilderField(runtimeBuilder, "disableStatefulHistory"));
+  }
+
+  @Test
+  public void statefulHistoryOptionsAreForwardedToTheWorkerBuilder() throws Exception {
+    var runtimeBuilder = new WorkflowRuntimeBuilder();
+
+    var returned = runtimeBuilder
+        .withStatefulHistoryDisabled(true)
+        .withHistoryCacheTtl(Duration.ofMinutes(2))
+        .withHistoryCacheMaxInstances(50)
+        .withHistoryCacheMaxBytes(4096L);
+
+    Assertions.assertSame(runtimeBuilder, returned);
+    Assertions.assertEquals(true, innerBuilderField(runtimeBuilder, "disableStatefulHistory"));
+    Assertions.assertEquals(Duration.ofMinutes(2), innerBuilderField(runtimeBuilder, "historyCacheTtl"));
+    Assertions.assertEquals(50, innerBuilderField(runtimeBuilder, "historyCacheMaxInstances"));
+    Assertions.assertEquals(4096L, innerBuilderField(runtimeBuilder, "historyCacheMaxBytes"));
   }
 }

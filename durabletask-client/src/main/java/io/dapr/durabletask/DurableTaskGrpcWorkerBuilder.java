@@ -34,6 +34,10 @@ public final class DurableTaskGrpcWorkerBuilder {
   Duration maximumTimerInterval;
   ExecutorService executorService;
   String appId; // App ID for cross-app routing
+  boolean disableStatefulHistory;
+  Duration historyCacheTtl;
+  int historyCacheMaxInstances;
+  long historyCacheMaxBytes;
 
   /**
    * Adds an orchestration factory to be used by the constructed {@link DurableTaskGrpcWorker}.
@@ -142,6 +146,62 @@ public final class DurableTaskGrpcWorkerBuilder {
    */
   public DurableTaskGrpcWorkerBuilder appId(String appId) {
     this.appId = appId;
+    return this;
+  }
+
+  /**
+   * Disables the stateful-history optimization.
+   *
+   * <p>By default the worker advertises {@code WORKER_CAPABILITY_STATEFUL_HISTORY} and caches each
+   * instance's committed history per work-item stream, so the sidecar can send only the new events
+   * (the delta) each turn instead of the full history. A cache miss is always recovered safely via
+   * the GetInstanceHistory RPC, so disabling this only affects per-turn bandwidth, never correctness.
+   * When disabled, the worker always receives the full history.</p>
+   *
+   * @param disableStatefulHistory whether to disable the stateful-history optimization
+   * @return this builder object
+   */
+  public DurableTaskGrpcWorkerBuilder disableStatefulHistory(boolean disableStatefulHistory) {
+    this.disableStatefulHistory = disableStatefulHistory;
+    return this;
+  }
+
+  /**
+   * Sets the sliding time-to-live for cached instance histories. An instance's entry is reclaimed
+   * once it has gone idle (no turn) for longer than this. If not specified, a default of one hour is
+   * used. Ignored when the stateful-history optimization is disabled.
+   *
+   * @param historyCacheTtl the sliding time-to-live for a cached instance history
+   * @return this builder object
+   */
+  public DurableTaskGrpcWorkerBuilder historyCacheTtl(Duration historyCacheTtl) {
+    this.historyCacheTtl = historyCacheTtl;
+    return this;
+  }
+
+  /**
+   * Sets the maximum number of per-instance histories retained on a single work-item stream;
+   * least-recently-used entries are evicted beyond it. A non-positive value uses the built-in
+   * default. Ignored when the stateful-history optimization is disabled.
+   *
+   * @param historyCacheMaxInstances the instance-count cap for the history cache
+   * @return this builder object
+   */
+  public DurableTaskGrpcWorkerBuilder historyCacheMaxInstances(int historyCacheMaxInstances) {
+    this.historyCacheMaxInstances = historyCacheMaxInstances;
+    return this;
+  }
+
+  /**
+   * Sets the byte budget for cached histories on a single work-item stream; least-recently-used
+   * entries are evicted beyond it. A non-positive value means unlimited (bounded only by the
+   * instance-count cap and the TTL). Ignored when the stateful-history optimization is disabled.
+   *
+   * @param historyCacheMaxBytes the byte budget for the history cache
+   * @return this builder object
+   */
+  public DurableTaskGrpcWorkerBuilder historyCacheMaxBytes(long historyCacheMaxBytes) {
+    this.historyCacheMaxBytes = historyCacheMaxBytes;
     return this;
   }
 

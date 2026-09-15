@@ -44,11 +44,13 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -272,6 +274,28 @@ public class DaprWorkflowClientTest {
 
     assertEquals(expectedStartTime, captor.getValue().getStartTime());
     assertEquals(expectedInput, captor.getValue().getInput());
+    assertFalse(captor.getValue().isEnforceUniqueInstanceId());
+  }
+
+  @Test
+  public void scheduleNewWorkflowWithEnforceUniqueInstanceId() {
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    String expectedInstanceId = "uniqueInstance";
+    NewWorkflowOptions newWorkflowOptions = new NewWorkflowOptions()
+        .setInstanceId(expectedInstanceId)
+        .setEnforceUniqueInstanceId(true);
+
+    client.scheduleNewWorkflow(TestWorkflow.class, newWorkflowOptions);
+
+    ArgumentCaptor<NewOrchestrationInstanceOptions> captor = ArgumentCaptor.forClass(
+        NewOrchestrationInstanceOptions.class
+    );
+
+    verify(mockInnerClient, times(1))
+        .scheduleNewOrchestrationInstance(eq(expectedName), captor.capture());
+
+    assertEquals(expectedInstanceId, captor.getValue().getInstanceId());
+    assertTrue(captor.getValue().isEnforceUniqueInstanceId());
   }
 
   @Test
@@ -470,6 +494,121 @@ public class DaprWorkflowClientTest {
     RerunWorkflowFromEventOptions options = new RerunWorkflowFromEventOptions().setNewInstanceId("target");
     assertThrows(IllegalArgumentException.class, () -> client.rerunWorkflowFromEvent("src", -1, options));
     verify(mockInnerClient, never()).rerunWorkflowFromEvent(any(), anyInt(), any(), any(), anyBoolean());
+  public void scheduleNewWorkflowWithAppIdOption() {
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    String expectedAppId = "targetApp";
+    NewWorkflowOptions options = new NewWorkflowOptions().setAppId(expectedAppId);
+
+    client.scheduleNewWorkflow(TestWorkflow.class, options);
+
+    ArgumentCaptor<NewOrchestrationInstanceOptions> captor = ArgumentCaptor.forClass(
+        NewOrchestrationInstanceOptions.class
+    );
+
+    verify(mockInnerClient, times(1))
+        .scheduleNewOrchestrationInstance(eq(expectedName), captor.capture());
+
+    assertEquals(expectedAppId, captor.getValue().getAppID());
+  }
+
+  @Test
+  public void terminateWorkflowWithAppId() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedAppId = "targetApp";
+
+    client.terminateWorkflow(expectedInstanceId, null, expectedAppId);
+
+    verify(mockInnerClient, times(1)).terminate(expectedInstanceId, null, expectedAppId);
+  }
+
+  @Test
+  public void suspendResumeWorkflowWithAppId() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedAppId = "targetApp";
+
+    client.suspendWorkflow(expectedInstanceId, "suspending workflow instance", expectedAppId);
+    client.resumeWorkflow(expectedInstanceId, "resuming workflow instance", expectedAppId);
+
+    verify(mockInnerClient, times(1)).suspendInstance(expectedInstanceId,
+        "suspending workflow instance", expectedAppId);
+    verify(mockInnerClient, times(1)).resumeInstance(expectedInstanceId,
+        "resuming workflow instance", expectedAppId);
+  }
+
+  @Test
+  public void getWorkflowStateWithAppId() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedAppId = "targetApp";
+
+    OrchestrationMetadata expectedMetadata = mock(OrchestrationMetadata.class);
+    when(expectedMetadata.getInstanceId()).thenReturn(expectedInstanceId);
+    when(mockInnerClient.getInstanceMetadata(expectedInstanceId, true, expectedAppId))
+        .thenReturn(expectedMetadata);
+
+    WorkflowState state = client.getWorkflowState(expectedInstanceId, true, expectedAppId);
+
+    verify(mockInnerClient, times(1)).getInstanceMetadata(expectedInstanceId, true, expectedAppId);
+    assertNotEquals(state, null);
+    assertEquals(state.getWorkflowId(), expectedMetadata.getInstanceId());
+  }
+
+  @Test
+  public void waitForWorkflowStartWithAppId() throws TimeoutException {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedAppId = "targetApp";
+    Duration timeout = Duration.ofSeconds(10);
+
+    OrchestrationMetadata expectedMetadata = mock(OrchestrationMetadata.class);
+    when(expectedMetadata.getInstanceId()).thenReturn(expectedInstanceId);
+    when(mockInnerClient.waitForInstanceStart(expectedInstanceId, timeout, true, expectedAppId))
+        .thenReturn(expectedMetadata);
+
+    WorkflowState result = client.waitForWorkflowStart(expectedInstanceId, timeout, true, expectedAppId);
+
+    verify(mockInnerClient, times(1)).waitForInstanceStart(expectedInstanceId, timeout, true, expectedAppId);
+    assertNotEquals(result, null);
+    assertEquals(result.getWorkflowId(), expectedMetadata.getInstanceId());
+  }
+
+  @Test
+  public void waitForWorkflowCompletionWithAppId() throws TimeoutException {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedAppId = "targetApp";
+    Duration timeout = Duration.ofSeconds(10);
+
+    OrchestrationMetadata expectedMetadata = mock(OrchestrationMetadata.class);
+    when(expectedMetadata.getInstanceId()).thenReturn(expectedInstanceId);
+    when(mockInnerClient.waitForInstanceCompletion(expectedInstanceId, timeout, true, expectedAppId))
+        .thenReturn(expectedMetadata);
+
+    WorkflowState result = client.waitForWorkflowCompletion(expectedInstanceId, timeout, true, expectedAppId);
+
+    verify(mockInnerClient, times(1)).waitForInstanceCompletion(expectedInstanceId, timeout, true, expectedAppId);
+    assertNotEquals(result, null);
+    assertEquals(result.getWorkflowId(), expectedMetadata.getInstanceId());
+  }
+
+  @Test
+  public void raiseEventWithAppId() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedEventName = "TestEventName";
+    Object expectedEventPayload = new Object();
+    String expectedAppId = "targetApp";
+
+    client.raiseEvent(expectedInstanceId, expectedEventName, expectedEventPayload, expectedAppId);
+
+    verify(mockInnerClient, times(1)).raiseEvent(expectedInstanceId,
+        expectedEventName, expectedEventPayload, expectedAppId);
+  }
+
+  @Test
+  public void purgeWorkflowWithAppId() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedAppId = "targetApp";
+
+    client.purgeWorkflow(expectedInstanceId, expectedAppId);
+
+    verify(mockInnerClient, times(1)).purgeInstance(expectedInstanceId, expectedAppId);
   }
 
   @Test
