@@ -20,13 +20,6 @@
     <maven.deploy.skip>false</maven.deploy.skip>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
-    <!--
-      The durable task sources folded into this module carry materially lower line coverage
-      than the workflow sources they joined, so the merged bundle sits near 60% rather than the
-      80% default. The gap is real and lives mostly in io.dapr.workflows.task.runner, which has
-      no unit tests at all; raise this back toward 80% as that package gains coverage.
-    -->
-    <jacoco-maven-plugin.coverage-ratio>60%</jacoco-maven-plugin.coverage-ratio>
   </properties>
 
   <dependencies>
