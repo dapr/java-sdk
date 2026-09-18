@@ -79,9 +79,13 @@ public enum WorkflowRuntimeStatus {
    *
    * @param status the protobuf status to convert.
    * @return the corresponding {@link WorkflowRuntimeStatus}.
-   * @throws IllegalArgumentException if the status is unknown.
+   * @throws IllegalArgumentException if the status is null or unknown.
    */
   public static WorkflowRuntimeStatus fromProtobuf(Orchestration.OrchestrationStatus status) {
+    if (status == null) {
+      throw new IllegalArgumentException("status cannot be null");
+    }
+
     switch (status) {
       case ORCHESTRATION_STATUS_RUNNING:
         return RUNNING;
