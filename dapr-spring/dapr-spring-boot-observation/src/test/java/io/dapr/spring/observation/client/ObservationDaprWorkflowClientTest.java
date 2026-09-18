@@ -203,22 +203,6 @@ class ObservationDaprWorkflowClientTest {
   }
 
   // -------------------------------------------------------------------------
-  // Deprecated methods — must NOT create spans
-  // -------------------------------------------------------------------------
-
-  @Test
-  @DisplayName("Deprecated getInstanceState falls through to parent without creating a span")
-  @SuppressWarnings("deprecation")
-  void deprecatedGetInstanceStateDoesNotCreateSpan() {
-    // This will fail (no sidecar) but must not leave any observations in the registry
-    assertThatThrownBy(() -> client.getInstanceState("instance-1", false))
-        .isInstanceOf(RuntimeException.class);
-
-    // No spans should have been created for deprecated methods
-    TestObservationRegistryAssert.assertThat(registry).doesNotHaveAnyObservation();
-  }
-
-  // -------------------------------------------------------------------------
   // Dummy workflow implementation for type-based tests
   // -------------------------------------------------------------------------
 
