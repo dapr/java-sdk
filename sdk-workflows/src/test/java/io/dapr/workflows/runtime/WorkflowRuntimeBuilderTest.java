@@ -29,8 +29,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -197,6 +200,64 @@ public class WorkflowRuntimeBuilderTest {
         throw new RuntimeException(e);
       }
     });
+  }
+
+  /**
+   * The runtime's own lifecycle tests pass the ownership flag in directly, so they pin what
+   * WorkflowRuntime does with it but not what this builder decides it should be. These two go
+   * through the public path instead.
+   */
+  @Test
+  public void buildLeavesACallerSuppliedExecutorRunningAfterClose() throws Exception {
+    resetRuntimeSingleton();
+    ExecutorService executorService = Executors.newCachedThreadPool();
+
+    try {
+      WorkflowRuntimeBuilder runtimeBuilder = new WorkflowRuntimeBuilder().withExecutorService(executorService);
+      try (WorkflowRuntime runtime = runtimeBuilder.build()) {
+        assertSame(executorService, runtimeExecutor(runtime));
+      }
+
+      Assertions.assertFalse(executorService.isShutdown(),
+          "an executor the caller supplied must outlive the runtime that used it");
+    } finally {
+      executorService.shutdown();
+      resetRuntimeSingleton();
+    }
+  }
+
+  @Test
+  public void buildShutsDownAnExecutorItCreatedItself() throws Exception {
+    resetRuntimeSingleton();
+
+    try {
+      ExecutorService created;
+      try (WorkflowRuntime runtime = new WorkflowRuntimeBuilder().build()) {
+        created = runtimeExecutor(runtime);
+      }
+
+      Assertions.assertTrue(created.isShutdown(),
+          "an executor the builder created is the runtime's to shut down");
+    } finally {
+      resetRuntimeSingleton();
+    }
+  }
+
+  /**
+   * {@link WorkflowRuntimeBuilder#build()} caches the runtime in a static field, so a test that
+   * builds one has to clear it or it gets the instance an earlier test built.
+   */
+  private static void resetRuntimeSingleton() throws Exception {
+    Field instance = WorkflowRuntimeBuilder.class.getDeclaredField("instance");
+    instance.setAccessible(true);
+    instance.set(null, null);
+  }
+
+  private static ExecutorService runtimeExecutor(WorkflowRuntime runtime) throws Exception {
+    Field executorService = WorkflowRuntime.class.getDeclaredField("executorService");
+    executorService.setAccessible(true);
+
+    return (ExecutorService) executorService.get(runtime);
   }
 
   /**

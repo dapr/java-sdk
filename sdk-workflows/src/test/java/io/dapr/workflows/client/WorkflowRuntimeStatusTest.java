@@ -48,6 +48,19 @@ public class WorkflowRuntimeStatusTest {
             Orchestration.OrchestrationStatus.UNRECOGNIZED));
   }
 
+  /**
+   * The deleted WorkflowRuntimeStatusConverter rejected a null status with this exception and
+   * message, and had a test for it. Without the explicit check, the switch below would throw
+   * NullPointerException instead.
+   */
+  @Test
+  public void aNullStatusIsRejectedWithIllegalArgumentException() {
+    IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+        () -> WorkflowRuntimeStatus.fromProtobuf(null));
+
+    assertEquals("status cannot be null", thrown.getMessage());
+  }
+
   @ParameterizedTest
   @EnumSource(WorkflowRuntimeStatus.class)
   public void everyStatusRoundTripsThroughProtobuf(WorkflowRuntimeStatus status) {
