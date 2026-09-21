@@ -13,9 +13,11 @@ limitations under the License.
 
 package io.dapr.testcontainers.converter;
 
+import io.dapr.testcontainers.ApiLoggingConfigurationSettings;
 import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.ListEntry;
+import io.dapr.testcontainers.LoggingConfigurationSettings;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
@@ -115,6 +117,24 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
       }
 
       configurationSpec.put("mtls", mtlsMap);
+    }
+
+    LoggingConfigurationSettings logging = configuration.getLogging();
+    if (logging != null) {
+      Map<String, Object> loggingMap = new LinkedHashMap<>();
+
+      ApiLoggingConfigurationSettings apiLogging = logging.getApiLogging();
+      if (apiLogging != null) {
+        Map<String, Object> apiLoggingMap = new LinkedHashMap<>();
+
+        putIfNotNull(apiLoggingMap, "enabled", apiLogging.getEnabled());
+        putIfNotNull(apiLoggingMap, "obfuscateURLs", apiLogging.getObfuscateUrls());
+        putIfNotNull(apiLoggingMap, "omitHealthChecks", apiLogging.getOmitHealthChecks());
+
+        loggingMap.put("apiLogging", apiLoggingMap);
+      }
+
+      configurationSpec.put("logging", loggingMap);
     }
 
     configurationProps.put("spec", configurationSpec);
