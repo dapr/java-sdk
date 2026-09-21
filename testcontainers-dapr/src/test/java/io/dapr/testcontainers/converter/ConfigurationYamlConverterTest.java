@@ -17,8 +17,12 @@ import io.dapr.testcontainers.ApiLoggingConfigurationSettings;
 import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.HttpMetricsConfigurationSettings;
 import io.dapr.testcontainers.ListEntry;
 import io.dapr.testcontainers.LoggingConfigurationSettings;
+import io.dapr.testcontainers.MetricsConfigurationSettings;
+import io.dapr.testcontainers.MetricsLabel;
+import io.dapr.testcontainers.MetricsRule;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
@@ -31,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -336,6 +341,287 @@ class ConfigurationYamlConverterTest {
         + "  name: my-config\n"
         + "spec:\n"
         + "  logging: {}\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+  @Test
+  public void testConfigurationWithMetricsToYaml() {
+    Map<String, String> regex = new LinkedHashMap<>();
+    regex.put("orders/", "orders/.+");
+
+    List<MetricsLabel> labels = new ArrayList<>();
+    labels.add(new MetricsLabel("method", regex));
+
+    List<MetricsRule> rules = new ArrayList<>();
+    rules.add(new MetricsRule("dapr_runtime_service_invocation_req_sent_total", labels));
+
+    HttpMetricsConfigurationSettings http = new HttpMetricsConfigurationSettings(
+        false,
+        Arrays.asList("/items", "/orders/{orderID}", "/orders/{orderID}/items/{itemID}"),
+        true
+    );
+
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(
+        true,
+        rules,
+        Arrays.asList(5, 10, 50, 100, 500),
+        http,
+        true
+    );
+
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withConfiguration(new Configuration("my-config", null, null, null, null, metrics))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    enabled: true\n"
+        + "    rules:\n"
+        + "    - name: dapr_runtime_service_invocation_req_sent_total\n"
+        + "      labels:\n"
+        + "      - name: method\n"
+        + "        regex:\n"
+        + "          orders/: orders/.+\n"
+        + "    latencyDistributionBuckets:\n"
+        + "    - 5\n"
+        + "    - 10\n"
+        + "    - 50\n"
+        + "    - 100\n"
+        + "    - 500\n"
+        + "    http:\n"
+        + "      increasedCardinality: false\n"
+        + "      pathMatching:\n"
+        + "      - /items\n"
+        + "      - /orders/{orderID}\n"
+        + "      - /orders/{orderID}/items/{itemID}\n"
+        + "      excludeVerbs: true\n"
+        + "    recordErrorCodes: true\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMinimalMetricsToYaml() {
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(false);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    enabled: false\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMetricsHttpOnlyToYaml() {
+    HttpMetricsConfigurationSettings http = new HttpMetricsConfigurationSettings(false);
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(true, http);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    enabled: true\n"
+        + "    http:\n"
+        + "      increasedCardinality: false\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithEmptyMetricsListsToYaml() {
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(
+        true,
+        new ArrayList<>(),
+        new ArrayList<>(),
+        new HttpMetricsConfigurationSettings(null, new ArrayList<>(), null),
+        null
+    );
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    enabled: true\n"
+        + "    http: {}\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMetricsRuleWithoutLabelsToYaml() {
+    List<MetricsRule> rules = new ArrayList<>();
+    rules.add(new MetricsRule("dapr_http_server_request_count", null));
+
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(true, rules, null, null, null);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    enabled: true\n"
+        + "    rules:\n"
+        + "    - name: dapr_http_server_request_count\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMetricsRuleWithEmptyLabelsToYaml() {
+    List<MetricsRule> rules = new ArrayList<>();
+    rules.add(new MetricsRule("dapr_http_server_request_count", new ArrayList<>()));
+
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(true, rules, null, null, null);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    enabled: true\n"
+        + "    rules:\n"
+        + "    - name: dapr_http_server_request_count\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMetricsEnabledNullToYaml() {
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(
+        null,
+        null,
+        null,
+        new HttpMetricsConfigurationSettings(null, null, true),
+        false
+    );
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    http:\n"
+        + "      excludeVerbs: true\n"
+        + "    recordErrorCodes: false\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithEmptyMetricsToYaml() {
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(null);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics: {}\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMetricsLabelWithoutRegexToYaml() {
+    List<MetricsLabel> labels = new ArrayList<>();
+    labels.add(new MetricsLabel("method", null));
+
+    List<MetricsRule> rules = new ArrayList<>();
+    rules.add(new MetricsRule("dapr_http_server_request_count", labels));
+
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(true, rules, null, null, null);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    enabled: true\n"
+        + "    rules:\n"
+        + "    - name: dapr_http_server_request_count\n"
+        + "      labels:\n"
+        + "      - name: method\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithLoggingAndMetricsToYaml() {
+    LoggingConfigurationSettings logging = new LoggingConfigurationSettings(
+        new ApiLoggingConfigurationSettings(true)
+    );
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(true, null, null, null, true);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, logging, metrics);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  logging:\n"
+        + "    apiLogging:\n"
+        + "      enabled: true\n"
+        + "  metrics:\n"
+        + "    enabled: true\n"
+        + "    recordErrorCodes: true\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }

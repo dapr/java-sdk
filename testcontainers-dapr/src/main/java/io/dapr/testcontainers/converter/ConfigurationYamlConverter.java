@@ -16,8 +16,12 @@ package io.dapr.testcontainers.converter;
 import io.dapr.testcontainers.ApiLoggingConfigurationSettings;
 import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
+import io.dapr.testcontainers.HttpMetricsConfigurationSettings;
 import io.dapr.testcontainers.ListEntry;
 import io.dapr.testcontainers.LoggingConfigurationSettings;
+import io.dapr.testcontainers.MetricsConfigurationSettings;
+import io.dapr.testcontainers.MetricsLabel;
+import io.dapr.testcontainers.MetricsRule;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
@@ -135,6 +139,66 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
       }
 
       configurationSpec.put("logging", loggingMap);
+    }
+
+    MetricsConfigurationSettings metrics = configuration.getMetrics();
+    if (metrics != null) {
+      Map<String, Object> metricsMap = new LinkedHashMap<>();
+
+      putIfNotNull(metricsMap, "enabled", metrics.getEnabled());
+
+      List<MetricsRule> rules = metrics.getRules();
+      if (rules != null && !rules.isEmpty()) {
+        List<Map<String, Object>> rulesList = new ArrayList<>();
+
+        for (MetricsRule rule : rules) {
+          Map<String, Object> ruleMap = new LinkedHashMap<>();
+          ruleMap.put("name", rule.getName());
+
+          List<MetricsLabel> labels = rule.getLabels();
+          if (labels != null && !labels.isEmpty()) {
+            List<Map<String, Object>> labelsList = new ArrayList<>();
+
+            for (MetricsLabel label : labels) {
+              Map<String, Object> labelMap = new LinkedHashMap<>();
+              labelMap.put("name", label.getName());
+              putIfNotNull(labelMap, "regex", label.getRegex());
+              labelsList.add(labelMap);
+            }
+
+            ruleMap.put("labels", labelsList);
+          }
+
+          rulesList.add(ruleMap);
+        }
+
+        metricsMap.put("rules", rulesList);
+      }
+
+      List<Integer> latencyDistributionBuckets = metrics.getLatencyDistributionBuckets();
+      if (latencyDistributionBuckets != null && !latencyDistributionBuckets.isEmpty()) {
+        metricsMap.put("latencyDistributionBuckets", latencyDistributionBuckets);
+      }
+
+      HttpMetricsConfigurationSettings http = metrics.getHttp();
+      if (http != null) {
+        Map<String, Object> httpMap = new LinkedHashMap<>();
+
+        putIfNotNull(httpMap, "increasedCardinality", http.getIncreasedCardinality());
+
+        List<String> pathMatching = http.getPathMatching();
+        if (pathMatching != null && !pathMatching.isEmpty()) {
+          httpMap.put("pathMatching", pathMatching);
+        }
+
+        putIfNotNull(httpMap, "excludeVerbs", http.getExcludeVerbs());
+
+        metricsMap.put("http", httpMap);
+      }
+
+      putIfNotNull(metricsMap, "recordErrorCodes", metrics.getRecordErrorCodes());
+
+      configurationSpec.put("metrics", metricsMap);
     }
 
     configurationProps.put("spec", configurationSpec);
