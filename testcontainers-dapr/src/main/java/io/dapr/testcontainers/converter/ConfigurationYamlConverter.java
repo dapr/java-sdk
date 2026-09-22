@@ -24,6 +24,7 @@ import io.dapr.testcontainers.MetricsLabel;
 import io.dapr.testcontainers.MetricsRule;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
+import io.dapr.testcontainers.NameResolutionConfigurationSettings;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import io.dapr.testcontainers.ZipkinTracingConfigurationSettings;
@@ -199,6 +200,21 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
       putIfNotNull(metricsMap, "recordErrorCodes", metrics.getRecordErrorCodes());
 
       configurationSpec.put("metrics", metricsMap);
+    }
+
+    NameResolutionConfigurationSettings nameResolution = configuration.getNameResolution();
+    if (nameResolution != null) {
+      Map<String, Object> nameResolutionMap = new LinkedHashMap<>();
+
+      putIfNotNull(nameResolutionMap, "component", nameResolution.getComponent());
+      putIfNotNull(nameResolutionMap, "version", nameResolution.getVersion());
+
+      Map<String, Object> nameResolutionConfiguration = nameResolution.getConfiguration();
+      if (nameResolutionConfiguration != null && !nameResolutionConfiguration.isEmpty()) {
+        nameResolutionMap.put("configuration", new LinkedHashMap<>(nameResolutionConfiguration));
+      }
+
+      configurationSpec.put("nameResolution", nameResolutionMap);
     }
 
     configurationProps.put("spec", configurationSpec);
