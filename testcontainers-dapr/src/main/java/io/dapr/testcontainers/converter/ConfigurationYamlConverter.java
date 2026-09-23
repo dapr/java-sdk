@@ -15,6 +15,7 @@ package io.dapr.testcontainers.converter;
 
 import io.dapr.testcontainers.ApiLoggingConfigurationSettings;
 import io.dapr.testcontainers.AppHttpPipeline;
+import io.dapr.testcontainers.ComponentsConfigurationSettings;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.HttpMetricsConfigurationSettings;
 import io.dapr.testcontainers.ListEntry;
@@ -215,6 +216,18 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
       }
 
       configurationSpec.put("nameResolution", nameResolutionMap);
+    }
+
+    ComponentsConfigurationSettings components = configuration.getComponents();
+    if (components != null) {
+      Map<String, Object> componentsMap = new LinkedHashMap<>();
+
+      List<String> deny = components.getDeny();
+      if (deny != null && !deny.isEmpty()) {
+        componentsMap.put("deny", new ArrayList<>(deny));
+      }
+
+      configurationSpec.put("components", componentsMap);
     }
 
     configurationProps.put("spec", configurationSpec);

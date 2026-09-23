@@ -24,10 +24,10 @@ public class Configuration {
   private final LoggingConfigurationSettings logging;
   private final MetricsConfigurationSettings metrics;
   private final NameResolutionConfigurationSettings nameResolution;
+  private final ComponentsConfigurationSettings components;
 
   // @TODO: add secrets https://github.com/dapr/java-sdk/issues/1280
   // @TODO: add middleware httpPipeline https://github.com/dapr/java-sdk/issues/1283
-  // @TODO: add disallow components https://github.com/dapr/java-sdk/issues/1285 
 
   /**
    * Creates a new configuration.
@@ -122,6 +122,32 @@ public class Configuration {
       MetricsConfigurationSettings metrics,
       NameResolutionConfigurationSettings nameResolution
   ) {
+    this(name, tracing, appHttpPipeline, mtls, logging, metrics, nameResolution, null);
+  }
+
+  /**
+   * Creates a new configuration.
+   *
+   * @param name            Configuration name.
+   * @param tracing         TracingConfigParameters tracing configuration
+   *                        parameters.
+   * @param appHttpPipeline AppHttpPipeline middleware configuration.
+   * @param mtls            MtlsConfigurationSettings mTLS configuration.
+   * @param logging         LoggingConfigurationSettings logging configuration.
+   * @param metrics         MetricsConfigurationSettings metrics configuration.
+   * @param nameResolution  NameResolutionConfigurationSettings name resolution configuration.
+   * @param components      ComponentsConfigurationSettings disallowed component types configuration.
+   */
+  public Configuration(
+      String name,
+      TracingConfigurationSettings tracing,
+      AppHttpPipeline appHttpPipeline,
+      MtlsConfigurationSettings mtls,
+      LoggingConfigurationSettings logging,
+      MetricsConfigurationSettings metrics,
+      NameResolutionConfigurationSettings nameResolution,
+      ComponentsConfigurationSettings components
+  ) {
     this.name = name;
     this.tracing = tracing;
     this.appHttpPipeline = appHttpPipeline;
@@ -129,6 +155,7 @@ public class Configuration {
     this.logging = logging;
     this.metrics = metrics;
     this.nameResolution = nameResolution;
+    this.components = components;
   }
 
   public String getName() {
@@ -157,5 +184,9 @@ public class Configuration {
 
   public NameResolutionConfigurationSettings getNameResolution() {
     return nameResolution;
+  }
+
+  public ComponentsConfigurationSettings getComponents() {
+    return components;
   }
 }

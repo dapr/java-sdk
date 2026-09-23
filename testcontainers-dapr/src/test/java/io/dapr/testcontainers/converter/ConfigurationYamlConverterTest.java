@@ -15,6 +15,7 @@ package io.dapr.testcontainers.converter;
 
 import io.dapr.testcontainers.ApiLoggingConfigurationSettings;
 import io.dapr.testcontainers.AppHttpPipeline;
+import io.dapr.testcontainers.ComponentsConfigurationSettings;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.HttpMetricsConfigurationSettings;
@@ -34,6 +35,7 @@ import org.yaml.snakeyaml.Yaml;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -751,6 +753,97 @@ class ConfigurationYamlConverterTest {
         + "  nameResolution:\n"
         + "    component: mdns\n"
         + "    version: v1\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithDisallowedComponentsToYaml() {
+    ComponentsConfigurationSettings components = new ComponentsConfigurationSettings(
+        List.of("bindings.smtp", "secretstores.local.file", "state.redis/v1"));
+
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withConfiguration(new Configuration("my-config", null, null, null, null, null, null, components))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  components:\n"
+        + "    deny:\n"
+        + "    - bindings.smtp\n"
+        + "    - secretstores.local.file\n"
+        + "    - state.redis/v1\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithEmptyDisallowedComponentsToYaml() {
+    ComponentsConfigurationSettings components = new ComponentsConfigurationSettings(List.of());
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, null, components);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  components: {}\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithNullDisallowedComponentsToYaml() {
+    ComponentsConfigurationSettings components = new ComponentsConfigurationSettings(null);
+    assertNull(components.getDeny());
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, null, components);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  components: {}\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithNameResolutionAndDisallowedComponentsToYaml() {
+    NameResolutionConfigurationSettings nameResolution = new NameResolutionConfigurationSettings("mdns");
+    ComponentsConfigurationSettings components = new ComponentsConfigurationSettings(List.of("bindings.smtp"));
+
+    Configuration configuration =
+        new Configuration("my-config", null, null, null, null, null, nameResolution, components);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  nameResolution:\n"
+        + "    component: mdns\n"
+        + "  components:\n"
+        + "    deny:\n"
+        + "    - bindings.smtp\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
