@@ -23,10 +23,10 @@ public class Configuration {
   private final MtlsConfigurationSettings mtls;
   private final LoggingConfigurationSettings logging;
   private final MetricsConfigurationSettings metrics;
+  private final NameResolutionConfigurationSettings nameResolution;
 
   // @TODO: add secrets https://github.com/dapr/java-sdk/issues/1280
   // @TODO: add middleware httpPipeline https://github.com/dapr/java-sdk/issues/1283
-  // @TODO: add nameResolution https://github.com/dapr/java-sdk/issues/1284
   // @TODO: add disallow components https://github.com/dapr/java-sdk/issues/1285 
 
   /**
@@ -98,12 +98,37 @@ public class Configuration {
       LoggingConfigurationSettings logging,
       MetricsConfigurationSettings metrics
   ) {
+    this(name, tracing, appHttpPipeline, mtls, logging, metrics, null);
+  }
+
+  /**
+   * Creates a new configuration.
+   *
+   * @param name            Configuration name.
+   * @param tracing         TracingConfigParameters tracing configuration
+   *                        parameters.
+   * @param appHttpPipeline AppHttpPipeline middleware configuration.
+   * @param mtls            MtlsConfigurationSettings mTLS configuration.
+   * @param logging         LoggingConfigurationSettings logging configuration.
+   * @param metrics         MetricsConfigurationSettings metrics configuration.
+   * @param nameResolution  NameResolutionConfigurationSettings name resolution configuration.
+   */
+  public Configuration(
+      String name,
+      TracingConfigurationSettings tracing,
+      AppHttpPipeline appHttpPipeline,
+      MtlsConfigurationSettings mtls,
+      LoggingConfigurationSettings logging,
+      MetricsConfigurationSettings metrics,
+      NameResolutionConfigurationSettings nameResolution
+  ) {
     this.name = name;
     this.tracing = tracing;
     this.appHttpPipeline = appHttpPipeline;
     this.mtls = mtls;
     this.logging = logging;
     this.metrics = metrics;
+    this.nameResolution = nameResolution;
   }
 
   public String getName() {
@@ -128,5 +153,9 @@ public class Configuration {
 
   public MetricsConfigurationSettings getMetrics() {
     return metrics;
+  }
+
+  public NameResolutionConfigurationSettings getNameResolution() {
+    return nameResolution;
   }
 }

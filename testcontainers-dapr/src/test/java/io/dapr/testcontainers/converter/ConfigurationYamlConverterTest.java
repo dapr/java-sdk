@@ -25,6 +25,7 @@ import io.dapr.testcontainers.MetricsLabel;
 import io.dapr.testcontainers.MetricsRule;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
+import io.dapr.testcontainers.NameResolutionConfigurationSettings;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import org.junit.jupiter.api.Test;
@@ -622,6 +623,134 @@ class ConfigurationYamlConverterTest {
         + "  metrics:\n"
         + "    enabled: true\n"
         + "    recordErrorCodes: true\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithNameResolutionToYaml() {
+    Map<String, Object> nameResolutionConfiguration = new LinkedHashMap<>();
+    nameResolutionConfiguration.put("connectionString", "/home/user/.dapr/nr.db");
+
+    NameResolutionConfigurationSettings nameResolution =
+        new NameResolutionConfigurationSettings("sqlite", "v1", nameResolutionConfiguration);
+
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withConfiguration(new Configuration("my-config", null, null, null, null, null, nameResolution))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  nameResolution:\n"
+        + "    component: sqlite\n"
+        + "    version: v1\n"
+        + "    configuration:\n"
+        + "      connectionString: /home/user/.dapr/nr.db\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMinimalNameResolutionToYaml() {
+    NameResolutionConfigurationSettings nameResolution = new NameResolutionConfigurationSettings("mdns");
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, nameResolution);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  nameResolution:\n"
+        + "    component: mdns\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithNameResolutionWithoutConfigurationToYaml() {
+    NameResolutionConfigurationSettings nameResolution =
+        new NameResolutionConfigurationSettings("kubernetes", "v1", new LinkedHashMap<>());
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, nameResolution);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  nameResolution:\n"
+        + "    component: kubernetes\n"
+        + "    version: v1\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithNameResolutionNestedConfigurationToYaml() {
+    Map<String, Object> consulClient = new LinkedHashMap<>();
+    consulClient.put("address", "127.0.0.1:8500");
+
+    Map<String, Object> nameResolutionConfiguration = new LinkedHashMap<>();
+    nameResolutionConfiguration.put("client", consulClient);
+    nameResolutionConfiguration.put("selfRegister", true);
+
+    NameResolutionConfigurationSettings nameResolution =
+        new NameResolutionConfigurationSettings("consul", "v1", nameResolutionConfiguration);
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, nameResolution);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  nameResolution:\n"
+        + "    component: consul\n"
+        + "    version: v1\n"
+        + "    configuration:\n"
+        + "      client:\n"
+        + "        address: 127.0.0.1:8500\n"
+        + "      selfRegister: true\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithMetricsAndNameResolutionToYaml() {
+    MetricsConfigurationSettings metrics = new MetricsConfigurationSettings(true);
+    NameResolutionConfigurationSettings nameResolution = new NameResolutionConfigurationSettings("mdns", "v1");
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, metrics, nameResolution);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  metrics:\n"
+        + "    enabled: true\n"
+        + "  nameResolution:\n"
+        + "    component: mdns\n"
+        + "    version: v1\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
