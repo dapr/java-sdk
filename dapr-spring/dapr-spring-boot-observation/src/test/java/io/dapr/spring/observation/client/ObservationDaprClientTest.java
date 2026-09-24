@@ -313,6 +313,17 @@ class ObservationDaprClientTest {
   }
 
   @Test
+  @DisplayName("healthCheck creates span dapr.client.health_check")
+  void healthCheckCreatesSpan() {
+    when(delegate.healthCheck()).thenReturn(Mono.just(true));
+
+    client.healthCheck().block();
+
+    TestObservationRegistryAssert.assertThat(registry)
+        .hasObservationWithNameEqualTo("dapr.client.health_check");
+  }
+
+  @Test
   @DisplayName("shutdown creates span dapr.client.shutdown")
   void shutdownCreatesSpan() {
     when(delegate.shutdown()).thenReturn(Mono.empty());

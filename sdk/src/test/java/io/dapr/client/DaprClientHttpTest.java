@@ -217,6 +217,48 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void healthCheckOK() {
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NO_CONTENT);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    StepVerifier.create(daprClientHttp.healthCheck())
+        .expectNext(true)
+        .expectComplete()
+        .verify();
+
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+    verify(httpClient).sendAsync(requestCaptor.capture(), any());
+    assertEquals("/v1.0/healthz", requestCaptor.getValue().uri().getPath());
+    assertEquals("GET", requestCaptor.getValue().method());
+  }
+
+  @Test
+  public void healthCheckUnhealthy() {
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_SERVER_ERROR);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    StepVerifier.create(daprClientHttp.healthCheck())
+        .expectNext(false)
+        .expectComplete()
+        .verify();
+  }
+
+  @Test
+  public void healthCheckSidecarUnreachable() {
+    when(httpClient.sendAsync(any(), any()))
+        .thenReturn(CompletableFuture.failedFuture(new IOException("Connection refused")));
+
+    StepVerifier.create(daprClientHttp.healthCheck())
+        .expectNext(false)
+        .expectComplete()
+        .verify();
+  }
+
+  @Test
   public void invokeServiceVerbNull() {
     MockHttpResponse mockHttpResponse = new MockHttpResponse(EXPECTED_RESULT.getBytes(), HTTP_OK);
     CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);

@@ -156,6 +156,12 @@ public class ObservationDaprClient implements DaprClient {
   }
 
   @Override
+  public Mono<Boolean> healthCheck() {
+    return observe(observation("dapr.client.health_check"),
+        () -> delegate.healthCheck());
+  }
+
+  @Override
   public Mono<Void> shutdown() {
     return observe(observation("dapr.client.shutdown"),
         () -> delegate.shutdown());
