@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -435,7 +437,60 @@ public class ActorProxyImplTest {
     Assertions.assertNull(emptyResponse);
   }
 
+  @Test()
+  public void invokeActorMethodWithRenamedMethodViaReflection() throws NoSuchMethodException {
+    final ActorClient daprClient = mock(ActorClient.class);
+    when(daprClient.invoke(anyString(), anyString(), Mockito.eq("actualName"), Mockito.isNull()))
+        .thenReturn(Mono.just("\"ok\"".getBytes()));
+
+    final ActorProxyImpl actorProxy = new ActorProxyImpl(
+        "myActorType",
+        new ActorId("100"),
+        new DefaultObjectSerializer(),
+        daprClient);
+
+    String res = (String) actorProxy.invoke(actorProxy, Actor.class.getMethod("renamedMethod"), null);
+    Assertions.assertEquals("ok", res);
+    Mockito.verify(daprClient).invoke(
+        Mockito.eq("myActorType"), Mockito.eq("100"), Mockito.eq("actualName"), Mockito.isNull());
+  }
+
+  @Test()
+  public void invokeActorMethodSerializationFails() throws IOException {
+    final ActorClient daprClient = mock(ActorClient.class);
+    final DaprObjectSerializer serializer = mock(DaprObjectSerializer.class);
+    when(serializer.serialize(Mockito.any())).thenThrow(new IOException("cannot serialize"));
+
+    final ActorProxy actorProxy = new ActorProxyImpl(
+        "myActorType",
+        new ActorId("100"),
+        serializer,
+        daprClient);
+
+    assertThrows(DaprException.class, () -> actorProxy.invokeMethod("mymethod", "hello").block());
+  }
+
+  @Test()
+  public void invokeActorMethodDeserializationFails() throws IOException {
+    final ActorClient daprClient = mock(ActorClient.class);
+    when(daprClient.invoke(anyString(), anyString(), anyString(), Mockito.isNull()))
+        .thenReturn(Mono.just("\"ok\"".getBytes()));
+    final DaprObjectSerializer serializer = mock(DaprObjectSerializer.class);
+    when(serializer.deserialize(Mockito.any(), Mockito.any())).thenThrow(new IOException("cannot deserialize"));
+
+    final ActorProxy actorProxy = new ActorProxyImpl(
+        "myActorType",
+        new ActorId("100"),
+        serializer,
+        daprClient);
+
+    assertThrows(DaprException.class, () -> actorProxy.invokeMethod("mymethod", String.class).block());
+  }
+
   interface Actor {
+    @ActorMethod(name = "actualName")
+    String renamedMethod();
+
     MyData getData();
 
     String echo(String message);
