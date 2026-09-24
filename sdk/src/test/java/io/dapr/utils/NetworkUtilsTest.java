@@ -17,7 +17,6 @@ import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.NetworkUtils.GrpcEndpointSettings;
 import io.grpc.ManagedChannel;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -26,15 +25,12 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class NetworkUtilsTest {
   private final int defaultGrpcPort = 50001;
   private final String defaultSidecarIP = "127.0.0.1";
   private ManagedChannel channel;
-  private static final List<ManagedChannel> channels = new ArrayList<>();
 
   @AfterEach
   public void tearDown() {
@@ -43,20 +39,9 @@ public class NetworkUtilsTest {
     }
   }
 
-  @AfterAll
-  public static void tearDownAll() {
-    for (ManagedChannel ch : channels) {
-      if (ch != null && !ch.isShutdown()) {
-        ch.shutdown();
-      }
-    }
-    channels.clear();
-  }
-
   @Test
   public void testBuildGrpcManagedChannel() {
     channel = NetworkUtils.buildGrpcManagedChannel(new Properties());
-    channels.add(channel);
 
     String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -66,7 +51,6 @@ public class NetworkUtilsTest {
   public void testBuildGrpcManagedChannel_httpEndpointNoPort() {
     var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), "http://example.com"));
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
 
     String expectedAuthority = "example.com:80";
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -76,7 +60,6 @@ public class NetworkUtilsTest {
   public void testBuildGrpcManagedChannel_httpEndpointWithPort() {
     var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), "http://example.com:3000"));
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
 
     String expectedAuthority = "example.com:3000";
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -86,7 +69,6 @@ public class NetworkUtilsTest {
   public void testBuildGrpcManagedChannel_httpsEndpointNoPort() {
     var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), "https://example.com"));
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
 
     String expectedAuthority = "example.com:443";
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -96,7 +78,6 @@ public class NetworkUtilsTest {
   public void testBuildGrpcManagedChannel_httpsEndpointWithPort() {
     var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), "https://example.com:3000"));
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
 
     String expectedAuthority = "example.com:3000";
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -113,7 +94,6 @@ public class NetworkUtilsTest {
       ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
     String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
     Assertions.assertEquals(expectedAuthority, channel.authority());
 
@@ -131,7 +111,6 @@ public class NetworkUtilsTest {
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
     Assertions.assertEquals("example.com:443", channel.authority());
   }
 
@@ -154,7 +133,6 @@ public class NetworkUtilsTest {
     Assumptions.assumeTrue(System.getProperty("os.name").toLowerCase().contains("linux") || 
                           System.getProperty("os.name").toLowerCase().contains("mac"));
 
-    // Generate test certificate and key
     File certFile = new File(this.getClass().getResource("/certs/test-cert.pem").getFile());
     File keyFile = new File(this.getClass().getResource("/certs/test-cert.key").getFile());
 
@@ -167,7 +145,6 @@ public class NetworkUtilsTest {
     // For Unix sockets, we expect an exception if the platform doesn't support it
     try {
       channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
       // If we get here, Unix sockets are supported
       Assertions.assertNotNull(channel.authority(), "Channel authority should not be null");
     } catch (Exception e) {
@@ -188,7 +165,6 @@ public class NetworkUtilsTest {
       ));
 
       channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
       Assertions.assertEquals("example.com:443", channel.authority());
 
   }
@@ -202,7 +178,6 @@ public class NetworkUtilsTest {
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
     String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
     Assertions.assertEquals(expectedAuthority, channel.authority());
   }
@@ -217,7 +192,6 @@ public class NetworkUtilsTest {
       ));
 
       channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
       Assertions.assertEquals("example.com:443", channel.authority());
 
   }
@@ -247,7 +221,6 @@ public class NetworkUtilsTest {
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
     String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
     Assertions.assertEquals(expectedAuthority, channel.authority());
     Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
@@ -350,7 +323,6 @@ public class NetworkUtilsTest {
     // For Unix sockets, we expect an exception if the platform doesn't support it
     try {
       channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
       Assertions.assertNotNull(channel.authority(), "Channel authority should not be null");
     } catch (Exception e) {
       // If we get here, Unix sockets are not supported
@@ -369,7 +341,6 @@ public class NetworkUtilsTest {
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
     Assertions.assertEquals("example.com:443", channel.authority());
   }
 
@@ -382,7 +353,6 @@ public class NetworkUtilsTest {
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
     
     // Verify the channel is created with the correct authority
     Assertions.assertEquals("example.com:443", channel.authority());
@@ -408,7 +378,6 @@ public class NetworkUtilsTest {
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
 
     // Verify the channel is created with the correct authority
     Assertions.assertEquals("example.com:443", channel.authority());
@@ -426,7 +395,6 @@ public class NetworkUtilsTest {
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
     
     // Verify the channel is created with the correct authority
     Assertions.assertEquals("example.com:443", channel.authority());
@@ -442,7 +410,6 @@ public class NetworkUtilsTest {
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    channels.add(channel);
     
     // Verify the channel is active and using TLS (not plaintext)
     Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
