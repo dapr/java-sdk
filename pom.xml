@@ -14,7 +14,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <grpc.version>1.79.0</grpc.version>
+    <grpc.version>1.84.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
     <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.18.0/dapr/proto</dapr.proto.baseurl>
     <durabletask.proto.baseurl>https://raw.githubusercontent.com/dapr/durabletask-protobuf/main/protos</durabletask.proto.baseurl>
@@ -79,8 +79,8 @@
     <opentelemetry-bom.version>2.1.0</opentelemetry-bom.version>
     <kotlin.version>2.1.0</kotlin.version>
     <rest-assured.version>5.5.1</rest-assured.version>
-    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.132 (CVE-2026-33871, CVE-2026-33870) -->
-    <netty.version>4.1.132.Final</netty.version>
+    <!-- Keep in sync with the Netty version grpc-netty ${grpc.version} is built against (grpc-java SECURITY.md) -->
+    <netty.version>4.2.16.Final</netty.version>
     <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
     <commons-compress.version>1.26.0</commons-compress.version>
   </properties>
