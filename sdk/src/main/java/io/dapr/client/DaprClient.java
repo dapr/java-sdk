@@ -67,6 +67,17 @@ public interface DaprClient extends AutoCloseable {
   Mono<Void> waitForSidecar(int timeoutInMilliseconds);
 
   /**
+   * Checks the health of the sidecar by calling the {@code /v1.0/healthz} endpoint.
+   *
+   * <p>Unlike {@link #waitForSidecar(int)}, which relies on {@code /v1.0/healthz/outbound}, this check only
+   * succeeds once all components are initialized, the Dapr HTTP port is available <b>and</b> the app channel
+   * is established. Calling it while the app is still starting up may therefore return {@code false}.</p>
+   *
+   * @return a Mono emitting {@code true} if the sidecar is healthy, {@code false} otherwise.
+   */
+  Mono<Boolean> healthCheck();
+
+  /**
    * Publish an event.
    *
    * @param pubsubName the pubsub name we will publish the event to
