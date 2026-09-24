@@ -8,11 +8,15 @@ on:
       - release-*
     tags:
       - v*
+    paths-ignore:
+      - 'quarkus/**'
 
   pull_request:
     branches:
     - master
     - release-*
+    paths-ignore:
+      - 'quarkus/**'
 
 jobs:
   build:
