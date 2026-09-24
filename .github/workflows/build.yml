@@ -103,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 17 ]
+        java: [ 17, 21, 25 ]
         spring-boot-version: [ 4.0.5 ]
         spring-boot-display-version: [ 4.0.x ]
         experimental: [ false ]

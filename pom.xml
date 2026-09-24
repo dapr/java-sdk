@@ -29,12 +29,12 @@
     <maven-javadoc-plugin.version>3.7.0</maven-javadoc-plugin.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <download-maven-plugin.version>1.6.0</download-maven-plugin.version>
-    <jacoco-maven-plugin.version>0.8.11</jacoco-maven-plugin.version>
+    <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
     <jacoco-maven-plugin.coverage-ratio>80%</jacoco-maven-plugin.coverage-ratio>
     <maven-gpg-plugin.version>3.1.0</maven-gpg-plugin.version>
     <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
-    <spotbugs-maven-plugin.version>4.8.2.0</spotbugs-maven-plugin.version>
+    <spotbugs-maven-plugin.version>4.9.8.5</spotbugs-maven-plugin.version>
     <maven-site-plugin.version>3.12.1</maven-site-plugin.version>
     <maven-project-info-reports-plugin.version>3.7.0</maven-project-info-reports-plugin.version>
     <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
