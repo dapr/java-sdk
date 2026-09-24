@@ -12,15 +12,15 @@ limitations under the License.
 */
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
-import io.dapr.durabletask.TaskActivity;
-import io.dapr.durabletask.TaskActivityFactory;
-import io.dapr.durabletask.TaskOrchestration;
-import io.dapr.durabletask.orchestration.TaskOrchestrationFactory;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
+import io.dapr.workflows.task.TaskActivity;
+import io.dapr.workflows.task.TaskActivityFactory;
+import io.dapr.workflows.task.TaskOrchestration;
+import io.dapr.workflows.task.orchestration.TaskOrchestrationFactory;
+import io.dapr.workflows.task.worker.DurableTaskGrpcWorkerBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -29,8 +29,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -135,7 +138,7 @@ public class WorkflowRuntimeBuilderTest {
         @Override
         public TaskOrchestration create() {
           W w = new W();
-          return ctx -> w.run(new DefaultWorkflowContext(ctx, w.getClass()));
+          return ctx -> w.run(ctx);
         }
 
         @Override
@@ -197,6 +200,64 @@ public class WorkflowRuntimeBuilderTest {
         throw new RuntimeException(e);
       }
     });
+  }
+
+  /**
+   * The runtime's own lifecycle tests pass the ownership flag in directly, so they pin what
+   * WorkflowRuntime does with it but not what this builder decides it should be. These two go
+   * through the public path instead.
+   */
+  @Test
+  public void buildLeavesACallerSuppliedExecutorRunningAfterClose() throws Exception {
+    resetRuntimeSingleton();
+    ExecutorService executorService = Executors.newCachedThreadPool();
+
+    try {
+      WorkflowRuntimeBuilder runtimeBuilder = new WorkflowRuntimeBuilder().withExecutorService(executorService);
+      try (WorkflowRuntime runtime = runtimeBuilder.build()) {
+        assertSame(executorService, runtimeExecutor(runtime));
+      }
+
+      Assertions.assertFalse(executorService.isShutdown(),
+          "an executor the caller supplied must outlive the runtime that used it");
+    } finally {
+      executorService.shutdown();
+      resetRuntimeSingleton();
+    }
+  }
+
+  @Test
+  public void buildShutsDownAnExecutorItCreatedItself() throws Exception {
+    resetRuntimeSingleton();
+
+    try {
+      ExecutorService created;
+      try (WorkflowRuntime runtime = new WorkflowRuntimeBuilder().build()) {
+        created = runtimeExecutor(runtime);
+      }
+
+      Assertions.assertTrue(created.isShutdown(),
+          "an executor the builder created is the runtime's to shut down");
+    } finally {
+      resetRuntimeSingleton();
+    }
+  }
+
+  /**
+   * {@link WorkflowRuntimeBuilder#build()} caches the runtime in a static field, so a test that
+   * builds one has to clear it or it gets the instance an earlier test built.
+   */
+  private static void resetRuntimeSingleton() throws Exception {
+    Field instance = WorkflowRuntimeBuilder.class.getDeclaredField("instance");
+    instance.setAccessible(true);
+    instance.set(null, null);
+  }
+
+  private static ExecutorService runtimeExecutor(WorkflowRuntime runtime) throws Exception {
+    Field executorService = WorkflowRuntime.class.getDeclaredField("executorService");
+    executorService.setAccessible(true);
+
+    return (ExecutorService) executorService.get(runtime);
   }
 
   /**
