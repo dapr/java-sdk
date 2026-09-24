@@ -27,6 +27,9 @@ import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.NameResolutionConfigurationSettings;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
+import io.dapr.testcontainers.SecretScope;
+import io.dapr.testcontainers.SecretScopeAccess;
+import io.dapr.testcontainers.SecretsConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import io.dapr.testcontainers.ZipkinTracingConfigurationSettings;
 import org.yaml.snakeyaml.Yaml;
@@ -228,6 +231,42 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
       }
 
       configurationSpec.put("components", componentsMap);
+    }
+
+    SecretsConfigurationSettings secrets = configuration.getSecrets();
+    if (secrets != null) {
+      Map<String, Object> secretsMap = new LinkedHashMap<>();
+
+      List<SecretScope> scopes = secrets.getScopes();
+      if (scopes != null && !scopes.isEmpty()) {
+        List<Map<String, Object>> scopesList = new ArrayList<>();
+
+        for (SecretScope scope : scopes) {
+          Map<String, Object> scopeMap = new LinkedHashMap<>();
+          scopeMap.put("storeName", scope.getStoreName());
+
+          SecretScopeAccess defaultAccess = scope.getDefaultAccess();
+          if (defaultAccess != null) {
+            scopeMap.put("defaultAccess", defaultAccess.getName());
+          }
+
+          List<String> allowedSecrets = scope.getAllowedSecrets();
+          if (allowedSecrets != null && !allowedSecrets.isEmpty()) {
+            scopeMap.put("allowedSecrets", new ArrayList<>(allowedSecrets));
+          }
+
+          List<String> deniedSecrets = scope.getDeniedSecrets();
+          if (deniedSecrets != null && !deniedSecrets.isEmpty()) {
+            scopeMap.put("deniedSecrets", new ArrayList<>(deniedSecrets));
+          }
+
+          scopesList.add(scopeMap);
+        }
+
+        secretsMap.put("scopes", scopesList);
+      }
+
+      configurationSpec.put("secrets", secretsMap);
     }
 
     configurationProps.put("spec", configurationSpec);
