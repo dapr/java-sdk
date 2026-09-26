@@ -31,6 +31,7 @@ public class WorkflowRuntime implements AutoCloseable {
   private final ManagedChannel managedChannel;
   private final ExecutorService executorService;
   private final GrpcChannelKeepalive keepalive;
+  private volatile boolean closed;
 
   /**
    * Constructor.
@@ -90,15 +91,38 @@ public class WorkflowRuntime implements AutoCloseable {
   }
 
   /**
-   * {@inheritDoc}
+   * Stops the runtime and releases its resources. Calling it more than once has no further effect.
+   *
+   * <p>Shutdown happens in dependency order: the keepalive and the worker are stopped first so the
+   * work-item stream is cancelled and no new work is accepted, then the executor drains any
+   * in-flight activities, and only then is the sidecar channel shut down. Shutting the channel
+   * down while the worker still holds the stream open would block until the channel's
+   * termination timeout elapsed.</p>
+   *
+   * <p>Once closed, a runtime cannot be restarted. {@link WorkflowRuntimeBuilder#build()} builds
+   * a fresh runtime when the previous one has been closed.</p>
    */
+  @Override
   public void close() {
+    if (this.closed) {
+      return;
+    }
+    this.closed = true;
     if (this.keepalive != null) {
       this.keepalive.close();
     }
+    this.worker.close();
     this.shutDownWorkerPool();
     this.closeSideCarChannel();
-    this.worker.close();
+  }
+
+  /**
+   * Whether {@link #close()} has been called on this runtime.
+   *
+   * @return true once the runtime has been closed.
+   */
+  public boolean isClosed() {
+    return this.closed;
   }
 
   private void closeSideCarChannel() {

@@ -29,6 +29,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.eq;
@@ -184,6 +186,58 @@ public class WorkflowRuntimeBuilderTest {
         .info(eq("Registered Activity: {}"), eq("TestActivity"));
 
     runtime.close();
+  }
+
+  @Test
+  public void buildReturnsTheSameRuntimeWhileItIsOpen() {
+    WorkflowRuntime first = new WorkflowRuntimeBuilder().build();
+    try {
+      WorkflowRuntime second = new WorkflowRuntimeBuilder().build();
+      Assertions.assertSame(first, second);
+    } finally {
+      first.close();
+    }
+  }
+
+  /**
+   * Regression test for dapr/java-sdk#1734: after a close the builder used to keep handing out
+   * the closed runtime, whose channel was already shut down, so a live reload could never obtain
+   * a working runtime again.
+   */
+  @Test
+  public void buildReturnsAFreshRuntimeAfterTheSharedOneIsClosed() {
+    WorkflowRuntime first = new WorkflowRuntimeBuilder().build();
+    first.close();
+
+    WorkflowRuntime second = new WorkflowRuntimeBuilder().build();
+    try {
+      Assertions.assertNotSame(first, second);
+      Assertions.assertTrue(first.isClosed());
+      Assertions.assertFalse(second.isClosed());
+    } finally {
+      second.close();
+    }
+  }
+
+  @Test
+  public void buildUsesTheExecutorSuppliedByTheCaller() {
+    ExecutorService executorService = Executors.newCachedThreadPool();
+    WorkflowRuntime runtime = new WorkflowRuntimeBuilder().withExecutorService(executorService).build();
+    try {
+      Assertions.assertFalse(executorService.isShutdown(), "executor must stay usable while the runtime is open");
+    } finally {
+      runtime.close();
+      executorService.shutdownNow();
+    }
+    Assertions.assertTrue(executorService.isShutdown());
+  }
+
+  @Test
+  public void buildRejectsReusingABuilderWhoseChannelWasClosed() {
+    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder();
+    builder.build().close();
+
+    Assertions.assertThrows(IllegalStateException.class, builder::build);
   }
 
   @Test
