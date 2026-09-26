@@ -79,22 +79,35 @@ public class WorkflowRuntimeBuilder {
   /**
    * Returns a WorkflowRuntime object.
    *
+   * <p>The runtime is shared: while one is open, every call returns that same instance. Once it
+   * has been {@link WorkflowRuntime#close() closed}, the next call builds a new runtime, which
+   * allows a full restart (for example on a live reload or between tests). Closing a runtime also
+   * shuts down the channel of the builder that created it, so the new runtime must be built from
+   * a new builder.</p>
+   *
    * @return A WorkflowRuntime object.
+   * @throws IllegalStateException if a new runtime is needed but this builder's channel has
+   *                               already been shut down by a previous runtime.
    */
   public WorkflowRuntime build() {
-    if (instance == null) {
-      synchronized (WorkflowRuntime.class) {
-        this.executorService = this.executorService == null ? Executors.newCachedThreadPool() : this.executorService;
-        if (instance == null) {
-          GrpcChannelKeepalive keepalive = null;
-          if (this.properties.getValue(Properties.WORKFLOWS_RUNTIME_APP_KEEP_ALIVE_ENABLED)) {
-            keepalive = new GrpcChannelKeepalive(this.managedChannel, "dapr-workflow-runtime-keepalive",
-                this.properties.getValue(Properties.WORKFLOWS_APP_KEEP_ALIVE_INTERVAL_SECONDS));
-          }
-          instance = new WorkflowRuntime(
-              this.builder.withExecutorService(this.executorService).build(),
-              this.managedChannel, this.executorService, keepalive);
+    synchronized (WorkflowRuntime.class) {
+      if (needsNewInstance()) {
+        if (this.managedChannel.isShutdown()) {
+          throw new IllegalStateException(
+              "This builder's channel was shut down when its previous WorkflowRuntime was closed. "
+                  + "Build the new WorkflowRuntime from a new WorkflowRuntimeBuilder.");
         }
+        if (this.executorService == null) {
+          this.executorService = Executors.newCachedThreadPool();
+        }
+        GrpcChannelKeepalive keepalive = null;
+        if (this.properties.getValue(Properties.WORKFLOWS_RUNTIME_APP_KEEP_ALIVE_ENABLED)) {
+          keepalive = new GrpcChannelKeepalive(this.managedChannel, "dapr-workflow-runtime-keepalive",
+              this.properties.getValue(Properties.WORKFLOWS_APP_KEEP_ALIVE_INTERVAL_SECONDS));
+        }
+        instance = new WorkflowRuntime(
+            this.builder.withExecutorService(this.executorService).build(),
+            this.managedChannel, this.executorService, keepalive);
       }
     }
 
@@ -103,6 +116,11 @@ public class WorkflowRuntimeBuilder {
     this.logger.info("Successfully built dapr workflow runtime");
 
     return instance;
+  }
+
+  private static boolean needsNewInstance() {
+    WorkflowRuntime current = instance;
+    return current == null || current.isClosed();
   }
 
   /**
