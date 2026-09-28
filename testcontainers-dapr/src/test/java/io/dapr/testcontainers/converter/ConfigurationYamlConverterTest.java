@@ -27,6 +27,9 @@ import io.dapr.testcontainers.MetricsRule;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.NameResolutionConfigurationSettings;
+import io.dapr.testcontainers.SecretScope;
+import io.dapr.testcontainers.SecretScopeAccess;
+import io.dapr.testcontainers.SecretsConfigurationSettings;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import org.junit.jupiter.api.Test;
@@ -844,6 +847,150 @@ class ConfigurationYamlConverterTest {
         + "  components:\n"
         + "    deny:\n"
         + "    - bindings.smtp\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithSecretsToYaml() {
+    SecretsConfigurationSettings secrets = new SecretsConfigurationSettings(List.of(
+        new SecretScope("vault", SecretScopeAccess.DENY, List.of("redis-password"), null),
+        new SecretScope("kubernetes", SecretScopeAccess.ALLOW, null, List.of("admin-password", "api-key"))));
+
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withConfiguration(new Configuration("my-config", null, null, null, null, null, null, null, secrets))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  secrets:\n"
+        + "    scopes:\n"
+        + "    - storeName: vault\n"
+        + "      defaultAccess: deny\n"
+        + "      allowedSecrets:\n"
+        + "      - redis-password\n"
+        + "    - storeName: kubernetes\n"
+        + "      defaultAccess: allow\n"
+        + "      deniedSecrets:\n"
+        + "      - admin-password\n"
+        + "      - api-key\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithSecretScopeWithoutDefaultAccessToYaml() {
+    SecretsConfigurationSettings secrets = new SecretsConfigurationSettings(
+        List.of(new SecretScope("localstore", null)));
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, null, null, secrets);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  secrets:\n"
+        + "    scopes:\n"
+        + "    - storeName: localstore\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithSecretScopeWithEmptySecretListsToYaml() {
+    SecretsConfigurationSettings secrets = new SecretsConfigurationSettings(
+        List.of(new SecretScope("localstore", SecretScopeAccess.ALLOW, List.of(), List.of())));
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, null, null, secrets);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  secrets:\n"
+        + "    scopes:\n"
+        + "    - storeName: localstore\n"
+        + "      defaultAccess: allow\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithEmptySecretsToYaml() {
+    SecretsConfigurationSettings secrets = new SecretsConfigurationSettings(List.of());
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, null, null, secrets);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  secrets: {}\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithNullSecretScopesToYaml() {
+    SecretsConfigurationSettings secrets = new SecretsConfigurationSettings(null);
+    assertNull(secrets.getScopes());
+
+    Configuration configuration = new Configuration("my-config", null, null, null, null, null, null, null, secrets);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  secrets: {}\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithDisallowedComponentsAndSecretsToYaml() {
+    ComponentsConfigurationSettings components = new ComponentsConfigurationSettings(List.of("bindings.smtp"));
+    SecretsConfigurationSettings secrets = new SecretsConfigurationSettings(
+        List.of(new SecretScope("vault", SecretScopeAccess.DENY)));
+
+    Configuration configuration =
+        new Configuration("my-config", null, null, null, null, null, null, components, secrets);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  components:\n"
+        + "    deny:\n"
+        + "    - bindings.smtp\n"
+        + "  secrets:\n"
+        + "    scopes:\n"
+        + "    - storeName: vault\n"
+        + "      defaultAccess: deny\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }

@@ -25,8 +25,8 @@ public class Configuration {
   private final MetricsConfigurationSettings metrics;
   private final NameResolutionConfigurationSettings nameResolution;
   private final ComponentsConfigurationSettings components;
+  private final SecretsConfigurationSettings secrets;
 
-  // @TODO: add secrets https://github.com/dapr/java-sdk/issues/1280
   // @TODO: add middleware httpPipeline https://github.com/dapr/java-sdk/issues/1283
 
   /**
@@ -148,6 +148,34 @@ public class Configuration {
       NameResolutionConfigurationSettings nameResolution,
       ComponentsConfigurationSettings components
   ) {
+    this(name, tracing, appHttpPipeline, mtls, logging, metrics, nameResolution, components, null);
+  }
+
+  /**
+   * Creates a new configuration.
+   *
+   * @param name            Configuration name.
+   * @param tracing         TracingConfigParameters tracing configuration
+   *                        parameters.
+   * @param appHttpPipeline AppHttpPipeline middleware configuration.
+   * @param mtls            MtlsConfigurationSettings mTLS configuration.
+   * @param logging         LoggingConfigurationSettings logging configuration.
+   * @param metrics         MetricsConfigurationSettings metrics configuration.
+   * @param nameResolution  NameResolutionConfigurationSettings name resolution configuration.
+   * @param components      ComponentsConfigurationSettings disallowed component types configuration.
+   * @param secrets         SecretsConfigurationSettings secret store access configuration.
+   */
+  public Configuration(
+      String name,
+      TracingConfigurationSettings tracing,
+      AppHttpPipeline appHttpPipeline,
+      MtlsConfigurationSettings mtls,
+      LoggingConfigurationSettings logging,
+      MetricsConfigurationSettings metrics,
+      NameResolutionConfigurationSettings nameResolution,
+      ComponentsConfigurationSettings components,
+      SecretsConfigurationSettings secrets
+  ) {
     this.name = name;
     this.tracing = tracing;
     this.appHttpPipeline = appHttpPipeline;
@@ -156,6 +184,7 @@ public class Configuration {
     this.metrics = metrics;
     this.nameResolution = nameResolution;
     this.components = components;
+    this.secrets = secrets;
   }
 
   public String getName() {
@@ -188,5 +217,9 @@ public class Configuration {
 
   public ComponentsConfigurationSettings getComponents() {
     return components;
+  }
+
+  public SecretsConfigurationSettings getSecrets() {
+    return secrets;
   }
 }
