@@ -83,7 +83,7 @@ jobs:
         max_attempts: 2
         timeout_minutes: 5
         retry_wait_seconds: 15
-        command: ./mvnw -B -pl durabletask-client -Pintegration-tests dependency:copy-dependencies verify
+        command: ./mvnw -B -pl durabletask-client -Pintegration-tests clean dependency:copy-dependencies verify
 
     - name: Kill Durable Task Sidecar
       run: docker rm -f durabletask-sidecar || true
@@ -127,7 +127,7 @@ jobs:
         max_attempts: 2
         timeout_minutes: 25
         retry_wait_seconds: 15
-        command: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests dependency:copy-dependencies verify
+        command: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -pl !durabletask-client -Pintegration-tests clean dependency:copy-dependencies verify
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v7
@@ -181,7 +181,7 @@ jobs:
         max_attempts: 2
         timeout_minutes: 20
         retry_wait_seconds: 15
-        command: ./mvnw -B -pl sdk-tests -Pintegration-tests,dapr-head dependency:copy-dependencies verify
+        command: ./mvnw -B -pl sdk-tests -Pintegration-tests,dapr-head clean dependency:copy-dependencies verify
     - name: Upload failsafe test report on failure
       if: ${{ failure() && steps.dapr_head_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v7
