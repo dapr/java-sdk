@@ -111,7 +111,7 @@ class DurableTaskGrpcWorkerStatefulHistoryTest {
     assertNotNull(captured.get());
     assertFalse(captured.get().contains(OrchestratorService.WorkerCapability.WORKER_CAPABILITY_STATEFUL_HISTORY),
         "a disabled worker must not advertise the capability");
-    assertTrue(captured.get().isEmpty());
+    assertEquals(List.of(OrchestratorService.WorkerCapability.WORKER_CAPABILITY_HEALTH_PING), captured.get());
   }
 
   @Test
