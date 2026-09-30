@@ -347,6 +347,22 @@ public class DaprClientImpl extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
+  public Mono<Boolean> healthCheck() {
+    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz" };
+
+    // Do the Dapr Http endpoint check to have parity with Dotnet
+    return this.httpClient.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, null, "", null, null)
+        .map(response -> true)
+        .onErrorResume(e -> {
+          this.logger.debug("Sidecar health check failed", e);
+          return Mono.just(false);
+        });
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public Mono<Void> publishEvent(PublishEventRequest request) {
     try {
       String pubsubName = request.getPubsubName();
