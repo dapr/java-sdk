@@ -195,7 +195,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
         // Advertise the stateful-history capability so the sidecar can send deltas instead of the
         // full history on each turn. Absent it, the sidecar always sends the full history.
         OrchestratorService.GetWorkItemsRequest.Builder requestBuilder = OrchestratorService.GetWorkItemsRequest
-            .newBuilder();
+            .newBuilder()
+            .addCapabilities(OrchestratorService.WorkerCapability.WORKER_CAPABILITY_HEALTH_PING);
         if (this.historyCache != null) {
           requestBuilder.addCapabilities(OrchestratorService.WorkerCapability.WORKER_CAPABILITY_STATEFUL_HISTORY);
         }
@@ -251,6 +252,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
 
               this.workerPool.submit(new ActivityRunner(workItem, taskActivityExecutor, sidecarClient, tracer));
 
+            } else if (requestType == OrchestratorService.WorkItem.RequestCase.HEALTHPING) {
+              continue;
             } else {
               logger.log(Level.WARNING,
                   "Received and dropped an unknown '{0}' work-item from the sidecar.",
