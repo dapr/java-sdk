@@ -17,6 +17,7 @@ import io.dapr.testcontainers.Subscription;
 import org.yaml.snakeyaml.Yaml;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SubscriptionYamlConverter implements YamlConverter<Subscription> {
@@ -42,6 +43,11 @@ public class SubscriptionYamlConverter implements YamlConverter<Subscription> {
     subscriptionSpec.put("route", subscription.getRoute());
 
     subscriptionProps.put("spec", subscriptionSpec);
+
+    List<String> scopes = subscription.getScopes();
+    if (!scopes.isEmpty()) {
+      subscriptionProps.put("scopes", scopes);
+    }
 
     return mapper.dumpAsMap(subscriptionProps);
   }
