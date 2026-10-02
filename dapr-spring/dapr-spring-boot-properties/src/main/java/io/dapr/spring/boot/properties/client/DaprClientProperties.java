@@ -17,6 +17,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "dapr.client")
 public class DaprClientProperties {
+
+  public static final String DEFAULT_HTTP_ENDPOINT = "http://localhost";
+  public static final String DEFAULT_GRPC_ENDPOINT = "localhost";
+  public static final int DEFAULT_HTTP_PORT = 3500;
+  public static final int DEFAULT_GRPC_PORT = 50001;
+
   private String httpEndpoint;
   private String grpcEndpoint;
   private Integer httpPort;
@@ -47,19 +53,19 @@ public class DaprClientProperties {
   }
 
   public String getHttpEndpoint() {
-    return httpEndpoint;
+    return (httpEndpoint != null) ? httpEndpoint : DEFAULT_HTTP_ENDPOINT;
   }
 
   public String getGrpcEndpoint() {
-    return grpcEndpoint;
+    return (grpcEndpoint != null) ? grpcEndpoint : DEFAULT_GRPC_ENDPOINT;
   }
 
   public Integer getHttpPort() {
-    return httpPort;
+    return (httpPort != null) ? httpPort : DEFAULT_HTTP_PORT;
   }
 
   public Integer getGrpcPort() {
-    return grpcPort;
+    return (grpcPort != null) ? grpcPort : DEFAULT_GRPC_PORT;
   }
 
   public void setHttpEndpoint(String httpEndpoint) {
