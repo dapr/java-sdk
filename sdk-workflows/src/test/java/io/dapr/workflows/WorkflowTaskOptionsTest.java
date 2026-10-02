@@ -13,15 +13,21 @@
 
 package io.dapr.workflows;
 
-import io.dapr.durabletask.HistoryPropagationScope;
+import io.dapr.workflows.task.history.HistoryPropagationScope;
 import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class WorkflowTaskOptionsTest {
 
     @Test
     void testConstructorWithRetryPolicyAndHandler() {
-        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder().build();
+        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+                .setMaxNumberOfAttempts(1)
+                .setFirstRetryInterval(Duration.ofSeconds(1))
+                .build();
         WorkflowTaskRetryHandler retryHandler = (context) -> true;
         
         WorkflowTaskOptions options = new WorkflowTaskOptions(retryPolicy, retryHandler);
@@ -33,7 +39,10 @@ class WorkflowTaskOptionsTest {
 
     @Test
     void testConstructorWithRetryPolicyOnly() {
-        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder().build();
+        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+                .setMaxNumberOfAttempts(1)
+                .setFirstRetryInterval(Duration.ofSeconds(1))
+                .build();
         
         WorkflowTaskOptions options = new WorkflowTaskOptions(retryPolicy);
         
@@ -66,7 +75,10 @@ class WorkflowTaskOptionsTest {
 
     @Test
     void testConstructorWithAllParameters() {
-        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder().build();
+        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+                .setMaxNumberOfAttempts(1)
+                .setFirstRetryInterval(Duration.ofSeconds(1))
+                .build();
         WorkflowTaskRetryHandler retryHandler = (context) -> true;
         String appId = "test-app";
         
@@ -79,7 +91,10 @@ class WorkflowTaskOptionsTest {
 
     @Test
     void testConstructorWithRetryPolicyAndAppId() {
-        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder().build();
+        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+                .setMaxNumberOfAttempts(1)
+                .setFirstRetryInterval(Duration.ofSeconds(1))
+                .build();
         String appId = "test-app";
         
         WorkflowTaskOptions options = new WorkflowTaskOptions(retryPolicy, appId);
@@ -134,7 +149,10 @@ class WorkflowTaskOptionsTest {
 
     @Test
     void testConstructorWithAllParametersIncludingScope() {
-        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder().build();
+        WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+                .setMaxNumberOfAttempts(1)
+                .setFirstRetryInterval(Duration.ofSeconds(1))
+                .build();
         WorkflowTaskRetryHandler retryHandler = (context) -> true;
         String appId = "test-app";
 

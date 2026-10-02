@@ -13,9 +13,9 @@
 
 package io.dapr.springboot.examples.wfp.historypropagation;
 
-import io.dapr.durabletask.ActivityResult;
-import io.dapr.durabletask.PropagatedHistory;
-import io.dapr.durabletask.WorkflowResult;
+import io.dapr.workflows.task.history.ActivityResult;
+import io.dapr.workflows.task.history.PropagatedHistory;
+import io.dapr.workflows.task.history.WorkflowResult;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;
