@@ -26,7 +26,7 @@
     <!-- The JaCoCo plugin was expecting coverage for this module, but since it's a test module
     and code coverage typically doesn't apply to tests, the coverage is set to 0. -->
     <jacoco-maven-plugin.coverage-ratio>0%</jacoco-maven-plugin.coverage-ratio>
-    <springboot4.version>4.0.5</springboot4.version>
+    <springboot4.version>4.0.8</springboot4.version>
     <!-- Spring Boot 4 ITs (Testcontainers/@SpringBootTest) require JUnit 6; align this test module to it. -->
     <junit-bom.version>6.0.2</junit-bom.version>
   </properties>
@@ -41,6 +41,21 @@
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
         <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Root-managed Jackson 2 and OpenTelemetry versions; MUST precede the Spring Boot BOM, which manages older, vulnerable versions. -->
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
