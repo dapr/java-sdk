@@ -5,10 +5,12 @@ import io.dapr.testcontainers.Subscription;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
+import java.util.List;
 import java.util.Set;
 
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SubscriptionYamlConverterTest {
   private final Yaml MAPPER = YamlMapperFactory.create();
@@ -39,4 +41,64 @@ class SubscriptionYamlConverterTest {
 
     assertEquals(expectedSubscriptionYaml, subscriptionYaml);
   }
+
+  @Test
+  public void testSubscriptionWithScopesToYaml() {
+    Subscription subscription = new Subscription("my-subscription", "pubsub", "topic", "/events",
+        List.of("app1", "app2"));
+
+    String subscriptionYaml = converter.convert(subscription);
+    String expectedSubscriptionYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Subscription\n"
+        + "metadata:\n"
+        + "  name: my-subscription\n"
+        + "spec:\n"
+        + "  pubsubname: pubsub\n"
+        + "  topic: topic\n"
+        + "  route: /events\n"
+        + "scopes:\n"
+        + "- app1\n"
+        + "- app2\n";
+
+    assertEquals(expectedSubscriptionYaml, subscriptionYaml);
+  }
+
+  @Test
+  public void testSubscriptionWithEmptyScopesToYaml() {
+    Subscription subscription = new Subscription("my-subscription", "pubsub", "topic", "/events", List.of());
+
+    String subscriptionYaml = converter.convert(subscription);
+    String expectedSubscriptionYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Subscription\n"
+        + "metadata:\n"
+        + "  name: my-subscription\n"
+        + "spec:\n"
+        + "  pubsubname: pubsub\n"
+        + "  topic: topic\n"
+        + "  route: /events\n";
+
+    assertEquals(expectedSubscriptionYaml, subscriptionYaml);
+  }
+
+  @Test
+  public void testSubscriptionWithNullScopesToYaml() {
+    Subscription subscription = new Subscription("my-subscription", "pubsub", "topic", "/events", null);
+
+    assertTrue(subscription.getScopes().isEmpty());
+
+    String subscriptionYaml = converter.convert(subscription);
+    String expectedSubscriptionYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Subscription\n"
+        + "metadata:\n"
+        + "  name: my-subscription\n"
+        + "spec:\n"
+        + "  pubsubname: pubsub\n"
+        + "  topic: topic\n"
+        + "  route: /events\n";
+
+    assertEquals(expectedSubscriptionYaml, subscriptionYaml);
+  }  
 }
