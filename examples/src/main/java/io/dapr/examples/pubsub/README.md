@@ -571,6 +571,8 @@ public class SubscriberController {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
           CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
           System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
+          // Each entry carries its own W3C trace context, independent of the bulk request's trace.
+          System.out.printf("Bulk Subscriber entry traceparent: %s\n", cloudEvent.getTraceParent());
           entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
         } catch (Exception e) {
           e.printStackTrace();
@@ -678,6 +680,9 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
         try {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
           System.out.printf("Bulk Subscriber got: %s\n", entry.getCloudEvent().getData().toStringUtf8());
+          // Each entry carries its own W3C trace context in the CloudEvent extensions,
+          // independent of the trace context of the bulk gRPC call itself.
+          System.out.printf("Bulk Subscriber entry traceparent: %s\n", getTraceParent(entry));
           TopicEventBulkResponseEntry.Builder responseEntryBuilder = TopicEventBulkResponseEntry
                   .newBuilder()
                   .setEntryId(entry.getEntryId())
@@ -699,6 +704,13 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
     }
   }
 
+  private static String getTraceParent(TopicEventBulkRequestEntry entry) {
+    if (!entry.hasCloudEvent()) {
+      return null;
+    }
+    Value traceParent = entry.getCloudEvent().getExtensions().getFieldsMap().get("traceparent");
+    return traceParent == null ? null : traceParent.getStringValue();
+  }
 }
 ```
 
@@ -819,6 +831,64 @@ Click on the search icon to see the latest query results. You should see a traci
 Once you click on the tracing event, you will see the details of the call stack starting in the client and then showing the service API calls right below.
 
 ![zipking-details](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-pubsub-details.png)
+
+#### Tracing individual events in bulk subscriptions
+
+When Dapr delivers messages to a bulk subscriber (`@BulkSubscribe` over HTTP or `onBulkTopicEvent` over gRPC), the whole batch
+is delivered in a **single call** from the sidecar to the app. That call has **one** trace context, which is what you see in
+the HTTP headers / gRPC metadata (`traceparent`, `grpc-trace-bin`) of the bulk request. This is expected: it represents the
+bulk delivery operation, not the individual messages.
+
+The trace context of each individual message is preserved **per entry**, inside its CloudEvent, as the
+`traceparent` and `tracestate` attributes (plus the legacy `traceid`):
+
+* **HTTP** (`BulkSubscribeMessage<CloudEvent<T>>`): use `CloudEvent#getTraceParent()` and `CloudEvent#getTraceState()`
+  on each `entry.getEvent()`.
+* **gRPC** (`TopicEventBulkRequest`): read the `traceparent` and `tracestate` keys from
+  `entry.getCloudEvent().getExtensions()`. Entries delivered as raw bytes (`entry.hasBytes()`) are not CloudEvents
+  and do not carry per-entry trace context.
+
+To trace each event separately, extract that context for every entry and use it as the parent (or as a
+[span link](https://opentelemetry.io/docs/concepts/signals/traces/#span-links)) of a span created for processing that entry.
+For example, with OpenTelemetry:
+
+```java
+TextMapGetter<Map<String, String>> getter = new TextMapGetter<>() {
+  @Override
+  public Iterable<String> keys(Map<String, String> carrier) {
+    return carrier.keySet();
+  }
+
+  @Override
+  public String get(Map<String, String> carrier, String key) {
+    return carrier.get(key);
+  }
+};
+
+for (BulkSubscribeMessageEntry<CloudEvent<String>> entry : bulkMessage.getEntries()) {
+  CloudEvent<String> event = entry.getEvent();
+  Map<String, String> carrier = new HashMap<>();
+  if (event.getTraceParent() != null) {
+    carrier.put("traceparent", event.getTraceParent());
+  }
+  if (event.getTraceState() != null) {
+    carrier.put("tracestate", event.getTraceState());
+  }
+  Context parent = W3CTraceContextPropagator.getInstance().extract(Context.root(), carrier, getter);
+  Span span = tracer.spanBuilder("process " + entry.getEntryId())
+      .setParent(parent)
+      .setSpanKind(SpanKind.CONSUMER)
+      .startSpan();
+  try (Scope scope = span.makeCurrent()) {
+    // process the event
+  } finally {
+    span.end();
+  }
+}
+```
+
+With this pattern, each message stays correlated with the trace started by its publisher, while the bulk delivery keeps
+its own trace.
 
 
 Once you click on the bulk publisher tracing event, you will see the details of the call stack starting in the client and then showing the service API calls right below.
