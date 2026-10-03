@@ -21,8 +21,7 @@
   </properties>
 
   <modules>
-    <module>producer-app</module>
-    <module>consumer-app</module>
+    <module>pubsub</module>
     <module>workflows</module>
   </modules>
 

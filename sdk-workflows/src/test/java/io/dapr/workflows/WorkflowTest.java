@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.Test;
 
-public class WorkflowTest {
+public class WorkflowTest {  
 
   @Test
   public void testWorkflow() {
