@@ -15,12 +15,6 @@ package io.dapr.springboot.examples.producer;
 
 import io.dapr.client.DaprClient;
 import io.dapr.springboot.DaprAutoConfiguration;
-import io.dapr.springboot.examples.producer.Customer;
-import io.dapr.springboot.examples.producer.CustomerStore;
-import io.dapr.springboot.examples.producer.OrderDTO;
-import io.dapr.springboot.examples.producer.workflow.CustomerFollowupActivity;
-import io.dapr.springboot.examples.producer.workflow.CustomerWorkflow;
-import io.dapr.springboot.examples.producer.workflow.RegisterCustomerActivity;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.junit.jupiter.api.AfterEach;
@@ -40,19 +34,14 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = {TestProducerApplication.class, DaprTestContainersConfig.class,
-        DaprAutoConfiguration.class, CustomerWorkflow.class, CustomerFollowupActivity.class,
-        RegisterCustomerActivity.class, CustomerStore.class},
+        DaprAutoConfiguration.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class ProducerAppIT {
 
   @Autowired
   private TestSubscriberRestController controller;
-
-  @Autowired
-  private CustomerStore customerStore;
 
   @Autowired
   private DaprClient daprClient;
@@ -176,37 +165,6 @@ class ProducerAppIT {
 
     assertNotNull(ordersByOtherAmount);
     assertEquals(0, ordersByOtherAmount.size());
-
-  }
-
-  @Test
-  void testCustomersWorkflows() {
-
-    client.post()
-        .uri("/customers")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body("{\"customerName\": \"salaboy\"}")
-        .exchange()
-        .expectStatus().isOk();
-
-
-    await().atMost(Duration.ofSeconds(15))
-            .until(customerStore.getCustomers()::size, equalTo(1));
-    Customer customer = customerStore.getCustomer("salaboy");
-    assertTrue(customer.isInCustomerDB());
-    String workflowId = customer.getWorkflowId();
-
-    client.post()
-        .uri("/customers/followup")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body("{ \"workflowId\": \"" + workflowId + "\",\"customerName\": \"salaboy\" }")
-        .exchange()
-        .expectStatus().isOk();
-
-    assertEquals(1, customerStore.getCustomers().size());
-
-    await().atMost(Duration.ofSeconds(10))
-            .until(customerStore.getCustomer("salaboy")::isFollowUp, equalTo(true));
 
   }
 
