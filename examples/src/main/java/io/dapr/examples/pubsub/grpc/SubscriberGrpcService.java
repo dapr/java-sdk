@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.examples.pubsub.grpc;
 
 import com.google.protobuf.Empty;
+import com.google.protobuf.Value;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprAppCallbackProtos.TopicEventBulkRequestEntry;
@@ -125,6 +126,9 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
         try {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
           System.out.printf("Bulk Subscriber got: %s\n", entry.getCloudEvent().getData().toStringUtf8());
+          // Each entry carries its own W3C trace context in the CloudEvent extensions,
+          // independent of the trace context of the bulk gRPC call itself.
+          System.out.printf("Bulk Subscriber entry traceparent: %s\n", getTraceParent(entry));
           TopicEventBulkResponseEntry.Builder responseEntryBuilder = TopicEventBulkResponseEntry
               .newBuilder()
               .setEntryId(entry.getEntryId())
@@ -144,6 +148,20 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
     } catch (Throwable e) {
       responseObserver.onError(e);
     }
+  }
+
+  /**
+   * Extracts the W3C traceparent of a single bulk entry from its CloudEvent extensions.
+   *
+   * @param entry the bulk request entry
+   * @return the entry's traceparent, or null if not present
+   */
+  private static String getTraceParent(TopicEventBulkRequestEntry entry) {
+    if (!entry.hasCloudEvent()) {
+      return null;
+    }
+    Value traceParent = entry.getCloudEvent().getExtensions().getFieldsMap().get("traceparent");
+    return traceParent == null ? null : traceParent.getStringValue();
   }
 
   /**
