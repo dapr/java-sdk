@@ -146,6 +146,8 @@ public class SubscriberController {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
           CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
           System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
+          // Each entry carries its own W3C trace context, independent of the bulk request's trace.
+          System.out.printf("Bulk Subscriber entry traceparent: %s\n", cloudEvent.getTraceParent());
           entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
         } catch (Exception e) {
           e.printStackTrace();
