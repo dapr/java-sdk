@@ -16,19 +16,29 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.TypeRef;
+import io.grpc.ManagedChannel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ActorRuntimeTest {
 
@@ -90,6 +100,40 @@ public class ActorRuntimeTest {
 
     public int count() {
       return this.count;
+    }
+  }
+
+  private static final String REMINDABLE_ACTOR_NAME = "MyRemindableActor";
+
+  private static final AtomicReference<String> lastReminder = new AtomicReference<>();
+
+  private static final AtomicReference<String> lastTimerData = new AtomicReference<>();
+
+  public interface MyRemindableActor {
+    void receiveTimer(String data);
+  }
+
+  @ActorType(name = REMINDABLE_ACTOR_NAME)
+  public static class MyRemindableActorImpl extends AbstractActor
+      implements MyRemindableActor, Remindable<String> {
+
+    public MyRemindableActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+    }
+
+    @Override
+    public TypeRef<String> getStateType() {
+      return TypeRef.STRING;
+    }
+
+    @Override
+    public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
+      return Mono.fromRunnable(() -> lastReminder.set(reminderName + ":" + state));
+    }
+
+    @Override
+    public void receiveTimer(String data) {
+      lastTimerData.set(data);
     }
   }
 
@@ -261,6 +305,101 @@ public class ActorRuntimeTest {
   }
 
   @Test
+  public void invokeReminder() throws Exception {
+    lastReminder.set(null);
+    String actorId = UUID.randomUUID().toString();
+    this.runtime.registerActor(MyRemindableActorImpl.class);
+
+    this.runtime.invokeReminder(
+        REMINDABLE_ACTOR_NAME, actorId, "myReminder", createReminderParams("hello")).block();
+
+    Assertions.assertEquals("myReminder:hello", lastReminder.get());
+  }
+
+  @Test
+  public void invokeReminderUnknownActorType() throws Exception {
+    this.runtime.registerActor(MyRemindableActorImpl.class);
+
+    assertThrows(IllegalArgumentException.class, () -> this.runtime.invokeReminder(
+        "UnknownActor", UUID.randomUUID().toString(), "myReminder", createReminderParams("hello")).block());
+  }
+
+  @Test
+  public void invokeTimer() throws Exception {
+    lastTimerData.set(null);
+    String actorId = UUID.randomUUID().toString();
+    this.runtime.registerActor(MyRemindableActorImpl.class);
+
+    this.runtime.invokeTimer(
+        REMINDABLE_ACTOR_NAME, actorId, "myTimer", createTimerParams("receiveTimer", "hello")).block();
+
+    Assertions.assertEquals("hello", lastTimerData.get());
+  }
+
+  @Test
+  public void invokeTimerUnknownActorType() throws Exception {
+    this.runtime.registerActor(MyRemindableActorImpl.class);
+
+    assertThrows(IllegalArgumentException.class, () -> this.runtime.invokeTimer(
+        "UnknownActor", UUID.randomUUID().toString(), "myTimer", createTimerParams("receiveTimer", "hello")).block());
+  }
+
+  @Test
+  public void deactivateUnknownActorType() {
+    this.runtime.registerActor(MyActorImpl.class);
+
+    assertThrows(IllegalArgumentException.class,
+        () -> this.runtime.deactivate("UnknownActor", UUID.randomUUID().toString()).block());
+  }
+
+  @Test
+  public void registerActorTwiceRegistersSingleEntity() throws Exception {
+    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class);
+
+    Assertions.assertEquals("{\"entities\":[\"" + ACTOR_NAME + "\"]}",
+        new String(this.runtime.serializeConfig()));
+  }
+
+  @Test
+  public void constructorShouldOnlyBeCalledOnce() throws Exception {
+    Field instanceField = ActorRuntime.class.getDeclaredField("instance");
+    instanceField.setAccessible(true);
+    instanceField.set(null, this.runtime);
+    try {
+      InvocationTargetException exception = assertThrows(InvocationTargetException.class,
+          () -> constructor.newInstance(null, this.mockDaprClient));
+      Assertions.assertTrue(exception.getCause() instanceof IllegalStateException);
+    } finally {
+      instanceField.set(null, null);
+    }
+  }
+
+  @Test
+  public void closeShutsDownChannel() throws Exception {
+    ManagedChannel channel = mock(ManagedChannel.class);
+    when(channel.isShutdown()).thenReturn(false);
+
+    try (ActorRuntime runtimeWithChannel = constructor.newInstance(channel, this.mockDaprClient)) {
+      // Try-with-resources closes the runtime.
+    }
+
+    verify(channel, times(1)).shutdown();
+  }
+
+  @Test
+  public void closeSkipsShutdownWhenChannelAlreadyShutdown() throws Exception {
+    ManagedChannel channel = mock(ManagedChannel.class);
+    when(channel.isShutdown()).thenReturn(true);
+
+    try (ActorRuntime runtimeWithChannel = constructor.newInstance(channel, this.mockDaprClient)) {
+      // Try-with-resources closes the runtime.
+    }
+
+    verify(channel, never()).shutdown();
+  }
+
+  @Test
   public void lazyInvoke() throws Exception {
     String actorId = UUID.randomUUID().toString();
     this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>());
@@ -276,6 +415,20 @@ public class ActorRuntimeTest {
     response = this.runtime.invoke(ACTOR_NAME, actorId, "count", null).block();
     count = ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
     Assertions.assertEquals(1, count);
+  }
+
+  private static byte[] createReminderParams(String data) throws IOException {
+    byte[] serializedData = new DefaultObjectSerializer().serialize(data);
+    ActorReminderParams params =
+        new ActorReminderParams(serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return ACTOR_STATE_SERIALIZER.serialize(params);
+  }
+
+  private static byte[] createTimerParams(String callback, String data) throws IOException {
+    byte[] serializedData = new DefaultObjectSerializer().serialize(data);
+    ActorTimerParams params =
+        new ActorTimerParams(callback, serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return ACTOR_STATE_SERIALIZER.serialize(params);
   }
 
 }
