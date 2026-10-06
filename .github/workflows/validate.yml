@@ -123,7 +123,7 @@ jobs:
             set -e
             (cd examples && mm.py ./src/main/java/io/dapr/examples/crypto/README.md)
             (cd examples && mm.py ./src/main/java/io/dapr/examples/workflows/README.md)
-            (cd spring-boot-examples && mm.py README.md)
+            (cd spring-boot-examples/pubsub && mm.py README.md)
             (cd spring-boot-examples/workflows/patterns && mm.py README.md)
             (cd examples && mm.py ./src/main/java/io/dapr/examples/jobs/README.md)
             (cd examples && mm.py ./src/main/java/io/dapr/examples/conversation/README.md)
