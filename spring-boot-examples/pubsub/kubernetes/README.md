@@ -41,7 +41,7 @@ helm upgrade --install dapr dapr/dapr \
 Now that we have our cluster set up with a local container registry, we need to build our `producer-app` and `consumer-app` containers.
 For this we will use Spring Boot build it functions to create container images using [Buildpacks](https://buildpacks.io): 
 
-From inside the `spring-boot-examples/producer-app` directory you can run the following command to create a container: 
+From inside the `spring-boot-examples/pubsub/producer-app` directory you can run the following command to create a container: 
 ```bash
 mvn spring-boot:build-image
 ```
@@ -59,7 +59,7 @@ docker push localhost:5001/sb-producer-app
 podman push localhost:5001/sb-producer-app --tls-verify=false
 ```
 
-From inside the `spring-boot-examples/consumer-app` directory you can run the following command to create a container:
+From inside the `spring-boot-examples/pubsub/consumer-app` directory you can run the following command to create a container:
 ```bash
 mvn spring-boot:build-image
 ```
@@ -95,7 +95,7 @@ helm install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql --se
 ```
 
 Once we have these components up and running we can install the application by running from inside 
-the `spring-boot-examples/kubernetes/` directory: 
+the `spring-boot-examples/pubsub/kubernetes/` directory: 
 
 ```bash
 kubectl apply -f .
