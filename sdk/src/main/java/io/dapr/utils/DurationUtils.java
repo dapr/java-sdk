@@ -14,11 +14,15 @@ limitations under the License.
 package io.dapr.utils;
 
 import java.time.Duration;
+import java.time.format.DateTimeParseException;
 
 public class DurationUtils {
 
   /**
    * Converts time from the String format used by Dapr into a Duration.
+   *
+   * <p>ISO 8601 durations (e.g. PT10S), optionally with repetitions (e.g. R5/PT10S), are also accepted, since
+   * the Dapr runtime echoes back the period exactly as it was registered. Repetitions are ignored.</p>
    *
    * @param valueString A String representing time in the Dapr runtime's format (e.g. 4h15m50s60ms).
    * @return A Duration
@@ -28,6 +32,9 @@ public class DurationUtils {
     // An example of the format is: 4h15m50s60ms. It does not include days.
     if (valueString == null) {
       throw new IllegalArgumentException("duration string cannot be null");
+    }
+    if (valueString.startsWith("R") || valueString.startsWith("P")) {
+      return convertDurationFromIso8601Format(valueString);
     }
     Duration parsedDuration = Duration.ZERO;
     int hourIndex = valueString.indexOf('h');
@@ -110,6 +117,61 @@ public class DurationUtils {
     }
 
     return stringValue;
+  }
+
+  /**
+   * Converts a Duration to the ISO 8601 duration format accepted by the Dapr runtime (e.g. PT1H30M10S).
+   * The runtime only accepts whole seconds in this format.
+   *
+   * @param value Duration, must be non-negative and have no sub-second part.
+   * @return The Duration formatted as an ISO 8601 duration.
+   */
+  public static String convertDurationToIso8601Format(Duration value) {
+    if (value == null || value.isNegative()) {
+      throw new IllegalArgumentException("duration must be non-negative");
+    }
+    if (value.getNano() != 0) {
+      throw new IllegalArgumentException("ISO 8601 durations only support whole seconds: " + value);
+    }
+
+    long hours = getDaysPart(value) * 24 + getHoursPart(value);
+    long minutes = getMinutesPart(value);
+    long seconds = getSecondsPart(value);
+
+    StringBuilder sb = new StringBuilder("PT");
+    if (hours > 0) {
+      sb.append(hours).append('H');
+    }
+    if (minutes > 0) {
+      sb.append(minutes).append('M');
+    }
+    if (seconds > 0 || (hours == 0 && minutes == 0)) {
+      sb.append(seconds).append('S');
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Converts an ISO 8601 duration, optionally prefixed with repetitions (e.g. R5/PT10S), into a Duration.
+   *
+   * @param valueString ISO 8601 duration.
+   * @return A Duration
+   */
+  private static Duration convertDurationFromIso8601Format(String valueString) {
+    String durationPart = valueString;
+    if (durationPart.startsWith("R")) {
+      int separator = durationPart.indexOf('/');
+      durationPart = separator == -1 ? "" : durationPart.substring(separator + 1);
+    }
+    if (durationPart.isEmpty()) {
+      return Duration.ZERO;
+    }
+
+    try {
+      return Duration.parse(durationPart);
+    } catch (DateTimeParseException e) {
+      throw new IllegalArgumentException("unsupported ISO 8601 duration: " + valueString, e);
+    }
   }
 
   /**

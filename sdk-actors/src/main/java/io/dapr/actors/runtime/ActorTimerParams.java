@@ -42,6 +42,16 @@ final class ActorTimerParams {
   private Duration period;
 
   /**
+   * Number of times the timer is triggered, null means unlimited.
+   */
+  private Integer repetitions;
+
+  /**
+   * Time after which the timer expires, null means it never expires.
+   */
+  private Duration ttl;
+
+  /**
    * Instantiates a new Actor Timer.
    *
    * @param callback  The name of the method to be called for this timer.
@@ -53,10 +63,32 @@ final class ActorTimerParams {
                    byte[] data,
                    Duration dueTime,
                    Duration period) {
+    this(callback, data, dueTime, period, null, null);
+  }
+
+  /**
+   * Instantiates a new Actor Timer.
+   *
+   * @param callback    The name of the method to be called for this timer.
+   * @param data        The state to be used by the callback method
+   * @param dueTime     The time when timer is first due, null means immediately.
+   * @param period      The periodic time when timer will be invoked, null means it fires only once.
+   * @param repetitions Number of times the timer is triggered, null means unlimited.
+   * @param ttl         Time after which the timer expires, null means it never expires.
+   */
+  ActorTimerParams(String callback,
+                   byte[] data,
+                   Duration dueTime,
+                   Duration period,
+                   Integer repetitions,
+                   Duration ttl) {
+    ActorScheduleUtils.validate(period, repetitions, ttl);
     this.callback = callback;
     this.data = data;
     this.dueTime = dueTime;
     this.period = period;
+    this.repetitions = repetitions;
+    this.ttl = ttl;
   }
 
   /**
@@ -84,6 +116,24 @@ final class ActorTimerParams {
    */
   public Duration getPeriod() {
     return this.period;
+  }
+
+  /**
+   * Gets the number of times the timer is triggered.
+   *
+   * @return Repetitions, null means unlimited.
+   */
+  public Integer getRepetitions() {
+    return this.repetitions;
+  }
+
+  /**
+   * Gets the time after which the timer expires.
+   *
+   * @return TTL, null means it never expires.
+   */
+  public Duration getTtl() {
+    return this.ttl;
   }
 
   /**

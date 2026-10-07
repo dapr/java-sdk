@@ -59,6 +59,8 @@ public class DaprGrpcClientTest {
 
     private static final String TIMER_NAME = "timerName";
 
+    private static final String SCHEDULE_OPTIONS_NAME = "withScheduleOptions";
+
     private static final byte[] RESPONSE_PAYLOAD = "\"hello world\"".getBytes();
 
     private static final List<ActorStateOperation> OPERATIONS =  Arrays.asList(
@@ -167,6 +169,35 @@ public class DaprGrpcClientTest {
         );
 
         Mono<Void> result = client.registerTimer(ACTOR_TYPE, ACTOR_ID, TIMER_NAME, params);
+        result.block();
+    }
+
+    @Test
+    public void registerActorReminderWithRepetitionsAndTtl() {
+        ActorReminderParams params = new ActorReminderParams(
+                "hello world".getBytes(),
+                null,
+                Duration.ofSeconds(2),
+                5,
+                Duration.ofMinutes(1),
+                null
+        );
+        Mono<Void> result = client.registerReminder(ACTOR_TYPE, ACTOR_ID, SCHEDULE_OPTIONS_NAME, params);
+        result.block();
+    }
+
+    @Test
+    public void registerActorTimerWithRepetitionsAndTtl() {
+        ActorTimerParams params = new ActorTimerParams(
+                "mymethod",
+                "hello world".getBytes(),
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(2),
+                3,
+                Duration.ofSeconds(30)
+        );
+
+        Mono<Void> result = client.registerTimer(ACTOR_TYPE, ACTOR_ID, SCHEDULE_OPTIONS_NAME, params);
         result.block();
     }
 
@@ -284,9 +315,16 @@ public class DaprGrpcClientTest {
         @Override
         public void registerActorReminder(DaprActorsProtos.RegisterActorReminderRequest request,
                                           io.grpc.stub.StreamObserver<com.google.protobuf.Empty> responseObserver) {
-            assertEquals(REMINDER_NAME, request.getName());
-            assertEquals("0h0m1s0ms", request.getDueTime());
-            assertEquals("0h0m2s0ms", request.getPeriod());
+            if (SCHEDULE_OPTIONS_NAME.equals(request.getName())) {
+                assertEquals("0h0m0s0ms", request.getDueTime());
+                assertEquals("R5/PT2S", request.getPeriod());
+                assertEquals("0h1m0s0ms", request.getTtl());
+            } else {
+                assertEquals(REMINDER_NAME, request.getName());
+                assertEquals("0h0m1s0ms", request.getDueTime());
+                assertEquals("0h0m2s0ms", request.getPeriod());
+                assertEquals("", request.getTtl());
+            }
             assertEquals(ACTOR_TYPE, request.getActorType());
             assertEquals(ACTOR_ID, request.getActorId());
             switch (request.getActorId()) {
@@ -305,10 +343,17 @@ public class DaprGrpcClientTest {
                                        io.grpc.stub.StreamObserver<com.google.protobuf.Empty> responseObserver) {
             assertEquals(ACTOR_TYPE, request.getActorType());
             assertEquals(ACTOR_ID, request.getActorId());
-            assertEquals(TIMER_NAME, request.getName());
             assertEquals("mymethod", request.getCallback());
-            assertEquals("0h0m1s0ms", request.getDueTime());
-            assertEquals("0h0m2s0ms", request.getPeriod());
+            if (SCHEDULE_OPTIONS_NAME.equals(request.getName())) {
+                assertEquals("0h0m1s0ms", request.getDueTime());
+                assertEquals("R3/PT2S", request.getPeriod());
+                assertEquals("0h0m30s0ms", request.getTtl());
+            } else {
+                assertEquals(TIMER_NAME, request.getName());
+                assertEquals("0h0m1s0ms", request.getDueTime());
+                assertEquals("0h0m2s0ms", request.getPeriod());
+                assertEquals("", request.getTtl());
+            }
             switch (request.getActorId()) {
                 case ACTOR_ID:
                     populateObserver(responseObserver, Empty.newBuilder().build());
