@@ -184,4 +184,35 @@ public class DurationUtilsTest {
     Duration d7 = Duration.ZERO.plusMillis(10000);
     assertEquals(0, DurationUtils.getMilliSecondsPart(d7));
   }
+
+  @Test
+  public void convertDurationToIso8601Format() {
+    assertEquals("PT0S", DurationUtils.convertDurationToIso8601Format(Duration.ZERO));
+    assertEquals("PT10S", DurationUtils.convertDurationToIso8601Format(Duration.ofSeconds(10)));
+    assertEquals("PT1H30M", DurationUtils.convertDurationToIso8601Format(Duration.ofMinutes(90)));
+    assertEquals("PT5M", DurationUtils.convertDurationToIso8601Format(Duration.ofMinutes(5)));
+    assertEquals("PT2H", DurationUtils.convertDurationToIso8601Format(Duration.ofHours(2)));
+    assertEquals("PT1M5S", DurationUtils.convertDurationToIso8601Format(Duration.ofSeconds(65)));
+    assertEquals("PT26H5S", DurationUtils.convertDurationToIso8601Format(Duration.ofHours(26).plusSeconds(5)));
+  }
+
+  @Test
+  public void convertDurationToIso8601FormatRejectsInvalidValues() {
+    assertThrows(IllegalArgumentException.class,
+        () -> DurationUtils.convertDurationToIso8601Format(Duration.ofMillis(1500)));
+    assertThrows(IllegalArgumentException.class,
+        () -> DurationUtils.convertDurationToIso8601Format(Duration.ofSeconds(-1)));
+    assertThrows(IllegalArgumentException.class,
+        () -> DurationUtils.convertDurationToIso8601Format(null));
+  }
+
+  @Test
+  public void convertDurationFromIso8601Format() {
+    assertEquals(Duration.ofSeconds(10), DurationUtils.convertDurationFromDaprFormat("PT10S"));
+    assertEquals(Duration.ofSeconds(10), DurationUtils.convertDurationFromDaprFormat("R5/PT10S"));
+    assertEquals(Duration.ofDays(1).plusHours(2), DurationUtils.convertDurationFromDaprFormat("P1DT2H"));
+    assertEquals(Duration.ZERO, DurationUtils.convertDurationFromDaprFormat("R5/"));
+    assertEquals(Duration.ZERO, DurationUtils.convertDurationFromDaprFormat("R5"));
+    assertThrows(IllegalArgumentException.class, () -> DurationUtils.convertDurationFromDaprFormat("P1M"));
+  }
 }
