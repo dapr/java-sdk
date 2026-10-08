@@ -49,7 +49,8 @@ jobs:
   build-durabletask:
     name: "Durable Task build & tests"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    # The job timeout covers every retry attempt, so it must fit setup plus max_attempts x timeout_minutes.
+    timeout-minutes: 15
     continue-on-error: false
     env:
       JDK_VER: 17
@@ -98,6 +99,7 @@ jobs:
   build:
     name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-display-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
+    # The job timeout covers every retry attempt, so it must fit setup plus max_attempts x timeout_minutes.
     timeout-minutes: 60
     continue-on-error: ${{ matrix.experimental }}
     strategy:
@@ -159,6 +161,7 @@ jobs:
   build-dapr-head:
     name: "Integration tests against dapr master"
     runs-on: ubuntu-latest
+    # The job timeout covers every retry attempt, so it must fit setup plus max_attempts x timeout_minutes.
     timeout-minutes: 50
     continue-on-error: true
     env:
