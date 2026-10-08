@@ -40,8 +40,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.UUID;
@@ -97,8 +95,6 @@ public class DaprJobsIT {
   @Test
   public void testJobScheduleCreationWithDueTime() {
     String jobName = "Job-" + UUID.randomUUID().toString().substring(0, 8);
-    DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            .withZone(ZoneOffset.UTC);
 
     Instant currentTime = Instant.now().plus(10, ChronoUnit.MINUTES);
     daprClient.scheduleJob(new ScheduleJobRequest(jobName, currentTime)).block();
@@ -112,15 +108,13 @@ public class DaprJobsIT {
     daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
 
     assertNotNull(getJobResponse);
-    assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
+    assertEquals(currentTime.truncatedTo(ChronoUnit.MILLIS), getJobResponse.getDueTime());
     assertEquals(jobName, getJobResponse.getName());
   }
 
   @Test
   public void testJobScheduleCreationWithSchedule() {
     String jobName = "Job-" + UUID.randomUUID().toString().substring(0, 8);
-    DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            .withZone(ZoneOffset.UTC);
 
     Instant currentTime = Instant.now().plus(10, ChronoUnit.MINUTES);
     daprClient.scheduleJob(new ScheduleJobRequest(jobName, JobSchedule.hourly())
@@ -135,7 +129,7 @@ public class DaprJobsIT {
     daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
 
     assertNotNull(getJobResponse);
-    assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
+    assertEquals(currentTime.truncatedTo(ChronoUnit.MILLIS), getJobResponse.getDueTime());
     assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
     assertEquals(jobName, getJobResponse.getName());
   }
@@ -144,8 +138,6 @@ public class DaprJobsIT {
   public void testJobScheduleCreationWithAllParameters() {
     String jobName = "Job-" + UUID.randomUUID().toString().substring(0, 8);
     Instant currentTime = Instant.now().plus(10, ChronoUnit.MINUTES);
-    DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            .withZone(ZoneOffset.UTC);
 
     String cronExpression = "2 * 3 * * FRI";
 
@@ -164,13 +156,13 @@ public class DaprJobsIT {
     daprClient.deleteJob(new DeleteJobRequest(jobName)).block();
 
     assertNotNull(getJobResponse);
-    assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
+    assertEquals(currentTime.truncatedTo(ChronoUnit.MILLIS), getJobResponse.getDueTime());
     assertEquals("2 * 3 * * FRI", getJobResponse.getSchedule().getExpression());
     assertEquals(jobName, getJobResponse.getName());
     assertEquals(Integer.valueOf(3), getJobResponse.getRepeats());
     assertEquals("Job data", new String(getJobResponse.getData()));
-    assertEquals(iso8601Formatter.format(currentTime.plus(2, ChronoUnit.HOURS)),
-            getJobResponse.getTtl().toString());
+    assertEquals(currentTime.plus(2, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MILLIS),
+            getJobResponse.getTtl());
   }
 
   @Test
