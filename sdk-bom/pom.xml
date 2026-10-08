@@ -48,8 +48,9 @@
     <gpg.skip>true</gpg.skip>
     <dapr.sdk.version>1.19.0-rc-1</dapr.sdk.version>
     <!-- Keep in sync with the Netty version grpc-netty ${grpc.version} is built against (grpc-java SECURITY.md) -->
-    <netty.version>4.2.16.Final</netty.version>
-    <jackson.version>2.21.2</jackson.version>
+    <netty.version>4.2.17.Final</netty.version>
+    <jackson.version>2.21.7</jackson.version>
+    <opentelemetry.version>1.62.0</opentelemetry.version>
     <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
     <commons-compress.version>1.26.0</commons-compress.version>
   </properties>
@@ -149,6 +150,13 @@
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
