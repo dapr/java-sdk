@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -68,6 +69,19 @@ public class DaprHttp implements AutoCloseable {
    */
   private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS =
       Set.of("grpc-trace-bin", "traceparent", "tracestate", "baggage");
+
+  /**
+   * Hop-by-hop headers managed by {@link HttpClient} itself, which rejects them when set explicitly.
+   * They are dropped so headers received from an inbound request can be forwarded as-is.
+   */
+  private static final Set<String> RESTRICTED_HEADERS =
+      Set.of("connection", "content-length", "expect", "host", "upgrade");
+
+  /**
+   * Headers owned by the SDK that callers cannot override.
+   */
+  private static final Set<String> SDK_OWNED_HEADERS =
+      Set.of(Headers.DAPR_USER_AGENT.toLowerCase(), Headers.DAPR_API_TOKEN);
 
   /**
    * Object mapper to parse DaprError with or without details.
@@ -298,20 +312,7 @@ public class DaprHttp implements AutoCloseable {
     HttpRequest.Builder requestBuilder = HttpRequest.newBuilder();
 
     requestBuilder.uri(createUri(uri, pathSegments, urlParameters));
-    addHeader(requestBuilder, Headers.DAPR_USER_AGENT, Version.getSdkVersion());
-    addHeader(requestBuilder, HEADER_DAPR_REQUEST_ID, UUID.randomUUID().toString());
-    addHeader(requestBuilder, "Content-Type", getContentType(headers));
-    addHeaders(requestBuilder, headers);
-
-    if (daprApiToken != null) {
-      addHeader(requestBuilder, Headers.DAPR_API_TOKEN, daprApiToken);
-    }
-
-    if (context != null) {
-      context.stream()
-          .filter(entry -> ALLOWED_CONTEXT_IN_HEADERS.contains(entry.getKey().toString().toLowerCase()))
-          .forEach(entry -> addHeader(requestBuilder, entry.getKey().toString(), entry.getValue().toString()));
-    }
+    buildHeaders(headers, context).forEach(requestBuilder::header);
 
     HttpRequest.BodyPublisher body = getBodyPublisher(content);
 
@@ -332,10 +333,41 @@ public class DaprHttp implements AutoCloseable {
         .thenApply(this::createResponse);
   }
 
-  private static String getContentType(Map<String, String> headers) {
-    String result = headers != null ? headers.get(Metadata.CONTENT_TYPE) : null;
+  /**
+   * Merges SDK, tracing and caller headers into a single set, matching names case-insensitively so each
+   * header is sent once. Precedence (lowest to highest): SDK defaults, tracing context, caller headers,
+   * SDK-owned headers. Hop-by-hop headers rejected by {@link HttpClient} are dropped.
+   */
+  private Map<String, String> buildHeaders(Map<String, String> headers, ContextView context) {
+    Map<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    result.put(HEADER_DAPR_REQUEST_ID, UUID.randomUUID().toString());
+    result.put(Metadata.CONTENT_TYPE, MEDIA_TYPE_APPLICATION_JSON);
 
-    return result == null ? MEDIA_TYPE_APPLICATION_JSON : result;
+    if (context != null) {
+      context.stream()
+          .filter(entry -> ALLOWED_CONTEXT_IN_HEADERS.contains(entry.getKey().toString().toLowerCase()))
+          .forEach(entry -> result.put(entry.getKey().toString(), entry.getValue().toString()));
+    }
+
+    if (headers != null) {
+      headers.forEach((name, value) -> {
+        if (name == null || value == null) {
+          return;
+        }
+
+        String key = name.toLowerCase();
+        if (!RESTRICTED_HEADERS.contains(key) && !SDK_OWNED_HEADERS.contains(key)) {
+          result.put(name, value);
+        }
+      });
+    }
+
+    result.put(Headers.DAPR_USER_AGENT, Version.getSdkVersion());
+    if (daprApiToken != null) {
+      result.put(Headers.DAPR_API_TOKEN, daprApiToken);
+    }
+
+    return result;
   }
 
   private static URI createUri(URI uri, String[] pathSegments, Map<String, List<String>> urlParameters) {
@@ -416,18 +448,6 @@ public class DaprHttp implements AutoCloseable {
 
   private static String encodeQueryParam(String key, String value) {
     return URLEncoder.encode(key, StandardCharsets.UTF_8) + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8);
-  }
-
-  private static void addHeader(HttpRequest.Builder requestBuilder, String name, String value) {
-    requestBuilder.header(name, value);
-  }
-
-  private static void addHeaders(HttpRequest.Builder requestBuilder, Map<String, String> headers) {
-    if (headers == null || headers.isEmpty()) {
-      return;
-    }
-
-    headers.forEach((k, v) -> addHeader(requestBuilder, k, v));
   }
 
   private static HttpRequest.BodyPublisher getBodyPublisher(byte[] content) {
