@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.ConstantFailurePolicy;
 import io.dapr.client.domain.DropFailurePolicy;
 import org.junit.jupiter.api.Assertions;
@@ -25,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class ActorReminderParamsTest {
 
   private static final ActorObjectSerializer SERIALIZER = new ActorObjectSerializer();
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Test
   public void outOfRangeDueTime() {
@@ -141,5 +144,57 @@ public class ActorReminderParamsTest {
     Assertions.assertEquals(original.getPeriod(), recreated.getPeriod());
     Assertions.assertEquals(original.getFailurePolicy().getFailurePolicyType(), recreated.getFailurePolicy().getFailurePolicyType());
     Assertions.assertEquals(((ConstantFailurePolicy) original.getFailurePolicy()).getDurationBetweenRetries(), ((ConstantFailurePolicy) recreated.getFailurePolicy()).getDurationBetweenRetries());
+  }
+
+  @Test
+  public void withRepetitionsAndTtl() throws Exception {
+    ActorReminderParams original = new ActorReminderParams("maru".getBytes(),
+        Duration.ofSeconds(2),
+        Duration.ofSeconds(10),
+        5,
+        Duration.ofMinutes(1),
+        null);
+
+    byte[] serialized = SERIALIZER.serialize(original);
+    String expected = "{\"dueTime\":\"0h0m2s0ms\",\"period\":\"R5/PT10S\",\"ttl\":\"0h1m0s0ms\","
+        + "\"data\":\"bWFydQ==\"}";
+    Assertions.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(serialized));
+
+    ActorReminderParams recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
+    Assertions.assertArrayEquals(original.getData(), recreated.getData());
+    Assertions.assertEquals(original.getDueTime(), recreated.getDueTime());
+    Assertions.assertEquals(original.getPeriod(), recreated.getPeriod());
+    Assertions.assertEquals(5, recreated.getRepetitions());
+    Assertions.assertEquals(original.getTtl(), recreated.getTtl());
+  }
+
+  @Test
+  public void withoutDueTimeAndPeriod() throws Exception {
+    ActorReminderParams original = new ActorReminderParams(null, null, null);
+
+    byte[] serialized = SERIALIZER.serialize(original);
+    Assertions.assertEquals(OBJECT_MAPPER.readTree("{}"), OBJECT_MAPPER.readTree(serialized));
+
+    ActorReminderParams recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
+    Assertions.assertNull(recreated.getDueTime());
+    Assertions.assertNull(recreated.getPeriod());
+    Assertions.assertNull(recreated.getRepetitions());
+    Assertions.assertNull(recreated.getTtl());
+  }
+
+  @Test
+  public void invalidRepetitions() {
+    assertThrows(IllegalArgumentException.class,
+        () -> new ActorReminderParams(null, null, Duration.ofSeconds(10), 0, null, null));
+    assertThrows(IllegalArgumentException.class,
+        () -> new ActorReminderParams(null, null, null, 5, null, null));
+    assertThrows(IllegalArgumentException.class,
+        () -> new ActorReminderParams(null, null, Duration.ofMillis(1500), 5, null, null));
+  }
+
+  @Test
+  public void negativeTtl() {
+    assertThrows(IllegalArgumentException.class,
+        () -> new ActorReminderParams(null, null, Duration.ofSeconds(10), null, Duration.ofSeconds(-1), null));
   }
 }

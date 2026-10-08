@@ -43,9 +43,19 @@ final class ActorReminderParams {
   private final Duration period;
 
   /**
+   * Number of times the reminder is triggered, null means unlimited.
+   */
+  private final Integer repetitions;
+
+  /**
+   * Time after which the reminder expires, null means it never expires.
+   */
+  private final Duration ttl;
+
+  /**
    * Failure Policy.
    */
-  private FailurePolicy failurePolicy;
+  private final FailurePolicy failurePolicy;
 
   /**
    * Instantiates a new instance for the params of a reminder.
@@ -55,11 +65,7 @@ final class ActorReminderParams {
    * @param period  Interval between triggers.
    */
   ActorReminderParams(byte[] data, Duration dueTime, Duration period) {
-    validateDueTime("DueTime", dueTime);
-    validatePeriod("Period", period);
-    this.data = data;
-    this.dueTime = dueTime;
-    this.period = period;
+    this(data, dueTime, period, null, null, null);
   }
 
   /**
@@ -70,7 +76,34 @@ final class ActorReminderParams {
    * @param period  Interval between triggers.
    */
   ActorReminderParams(byte[] data, Duration dueTime, Duration period, FailurePolicy failurePolicy) {
-    this(data, dueTime, period);
+    this(data, dueTime, period, null, null, failurePolicy);
+  }
+
+  /**
+   * Instantiates a new instance for the params of a reminder.
+   *
+   * @param data          Data to be passed in as part of the reminder trigger.
+   * @param dueTime       Time the reminder is due for the 1st time, null means immediately.
+   * @param period        Interval between triggers, null means it fires only once.
+   * @param repetitions   Number of times the reminder is triggered, null means unlimited.
+   * @param ttl           Time after which the reminder expires, null means it never expires.
+   * @param failurePolicy Failure policy, can be null.
+   */
+  ActorReminderParams(
+      byte[] data,
+      Duration dueTime,
+      Duration period,
+      Integer repetitions,
+      Duration ttl,
+      FailurePolicy failurePolicy) {
+    validateDueTime("DueTime", dueTime);
+    validatePeriod("Period", period);
+    ActorScheduleUtils.validate(period, repetitions, ttl);
+    this.data = data;
+    this.dueTime = dueTime;
+    this.period = period;
+    this.repetitions = repetitions;
+    this.ttl = ttl;
     this.failurePolicy = failurePolicy;
   }
 
@@ -93,6 +126,24 @@ final class ActorReminderParams {
   }
 
   /**
+   * Gets the number of times the reminder is triggered.
+   *
+   * @return Repetitions, null means unlimited.
+   */
+  Integer getRepetitions() {
+    return repetitions;
+  }
+
+  /**
+   * Gets the time after which the reminder expires.
+   *
+   * @return TTL, null means it never expires.
+   */
+  Duration getTtl() {
+    return ttl;
+  }
+
+  /**
    * Gets the data to be passed in as part of the reminder trigger.
    *
    * @return Data to be passed in as part of the reminder trigger.
@@ -108,7 +159,7 @@ final class ActorReminderParams {
    * @param value   Vale being checked.
    */
   private static void validateDueTime(String argName, Duration value) {
-    if (value.compareTo(Duration.ZERO) < 0) {
+    if (value != null && value.compareTo(Duration.ZERO) < 0) {
       String message = String.format(
             "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, Duration.ZERO);
       throw new IllegalArgumentException(message);
@@ -122,7 +173,7 @@ final class ActorReminderParams {
    * @param value   Vale being checked.
    */
   private static void validatePeriod(String argName, Duration value) throws IllegalArgumentException {
-    if (value.compareTo(MIN_TIME_PERIOD) < 0) {
+    if (value != null && value.compareTo(MIN_TIME_PERIOD) < 0) {
       String message = String.format(
             "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, MIN_TIME_PERIOD);
       throw new IllegalArgumentException(message);

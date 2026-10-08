@@ -19,7 +19,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
-import io.dapr.utils.DurationUtils;
 import io.dapr.v1.DaprActorsProtos;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
@@ -154,8 +153,10 @@ class DaprClientImpl implements DaprClient {
                     .setActorId(actorId)
                     .setName(reminderName)
                     .setData(ByteString.copyFrom(reminderParams.getData()))
-                    .setDueTime(DurationUtils.convertDurationToDaprFormat(reminderParams.getDueTime()))
-            .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()));
+                    .setDueTime(ActorScheduleUtils.formatDueTime(reminderParams.getDueTime()))
+                    .setPeriod(ActorScheduleUtils.formatPeriod(
+                        reminderParams.getPeriod(), reminderParams.getRepetitions()))
+                    .setTtl(ActorScheduleUtils.formatDuration(reminderParams.getTtl()));
 
     if (reminderParams.getFailurePolicy() != null) {
       builder.setFailurePolicy(getJobFailurePolicy(reminderParams.getFailurePolicy()));
@@ -196,8 +197,9 @@ class DaprClientImpl implements DaprClient {
              .setName(timerName)
              .setCallback(timerParams.getCallback())
              .setData(ByteString.copyFrom(timerParams.getData()))
-             .setDueTime(DurationUtils.convertDurationToDaprFormat(timerParams.getDueTime()))
-             .setPeriod(DurationUtils.convertDurationToDaprFormat(timerParams.getPeriod()))
+             .setDueTime(ActorScheduleUtils.formatDueTime(timerParams.getDueTime()))
+             .setPeriod(ActorScheduleUtils.formatPeriod(timerParams.getPeriod(), timerParams.getRepetitions()))
+             .setTtl(ActorScheduleUtils.formatDuration(timerParams.getTtl()))
              .build();
 
     return Mono.<Empty>create(it -> client.registerActorTimer(req, createStreamObserver(it))).then().then();

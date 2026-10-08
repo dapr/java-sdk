@@ -83,8 +83,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
     try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.writeStartObject();
-      generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(timer.getDueTime()));
-      generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(timer.getPeriod()));
+      writeSchedule(generator, timer.getDueTime(), timer.getPeriod(), timer.getRepetitions(), timer.getTtl());
       generator.writeStringField("callback", timer.getCallback());
       if (timer.getData() != null) {
         generator.writeBinaryField("data", timer.getData());
@@ -108,8 +107,8 @@ public class ActorObjectSerializer extends ObjectSerializer {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.setCodec(OBJECT_MAPPER);
       generator.writeStartObject();
-      generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(reminder.getDueTime()));
-      generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(reminder.getPeriod()));
+      writeSchedule(
+          generator, reminder.getDueTime(), reminder.getPeriod(), reminder.getRepetitions(), reminder.getTtl());
       if (reminder.getData() != null) {
         generator.writeBinaryField("data", reminder.getData());
       }
@@ -236,9 +235,11 @@ public class ActorObjectSerializer extends ObjectSerializer {
     String callback = node.get("callback").asText();
     Duration dueTime = extractDurationOrNull(node, "dueTime");
     Duration period = extractDurationOrNull(node, "period");
+    Integer repetitions = extractRepetitionsOrNull(node);
+    Duration ttl = extractDurationOrNull(node, "ttl");
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
-    return new ActorTimerParams(callback, data, dueTime, period);
+    return new ActorTimerParams(callback, data, dueTime, period, repetitions, ttl);
   }
 
   /**
@@ -256,6 +257,8 @@ public class ActorObjectSerializer extends ObjectSerializer {
     JsonNode node = OBJECT_MAPPER.readTree(value);
     Duration dueTime = extractDurationOrNull(node, "dueTime");
     Duration period = extractDurationOrNull(node, "period");
+    Integer repetitions = extractRepetitionsOrNull(node);
+    Duration ttl = extractDurationOrNull(node, "ttl");
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
     // Handle failure policy if present
@@ -266,7 +269,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
     }
 
 
-    return new ActorReminderParams(data, dueTime, period, failurePolicy);
+    return new ActorReminderParams(data, dueTime, period, repetitions, ttl, failurePolicy);
   }
 
   /**
@@ -283,5 +286,47 @@ public class ActorObjectSerializer extends ObjectSerializer {
     }
 
     return DurationUtils.convertDurationFromDaprFormat(valueNode.asText());
+  }
+
+  /**
+   * Extracts the repetitions from the period (e.g. R5/PT10S) or null.
+   *
+   * @param node Node that contains the period attribute.
+   * @return Repetitions or null.
+   */
+  private static Integer extractRepetitionsOrNull(JsonNode node) {
+    JsonNode valueNode = node.get("period");
+    if (valueNode == null) {
+      return null;
+    }
+
+    return ActorScheduleUtils.parseRepetitions(valueNode.asText());
+  }
+
+  /**
+   * Writes the schedule fields of a timer or reminder, omitting the ones that are not set.
+   *
+   * @param generator   JSON generator.
+   * @param dueTime     Due time or null.
+   * @param period      Period or null.
+   * @param repetitions Repetitions or null.
+   * @param ttl         TTL or null.
+   * @throws IOException If cannot generate JSON.
+   */
+  private static void writeSchedule(
+      JsonGenerator generator,
+      Duration dueTime,
+      Duration period,
+      Integer repetitions,
+      Duration ttl) throws IOException {
+    if (dueTime != null) {
+      generator.writeStringField("dueTime", ActorScheduleUtils.formatDuration(dueTime));
+    }
+    if (period != null) {
+      generator.writeStringField("period", ActorScheduleUtils.formatPeriod(period, repetitions));
+    }
+    if (ttl != null) {
+      generator.writeStringField("ttl", ActorScheduleUtils.formatDuration(ttl));
+    }
   }
 }
