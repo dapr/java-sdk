@@ -69,4 +69,37 @@ public class ActorTimerTest {
     // Deep comparison via JsonNode.equals method.
     Assertions.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }
+
+  @Test
+  public void serializeWithRepetitionsAndTtl() throws IOException {
+    ActorTimerParams timer = new ActorTimerParams(
+      "myfunction",
+      null,
+      null,
+      Duration.ofSeconds(10),
+      3,
+      Duration.ofMinutes(5));
+    byte[] s = new ActorObjectSerializer().serialize(timer);
+
+    String expected = "{\"period\":\"R3/PT10S\",\"ttl\":\"0h5m0s0ms\", \"callback\": \"myfunction\"}";
+    Assertions.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
+  }
+
+  @Test
+  public void deserializeWithRepetitions() throws IOException {
+    String payload = "{\"period\":\"R3/PT10S\",\"dueTime\":\"0h0m1s0ms\", \"callback\": \"myfunction\"}";
+    ActorTimerParams timer = new ActorObjectSerializer().deserialize(payload.getBytes(), ActorTimerParams.class);
+
+    Assertions.assertEquals("myfunction", timer.getCallback());
+    Assertions.assertEquals(Duration.ofSeconds(1), timer.getDueTime());
+    Assertions.assertEquals(Duration.ofSeconds(10), timer.getPeriod());
+    Assertions.assertEquals(3, timer.getRepetitions());
+    Assertions.assertNull(timer.getTtl());
+  }
+
+  @Test
+  public void invalidRepetitions() {
+    Assertions.assertThrows(IllegalArgumentException.class,
+      () -> new ActorTimerParams("myfunction", null, null, null, 3, null));
+  }
 }
