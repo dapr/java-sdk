@@ -32,6 +32,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -106,6 +107,29 @@ public class DaprHttpTest {
     assertEquals("POST", request.method());
     assertEquals("http://" + sidecarIp + ":3500/v1.0/state", request.uri().toString());
     assertEquals("xyz", request.headers().firstValue(Headers.DAPR_API_TOKEN).get());
+  }
+
+  @Test
+  public void invokeApi_skipsHeadersWithNullNameOrValue() {
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(new byte[0], HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+    Map<String, String> headers = new HashMap<>();
+    headers.put(null, "orphan-value");
+    headers.put("x-tenant-id", null);
+    headers.put("x-correlation-id", "order-1234");
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
+    daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, (byte[]) null, headers, Context.empty()).block();
+
+    verify(httpClient).sendAsync(requestCaptor.capture(), any());
+
+    HttpRequest request = requestCaptor.getValue();
+
+    assertEquals(List.of("order-1234"), request.headers().allValues("x-correlation-id"));
+    assertEquals(List.of(), request.headers().allValues("x-tenant-id"));
   }
 
   @Test

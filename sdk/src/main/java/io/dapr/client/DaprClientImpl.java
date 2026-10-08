@@ -143,6 +143,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -692,7 +693,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       List<String> pathSegments = new ArrayList<>(Arrays.asList(DaprHttp.API_VERSION, "invoke", appId, "method"));
       pathSegments.addAll(Arrays.asList(methodSegments));
 
-      final Map<String, String> headers = new HashMap<>();
+      final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
       headers.putAll(httpExtension.getHeaders());
       if (metadata != null) {
         headers.putAll(metadata);
@@ -701,7 +702,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       if (contentType != null && !contentType.isEmpty()) {
         headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE, contentType);
       } else {
-        headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE, objectSerializer.getContentType());
+        headers.putIfAbsent(io.dapr.client.domain.Metadata.CONTENT_TYPE, objectSerializer.getContentType());
       }
       Mono<DaprHttp.Response> response = Mono.deferContextual(
           context -> this.httpClient.invokeApi(httpMethod, pathSegments.toArray(new String[0]),
