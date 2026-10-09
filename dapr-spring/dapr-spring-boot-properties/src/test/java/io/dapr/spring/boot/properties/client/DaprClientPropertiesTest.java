@@ -27,6 +27,21 @@ public class DaprClientPropertiesTest {
       .withUserConfiguration(EnableDaprClientProperties.class);
 
   @Test
+  @DisplayName("Should have correct default values when using no-arg constructor")
+  public void shouldHaveCorrectDefaults() {
+
+    DaprClientProperties properties = new DaprClientProperties();
+
+    SoftAssertions.assertSoftly(softly -> {
+      softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
+      softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
+      softly.assertThat(properties.getHttpPort()).isEqualTo(3500);
+      softly.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+      softly.assertThat(properties.getApiToken()).isNull();
+    });
+  }
+
+  @Test
   @DisplayName("Should create DaprClientProperties correctly through constructor")
   public void shouldCreateDaprClientPropertiesCorrectly() {
 
@@ -49,18 +64,33 @@ public class DaprClientPropertiesTest {
 
     DaprClientProperties properties = new DaprClientProperties();
 
-    properties.setGrpcEndpoint("localhost");
-    properties.setGrpcPort(50001);
-    properties.setHttpEndpoint("http://localhost");
-    properties.setHttpPort(3500);
+    properties.setGrpcEndpoint("custom-host");
+    properties.setGrpcPort(60001);
+    properties.setHttpEndpoint("http://custom-host");
+    properties.setHttpPort(4500);
     properties.setApiToken("ABC");
 
     SoftAssertions.assertSoftly(softAssertions -> {
-      softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
-      softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
-      softAssertions.assertThat(properties.getHttpPort()).isEqualTo(3500);
-      softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+      softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("custom-host");
+      softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://custom-host");
+      softAssertions.assertThat(properties.getHttpPort()).isEqualTo(4500);
+      softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(60001);
       softAssertions.assertThat(properties.getApiToken()).isEqualTo("ABC");
+    });
+  }
+
+  @Test
+  @DisplayName("Should have correct defaults when no properties are configured")
+  public void shouldHaveDefaultsWhenNoPropertiesConfigured() {
+    runner.run(context -> {
+      DaprClientProperties properties = context.getBean(DaprClientProperties.class);
+      SoftAssertions.assertSoftly(softly -> {
+        softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
+        softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
+        softly.assertThat(properties.getHttpPort()).isEqualTo(3500);
+        softly.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+        softly.assertThat(properties.getApiToken()).isNull();
+      });
     });
   }
 
