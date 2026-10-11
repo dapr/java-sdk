@@ -241,7 +241,7 @@ public class DaprClientGrpcTest {
         return false;
       }
 
-      if (!"\"hello\"".equals(new String(publishEventRequest.getData().toByteArray()))) {
+      if (!"hello".equals(new String(publishEventRequest.getData().toByteArray()))) {
         return false;
       }
       return true;
@@ -252,6 +252,97 @@ public class DaprClientGrpcTest {
         new PublishEventRequest("pubsubname", "topic", "hello")
             .setContentType("text/plain"));
     result.block();
+  }
+
+  @Test
+  public void publishEventTextContentTypeWithNumberTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest ->
+        "text/plain".equals(publishEventRequest.getDataContentType())
+            && "42".equals(new String(publishEventRequest.getData().toByteArray()))), any());
+
+    client.publishEvent(new PublishEventRequest("pubsubname", "topic", 42).setContentType("text/plain")).block();
+  }
+
+  @Test
+  public void publishEventTextContentTypeWithObjectFallsBackToSerializerTest() {
+    MyObject event = new MyObject(1, "Event");
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest -> {
+      String data = new String(publishEventRequest.getData().toByteArray());
+      return "text/plain".equals(publishEventRequest.getDataContentType())
+          && ("{\"id\":1,\"value\":\"Event\"}".equals(data) || "{\"value\":\"Event\",\"id\":1}".equals(data));
+    }), any());
+
+    client.publishEvent(new PublishEventRequest("pubsubname", "topic", event).setContentType("text/plain")).block();
+  }
+
+  @Test
+  public void publishEventTextContentTypeWithBooleanTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest ->
+        "text/plain".equals(publishEventRequest.getDataContentType())
+            && "true".equals(new String(publishEventRequest.getData().toByteArray()))), any());
+
+    client.publishEvent(new PublishEventRequest("pubsubname", "topic", true).setContentType("text/plain")).block();
+  }
+
+  @Test
+  public void publishEventNonTextContentTypeWithStringTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest ->
+        "application/json".equals(publishEventRequest.getDataContentType())
+            && "\"hello\"".equals(new String(publishEventRequest.getData().toByteArray()))), any());
+
+    client.publishEvent(
+        new PublishEventRequest("pubsubname", "topic", "hello").setContentType("application/json")).block();
+  }
+
+  @Test
+  public void publishEventTextContentTypeWithCustomSerializerTest() throws IOException {
+    DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
+    when(mockSerializer.serialize("hello")).thenReturn("custom".getBytes());
+    client = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, new DefaultObjectSerializer());
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest ->
+        "text/plain".equals(publishEventRequest.getDataContentType())
+            && "custom".equals(new String(publishEventRequest.getData().toByteArray()))), any());
+
+    client.publishEvent(new PublishEventRequest("pubsubname", "topic", "hello").setContentType("text/plain")).block();
+  }
+
+  @Test
+  public void publishEventStringWithoutContentTypeTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest ->
+        "application/json".equals(publishEventRequest.getDataContentType())
+            && "\"hello\"".equals(new String(publishEventRequest.getData().toByteArray()))), any());
+
+    client.publishEvent("pubsubname", "topic", "hello").block();
   }
 
   @Test
