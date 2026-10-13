@@ -46,6 +46,7 @@ import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
 import static io.dapr.utils.TestUtils.formatIpAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -654,6 +655,95 @@ public class DaprClientHttpTest {
 
     assertEquals(traceparent, request.headers().firstValue("traceparent").get());
     assertEquals(tracestate, request.headers().firstValue("tracestate").get());
+  }
+
+  @Test
+  public void invokeServiceForwardsHttpExtensionHeadersAndMetadata() {
+    HttpRequest request = invokeAndCaptureRequest(
+        new HttpExtension(DaprHttp.HttpMethods.GET, null, Map.of("aaa", "96969")),
+        Map.of("bbb", "123"));
+
+    assertEquals(List.of("96969"), request.headers().allValues("aaa"));
+    assertEquals(List.of("123"), request.headers().allValues("bbb"));
+  }
+
+  @Test
+  public void invokeServiceDropsHopByHopHeadersWhenForwardingInboundHeaders() {
+    Map<String, String> inboundHeaders = Map.of(
+        "Host", "127.0.0.1:3000",
+        "Connection", "Keep-Alive",
+        "Content-Length", "13",
+        "x-forwarded-host", "test.local");
+
+    HttpRequest request = invokeAndCaptureRequest(
+        new HttpExtension(DaprHttp.HttpMethods.POST, null, inboundHeaders), inboundHeaders);
+
+    assertEquals(List.of("test.local"), request.headers().allValues("x-forwarded-host"));
+    assertEquals(List.of(), request.headers().allValues("host"));
+    assertEquals(List.of(), request.headers().allValues("connection"));
+    assertEquals(List.of(), request.headers().allValues("content-length"));
+  }
+
+  @Test
+  public void invokeServiceSendsCallerContentTypeOnce() {
+    HttpRequest request = invokeAndCaptureRequest(
+        new HttpExtension(DaprHttp.HttpMethods.POST, null, Map.of("Content-Type", "text/plain")), null);
+
+    assertEquals(List.of("text/plain"), request.headers().allValues("content-type"));
+  }
+
+  @Test
+  public void invokeServiceDefaultsContentTypeToSerializer() {
+    HttpRequest request = invokeAndCaptureRequest(HttpExtension.POST, null);
+
+    assertEquals(List.of("application/json"), request.headers().allValues("content-type"));
+  }
+
+  @Test
+  public void invokeServiceExplicitHeaderOverridesTracingContextOnce() {
+    String contextTraceparent = "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01";
+    String inboundTraceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+    HttpRequest request = invokeAndCaptureRequest(
+        new HttpExtension(DaprHttp.HttpMethods.POST, null, Map.of("Traceparent", inboundTraceparent)),
+        null,
+        Context.of("traceparent", contextTraceparent));
+
+    assertEquals(List.of(inboundTraceparent), request.headers().allValues("traceparent"));
+  }
+
+  @Test
+  public void invokeServiceDoesNotLetCallerOverrideSdkOwnedHeaders() {
+    DaprHttp tokenedDaprHttp = new DaprHttp(sidecarIp, 3000, "xyz", READ_TIMEOUT, httpClient);
+    daprClientHttp = buildDaprClient(tokenedDaprHttp);
+
+    HttpRequest request = invokeAndCaptureRequest(
+        new HttpExtension(DaprHttp.HttpMethods.POST, null,
+            Map.of(Headers.DAPR_API_TOKEN, "forged", "user-agent", "curl/8.0")),
+        null);
+
+    assertEquals(List.of("xyz"), request.headers().allValues(Headers.DAPR_API_TOKEN));
+    assertEquals(1, request.headers().allValues(Headers.DAPR_USER_AGENT).size());
+    assertNotEquals("curl/8.0", request.headers().firstValue(Headers.DAPR_USER_AGENT).orElse(null));
+  }
+
+  private HttpRequest invokeAndCaptureRequest(HttpExtension httpExtension, Map<String, String> metadata) {
+    return invokeAndCaptureRequest(httpExtension, metadata, Context.empty());
+  }
+
+  private HttpRequest invokeAndCaptureRequest(
+      HttpExtension httpExtension, Map<String, String> metadata, ContextView context) {
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(new byte[0], HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    daprClientHttp.invokeMethod("41", "neworder", "", httpExtension, metadata, byte[].class)
+        .contextWrite(it -> it.putAll(context))
+        .block();
+
+    verify(httpClient).sendAsync(requestCaptor.capture(), any());
+    return requestCaptor.getValue();
   }
 
   @Test
