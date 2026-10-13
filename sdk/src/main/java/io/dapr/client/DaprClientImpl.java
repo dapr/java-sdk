@@ -368,18 +368,29 @@ public class DaprClientImpl extends AbstractDaprClient {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
       Object data = request.getData();
-      DaprPubsubProtos.PublishEventRequest.Builder envelopeBuilder = DaprPubsubProtos.PublishEventRequest.newBuilder()
-          .setTopic(topic)
-          .setPubsubName(pubsubName)
-          .setData(ByteString.copyFrom(objectSerializer.serialize(data)));
 
       // Content-type can be overwritten on a per-request basis.
       // It allows CloudEvents to be handled differently, for example.
       String contentType = request.getContentType();
-      if (contentType == null || contentType.isEmpty()) {
+      byte[] serializedData;
+      if (Strings.isNullOrEmpty(contentType)) {
+        serializedData = objectSerializer.serialize(data);
         contentType = objectSerializer.getContentType();
+      } else if (objectSerializer instanceof DefaultObjectSerializer
+          && DefaultContentTypeConverter.isStringContentType(contentType)
+          && (data instanceof String || data instanceof Number || data instanceof Boolean)) {
+        // Text content is sent as-is, otherwise the JSON serializer would quote it and the
+        // payload would not match the given content type.
+        serializedData = DefaultContentTypeConverter.convertEventToBytesForGrpc(data, contentType);
+      } else {
+        serializedData = objectSerializer.serialize(data);
       }
-      envelopeBuilder.setDataContentType(contentType);
+
+      DaprPubsubProtos.PublishEventRequest.Builder envelopeBuilder = DaprPubsubProtos.PublishEventRequest.newBuilder()
+          .setTopic(topic)
+          .setPubsubName(pubsubName)
+          .setData(ByteString.copyFrom(serializedData))
+          .setDataContentType(contentType);
 
       Map<String, String> metadata = request.getMetadata();
       if (metadata != null) {
