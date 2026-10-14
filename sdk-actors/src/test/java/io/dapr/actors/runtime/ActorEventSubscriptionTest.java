@@ -174,6 +174,22 @@ public class ActorEventSubscriptionTest {
   }
 
   @Test
+  public void closeRightAfterSubscribeLeavesNoStreamOpen() throws Exception {
+    for (int i = 0; i < 50; i++) {
+      subscription = runtime.subscribeActorEvents(DaprGrpc.newStub(channel), Duration.ofSeconds(10));
+      subscription.close();
+
+      subscription.awaitTermination();
+      assertFalse(subscription.isRunning());
+    }
+
+    Stream stream;
+    while ((stream = dapr.streams.poll()) != null) {
+      assertTrue(stream.ended.poll(5, TimeUnit.SECONDS), "a stream was left open");
+    }
+  }
+
+  @Test
   public void cannotSubscribeTwice() throws Exception {
     subscribe(Duration.ofSeconds(10));
 

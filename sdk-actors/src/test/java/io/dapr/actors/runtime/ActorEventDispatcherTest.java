@@ -54,6 +54,8 @@ public class ActorEventDispatcherTest {
 
   private static final AtomicReference<String> LAST_TIMER_DATA = new AtomicReference<>();
 
+  private static final AtomicReference<Duration> LAST_REMINDER_PERIOD = new AtomicReference<>();
+
   public interface MyRemindableActor {
     void receiveTimer(String data);
   }
@@ -72,7 +74,10 @@ public class ActorEventDispatcherTest {
 
     @Override
     public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
-      return Mono.fromRunnable(() -> LAST_REMINDER.set(reminderName + ":" + state));
+      return Mono.fromRunnable(() -> {
+        LAST_REMINDER_PERIOD.set(period);
+        LAST_REMINDER.set(reminderName + ":" + state);
+      });
     }
 
     @Override
@@ -244,6 +249,8 @@ public class ActorEventDispatcherTest {
 
     assertEquals("9", response.getReminderResponse().getId());
     assertEquals("empty:null", LAST_REMINDER.get());
+    // Same as over HTTP, where Dapr sends an empty period for a one-shot reminder.
+    assertEquals(Duration.ZERO, LAST_REMINDER_PERIOD.get());
   }
 
   @Test

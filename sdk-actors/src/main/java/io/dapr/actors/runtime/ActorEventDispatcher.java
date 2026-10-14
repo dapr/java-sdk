@@ -193,12 +193,9 @@ final class ActorEventDispatcher {
       if (callback != null) {
         generator.writeStringField("callback", callback);
       }
-      if (!dueTime.isEmpty()) {
-        generator.writeStringField("dueTime", dueTime);
-      }
-      if (!period.isEmpty()) {
-        generator.writeStringField("period", period);
-      }
+      // Dapr always sends both fields over HTTP, empty when unset, and the serializer reads an empty one as zero.
+      generator.writeStringField("dueTime", dueTime);
+      generator.writeStringField("period", period);
       byte[] raw = unwrapData(data);
       if (raw != null && raw.length > 0) {
         generator.writeFieldName("data");

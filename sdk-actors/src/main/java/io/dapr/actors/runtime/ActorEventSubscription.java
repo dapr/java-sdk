@@ -168,6 +168,10 @@ public final class ActorEventSubscription implements Closeable {
       while (running.get()) {
         Session current = new Session();
         session = current;
+        // close() sets running before reading session, so one of the two always sees the other.
+        if (!running.get()) {
+          return;
+        }
         Throwable error = current.run();
         if (!running.get()) {
           return;
@@ -219,15 +223,23 @@ public final class ActorEventSubscription implements Closeable {
 
     Throwable run() throws InterruptedException {
       synchronized (this) {
+        if (closed) {
+          return null;
+        }
         requests = (ClientCallStreamObserver<SubscribeActorEventsRequestAlpha1>)
             stub.subscribeActorEventsAlpha1(this);
       }
-      send(ActorEventDispatcher.buildInitialRequest(runtime.getConfig()));
+      try {
+        send(ActorEventDispatcher.buildInitialRequest(runtime.getConfig()));
 
-      if (!handshake.await(handshakeTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-        cancel("timed out waiting for Dapr to acknowledge the actor registration");
+        if (!handshake.await(handshakeTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
+          cancel("timed out waiting for Dapr to acknowledge the actor registration");
+        }
+        done.await();
+      } catch (InterruptedException e) {
+        shutdown();
+        throw e;
       }
-      done.await();
       return error;
     }
 
@@ -299,8 +311,10 @@ public final class ActorEventSubscription implements Closeable {
         return;
       }
       closed = true;
-      requests.onCompleted();
-      requests.cancel("actor event subscription closed", null);
+      if (requests != null) {
+        requests.onCompleted();
+        requests.cancel("actor event subscription closed", null);
+      }
     }
   }
 }
