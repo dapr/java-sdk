@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
+import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorType;
 import io.dapr.exceptions.DaprException;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsRequestAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsResponseAlpha1;
@@ -197,9 +199,81 @@ public class ActorEventSubscriptionTest {
         () -> runtime.subscribeActorEvents(DaprGrpc.newStub(channel), Duration.ofSeconds(10)));
   }
 
+  @Test
+  public void unexpectedMessageAfterAckIsIgnored() throws Exception {
+    Stream stream = subscribe(Duration.ofSeconds(10));
+    stream.next();
+    stream.send(ACK);
+    stream.send(ACK);
+
+    stream.send(ActorEventDispatcherTest.invoke("a", "MyGreatActor", "say"));
+    assertEquals("a", stream.next().getInvokeResponse().getId());
+  }
+
+  @Test
+  public void closeWaitsForInFlightCallbacks() throws Exception {
+    runtime.registerActor(SlowActorImpl.class);
+    runtime.getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(5));
+    Stream stream = subscribe(Duration.ofSeconds(10));
+    stream.next();
+    stream.send(ACK);
+
+    stream.send(ActorEventDispatcherTest.invoke("slow", "SlowActor", "slow"));
+    subscription.close();
+
+    assertEquals("slow", stream.next().getInvokeResponse().getId());
+  }
+
+  @Test
+  public void subscribeWithoutChannelFails() {
+    assertThrows(IllegalStateException.class, () -> runtime.subscribeActorEvents());
+  }
+
+  @Test
+  public void runtimeSubscribesOnItsChannelAndClosesTheSubscription() throws Exception {
+    ActorRuntime channelRuntime = ActorEventDispatcherTest.newRuntime(channel);
+    channelRuntime.registerActor(ActorRuntimeTest.MyActorImpl.class);
+    subscription = channelRuntime.subscribeActorEvents();
+    Stream first = dapr.nextStream();
+    first.next();
+    first.send(ACK);
+
+    // Registered after subscribing: Dapr learns about it on the next reconnect.
+    channelRuntime.registerActor(SlowActorImpl.class);
+    first.responses.onCompleted();
+    Stream second = dapr.nextStream();
+    assertTrue(second.next().getInitialRequest().getEntitiesList().contains("SlowActor"));
+
+    channelRuntime.close();
+    assertFalse(subscription.isRunning());
+    assertTrue(second.ended.poll(5, TimeUnit.SECONDS));
+  }
+
   private Stream subscribe(Duration handshakeTimeout) throws InterruptedException {
     subscription = runtime.subscribeActorEvents(DaprGrpc.newStub(channel), handshakeTimeout);
     return dapr.nextStream();
+  }
+
+  public interface SlowActor {
+    String slow();
+  }
+
+  @ActorType(name = "SlowActor")
+  public static class SlowActorImpl extends AbstractActor implements SlowActor {
+
+    public SlowActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+    }
+
+    @Override
+    public String slow() {
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      return "done";
+    }
   }
 
   /**

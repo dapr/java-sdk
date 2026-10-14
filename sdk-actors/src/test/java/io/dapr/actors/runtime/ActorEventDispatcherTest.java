@@ -25,9 +25,11 @@ import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsRequestAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsRequestInitialAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsResponseAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsResponseDeactivateRequestAlpha1;
+import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsResponseInitialAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsResponseInvokeRequestAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsResponseReminderRequestAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsResponseTimerRequestAlpha1;
+import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -106,13 +109,17 @@ public class ActorEventDispatcherTest {
   private ActorRuntime runtime;
 
   static ActorRuntime newRuntime() throws Exception {
+    return newRuntime(null);
+  }
+
+  static ActorRuntime newRuntime(ManagedChannel channel) throws Exception {
     Constructor<ActorRuntime> constructor = (Constructor<ActorRuntime>) Arrays.stream(
             ActorRuntime.class.getDeclaredConstructors())
         .filter(c -> c.getParameters().length == 2)
         .findFirst()
         .get();
     constructor.setAccessible(true);
-    return constructor.newInstance(null, mock(DaprClient.class));
+    return constructor.newInstance(channel, mock(DaprClient.class));
   }
 
   @BeforeEach
@@ -131,7 +138,11 @@ public class ActorEventDispatcherTest {
         .setDrainBalancedActors(true)
         .addActorTypeConfig(new ActorTypeConfig()
             .setActorTypeName("MyGreatActor")
-            .setActorIdleTimeout(Duration.ofSeconds(30)));
+            .setActorIdleTimeout(Duration.ofSeconds(30)))
+        .addActorTypeConfig(new ActorTypeConfig()
+            .setActorTypeName("MyRemindableActor")
+            .setDrainOngoingCallTimeout(Duration.ofSeconds(5))
+            .setDrainBalancedActors(false));
 
     SubscribeActorEventsRequestInitialAlpha1 initial =
         ActorEventDispatcher.buildInitialRequest(runtime.getConfig()).getInitialRequest();
@@ -146,6 +157,56 @@ public class ActorEventDispatcherTest {
     assertEquals(Arrays.asList("MyGreatActor"), entityConfig.getEntitiesList());
     assertEquals(30, entityConfig.getActorIdleTimeout().getSeconds());
     assertFalse(entityConfig.hasDrainOngoingCallTimeout());
+    ActorEntityConfig secondConfig = initial.getEntitiesConfig(1);
+    assertFalse(secondConfig.hasActorIdleTimeout());
+    assertEquals(5, secondConfig.getDrainOngoingCallTimeout().getSeconds());
+    assertTrue(secondConfig.hasDrainRebalancedActors());
+    assertFalse(secondConfig.getDrainRebalancedActors());
+  }
+
+  @Test
+  public void unexpectedEventFails() {
+    SubscribeActorEventsResponseAlpha1 request = SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setInitialResponse(SubscribeActorEventsResponseInitialAlpha1.getDefaultInstance())
+        .build();
+
+    assertThrows(IllegalArgumentException.class, () -> dispatch(request));
+  }
+
+  @Test
+  public void invokePassesData() throws Exception {
+    SubscribeActorEventsResponseAlpha1 request = SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setInvokeRequest(SubscribeActorEventsResponseInvokeRequestAlpha1.newBuilder()
+            .setId("12")
+            .setActorType("MyRemindableActor")
+            .setActorId(UUID.randomUUID().toString())
+            .setMethod("receiveTimer")
+            .setData(ByteString.copyFrom(SERIALIZER.serialize("payload"))))
+        .build();
+
+    SubscribeActorEventsRequestAlpha1 response = dispatch(request);
+
+    assertEquals("12", response.getInvokeResponse().getId());
+    assertEquals("payload", LAST_TIMER_DATA.get());
+  }
+
+  @Test
+  public void callbacksForUnknownActorTypeAreNotFound() {
+    String actorId = UUID.randomUUID().toString();
+    SubscribeActorEventsResponseAlpha1 reminder = SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setReminderRequest(SubscribeActorEventsResponseReminderRequestAlpha1.newBuilder()
+            .setId("13").setActorType("Unknown").setActorId(actorId).setName("r"))
+        .build();
+    SubscribeActorEventsResponseAlpha1 timer = SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setTimerRequest(SubscribeActorEventsResponseTimerRequestAlpha1.newBuilder()
+            .setId("14").setActorType("Unknown").setActorId(actorId).setName("t").setCallback("receiveTimer"))
+        .build();
+
+    for (SubscribeActorEventsResponseAlpha1 request :
+        Arrays.asList(reminder, timer, deactivate("15", "Unknown", actorId))) {
+      SubscribeActorEventsRequestAlpha1 response = dispatch(request);
+      assertEquals(Status.Code.NOT_FOUND.value(), response.getRequestFailed().getCode());
+    }
   }
 
   @Test
@@ -271,6 +332,59 @@ public class ActorEventDispatcherTest {
 
     assertEquals("10", response.getTimerResponse().getId());
     assertEquals("tick", LAST_TIMER_DATA.get());
+  }
+
+  @Test
+  public void reminderAcceptsDataNotWrappedInBytesValue() throws Exception {
+    String base64 = Base64.getEncoder().encodeToString(SERIALIZER.serialize("raw"));
+    SubscribeActorEventsResponseAlpha1 request = SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setReminderRequest(SubscribeActorEventsResponseReminderRequestAlpha1.newBuilder()
+            .setId("16")
+            .setActorType("MyRemindableActor")
+            .setActorId(UUID.randomUUID().toString())
+            .setName("rawreminder")
+            .setData(Any.newBuilder()
+                .setTypeUrl("type.googleapis.com/unknown")
+                .setValue(ByteString.copyFrom("\"" + base64 + "\"", StandardCharsets.UTF_8))))
+        .build();
+
+    SubscribeActorEventsRequestAlpha1 response = dispatch(request);
+
+    assertEquals("16", response.getReminderResponse().getId());
+    assertEquals("rawreminder:raw", LAST_REMINDER.get());
+  }
+
+  @Test
+  public void reminderWithInvalidDataFails() {
+    SubscribeActorEventsResponseAlpha1 request = SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setReminderRequest(SubscribeActorEventsResponseReminderRequestAlpha1.newBuilder()
+            .setId("17")
+            .setActorType("MyRemindableActor")
+            .setActorId(UUID.randomUUID().toString())
+            .setName("broken")
+            .setData(Any.pack(BytesValue.of(ByteString.copyFromUtf8("{not json")))))
+        .build();
+
+    SubscribeActorEventsRequestAlpha1 response = dispatch(request);
+
+    assertEquals("17", response.getRequestFailed().getId());
+    assertEquals(Status.Code.UNKNOWN.value(), response.getRequestFailed().getCode());
+  }
+
+  @Test
+  public void timerWithUnknownCallbackFails() {
+    SubscribeActorEventsResponseAlpha1 request = SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setTimerRequest(SubscribeActorEventsResponseTimerRequestAlpha1.newBuilder()
+            .setId("18")
+            .setActorType("MyRemindableActor")
+            .setActorId(UUID.randomUUID().toString())
+            .setName("t")
+            .setCallback("missing"))
+        .build();
+
+    SubscribeActorEventsRequestAlpha1 response = dispatch(request);
+
+    assertEquals("18", response.getRequestFailed().getId());
   }
 
   /**
