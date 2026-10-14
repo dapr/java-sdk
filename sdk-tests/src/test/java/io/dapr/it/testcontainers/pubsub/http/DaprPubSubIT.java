@@ -34,6 +34,7 @@ import io.dapr.serializer.CustomizableObjectSerializer;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
 import io.dapr.utils.TypeRef;
 import org.assertj.core.api.SoftAssertions;
 import org.jetbrains.annotations.NotNull;
@@ -82,8 +83,7 @@ public class DaprPubSubIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(DaprPubSubIT.class);
   private static final Network DAPR_NETWORK = Network.newNetwork();
-  private static final Random RANDOM = new Random();
-  private static final int PORT = RANDOM.nextInt(1000) + 8000;
+  private static final int PORT = DaprContainerFactory.allocateFreePort();
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port.*";
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
