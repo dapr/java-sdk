@@ -26,8 +26,7 @@ public class Configuration {
   private final NameResolutionConfigurationSettings nameResolution;
   private final ComponentsConfigurationSettings components;
   private final SecretsConfigurationSettings secrets;
-
-  // @TODO: add middleware httpPipeline https://github.com/dapr/java-sdk/issues/1283
+  private final HttpPipeline httpPipeline;
 
   /**
    * Creates a new configuration.
@@ -176,6 +175,36 @@ public class Configuration {
       ComponentsConfigurationSettings components,
       SecretsConfigurationSettings secrets
   ) {
+    this(name, tracing, appHttpPipeline, mtls, logging, metrics, nameResolution, components, secrets, null);
+  }
+
+  /**
+   * Creates a new configuration.
+   *
+   * @param name            Configuration name.
+   * @param tracing         TracingConfigParameters tracing configuration
+   *                        parameters.
+   * @param appHttpPipeline AppHttpPipeline middleware configuration.
+   * @param mtls            MtlsConfigurationSettings mTLS configuration.
+   * @param logging         LoggingConfigurationSettings logging configuration.
+   * @param metrics         MetricsConfigurationSettings metrics configuration.
+   * @param nameResolution  NameResolutionConfigurationSettings name resolution configuration.
+   * @param components      ComponentsConfigurationSettings disallowed component types configuration.
+   * @param secrets         SecretsConfigurationSettings secret store access configuration.
+   * @param httpPipeline    HttpPipeline middleware configuration for incoming requests.
+   */
+  public Configuration(
+      String name,
+      TracingConfigurationSettings tracing,
+      AppHttpPipeline appHttpPipeline,
+      MtlsConfigurationSettings mtls,
+      LoggingConfigurationSettings logging,
+      MetricsConfigurationSettings metrics,
+      NameResolutionConfigurationSettings nameResolution,
+      ComponentsConfigurationSettings components,
+      SecretsConfigurationSettings secrets,
+      HttpPipeline httpPipeline
+  ) {
     this.name = name;
     this.tracing = tracing;
     this.appHttpPipeline = appHttpPipeline;
@@ -185,6 +214,7 @@ public class Configuration {
     this.nameResolution = nameResolution;
     this.components = components;
     this.secrets = secrets;
+    this.httpPipeline = httpPipeline;
   }
 
   public String getName() {
@@ -221,5 +251,9 @@ public class Configuration {
 
   public SecretsConfigurationSettings getSecrets() {
     return secrets;
+  }
+
+  public HttpPipeline getHttpPipeline() {
+    return httpPipeline;
   }
 }
