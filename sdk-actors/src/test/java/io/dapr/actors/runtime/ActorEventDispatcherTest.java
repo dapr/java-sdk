@@ -81,6 +81,23 @@ public class ActorEventDispatcherTest {
     }
   }
 
+  public interface ThrowingActor {
+    void lookup() throws NoSuchMethodException;
+  }
+
+  @ActorType(name = "ThrowingActor")
+  public static class ThrowingActorImpl extends AbstractActor implements ThrowingActor {
+
+    public ThrowingActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+    }
+
+    @Override
+    public void lookup() throws NoSuchMethodException {
+      throw new NoSuchMethodException("thrown by the actor");
+    }
+  }
+
   private ActorRuntime runtime;
 
   static ActorRuntime newRuntime() throws Exception {
@@ -98,6 +115,7 @@ public class ActorEventDispatcherTest {
     runtime = newRuntime();
     runtime.registerActor(ActorRuntimeTest.MyActorImpl.class);
     runtime.registerActor(MyRemindableActorImpl.class);
+    runtime.registerActor(ThrowingActorImpl.class);
   }
 
   @Test
@@ -113,7 +131,7 @@ public class ActorEventDispatcherTest {
     SubscribeActorEventsRequestInitialAlpha1 initial =
         ActorEventDispatcher.buildInitialRequest(runtime.getConfig()).getInitialRequest();
 
-    assertEquals(Arrays.asList("MyGreatActor", "MyRemindableActor"), initial.getEntitiesList());
+    assertEquals(Arrays.asList("MyGreatActor", "MyRemindableActor", "ThrowingActor"), initial.getEntitiesList());
     assertEquals(120, initial.getActorIdleTimeout().getSeconds());
     assertEquals(1, initial.getDrainOngoingCallTimeout().getSeconds());
     assertEquals(500_000_000, initial.getDrainOngoingCallTimeout().getNanos());
@@ -160,6 +178,14 @@ public class ActorEventDispatcherTest {
 
     assertEquals("3", response.getRequestFailed().getId());
     assertEquals(Status.Code.NOT_FOUND.value(), response.getRequestFailed().getCode());
+  }
+
+  @Test
+  public void noSuchMethodThrownByActorIsUnknown() {
+    SubscribeActorEventsRequestAlpha1 response = dispatch(invoke("11", "ThrowingActor", "lookup"));
+
+    assertEquals("11", response.getRequestFailed().getId());
+    assertEquals(Status.Code.UNKNOWN.value(), response.getRequestFailed().getCode());
   }
 
   @Test

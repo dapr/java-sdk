@@ -16,6 +16,7 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
 import io.dapr.config.Properties;
+import io.dapr.internal.grpc.interceptors.DaprApiTokenInterceptor;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
@@ -86,6 +87,11 @@ public class ActorRuntime implements Closeable {
   private volatile ActorEventSubscription actorEventSubscription;
 
   /**
+   * Dapr API token sent on the actor event stream, or null.
+   */
+  private String apiToken;
+
+  /**
    * The default constructor. This should not be called directly.
    *
    * @throws IllegalStateException If cannot instantiate Runtime.
@@ -101,6 +107,7 @@ public class ActorRuntime implements Closeable {
    */
   private ActorRuntime(Properties properties) throws IllegalStateException {
     this(NetworkUtils.buildGrpcManagedChannel(properties));
+    this.apiToken = properties.getValue(Properties.API_TOKEN);
   }
 
   /**
@@ -285,7 +292,9 @@ public class ActorRuntime implements Closeable {
     if (this.channel == null) {
       throw new IllegalStateException("ActorRuntime has no gRPC channel to Dapr.");
     }
-    return subscribeActorEvents(DaprGrpc.newStub(this.channel), ACTOR_EVENTS_HANDSHAKE_TIMEOUT);
+    DaprGrpc.DaprStub stub = DaprGrpc.newStub(this.channel)
+        .withInterceptors(new DaprApiTokenInterceptor(this.apiToken));
+    return subscribeActorEvents(stub, ACTOR_EVENTS_HANDSHAKE_TIMEOUT);
   }
 
   /**

@@ -53,7 +53,10 @@ public final class ActorEventSubscription implements Closeable {
 
   private static final Duration MAX_BACKOFF = Duration.ofSeconds(30);
 
-  private static final Duration DEFAULT_DRAIN_TIMEOUT = Duration.ofSeconds(10);
+  /**
+   * Dapr's default drain ongoing call timeout, used when the runtime config leaves it unset.
+   */
+  private static final Duration DEFAULT_DRAIN_TIMEOUT = Duration.ofSeconds(2);
 
   private static final Set<Status.Code> TERMINAL_CODES = EnumSet.of(
       Status.Code.FAILED_PRECONDITION,

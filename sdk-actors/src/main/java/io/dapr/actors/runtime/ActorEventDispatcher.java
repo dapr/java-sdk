@@ -232,10 +232,10 @@ final class ActorEventDispatcher {
   }
 
   private static SubscribeActorEventsRequestAlpha1 failed(String id, Throwable error) {
-    for (Throwable cause = error; cause != null; cause = cause.getCause()) {
-      if (cause instanceof NoSuchMethodException) {
-        return failed(id, Status.Code.NOT_FOUND, cause.getMessage());
-      }
+    // Only the method lookup itself is a not-found: a NoSuchMethodException thrown by the actor's own code
+    // arrives wrapped, and must stay retryable.
+    if (error instanceof NoSuchMethodException) {
+      return failed(id, Status.Code.NOT_FOUND, error.getMessage());
     }
     return failed(id, Status.Code.UNKNOWN, error.toString());
   }
