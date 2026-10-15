@@ -53,7 +53,12 @@ public final class DaprContainerFactory {
         .withAppChannelAddress("host.testcontainers.internal");
   }
 
-  private static int allocateFreePort() {
+  /**
+   * Allocates a port that is free on the host at the time of the call.
+   *
+   * @return a free port number
+   */
+  public static int allocateFreePort() {
     try (ServerSocket socket = new ServerSocket(0)) {
       socket.setReuseAddress(true);
       return socket.getLocalPort();
