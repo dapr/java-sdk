@@ -19,6 +19,7 @@ import io.dapr.testcontainers.ComponentsConfigurationSettings;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.HttpMetricsConfigurationSettings;
+import io.dapr.testcontainers.HttpPipeline;
 import io.dapr.testcontainers.ListEntry;
 import io.dapr.testcontainers.LoggingConfigurationSettings;
 import io.dapr.testcontainers.MetricsConfigurationSettings;
@@ -993,5 +994,87 @@ class ConfigurationYamlConverterTest {
         + "      defaultAccess: deny\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithHttpPipelineToYaml() {
+    HttpPipeline httpPipeline = new HttpPipeline(List.of(
+        new ListEntry("uppercase", "middleware.http.uppercase"),
+        new ListEntry("ratelimit", "middleware.http.ratelimit")));
+
+    Configuration configuration =
+        new Configuration("my-config", null, null, null, null, null, null, null, null, httpPipeline);
+    assertEquals(2, configuration.getHttpPipeline().getHandlers().size());
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  httpPipeline:\n"
+        + "    handlers:\n"
+        + "    - name: uppercase\n"
+        + "      type: middleware.http.uppercase\n"
+        + "    - name: ratelimit\n"
+        + "      type: middleware.http.ratelimit\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithHttpPipelineAndAppHttpPipelineToYaml() {
+    HttpPipeline httpPipeline = new HttpPipeline(List.of(new ListEntry("uppercase", "middleware.http.uppercase")));
+    AppHttpPipeline appHttpPipeline =
+        new AppHttpPipeline(List.of(new ListEntry("alias", "middleware.http.routeralias")));
+
+    Configuration configuration =
+        new Configuration("my-config", null, appHttpPipeline, null, null, null, null, null, null, httpPipeline);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  httpPipeline:\n"
+        + "    handlers:\n"
+        + "    - name: uppercase\n"
+        + "      type: middleware.http.uppercase\n"
+        + "  appHttpPipeline:\n"
+        + "    handlers:\n"
+        + "    - name: alias\n"
+        + "      type: middleware.http.routeralias\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithNullHttpPipelineHandlersToYaml() {
+    HttpPipeline httpPipeline = new HttpPipeline(null);
+    assertNull(httpPipeline.getHandlers());
+
+    Configuration configuration =
+        new Configuration("my-config", null, null, null, null, null, null, null, null, httpPipeline);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  httpPipeline:\n"
+        + "    handlers: null\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithoutHttpPipelineHasNullGetter() {
+    Configuration configuration = new Configuration("my-config", null, null);
+    assertNull(configuration.getHttpPipeline());
   }
 }
