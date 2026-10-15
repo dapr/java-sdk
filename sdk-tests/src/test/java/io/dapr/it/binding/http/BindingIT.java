@@ -52,11 +52,11 @@ public class BindingIT extends BaseContainerIT {
           client.invokeBinding("github-http-binding-404", "get", "").block();
           fail("Should throw an exception");
         } catch (DaprException e) {
-          assertEquals(404, e.getHttpStatusCode());
+          assertGitHubErrorStatus(e.getHttpStatusCode());
           // This HTTP binding did not set `errorIfNot2XX` to false in component metadata, so the error payload is not
           // consistent between HTTP and gRPC.
           assertTrue(new String(e.getPayload()).contains(
-              "error invoking output binding github-http-binding-404: received status code 404"));
+              "error invoking output binding github-http-binding-404: received status code " + e.getHttpStatusCode()));
         }
       }, 10000);
     }
@@ -78,16 +78,23 @@ public class BindingIT extends BaseContainerIT {
           client.invokeBinding("github-http-binding-404-success", "get", "").block();
           fail("Should throw an exception");
         } catch (DaprException e) {
-          assertEquals(404, e.getHttpStatusCode());
+          assertGitHubErrorStatus(e.getHttpStatusCode());
           // The HTTP binding must set `errorIfNot2XX` to false in component metadata for the error payload to be
           // consistent between HTTP and gRPC.
           assertTrue(new String(e.getPayload()).contains("message"));
-          assertTrue(new String(e.getPayload()).contains("Not Found"));
+          assertTrue(new String(e.getPayload()).contains(
+              e.getHttpStatusCode() == 404 ? "Not Found" : "API rate limit exceeded"));
           assertTrue(new String(e.getPayload()).contains("documentation_url"));
           assertTrue(new String(e.getPayload()).contains("https://docs.github.com/rest"));
         }
       }, 10000);
     }
+  }
+
+  // api.github.com answers 404 for an unknown path, or 403 when the runner's IP has used up the unauthenticated
+  // rate limit. Either way the binding must pass the status and body through.
+  private static void assertGitHubErrorStatus(int status) {
+    assertTrue(status == 404 || status == 403, "expected 404 or 403 but was " + status);
   }
 
   @Test
