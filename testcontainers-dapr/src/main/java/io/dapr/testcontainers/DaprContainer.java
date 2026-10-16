@@ -480,7 +480,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     }
 
     if (components.isEmpty()) {
-      components.add(new Component("kvstore", "state.in-memory", "v1", Collections.emptyMap()));
+      // The default state store is also the actor state store, so actors and workflows work out of the box
+      components.add(new Component("kvstore", "state.in-memory", "v1",
+              Collections.singletonMap("actorStateStore", "true")));
       components.add(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()));
     }
 
