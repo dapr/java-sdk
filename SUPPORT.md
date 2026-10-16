@@ -14,8 +14,8 @@ at a given version pins the whole stack, core and Spring, to that single version
 
 ### Migrating to the unified workflows module
 
-In **1.19.x**, `durabletask-client` has been folded into `dapr-sdk-workflows`, which is a breaking
-change for workflow code — so upgrading from 1.18.x requires source changes. See
+In **1.20.x**, `durabletask-client` has been folded into `dapr-sdk-workflows`, which is a breaking
+change for workflow code — so upgrading from 1.19.x or earlier requires source changes. See
 [MIGRATION.md](MIGRATION.md) for the type mapping, the removed API, and what it means for workflows
 that are already running when you upgrade.
 
