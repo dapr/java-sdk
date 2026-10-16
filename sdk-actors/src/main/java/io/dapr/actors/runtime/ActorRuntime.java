@@ -16,14 +16,17 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
 import io.dapr.config.Properties;
+import io.dapr.internal.grpc.interceptors.DaprApiTokenInterceptor;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
+import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -47,6 +50,11 @@ public class ActorRuntime implements Closeable {
    * Tracing errors, warnings and info logs.
    */
   private static final ActorTrace ACTOR_TRACE = new ActorTrace();
+
+  /**
+   * Maximum time to wait for Dapr to acknowledge the actor registration on the actor event stream.
+   */
+  private static final Duration ACTOR_EVENTS_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
 
   /**
    * Gets an instance to the ActorRuntime. There is only 1.
@@ -74,6 +82,16 @@ public class ActorRuntime implements Closeable {
   private final ConcurrentMap<String, ActorManager> actorManagers;
 
   /**
+   * Stream that hosts the actors over gRPC, or null if not subscribed.
+   */
+  private volatile ActorEventSubscription actorEventSubscription;
+
+  /**
+   * Dapr API token sent on the actor event stream, or null.
+   */
+  private String apiToken;
+
+  /**
    * The default constructor. This should not be called directly.
    *
    * @throws IllegalStateException If cannot instantiate Runtime.
@@ -89,6 +107,7 @@ public class ActorRuntime implements Closeable {
    */
   private ActorRuntime(Properties properties) throws IllegalStateException {
     this(NetworkUtils.buildGrpcManagedChannel(properties));
+    this.apiToken = properties.getValue(Properties.API_TOKEN);
   }
 
   /**
@@ -247,8 +266,63 @@ public class ActorRuntime implements Closeable {
           this.daprClient,
           new DaprStateAsyncProvider(this.daprClient, stateSerializer));
       this.config.addRegisteredActorType(actorTypeInfo.getName());
+      ActorEventSubscription subscription = this.actorEventSubscription;
+      if (subscription != null && subscription.isRunning()) {
+        ACTOR_TRACE.writeWarning(TRACE_TYPE, actorTypeInfo.getName(),
+            "Actor type registered after subscribing to actor events; Dapr learns about it on the next reconnect.");
+      }
       return new ActorManager<T>(context);
     });
+  }
+
+  /**
+   * Hosts the registered actor types over gRPC. Dapr delivers actor invocations, reminders, timers and
+   * deactivations on a stream opened by the app, so the app does not need to expose a server port for actor
+   * callbacks. Register the actor types before calling this method.
+   *
+   * <p>Dapr rejects the stream when it is configured with an HTTP app channel: run Dapr without an app port, or
+   * with the gRPC app protocol.
+   *
+   * <p>This API is in alpha and may change.
+   *
+   * @return The running subscription. Close it to stop hosting the actors.
+   * @throws IllegalStateException If the runtime has no gRPC channel or is already subscribed.
+   */
+  public ActorEventSubscription subscribeActorEvents() {
+    if (this.channel == null) {
+      throw new IllegalStateException("ActorRuntime has no gRPC channel to Dapr.");
+    }
+    DaprGrpc.DaprStub stub = DaprGrpc.newStub(this.channel)
+        .withInterceptors(new DaprApiTokenInterceptor(this.apiToken));
+    return subscribeActorEvents(stub, ACTOR_EVENTS_HANDSHAKE_TIMEOUT);
+  }
+
+  /**
+   * Hosts the registered actor types over gRPC using the given stub. Useful for testing.
+   *
+   * @param stub             Dapr gRPC stub.
+   * @param handshakeTimeout Maximum time to wait for Dapr to acknowledge the registration.
+   * @return The running subscription.
+   */
+  synchronized ActorEventSubscription subscribeActorEvents(DaprGrpc.DaprStub stub, Duration handshakeTimeout) {
+    if (this.actorEventSubscription != null && this.actorEventSubscription.isRunning()) {
+      throw new IllegalStateException("ActorRuntime is already subscribed to actor events.");
+    }
+    ActorEventSubscription subscription = new ActorEventSubscription(this, stub, this.channel, handshakeTimeout);
+    this.actorEventSubscription = subscription;
+    subscription.start();
+    return subscription;
+  }
+
+  /**
+   * Gets the serializer for the request and response objects of an actor type.
+   *
+   * @param actorTypeName Actor type name.
+   * @return Object serializer.
+   * @throws IllegalArgumentException If the actor type is not registered.
+   */
+  DaprObjectSerializer getObjectSerializer(String actorTypeName) {
+    return this.getActorManager(actorTypeName).getObjectSerializer();
   }
 
   /**
@@ -347,6 +421,10 @@ public class ActorRuntime implements Closeable {
    */
   @Override
   public void close() {
+    ActorEventSubscription subscription = this.actorEventSubscription;
+    if (subscription != null) {
+      subscription.close();
+    }
     if (channel != null && !channel.isShutdown()) {
       channel.shutdown();
     }
