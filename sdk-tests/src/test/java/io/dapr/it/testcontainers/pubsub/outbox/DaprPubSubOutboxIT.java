@@ -21,6 +21,7 @@ import io.dapr.it.testcontainers.DaprClientFactory;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.internal.DaprContainerFactory;
 import io.dapr.testcontainers.wait.strategy.DaprWait;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -43,7 +44,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
@@ -60,8 +60,7 @@ public class DaprPubSubOutboxIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(DaprPubSubOutboxIT.class);
   private static final Network DAPR_NETWORK = Network.newNetwork();
-  private static final Random RANDOM = new Random();
-  private static final int PORT = RANDOM.nextInt(1000) + 8000;
+  private static final int PORT = DaprContainerFactory.allocateFreePort();
 
   private static final String PUBSUB_APP_ID = "pubsub-dapr-app";
   private static final String PUBSUB_NAME = "pubsub";
