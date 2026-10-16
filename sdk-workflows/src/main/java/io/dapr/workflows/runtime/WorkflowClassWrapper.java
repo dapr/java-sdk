@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.TaskOrchestration;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.task.TaskOrchestration;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -70,7 +70,7 @@ class WorkflowClassWrapper<T extends Workflow> extends WorkflowVersionWrapper {
         );
       }
 
-      workflow.run(new DefaultWorkflowContext(ctx, workflow.getClass()));
+      workflow.run(ctx);
     };
   }
 }

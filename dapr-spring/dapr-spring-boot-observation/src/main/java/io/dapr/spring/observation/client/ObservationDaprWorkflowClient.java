@@ -39,11 +39,10 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A {@link DaprWorkflowClient} subclass that creates Micrometer Observation spans (bridged to
- * OpenTelemetry) for each non-deprecated method call.
+ * OpenTelemetry) for each method call.
  *
  * <p>Because this class extends {@link DaprWorkflowClient}, consumers can keep injecting
- * {@code DaprWorkflowClient} without any code changes. Deprecated methods fall through to the
- * parent implementation without any observation.
+ * {@code DaprWorkflowClient} without any code changes.
  *
  * <p><b>Trace propagation:</b> an {@link OtelTracingClientInterceptor} is registered on the gRPC
  * channel. For each synchronous workflow RPC, the observation opens an OTel scope (via
@@ -333,10 +332,6 @@ public class ObservationDaprWorkflowClient extends DaprWorkflowClient {
       obs.stop();
     }
   }
-
-  // Deprecated methods (getInstanceState, waitForInstanceStart, waitForInstanceCompletion,
-  // purgeInstance) are intentionally not overridden — they fall through to the parent
-  // implementation without any observation.
 
   // -------------------------------------------------------------------------
   // gRPC interceptor: injects the current OTel span's traceparent into headers

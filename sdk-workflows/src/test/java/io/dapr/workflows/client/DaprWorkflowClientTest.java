@@ -15,17 +15,16 @@ package io.dapr.workflows.client;
 
 import com.google.protobuf.Timestamp;
 import io.dapr.config.Properties;
-import io.dapr.durabletask.DurableTaskClient;
-import io.dapr.durabletask.DurableTaskGrpcClientBuilder;
-import io.dapr.durabletask.NewOrchestrationInstanceOptions;
-import io.dapr.durabletask.OrchestrationMetadata;
-import io.dapr.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.durabletask.implementation.protobuf.HistoryEvents;
 import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService.ListInstanceIDsResponse;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
+import io.dapr.workflows.task.client.DurableTaskClient;
+import io.dapr.workflows.task.client.DurableTaskGrpcClientBuilder;
+import io.dapr.workflows.task.client.NewOrchestrationInstanceOptions;
+import io.dapr.workflows.task.client.OrchestrationMetadata;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -43,10 +42,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -315,7 +314,7 @@ public class DaprWorkflowClientTest {
     OrchestrationMetadata expectedMetadata = mock(OrchestrationMetadata.class);
     when(expectedMetadata.getInstanceId()).thenReturn(instanceId);
     when(expectedMetadata.getName()).thenReturn("WorkflowName");
-    when(expectedMetadata.getRuntimeStatus()).thenReturn(OrchestrationRuntimeStatus.RUNNING);
+    when(expectedMetadata.getRuntimeStatus()).thenReturn(WorkflowRuntimeStatus.RUNNING);
     when(mockInnerClient.getInstanceMetadata(instanceId, true)).thenReturn(expectedMetadata);
 
     // Act
