@@ -112,6 +112,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>getBinaryStoreProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/binarystore.proto</url>
+              <outputFileName>binarystore.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>getBindingProto</id>
             <phase>initialize</phase>
             <goals>
