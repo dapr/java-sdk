@@ -41,7 +41,8 @@ public class DemoJobsClient {
       // Schedule a job.
       System.out.println("**** Scheduling a Job with name dapr-jobs-1 *****");
       ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest("dapr-job-1",
-          JobSchedule.fromString("* * * * * *")).setData("Hello World!".getBytes());
+          JobSchedule.fromString("* * * * * *")).setData("Hello World!".getBytes())
+          .setOverwrite(true);
       client.scheduleJob(scheduleJobRequest).block();
 
       System.out.println("**** Scheduling job dapr-jobs-1 completed *****");
