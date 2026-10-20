@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -225,6 +226,31 @@ public class ActorEventSubscriptionTest {
   }
 
   @Test
+  public void requestsReceivedWhileClosingAreRejected() throws Exception {
+    runtime.registerActor(SlowActorImpl.class);
+    runtime.getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(5));
+    Stream stream = subscribe(Duration.ofSeconds(10));
+    stream.next();
+    stream.send(ACK);
+
+    SlowActorImpl.STARTED.drainPermits();
+    stream.send(ActorEventDispatcherTest.invoke("slow", "SlowActor", "slow"));
+    assertTrue(SlowActorImpl.STARTED.tryAcquire(5, TimeUnit.SECONDS));
+    Thread closer = new Thread(subscription::close);
+    closer.start();
+    while (subscription.isRunning()) {
+      Thread.sleep(5);
+    }
+
+    stream.send(ActorEventDispatcherTest.invoke("late", "SlowActor", "slow"));
+    SubscribeActorEventsRequestAlpha1 rejected = stream.next();
+    assertEquals("late", rejected.getRequestFailed().getId());
+    assertEquals(Status.Code.UNAVAILABLE.value(), rejected.getRequestFailed().getCode());
+    assertEquals("slow", stream.next().getInvokeResponse().getId());
+    closer.join(TimeUnit.SECONDS.toMillis(10));
+  }
+
+  @Test
   public void subscribeWithoutChannelFails() {
     assertThrows(IllegalStateException.class, () -> runtime.subscribeActorEvents());
   }
@@ -261,12 +287,15 @@ public class ActorEventSubscriptionTest {
   @ActorType(name = "SlowActor")
   public static class SlowActorImpl extends AbstractActor implements SlowActor {
 
+    static final Semaphore STARTED = new Semaphore(0);
+
     public SlowActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);
     }
 
     @Override
     public String slow() {
+      STARTED.release();
       try {
         Thread.sleep(500);
       } catch (InterruptedException e) {

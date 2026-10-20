@@ -22,6 +22,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.Closeable;
@@ -130,8 +131,8 @@ public final class ActorEventSubscription implements Closeable {
   }
 
   /**
-   * Stops hosting actors. Waits for in-flight callbacks up to the drain ongoing call timeout, then closes the
-   * stream.
+   * Stops hosting actors. Callbacks received from now on are rejected with {@code UNAVAILABLE}. Waits for
+   * in-flight callbacks up to the drain ongoing call timeout, then closes the stream.
    */
   @Override
   public void close() {
@@ -257,8 +258,13 @@ public final class ActorEventSubscription implements Closeable {
         return;
       }
 
+      if (!running.get()) {
+        send(ActorEventDispatcher.rejectClosing(message));
+        return;
+      }
+
       inFlight.incrementAndGet();
-      ActorEventDispatcher.dispatch(runtime, message)
+      Mono.defer(() -> ActorEventDispatcher.dispatch(runtime, message))
           .subscribeOn(Schedulers.boundedElastic())
           .doFinally(signal -> inFlight.decrementAndGet())
           .subscribe(
@@ -303,6 +309,8 @@ public final class ActorEventSubscription implements Closeable {
       if (closed) {
         return;
       }
+      // A cancelled call cannot be half-closed, so shutdown() must not touch it afterwards.
+      closed = true;
       requests.cancel(reason, null);
     }
 

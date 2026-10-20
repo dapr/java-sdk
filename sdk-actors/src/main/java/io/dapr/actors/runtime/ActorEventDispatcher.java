@@ -113,6 +113,32 @@ final class ActorEventDispatcher {
     }
   }
 
+  /**
+   * Rejects a callback received while the subscription is closing, so Dapr does not wait for a reply that would
+   * be dropped.
+   *
+   * @param message Callback received on the stream.
+   * @return The request_failed message to send back on the stream.
+   */
+  static SubscribeActorEventsRequestAlpha1 rejectClosing(SubscribeActorEventsResponseAlpha1 message) {
+    return failed(requestId(message), Status.Code.UNAVAILABLE, "actor event subscription is closing");
+  }
+
+  private static String requestId(SubscribeActorEventsResponseAlpha1 message) {
+    switch (message.getResponseTypeCase()) {
+      case INVOKE_REQUEST:
+        return message.getInvokeRequest().getId();
+      case REMINDER_REQUEST:
+        return message.getReminderRequest().getId();
+      case TIMER_REQUEST:
+        return message.getTimerRequest().getId();
+      case DEACTIVATE_REQUEST:
+        return message.getDeactivateRequest().getId();
+      default:
+        return "";
+    }
+  }
+
   private static Mono<SubscribeActorEventsRequestAlpha1> invoke(
       ActorRuntime runtime, SubscribeActorEventsResponseInvokeRequestAlpha1 request) {
     String id = request.getId();
