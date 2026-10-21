@@ -4,6 +4,11 @@
         <Package name="~io\.dapr\.examples.*"/>
     </Match>
 
+    <!--Ignoring auto-generated durabletask protobuf code-->
+    <Match>
+        <Package name="io.dapr.durabletask.implementation.protobuf"/>
+    </Match>
+
     <!--Temporarily ignoring checking after upgrade to new spotbugs version-->
     <Match>
         <Package name="~io\.dapr.*"/>

@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot.examples.wfp.fanoutin;
 
-import io.dapr.durabletask.Task;
+import io.dapr.workflows.task.Task;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import org.springframework.stereotype.Component;
