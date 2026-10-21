@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
@@ -84,6 +85,15 @@ class ActorManager<T extends AbstractActor> {
    */
   Mono<Void> deactivateActor(ActorId actorId) {
     return Mono.fromSupplier(() -> this.activeActors.remove(actorId)).flatMap(actor -> actor.onDeactivateInternal());
+  }
+
+  /**
+   * Gets the serializer for this actor type's request and response objects.
+   *
+   * @return Object serializer.
+   */
+  DaprObjectSerializer getObjectSerializer() {
+    return this.runtimeContext.getObjectSerializer();
   }
 
   /**
