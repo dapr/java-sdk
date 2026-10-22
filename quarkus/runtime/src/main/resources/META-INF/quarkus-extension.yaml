@@ -1,0 +1,11 @@
+name: Agentic Dapr
+description: Agentic Dapr
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+    - ai
+    - agentic
+    - cncf
+    - dapr
+  categories:
+    - "integration"
