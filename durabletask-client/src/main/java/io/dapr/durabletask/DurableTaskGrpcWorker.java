@@ -101,7 +101,10 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
 
     this.tracer = GlobalOpenTelemetry.getTracer("dapr-workflow");
 
-    this.sidecarClient = TaskHubSidecarServiceGrpc.newBlockingStub(sidecarGrpcChannel);
+    // The sidecar bounds work items and histories by its max request body size. A lower receive
+    // limit here only makes the worker refuse, re-fetch and refuse the same work item forever.
+    this.sidecarClient = TaskHubSidecarServiceGrpc.newBlockingStub(sidecarGrpcChannel)
+        .withMaxInboundMessageSize(Integer.MAX_VALUE);
     this.dataConverter = builder.dataConverter != null ? builder.dataConverter : new JacksonDataConverter();
     this.maximumTimerInterval = builder.maximumTimerInterval != null ? builder.maximumTimerInterval
         : DEFAULT_MAXIMUM_TIMER_INTERVAL;
