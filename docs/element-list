@@ -27,8 +27,8 @@ io.dapr.spring.boot.autoconfigure.client
 io.dapr.spring.boot.properties.client
 io.dapr.spring.boot.properties.pubsub
 io.dapr.spring.boot.properties.statestore
+io.dapr.spring.boot.testcontainers.lifecycle
 io.dapr.spring.boot.testcontainers.service.connection
-io.dapr.spring.boot4.autoconfigure.client
 io.dapr.spring.data
 io.dapr.spring.data.repository.config
 io.dapr.spring.data.repository.query
@@ -37,9 +37,6 @@ io.dapr.spring.messaging.observation
 io.dapr.spring.observation.client
 io.dapr.spring.workflows.config
 io.dapr.spring.workflows.config.annotations
-io.dapr.spring6.data
-io.dapr.spring6.data.repository.config
-io.dapr.spring6.data.repository.query
 io.dapr.testcontainers
 io.dapr.testcontainers.converter
 io.dapr.testcontainers.wait.strategy
