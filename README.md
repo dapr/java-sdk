@@ -82,7 +82,7 @@ For Maven:
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk-bom</artifactId>
-        <version>1.18.1</version>
+        <version>1.19.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -94,19 +94,19 @@ For Maven:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.17.5</version>
+      <version>1.19.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.17.5</version>
+      <version>1.19.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.17.5</version>
+      <version>1.19.0</version>
     </dependency>
     ...
   </dependencies>
@@ -117,10 +117,10 @@ For Maven:
 For Gradle:
 ```groovy
 dependencies {
-    implementation platform('io.dapr:dapr-sdk-bom:1.18.0')
+    implementation platform('io.dapr:dapr-sdk-bom:1.19.0')
 
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.17.5')
+    compile('io.dapr:dapr-sdk:1.19.0')
     // Dapr's SDK for Actors (optional).
     implementation 'io.dapr:dapr-sdk-actors'
 }
@@ -137,7 +137,7 @@ For Maven:
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-bom</artifactId>
-        <version>1.18.1</version>
+        <version>1.19.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -163,7 +163,7 @@ For Maven:
 For Gradle:
 ```groovy
 dependencies {
-    implementation platform('io.dapr.spring:dapr-spring-bom:1.18.0')
+    implementation platform('io.dapr.spring:dapr-spring-bom:1.19.0')
 
     // Dapr's SDK integration with Spring Boot.
     implementation 'io.dapr:dapr-sdk-springboot'
@@ -184,17 +184,17 @@ For Maven:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.18.1</version>
+      <version>1.19.0</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.18.1</version>
+      <version>1.19.0</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.18.1</version>
+      <version>1.19.0</version>
     </dependency>
   </dependencies>
   ...
@@ -204,9 +204,9 @@ For Maven:
 For Gradle:
 ```groovy
 dependencies {
-    implementation 'io.dapr:dapr-sdk:1.17.2'
-    implementation 'io.dapr:dapr-sdk-actors:1.17.2'
-    implementation 'io.dapr:dapr-sdk-springboot:1.17.2'
+    implementation 'io.dapr:dapr-sdk:1.19.0'
+    implementation 'io.dapr:dapr-sdk-actors:1.19.0'
+    implementation 'io.dapr:dapr-sdk-springboot:1.19.0'
 }
 ```
 
