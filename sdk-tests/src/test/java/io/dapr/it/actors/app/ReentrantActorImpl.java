@@ -51,6 +51,21 @@ public class ReentrantActorImpl extends AbstractActor implements ReentrantActor 
     return Mono.just("reentrancy-ok");
   }
 
+  @Override
+  public String callBlocking(String targetActorId) {
+    return proxy(targetActorId).returnToBlocking(getId().toString());
+  }
+
+  @Override
+  public String returnToBlocking(String actorId) {
+    return proxy(actorId).finishBlocking();
+  }
+
+  @Override
+  public String finishBlocking() {
+    return "sync-reentrancy-ok";
+  }
+
   private static ReentrantActor proxy(String actorId) {
     return PROXY_BUILDER.build(new ActorId(actorId));
   }

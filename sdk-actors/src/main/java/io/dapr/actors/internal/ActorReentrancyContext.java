@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.context.ContextView;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Internal helpers for carrying an incoming actor reentrancy id through a Reactor invocation.
@@ -27,6 +28,8 @@ public final class ActorReentrancyContext {
   public static final String REENTRANCY_ID_HEADER = "Dapr-Reentrancy-Id";
 
   private static final String CONTEXT_KEY = ActorReentrancyContext.class.getName() + ".id";
+
+  private static final ThreadLocal<String> THREAD_LOCAL_REENTRANCY_ID = new ThreadLocal<>();
 
   private ActorReentrancyContext() {
   }
@@ -47,13 +50,40 @@ public final class ActorReentrancyContext {
   }
 
   /**
+   * Sets the reentrancy id for the duration of a synchronous actor method invocation.
+   *
+   * @param reentrancyId Id received from Dapr, or {@code null} when this is not a reentrant call.
+   * @param action Synchronous actor method invocation.
+   * @param <T> Invocation result type.
+   * @return The invocation result.
+   */
+  public static <T> T withReentrancyId(String reentrancyId, Supplier<T> action) {
+    String previous = THREAD_LOCAL_REENTRANCY_ID.get();
+    if (reentrancyId == null || reentrancyId.isEmpty()) {
+      THREAD_LOCAL_REENTRANCY_ID.remove();
+    } else {
+      THREAD_LOCAL_REENTRANCY_ID.set(reentrancyId);
+    }
+
+    try {
+      return action.get();
+    } finally {
+      if (previous == null) {
+        THREAD_LOCAL_REENTRANCY_ID.remove();
+      } else {
+        THREAD_LOCAL_REENTRANCY_ID.set(previous);
+      }
+    }
+  }
+
+  /**
    * Reads the reentrancy id from a Reactor subscriber context.
    *
    * @param context Subscriber context.
    * @return The id, or {@code null} when no actor invocation is active.
    */
   public static String getReentrancyId(ContextView context) {
-    return context.getOrDefault(CONTEXT_KEY, null);
+    return context.hasKey(CONTEXT_KEY) ? context.get(CONTEXT_KEY) : THREAD_LOCAL_REENTRANCY_ID.get();
   }
 
   /**
@@ -72,4 +102,5 @@ public final class ActorReentrancyContext {
         .findFirst()
         .orElse(null);
   }
+
 }

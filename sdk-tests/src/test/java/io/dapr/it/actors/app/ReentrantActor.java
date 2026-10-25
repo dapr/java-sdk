@@ -23,4 +23,10 @@ public interface ReentrantActor {
   Mono<String> returnTo(String actorId);
 
   Mono<String> finish();
+
+  String callBlocking(String targetActorId);
+
+  String returnToBlocking(String actorId);
+
+  String finishBlocking();
 }

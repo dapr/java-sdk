@@ -73,8 +73,18 @@ public class ActorReentrancyIT extends BaseContainerIT {
   }
 
   @Test
+  public void reentersActorSynchronouslyOverHttpHost() {
+    assertSynchronousReentrantCallCompletes(httpActorClient);
+  }
+
+  @Test
   public void reentersActorOverGrpcHost() {
     assertReentrantCallCompletes(grpcActorClient);
+  }
+
+  @Test
+  public void reentersActorSynchronouslyOverGrpcHost() {
+    assertSynchronousReentrantCallCompletes(grpcActorClient);
   }
 
   private static void assertReentrantCallCompletes(ActorClient actorClient) {
@@ -85,5 +95,15 @@ public class ActorReentrancyIT extends BaseContainerIT {
     ReentrantActor actorA = builder.build(new ActorId(actorAId));
 
     assertEquals("reentrancy-ok", actorA.call(actorBId).block());
+  }
+
+  private static void assertSynchronousReentrantCallCompletes(ActorClient actorClient) {
+    ActorProxyBuilder<ReentrantActor> builder =
+        new ActorProxyBuilder<>(ReentrantActorImpl.TYPE, ReentrantActor.class, actorClient);
+    String actorAId = UUID.randomUUID().toString();
+    String actorBId = UUID.randomUUID().toString();
+    ReentrantActor actorA = builder.build(new ActorId(actorAId));
+
+    assertEquals("sync-reentrancy-ok", actorA.callBlocking(actorBId));
   }
 }

@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.internal.ActorReentrancyContext;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
@@ -260,20 +261,21 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous object response.
    */
   private Mono<Object> invokeMethod(AbstractActor actor, Method method, Object input) {
-    return Mono.fromSupplier(() -> {
-      try {
-        if (method.getParameterCount() == 0) {
-          return method.invoke(actor);
-        } else {
-          // Actor methods must have a one or no parameter, which is guaranteed at this point.
-          return method.invoke(actor, input);
-        }
-      } catch (RuntimeException e) {
-        throw e;
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return Mono.deferContextual(context -> Mono.fromSupplier(() ->
+        ActorReentrancyContext.withReentrancyId(ActorReentrancyContext.getReentrancyId(context), () -> {
+          try {
+            if (method.getParameterCount() == 0) {
+              return method.invoke(actor);
+            } else {
+              // Actor methods must have a one or no parameter, which is guaranteed at this point.
+              return method.invoke(actor, input);
+            }
+          } catch (RuntimeException e) {
+            throw e;
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        })));
   }
 
   /**
@@ -285,16 +287,19 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous object response.
    */
   private Mono<Object> invokeMonoMethod(AbstractActor actor, Method method, Object input) {
-    try {
-      if (method.getParameterCount() == 0) {
-        return (Mono<Object>) method.invoke(actor);
-      } else {
-        // Actor methods must have a one or no parameter, which is guaranteed at this point.
-        return (Mono<Object>) method.invoke(actor, input);
-      }
-    } catch (Exception e) {
-      return Mono.error(e);
-    }
+    return Mono.deferContextual(context -> ActorReentrancyContext.withReentrancyId(
+        ActorReentrancyContext.getReentrancyId(context), () -> {
+          try {
+            if (method.getParameterCount() == 0) {
+              return (Mono<Object>) method.invoke(actor);
+            } else {
+              // Actor methods must have a one or no parameter, which is guaranteed at this point.
+              return (Mono<Object>) method.invoke(actor, input);
+            }
+          } catch (Exception e) {
+            return Mono.error(e);
+          }
+        }));
   }
 
   /**
