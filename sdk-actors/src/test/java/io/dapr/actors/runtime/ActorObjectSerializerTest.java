@@ -149,7 +149,8 @@ public class ActorObjectSerializerTest {
         .setActorScanInterval(Duration.ofSeconds(30))
         .setDrainOngoingCallTimeout(Duration.ofMinutes(1))
         .setDrainBalancedActors(true)
-        .setRemindersStoragePartitions(7);
+        .setRemindersStoragePartitions(7)
+        .setReentrancy(new ActorReentrancyConfig().setEnabled(true).setMaxStackDepth(5));
 
     byte[] serialized = SERIALIZER.serialize(config);
 
@@ -158,7 +159,8 @@ public class ActorObjectSerializerTest {
         + "\"actorScanInterval\":\"0h0m30s0ms\","
         + "\"drainOngoingCallTimeout\":\"0h1m0s0ms\","
         + "\"drainBalancedActors\":true,"
-        + "\"remindersStoragePartitions\":7}";
+        + "\"remindersStoragePartitions\":7,"
+        + "\"reentrancy\":{\"enabled\":true,\"maxStackDepth\":5}}";
     Assertions.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(serialized));
   }
 
@@ -168,7 +170,8 @@ public class ActorObjectSerializerTest {
         .setActorTypeName("MyActor")
         .setActorIdleTimeout(Duration.ofHours(2))
         .setDrainBalancedActors(false)
-        .setRemindersStoragePartitions(3);
+        .setRemindersStoragePartitions(3)
+        .setReentrancy(new ActorReentrancyConfig().setEnabled(false).setMaxStackDepth(2));
     ActorRuntimeConfig config = new ActorRuntimeConfig()
         .addRegisteredActorType("MyActor")
         .addActorTypeConfig(actorTypeConfig);
@@ -180,7 +183,8 @@ public class ActorObjectSerializerTest {
         + "\"entities\":[\"MyActor\"],"
         + "\"actorIdleTimeout\":\"2h0m0s0ms\","
         + "\"drainBalancedActors\":false,"
-        + "\"remindersStoragePartitions\":3}]}";
+        + "\"remindersStoragePartitions\":3,"
+        + "\"reentrancy\":{\"enabled\":false,\"maxStackDepth\":2}}]}";
     Assertions.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(serialized));
   }
 

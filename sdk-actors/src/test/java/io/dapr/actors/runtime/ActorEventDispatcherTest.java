@@ -18,6 +18,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
+import io.dapr.actors.internal.ActorReentrancyContext;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.DaprActorsProtos.ActorEntityConfig;
@@ -106,6 +107,24 @@ public class ActorEventDispatcherTest {
     }
   }
 
+  public interface ReentrancyActor {
+    Mono<String> currentReentrancyId();
+  }
+
+  @ActorType(name = "ReentrancyActor")
+  public static class ReentrancyActorImpl extends AbstractActor implements ReentrancyActor {
+
+    public ReentrancyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+    }
+
+    @Override
+    public Mono<String> currentReentrancyId() {
+      return Mono.deferContextual(context ->
+          Mono.justOrEmpty(ActorReentrancyContext.getReentrancyId(context)));
+    }
+  }
+
   private ActorRuntime runtime;
 
   static ActorRuntime newRuntime() throws Exception {
@@ -128,6 +147,7 @@ public class ActorEventDispatcherTest {
     runtime.registerActor(ActorRuntimeTest.MyActorImpl.class);
     runtime.registerActor(MyRemindableActorImpl.class);
     runtime.registerActor(ThrowingActorImpl.class);
+    runtime.registerActor(ReentrancyActorImpl.class);
   }
 
   @Test
@@ -136,9 +156,11 @@ public class ActorEventDispatcherTest {
         .setActorIdleTimeout(Duration.ofMinutes(2))
         .setDrainOngoingCallTimeout(Duration.ofMillis(1500))
         .setDrainBalancedActors(true)
+        .setReentrancy(new io.dapr.actors.runtime.ActorReentrancyConfig().setEnabled(true).setMaxStackDepth(5))
         .addActorTypeConfig(new ActorTypeConfig()
             .setActorTypeName("MyGreatActor")
-            .setActorIdleTimeout(Duration.ofSeconds(30)))
+            .setActorIdleTimeout(Duration.ofSeconds(30))
+            .setReentrancy(new io.dapr.actors.runtime.ActorReentrancyConfig().setEnabled(false).setMaxStackDepth(2)))
         .addActorTypeConfig(new ActorTypeConfig()
             .setActorTypeName("MyRemindableActor")
             .setDrainOngoingCallTimeout(Duration.ofSeconds(5))
@@ -147,15 +169,21 @@ public class ActorEventDispatcherTest {
     SubscribeActorEventsRequestInitialAlpha1 initial =
         ActorEventDispatcher.buildInitialRequest(runtime.getConfig()).getInitialRequest();
 
-    assertEquals(Arrays.asList("MyGreatActor", "MyRemindableActor", "ThrowingActor"), initial.getEntitiesList());
+    assertEquals(Arrays.asList("MyGreatActor", "MyRemindableActor", "ThrowingActor", "ReentrancyActor"),
+        initial.getEntitiesList());
     assertEquals(120, initial.getActorIdleTimeout().getSeconds());
     assertEquals(1, initial.getDrainOngoingCallTimeout().getSeconds());
     assertEquals(500_000_000, initial.getDrainOngoingCallTimeout().getNanos());
     assertTrue(initial.getDrainRebalancedActors());
-    assertFalse(initial.hasReentrancy());
+    assertTrue(initial.hasReentrancy());
+    assertTrue(initial.getReentrancy().getEnabled());
+    assertEquals(5, initial.getReentrancy().getMaxStackDepth());
     ActorEntityConfig entityConfig = initial.getEntitiesConfig(0);
     assertEquals(Arrays.asList("MyGreatActor"), entityConfig.getEntitiesList());
     assertEquals(30, entityConfig.getActorIdleTimeout().getSeconds());
+    assertTrue(entityConfig.hasReentrancy());
+    assertFalse(entityConfig.getReentrancy().getEnabled());
+    assertEquals(2, entityConfig.getReentrancy().getMaxStackDepth());
     assertFalse(entityConfig.hasDrainOngoingCallTimeout());
     ActorEntityConfig secondConfig = initial.getEntitiesConfig(1);
     assertFalse(secondConfig.hasActorIdleTimeout());
@@ -191,6 +219,24 @@ public class ActorEventDispatcherTest {
   }
 
   @Test
+  public void invokeCarriesReentrancyIdInInvocationContext() throws Exception {
+    String reentrancyId = "chain-123";
+    String actorId = UUID.randomUUID().toString();
+    SubscribeActorEventsResponseAlpha1 request = SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setInvokeRequest(SubscribeActorEventsResponseInvokeRequestAlpha1.newBuilder()
+            .setId("reentrant")
+            .setActorType("ReentrancyActor")
+            .setActorId(actorId)
+            .setMethod("currentReentrancyId")
+            .putMetadata(ActorReentrancyContext.REENTRANCY_ID_HEADER, reentrancyId))
+        .build();
+
+    SubscribeActorEventsRequestAlpha1 response = dispatch(request);
+
+    assertEquals(reentrancyId, SERIALIZER.deserialize(response.getInvokeResponse().getData().toByteArray(), String.class));
+  }
+
+  @Test
   public void callbacksForUnknownActorTypeAreNotFound() {
     String actorId = UUID.randomUUID().toString();
     SubscribeActorEventsResponseAlpha1 reminder = SubscribeActorEventsResponseAlpha1.newBuilder()
@@ -217,6 +263,7 @@ public class ActorEventDispatcherTest {
     assertFalse(initial.hasActorIdleTimeout());
     assertFalse(initial.hasDrainOngoingCallTimeout());
     assertFalse(initial.hasDrainRebalancedActors());
+    assertFalse(initial.hasReentrancy());
   }
 
   @Test
