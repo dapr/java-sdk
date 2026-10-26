@@ -127,6 +127,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -2580,7 +2581,6 @@ public class DaprClientImpl extends AbstractDaprClient {
                 // does not make the client buffer the whole file.
                 requestStream.disableAutoRequestWithInitial(0);
                 callStream.set(requestStream);
-                sink.onCancel(() -> requestStream.cancel("Subscriber cancelled the download.", null));
               }
 
               @Override
@@ -2612,11 +2612,16 @@ public class DaprClientImpl extends AbstractDaprClient {
               }
             };
 
+        // The subscriber can cancel before the call starts. Do not start the call then.
+        if (sink.isCancelled()) {
+          return;
+        }
         intercept(context, asyncStub).getBinaryFileAlpha1(request, responseObserver);
 
-        // The call has started, so gRPC now accepts requests. Forward subscriber demand to it.
+        // The call has started, so gRPC now accepts cancel and request calls.
         ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> stream = callStream.get();
         if (stream != null) {
+          sink.onCancel(() -> stream.cancel("Subscriber cancelled the download.", null));
           sink.onRequest(n -> {
             if (n == Long.MAX_VALUE) {
               unboundedDemand.set(true);
@@ -2708,29 +2713,43 @@ public class DaprClientImpl extends AbstractDaprClient {
         // The sidecar must receive the initial request within 5 seconds, so send it before any content.
         requestObserver.onNext(initialMessage);
 
-        final long[] sequenceNumber = {0};
-        contentSubscription.update(request.getContent()
-            .concatMapIterable(DaprClientImpl::splitBinaryFileChunk)
-            .subscribe(
-                chunk -> requestObserver.onNext(DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1.newBuilder()
-                    .setPayload(CommonProtos.StreamPayload.newBuilder()
-                        .setData(chunk)
-                        .setSeq(sequenceNumber[0]++)
-                        .build())
-                    .build()),
-                error -> {
-                  terminated.set(true);
-                  requestObserver.onError(error);
-                  sink.error(DaprException.propagate(error));
-                },
-                requestObserver::onCompleted));
-
         sink.onCancel(() -> {
           terminated.set(true);
           contentSubscription.dispose();
           requestObserver.onError(
               Status.CANCELLED.withDescription("Subscriber cancelled the upload.").asRuntimeException());
         });
+
+        final long[] sequenceNumber = {0};
+        final BaseSubscriber<ByteString> contentSubscriber = new BaseSubscriber<ByteString>() {
+          @Override
+          protected void hookOnNext(ByteString chunk) {
+            requestObserver.onNext(DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1.newBuilder()
+                .setPayload(CommonProtos.StreamPayload.newBuilder()
+                    .setData(chunk)
+                    .setSeq(sequenceNumber[0]++)
+                    .build())
+                .build());
+          }
+
+          @Override
+          protected void hookOnError(Throwable error) {
+            terminated.set(true);
+            requestObserver.onError(error);
+            sink.error(DaprException.propagate(error));
+          }
+
+          @Override
+          protected void hookOnComplete() {
+            requestObserver.onCompleted();
+          }
+        };
+        // Register the subscriber before it receives content, so a server error can stop even a
+        // synchronous content Flux.
+        contentSubscription.update(contentSubscriber);
+        request.getContent()
+            .concatMapIterable(DaprClientImpl::splitBinaryFileChunk)
+            .subscribe(contentSubscriber);
       }));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);

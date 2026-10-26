@@ -442,7 +442,8 @@ public interface DaprPreviewClient extends AutoCloseable {
   /**
    * Deletes a file from a binary store component.
    *
-   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   * <p>If the file does not exist, the Mono fails with the NOT_FOUND error code.
+   * This is an alpha API. Its name and behavior can change in a later release.
    *
    * @param storeName Name of the binary store component.
    * @param fileName  Name of the file to delete.
@@ -455,6 +456,8 @@ public interface DaprPreviewClient extends AutoCloseable {
    * Reads a file from a binary store component as a stream of chunks.
    *
    * <p>The chunks arrive in file order. Cancel the subscription to stop the download.
+   * If the file does not exist, the Flux fails with the NOT_FOUND error code.
+   * A timeout set with dapr.api.timeoutMilliseconds applies to the whole download.
    * This is an alpha API. Its name and behavior can change in a later release.
    *
    * @param storeName Name of the binary store component.
@@ -484,6 +487,9 @@ public interface DaprPreviewClient extends AutoCloseable {
    * exists, the call fails with the ALREADY_EXISTS error code. The SDK does not apply gRPC flow
    * control: if the content Flux produces data faster than the network sends it, gRPC holds the
    * extra data in memory.
+   * Each subscription to the returned Mono subscribes to the content Flux again. To retry, use a
+   * content Flux that supports more than one subscription.
+   * A timeout set with dapr.api.timeoutMilliseconds applies to the whole upload.
    * This is an alpha API. Its name and behavior can change in a later release.
    *
    * @param request The request with the store name, file name, content, and overwrite flag.

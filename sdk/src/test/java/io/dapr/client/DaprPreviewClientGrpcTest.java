@@ -50,6 +50,7 @@ import io.dapr.client.domain.ToolMessage;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UserMessage;
 import io.dapr.client.domain.query.Query;
+import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -93,8 +94,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -2925,5 +2928,145 @@ public class DaprPreviewClientGrpcTest {
       };
     }).when(daprStub).setBinaryFileAlpha1(any());
     return sent;
+  }
+
+  @Test
+  @DisplayName("getBinaryFile should not start the call when the subscriber cancels first")
+  public void getBinaryFileEarlyCancelTest() {
+    previewClient.getBinaryFile("mystore", "file.txt").subscribe(new BaseSubscriber<byte[]>() {
+      @Override
+      protected void hookOnSubscribe(Subscription subscription) {
+        cancel();
+      }
+    });
+
+    verify(daprStub, times(0)).getBinaryFileAlpha1(
+        any(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class), any());
+  }
+
+  @Test
+  @DisplayName("getBinaryFile should not report the CANCELLED error that follows a subscriber cancel")
+  public void getBinaryFileCancelledErrorIsNotDroppedTest() {
+    List<Throwable> dropped = new ArrayList<>();
+    Hooks.onErrorDropped(dropped::add);
+    try {
+      ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> callStream =
+          mock(ClientCallStreamObserver.class);
+      AtomicReference<StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>> observerRef =
+          new AtomicReference<>();
+      doAnswer((Answer<Void>) invocation -> {
+        ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+            DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> observer =
+            (ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+                DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+        observer.beforeStart(callStream);
+        observerRef.set(observer);
+        return null;
+      }).when(daprStub).getBinaryFileAlpha1(any(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class), any());
+
+      reactor.core.Disposable download = previewClient.getBinaryFile("mystore", "file.txt").subscribe();
+      download.dispose();
+      // Like real gRPC: the cancelled call reports CANCELLED.
+      observerRef.get().onError(Status.CANCELLED.asRuntimeException());
+
+      verify(callStream).cancel(any(), any());
+      assertTrue(dropped.isEmpty());
+    } finally {
+      Hooks.resetOnErrorDropped();
+    }
+  }
+
+  @Test
+  @DisplayName("getBinaryFile should not ask for more messages after empty chunks when demand is unbounded")
+  public void getBinaryFileUnboundedDemandTest() throws Exception {
+    ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> callStream =
+        mock(ClientCallStreamObserver.class);
+    AtomicReference<StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>> observerRef =
+        new AtomicReference<>();
+    doAnswer((Answer<Void>) invocation -> {
+      ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+          DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> observer =
+          (ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+              DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.beforeStart(callStream);
+      observerRef.set(observer);
+      return null;
+    }).when(daprStub).getBinaryFileAlpha1(any(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class), any());
+
+    CompletableFuture<List<byte[]>> result =
+        previewClient.getBinaryFile("mystore", "file.txt").collectList().toFuture();
+
+    verify(callStream).request(Integer.MAX_VALUE);
+    observerRef.get().onNext(binaryFileResponse("", 0));
+    observerRef.get().onNext(binaryFileResponse("data", 1));
+    observerRef.get().onCompleted();
+
+    verify(callStream, times(0)).request(1);
+    List<byte[]> chunks = result.get();
+    assertEquals(1, chunks.size());
+    assertArrayEquals("data".getBytes(StandardCharsets.UTF_8), chunks.get(0));
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should stop reading content when the server fails")
+  public void setBinaryFileServerErrorDisposesContentTest() {
+    AtomicReference<StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1>> responseRef =
+        new AtomicReference<>();
+    StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> requestObserver = mock(StreamObserver.class);
+    doAnswer((Answer<StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>>) invocation -> {
+      responseRef.set(
+          (StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1>) invocation.getArguments()[0]);
+      return requestObserver;
+    }).when(daprStub).setBinaryFileAlpha1(any());
+
+    AtomicBoolean contentCancelled = new AtomicBoolean();
+    Flux<byte[]> content = Flux.<byte[]>never().doOnCancel(() -> contentCancelled.set(true));
+    CompletableFuture<Void> result =
+        previewClient.setBinaryFile(new SetBinaryFileRequestAlpha1("mystore", "file.txt", content)).toFuture();
+
+    responseRef.get().onError(newStatusRuntimeException("ALREADY_EXISTS", "binary file already exists"));
+
+    assertTrue(contentCancelled.get());
+    ExecutionException error = assertThrows(ExecutionException.class, result::get);
+    assertEquals("ALREADY_EXISTS", ((DaprException) error.getCause()).getErrorCode());
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should stop sending synchronous content when the server fails mid-upload")
+  public void setBinaryFileSynchronousContentStopsOnServerErrorTest() {
+    List<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> sent = new ArrayList<>();
+    doAnswer((Answer<StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1> responseObserver =
+          (StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1>) invocation.getArguments()[0];
+      return new StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>() {
+        @Override
+        public void onNext(DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1 value) {
+          sent.add(value);
+          // The server rejects the file while the second payload is being sent.
+          if (value.hasPayload() && value.getPayload().getSeq() == 1) {
+            responseObserver.onError(newStatusRuntimeException("ALREADY_EXISTS", "binary file already exists"));
+          }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+        }
+
+        @Override
+        public void onCompleted() {
+        }
+      };
+    }).when(daprStub).setBinaryFileAlpha1(any());
+
+    // 100 KiB in one synchronous chunk: the SDK would send 4 payloads.
+    byte[] content = new byte[100 * 1024];
+
+    assertThrowsDaprException(
+        StatusRuntimeException.class,
+        "ALREADY_EXISTS",
+        "ALREADY_EXISTS: binary file already exists",
+        () -> previewClient.setBinaryFile("mystore", "large.bin", content, false).block());
+    // The initial request and the first two payloads only.
+    assertEquals(3, sent.size());
   }
 }
