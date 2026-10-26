@@ -385,15 +385,17 @@ public abstract class AbstractActor {
    * Internal callback after method is invoked.
    *
    * @param actorMethodContext Method context.
+   * @param beforeSave         Runs after onPostActorMethod, an error skips the state save.
    * @return Asynchronous void response.
    */
-  Mono<Void> onPostActorMethodInternal(ActorMethodContext actorMethodContext) {
+  Mono<Void> onPostActorMethodInternal(ActorMethodContext actorMethodContext, Mono<Void> beforeSave) {
     return Mono.fromRunnable(() -> {
       if (!this.started.get()) {
         throw new IllegalStateException("Cannot complete a method before starting a call.");
       }
     })
         .then(this.onPostActorMethod(actorMethodContext))
+        .then(beforeSave)
         .then(this.saveState())
         .then(Mono.fromRunnable(() -> this.started.set(false)));
   }

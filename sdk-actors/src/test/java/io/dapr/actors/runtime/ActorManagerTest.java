@@ -163,14 +163,20 @@ public class ActorManagerTest {
     int increment();
   }
 
+  interface FailingActor {
+    Mono<Void> writeThenFail(String value);
+  }
+
   @ActorType(name = "GatedActor")
-  public static class GatedActorImpl extends AbstractActor implements GatedActor, Remindable<String> {
+  public static class GatedActorImpl extends AbstractActor implements GatedActor, FailingActor, Remindable<String> {
 
     private final Mono<Void> gate;
 
     private int calls;
 
     private int deactivations;
+
+    private int postHooks;
 
     public GatedActorImpl(ActorRuntimeContext runtimeContext, ActorId id, Mono<Void> gate) {
       super(runtimeContext, id);
@@ -183,8 +189,18 @@ public class ActorManagerTest {
     }
 
     @Override
+    protected Mono<Void> onPostActorMethod(ActorMethodContext actorMethodContext) {
+      return Mono.fromRunnable(() -> this.postHooks++);
+    }
+
+    @Override
     public Mono<Void> write(String value) {
       return this.gate.then(Mono.defer(() -> this.getActorStateManager().set("value", value)));
+    }
+
+    @Override
+    public Mono<Void> writeThenFail(String value) {
+      return this.write(value).then(Mono.error(new IllegalArgumentException("callback failed")));
     }
 
     @Override
@@ -624,6 +640,59 @@ public class ActorManagerTest {
 
     Assertions.assertEquals(List.of("value=fresh"), provider.saved);
     assertCause(IllegalStateException.class, stale);
+  }
+
+  @Test
+  public void replacedActivationRunsPostHookButSkipsSave() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(provider, created, gate);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<byte[]> stale = write(manager, actorId, "stale").toFuture();
+    manager.activateActor(actorId, "a2").block();
+    gate.complete(null);
+
+    assertCause(IllegalStateException.class, stale);
+    Assertions.assertEquals(1, created.get(0).postHooks);
+    Assertions.assertEquals(List.of(), provider.saved);
+  }
+
+  @Test
+  public void deactivatedActorRunsPostHookButSkipsSave() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(provider, created, gate);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<Void> stale = manager.invokeTimer(actorId, "t", createTimerParams("write", "stale")).toFuture();
+    manager.deactivateActor(actorId).block();
+    gate.complete(null);
+
+    assertCause(IllegalStateException.class, stale);
+    Assertions.assertEquals(1, created.get(0).postHooks);
+    Assertions.assertEquals(List.of(), provider.saved);
+  }
+
+  @Test
+  public void failingTimerCallbackSkipsSave() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<GatedActorImpl> created = new ArrayList<>();
+    ActorManager<GatedActorImpl> manager =
+        createGatedManager(provider, created, CompletableFuture.completedFuture(null));
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<Void> call =
+        manager.invokeTimer(actorId, "t", createTimerParams("writeThenFail", "lost")).toFuture();
+
+    assertCause(IllegalArgumentException.class, call);
+    Assertions.assertEquals(0, created.get(0).postHooks);
+    Assertions.assertEquals(List.of(), provider.saved);
   }
 
   @Test

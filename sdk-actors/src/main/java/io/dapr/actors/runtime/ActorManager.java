@@ -372,9 +372,8 @@ class ActorManager<T extends AbstractActor> {
           })
           .then(actor.onPreActorMethodInternal(context))
           .then((Mono<Object>) func.apply(actor))
-          .switchIfEmpty(
-              this.ifLive(active, actor.onPostActorMethodInternal(context)))
-          .flatMap(r -> this.ifLive(active, actor.onPostActorMethodInternal(context)).thenReturn(r))
+          .switchIfEmpty(actor.onPostActorMethodInternal(context, this.checkLive(active)))
+          .flatMap(r -> actor.onPostActorMethodInternal(context, this.checkLive(active)).thenReturn(r))
           .map(o -> (R) o);
     } catch (Exception e) {
       return Mono.error(e);
@@ -395,8 +394,8 @@ class ActorManager<T extends AbstractActor> {
     });
   }
 
-  /** Skips the post step state save if the instance was replaced during the call. */
-  private Mono<Void> ifLive(ActiveActor<T> active, Mono<Void> post) {
+  /** Fails the call before its state save if the instance was replaced during the call. */
+  private Mono<Void> checkLive(ActiveActor<T> active) {
     return Mono.defer(() -> {
       ActorId actorId = active.actor.getId();
       if (this.activeActors.get(actorId) != active) {
@@ -406,7 +405,7 @@ class ActorManager<T extends AbstractActor> {
                 this.runtimeContext.getActorTypeInformation().getName())));
       }
 
-      return post;
+      return Mono.empty();
     });
   }
 
