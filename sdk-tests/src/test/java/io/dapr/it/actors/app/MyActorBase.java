@@ -44,7 +44,9 @@ public abstract class MyActorBase<T> extends AbstractActor implements MyActor, R
   private ActorReminderDataParam actorReminderDataParam =
           new ActorReminderDataParam("36", String.class.getSimpleName());
 
-  private Function<T, String> toStringFunc = Objects::toString;
+  // the object is rebuilt on reactivation, so this can't be set by startReminder
+  private final Function<T, String> toStringFunc =
+      t -> t instanceof byte[] b ? Base64.getEncoder().encodeToString(b) : Objects.toString(t);
 
   private final TypeRef<T> reminderStateRef;
 
@@ -101,7 +103,6 @@ public abstract class MyActorBase<T> extends AbstractActor implements MyActor, R
         break;
       case "Binary":
         data = actorReminderDataParam.getBinaryData();
-        toStringFunc = t -> Base64.getEncoder().encodeToString((byte[])t);
         break;
       case "Object":
         data = actorReminderDataParam.asObject(TypeRef.get(MyObject.class));
