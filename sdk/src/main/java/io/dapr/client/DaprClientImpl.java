@@ -78,6 +78,7 @@ import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.RuleMetadata;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.ScheduleJobRequest;
+import io.dapr.client.domain.SetBinaryFileRequestAlpha1;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
@@ -117,12 +118,15 @@ import io.dapr.v1.DaprSecretProtos;
 import io.dapr.v1.DaprStateProtos;
 import io.grpc.Channel;
 import io.grpc.Metadata;
+import io.grpc.Status;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -2634,5 +2638,113 @@ public class DaprClientImpl extends AbstractDaprClient {
     return getBinaryFile(storeName, fileName)
         .collect(ByteArrayOutputStream::new, (out, chunk) -> out.write(chunk, 0, chunk.length))
         .map(ByteArrayOutputStream::toByteArray);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> setBinaryFile(String storeName, String fileName, byte[] content, boolean overwrite) {
+    if (content == null) {
+      return DaprException.wrapMono(new IllegalArgumentException("Content cannot be null."));
+    }
+    return setBinaryFile(
+        new SetBinaryFileRequestAlpha1(storeName, fileName, Flux.just(content)).setOverwrite(overwrite));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> setBinaryFile(SetBinaryFileRequestAlpha1 request) {
+    try {
+      if (request == null) {
+        throw new IllegalArgumentException("SetBinaryFileRequestAlpha1 cannot be null.");
+      }
+      validateBinaryFileArgs(request.getStoreName(), request.getFileName());
+      if (request.getContent() == null) {
+        throw new IllegalArgumentException("Content cannot be null.");
+      }
+
+      final DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1 initialMessage =
+          DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1.newBuilder()
+              .setInitialRequest(DaprBinaryStoreProtos.SetBinaryFileRequestInitialAlpha1.newBuilder()
+                  .setComponentName(request.getStoreName())
+                  .setFileName(request.getFileName())
+                  .setOverwrite(request.isOverwrite())
+                  .build())
+              .build();
+
+      return Mono.deferContextual(context -> Mono.<Void>create(sink -> {
+        final Disposable.Swap contentSubscription = Disposables.swap();
+        final AtomicBoolean cancelled = new AtomicBoolean();
+
+        final StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1> responseObserver =
+            new StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1>() {
+              @Override
+              public void onNext(DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1 response) {
+                // The response has no fields.
+              }
+
+              @Override
+              public void onError(Throwable t) {
+                contentSubscription.dispose();
+                // After a cancel, gRPC reports CANCELLED. The subscriber is gone, so drop it.
+                if (!cancelled.get()) {
+                  sink.error(DaprException.propagate(t));
+                }
+              }
+
+              @Override
+              public void onCompleted() {
+                sink.success();
+              }
+            };
+
+        final StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> requestObserver =
+            intercept(context, asyncStub).setBinaryFileAlpha1(responseObserver);
+
+        // The sidecar must receive the initial request within 5 seconds, so send it before any content.
+        requestObserver.onNext(initialMessage);
+
+        final long[] sequenceNumber = {0};
+        contentSubscription.update(request.getContent()
+            .concatMapIterable(DaprClientImpl::splitBinaryFileChunk)
+            .subscribe(
+                chunk -> requestObserver.onNext(DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1.newBuilder()
+                    .setPayload(CommonProtos.StreamPayload.newBuilder()
+                        .setData(chunk)
+                        .setSeq(sequenceNumber[0]++)
+                        .build())
+                    .build()),
+                error -> {
+                  requestObserver.onError(error);
+                  sink.error(DaprException.propagate(error));
+                },
+                requestObserver::onCompleted));
+
+        sink.onCancel(() -> {
+          cancelled.set(true);
+          contentSubscription.dispose();
+          requestObserver.onError(
+              Status.CANCELLED.withDescription("Subscriber cancelled the upload.").asRuntimeException());
+        });
+      }));
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * Splits one content chunk into parts of at most {@link #BINARY_FILE_CHUNK_SIZE} bytes.
+   * An empty chunk gives no parts.
+   */
+  private static List<ByteString> splitBinaryFileChunk(byte[] chunk) {
+    List<ByteString> parts = new ArrayList<>();
+    for (int offset = 0; offset < chunk.length; offset += BINARY_FILE_CHUNK_SIZE) {
+      int length = Math.min(BINARY_FILE_CHUNK_SIZE, chunk.length - offset);
+      parts.add(ByteString.copyFrom(chunk, offset, length));
+    }
+    return parts;
   }
 }

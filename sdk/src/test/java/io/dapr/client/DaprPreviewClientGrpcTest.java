@@ -44,6 +44,7 @@ import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.SetBinaryFileRequestAlpha1;
 import io.dapr.client.domain.SystemMessage;
 import io.dapr.client.domain.ToolMessage;
 import io.dapr.client.domain.UnlockResponseStatus;
@@ -2738,5 +2739,150 @@ public class DaprPreviewClientGrpcTest {
             .setSeq(seq)
             .build())
         .build();
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should send the initial request first, then payloads with seq from 0")
+  public void setBinaryFileMessageOrderTest() {
+    List<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> sent = mockSetBinaryFileStream();
+
+    Flux<byte[]> content = Flux.just(
+        "ab".getBytes(StandardCharsets.UTF_8),
+        new byte[0],
+        "cd".getBytes(StandardCharsets.UTF_8));
+    previewClient.setBinaryFile(new SetBinaryFileRequestAlpha1("mystore", "file.txt", content)).block();
+
+    assertEquals(3, sent.size());
+    assertTrue(sent.get(0).hasInitialRequest());
+    assertEquals("mystore", sent.get(0).getInitialRequest().getComponentName());
+    assertEquals("file.txt", sent.get(0).getInitialRequest().getFileName());
+    assertTrue(sent.get(0).getInitialRequest().hasOverwrite());
+    assertFalse(sent.get(0).getInitialRequest().getOverwrite());
+    assertEquals(0, sent.get(1).getPayload().getSeq());
+    assertEquals("ab", sent.get(1).getPayload().getData().toStringUtf8());
+    assertEquals(1, sent.get(2).getPayload().getSeq());
+    assertEquals("cd", sent.get(2).getPayload().getData().toStringUtf8());
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should split a large byte array into 32 KiB chunks")
+  public void setBinaryFileSplitsLargeContentTest() {
+    List<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> sent = mockSetBinaryFileStream();
+    byte[] content = new byte[100 * 1024];
+    for (int i = 0; i < content.length; i++) {
+      content[i] = (byte) i;
+    }
+
+    previewClient.setBinaryFile("mystore", "large.bin", content, true).block();
+
+    // 1 initial request + 4 payloads: 32 KiB, 32 KiB, 32 KiB, 4 KiB.
+    assertEquals(5, sent.size());
+    assertTrue(sent.get(0).getInitialRequest().getOverwrite());
+    ByteString joined = ByteString.EMPTY;
+    for (int i = 1; i < sent.size(); i++) {
+      CommonProtos.StreamPayload payload = sent.get(i).getPayload();
+      assertEquals(i - 1, payload.getSeq());
+      assertTrue(payload.getData().size() <= 32 * 1024);
+      joined = joined.concat(payload.getData());
+    }
+    assertEquals(32 * 1024, sent.get(1).getPayload().getData().size());
+    assertEquals(4 * 1024, sent.get(4).getPayload().getData().size());
+    assertArrayEquals(content, joined.toByteArray());
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should keep the gRPC error code")
+  public void setBinaryFileAlreadyExistsTest() {
+    doAnswer((Answer<StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1> responseObserver =
+          (StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1>) invocation.getArguments()[0];
+      responseObserver.onError(newStatusRuntimeException("ALREADY_EXISTS", "binary file already exists"));
+      return mock(StreamObserver.class);
+    }).when(daprStub).setBinaryFileAlpha1(any());
+
+    assertThrowsDaprException(
+        StatusRuntimeException.class,
+        "ALREADY_EXISTS",
+        "ALREADY_EXISTS: binary file already exists",
+        () -> previewClient.setBinaryFile("mystore", "file.txt",
+            "data".getBytes(StandardCharsets.UTF_8), false).block());
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should cancel the gRPC call when the content stream fails")
+  public void setBinaryFileContentErrorTest() {
+    StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> requestObserver = mock(StreamObserver.class);
+    doAnswer((Answer<StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>>) invocation ->
+        requestObserver).when(daprStub).setBinaryFileAlpha1(any());
+
+    Flux<byte[]> content = Flux.concat(
+        Flux.just("ab".getBytes(StandardCharsets.UTF_8)),
+        Flux.error(new IllegalStateException("disk read failed")));
+
+    // DaprException.propagate wraps a non-gRPC error in a DaprException whose cause is the original error.
+    assertThrowsDaprException(IllegalStateException.class, () -> previewClient.setBinaryFile(
+        new SetBinaryFileRequestAlpha1("mystore", "file.txt", content)).block());
+    verify(requestObserver).onError(any(IllegalStateException.class));
+    verify(requestObserver, times(0)).onCompleted();
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should cancel the gRPC call when the subscriber cancels")
+  public void setBinaryFileCancelTest() {
+    StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> requestObserver = mock(StreamObserver.class);
+    doAnswer((Answer<StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>>) invocation ->
+        requestObserver).when(daprStub).setBinaryFileAlpha1(any());
+
+    reactor.core.Disposable upload = previewClient.setBinaryFile(
+        new SetBinaryFileRequestAlpha1("mystore", "file.txt", Flux.never())).subscribe();
+    upload.dispose();
+
+    verify(requestObserver).onError(any(StatusRuntimeException.class));
+    verify(requestObserver, times(0)).onCompleted();
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should reject invalid requests")
+  public void setBinaryFileInvalidArgumentsTest() {
+    Flux<byte[]> content = Flux.just("data".getBytes(StandardCharsets.UTF_8));
+    assertThrows(IllegalArgumentException.class, () -> previewClient.setBinaryFile(null).block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.setBinaryFile(
+        new SetBinaryFileRequestAlpha1(null, "file.txt", content)).block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.setBinaryFile(
+        new SetBinaryFileRequestAlpha1("mystore", " ", content)).block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.setBinaryFile(
+        new SetBinaryFileRequestAlpha1("mystore", "file.txt", null)).block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.setBinaryFile(
+        "mystore", "file.txt", null, false).block());
+  }
+
+  /**
+   * Makes {@code setBinaryFileAlpha1} return a fake request stream. The fake records every message.
+   * When the client completes the request stream, the fake completes the response.
+   */
+  private List<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> mockSetBinaryFileStream() {
+    List<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> sent = new ArrayList<>();
+    doAnswer((Answer<StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1> responseObserver =
+          (StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1>) invocation.getArguments()[0];
+      return new StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>() {
+        @Override
+        public void onNext(DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1 value) {
+          sent.add(value);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+          responseObserver.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+          responseObserver.onNext(DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1.getDefaultInstance());
+          responseObserver.onCompleted();
+        }
+      };
+    }).when(daprStub).setBinaryFileAlpha1(any());
+    return sent;
   }
 }

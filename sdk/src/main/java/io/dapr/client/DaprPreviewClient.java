@@ -26,6 +26,7 @@ import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.SetBinaryFileRequestAlpha1;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
@@ -475,4 +476,33 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @throws IllegalArgumentException if storeName or fileName is null or blank.
    */
   Mono<byte[]> getBinaryFileBytes(String storeName, String fileName);
+
+  /**
+   * Stores a file in a binary store component.
+   *
+   * <p>The SDK sends the content in chunks of at most 32 KiB. If overwrite is false and the file
+   * exists, the call fails with the ALREADY_EXISTS error code. The SDK does not apply gRPC flow
+   * control: if the content Flux produces data faster than the network sends it, gRPC holds the
+   * extra data in memory.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, file name, content, and overwrite flag.
+   * @return An empty Mono that completes when the sidecar stores the file.
+   * @throws IllegalArgumentException if the request, store name, file name, or content is missing.
+   */
+  Mono<Void> setBinaryFile(SetBinaryFileRequestAlpha1 request);
+
+  /**
+   * Stores a file in a binary store component from a byte array.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the binary store component.
+   * @param fileName  Name of the file to store.
+   * @param content   File content.
+   * @param overwrite true to replace an existing file, false to fail when the file exists.
+   * @return An empty Mono that completes when the sidecar stores the file.
+   * @throws IllegalArgumentException if storeName, fileName, or content is missing.
+   */
+  Mono<Void> setBinaryFile(String storeName, String fileName, byte[] content, boolean overwrite);
 }
