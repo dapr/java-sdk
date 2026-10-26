@@ -26,6 +26,7 @@ import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.SetBinaryFileRequestAlpha1;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
@@ -437,4 +438,78 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @throws IllegalArgumentException if required parameters are missing.
    */
   Flux<byte[]> decrypt(DecryptRequestAlpha1 request);
+
+  /**
+   * Deletes a file from a binary store component.
+   *
+   * <p>If the file does not exist, the Mono fails with the NOT_FOUND error code.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the binary store component.
+   * @param fileName  Name of the file to delete.
+   * @return An empty Mono that completes when the sidecar deletes the file.
+   * @throws IllegalArgumentException if storeName or fileName is null or blank.
+   */
+  Mono<Void> deleteBinaryFile(String storeName, String fileName);
+
+  /**
+   * Reads a file from a binary store component as a stream of chunks.
+   *
+   * <p>The chunks arrive in file order. Cancel the subscription to stop the download.
+   * If the file does not exist, the Flux fails with the NOT_FOUND error code.
+   * A timeout set with dapr.api.timeoutMilliseconds applies to the whole download.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the binary store component.
+   * @param fileName  Name of the file to read.
+   * @return A Flux of file chunks.
+   * @throws IllegalArgumentException if storeName or fileName is null or blank.
+   */
+  Flux<byte[]> getBinaryFile(String storeName, String fileName);
+
+  /**
+   * Reads a whole file from a binary store component into memory.
+   *
+   * <p>This method holds the whole file in memory. Use {@link #getBinaryFile(String, String)} for large files.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the binary store component.
+   * @param fileName  Name of the file to read.
+   * @return A Mono with the file content. An empty file gives an empty array.
+   * @throws IllegalArgumentException if storeName or fileName is null or blank.
+   */
+  Mono<byte[]> getBinaryFileBytes(String storeName, String fileName);
+
+  /**
+   * Stores a file in a binary store component.
+   *
+   * <p>The SDK sends the content in chunks of at most 32 KiB. If overwrite is false and the file
+   * exists, the call fails with the ALREADY_EXISTS error code. The SDK does not apply gRPC flow
+   * control: if the content Flux produces data faster than the network sends it, gRPC holds the
+   * extra data in memory.
+   * Each subscription to the returned Mono subscribes to the content Flux again. To retry, use a
+   * content Flux that supports more than one subscription.
+   * A timeout set with dapr.api.timeoutMilliseconds applies to the whole upload.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, file name, content, and overwrite flag.
+   * @return An empty Mono that completes when the sidecar stores the file.
+   * @throws IllegalArgumentException if the request, store name, file name, or content is missing.
+   */
+  Mono<Void> setBinaryFile(SetBinaryFileRequestAlpha1 request);
+
+  /**
+   * Stores a file in a binary store component from a byte array.
+   *
+   * <p>The SDK sends the content in chunks of at most 32 KiB.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the binary store component.
+   * @param fileName  Name of the file to store.
+   * @param content   File content.
+   * @param overwrite true to replace an existing file, false to fail when the file exists.
+   * @return An empty Mono that completes when the sidecar stores the file.
+   * @throws IllegalArgumentException if storeName, fileName, or content is missing.
+   */
+  Mono<Void> setBinaryFile(String storeName, String fileName, byte[] content, boolean overwrite);
 }
