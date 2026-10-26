@@ -79,6 +79,7 @@ import org.mockito.stubbing.Answer;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -2839,6 +2840,46 @@ public class DaprPreviewClientGrpcTest {
 
     verify(requestObserver).onError(any(StatusRuntimeException.class));
     verify(requestObserver, times(0)).onCompleted();
+  }
+
+  @Test
+  @DisplayName("setBinaryFile should report only the content error when the content stream fails")
+  public void setBinaryFileContentErrorSignalsOnceTest() {
+    List<Throwable> dropped = new ArrayList<>();
+    Hooks.onErrorDropped(dropped::add);
+    try {
+      doAnswer((Answer<StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>>) invocation -> {
+        StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1> responseObserver =
+            (StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1>) invocation.getArguments()[0];
+        return new StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1>() {
+          @Override
+          public void onNext(DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1 value) {
+          }
+
+          @Override
+          public void onError(Throwable t) {
+            // Like real gRPC: cancelling the call reports CANCELLED to the response observer.
+            responseObserver.onError(Status.CANCELLED.withCause(t).asRuntimeException());
+          }
+
+          @Override
+          public void onCompleted() {
+            responseObserver.onNext(DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1.getDefaultInstance());
+            responseObserver.onCompleted();
+          }
+        };
+      }).when(daprStub).setBinaryFileAlpha1(any());
+
+      Flux<byte[]> content = Flux.concat(
+          Flux.just("ab".getBytes(StandardCharsets.UTF_8)),
+          Flux.error(new IllegalStateException("disk read failed")));
+
+      assertThrowsDaprException(IllegalStateException.class, () -> previewClient.setBinaryFile(
+          new SetBinaryFileRequestAlpha1("mystore", "file.txt", content)).block());
+      assertTrue(dropped.isEmpty());
+    } finally {
+      Hooks.resetOnErrorDropped();
+    }
   }
 
   @Test

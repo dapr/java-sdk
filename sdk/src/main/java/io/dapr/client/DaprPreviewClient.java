@@ -495,7 +495,8 @@ public interface DaprPreviewClient extends AutoCloseable {
   /**
    * Stores a file in a binary store component from a byte array.
    *
-   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   * <p>The SDK sends the content in chunks of at most 32 KiB.
+   * This is an alpha API. Its name and behavior can change in a later release.
    *
    * @param storeName Name of the binary store component.
    * @param fileName  Name of the file to store.

@@ -2677,7 +2677,9 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Mono.deferContextual(context -> Mono.<Void>create(sink -> {
         final Disposable.Swap contentSubscription = Disposables.swap();
-        final AtomicBoolean cancelled = new AtomicBoolean();
+        // Set when the upload ends on the client side (subscriber cancel or content error).
+        // gRPC then reports CANCELLED, which must not replace the real outcome.
+        final AtomicBoolean terminated = new AtomicBoolean();
 
         final StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1> responseObserver =
             new StreamObserver<DaprBinaryStoreProtos.SetBinaryFileResponseAlpha1>() {
@@ -2689,8 +2691,7 @@ public class DaprClientImpl extends AbstractDaprClient {
               @Override
               public void onError(Throwable t) {
                 contentSubscription.dispose();
-                // After a cancel, gRPC reports CANCELLED. The subscriber is gone, so drop it.
-                if (!cancelled.get()) {
+                if (!terminated.get()) {
                   sink.error(DaprException.propagate(t));
                 }
               }
@@ -2718,13 +2719,14 @@ public class DaprClientImpl extends AbstractDaprClient {
                         .build())
                     .build()),
                 error -> {
+                  terminated.set(true);
                   requestObserver.onError(error);
                   sink.error(DaprException.propagate(error));
                 },
                 requestObserver::onCompleted));
 
         sink.onCancel(() -> {
-          cancelled.set(true);
+          terminated.set(true);
           contentSubscription.dispose();
           requestObserver.onError(
               Status.CANCELLED.withDescription("Subscriber cancelled the upload.").asRuntimeException());
