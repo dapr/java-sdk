@@ -449,4 +449,29 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @throws IllegalArgumentException if storeName or fileName is null or blank.
    */
   Mono<Void> deleteBinaryFile(String storeName, String fileName);
+
+  /**
+   * Reads a file from a binary store component as a stream of chunks.
+   *
+   * <p>The chunks arrive in file order. Cancel the subscription to stop the download.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the binary store component.
+   * @param fileName  Name of the file to read.
+   * @return A Flux of file chunks.
+   * @throws IllegalArgumentException if storeName or fileName is null or blank.
+   */
+  Flux<byte[]> getBinaryFile(String storeName, String fileName);
+
+  /**
+   * Reads a whole file from a binary store component into memory.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the binary store component.
+   * @param fileName  Name of the file to read.
+   * @return A Mono with the file content. An empty file gives an empty array.
+   * @throws IllegalArgumentException if storeName or fileName is null or blank.
+   */
+  Mono<byte[]> getBinaryFileBytes(String storeName, String fileName);
 }

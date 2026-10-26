@@ -63,6 +63,8 @@ import io.dapr.v1.DaprPubsubProtos;
 import io.dapr.v1.DaprStateProtos;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -2573,5 +2575,120 @@ public class DaprPreviewClientGrpcTest {
         "NOT_FOUND",
         "NOT_FOUND: binary file not found",
         () -> previewClient.deleteBinaryFile("mystore", "missing.txt").block());
+  }
+
+  @Test
+  @DisplayName("getBinaryFile should emit non-empty chunks in order")
+  public void getBinaryFileChunksTest() {
+    ArgumentCaptor<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> captor =
+        ArgumentCaptor.forClass(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> observer =
+          (StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.onNext(binaryFileResponse("first", 0));
+      observer.onNext(binaryFileResponse("", 1));
+      observer.onNext(binaryFileResponse("second", 2));
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getBinaryFileAlpha1(captor.capture(), any());
+
+    List<byte[]> chunks = previewClient.getBinaryFile("mystore", "file.txt").collectList().block();
+
+    assertNotNull(chunks);
+    assertEquals(2, chunks.size());
+    assertArrayEquals("first".getBytes(StandardCharsets.UTF_8), chunks.get(0));
+    assertArrayEquals("second".getBytes(StandardCharsets.UTF_8), chunks.get(1));
+    assertEquals("mystore", captor.getValue().getComponentName());
+    assertEquals("file.txt", captor.getValue().getFileName());
+  }
+
+  @Test
+  @DisplayName("getBinaryFileBytes should join all chunks")
+  public void getBinaryFileBytesTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> observer =
+          (StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.onNext(binaryFileResponse("hello ", 0));
+      observer.onNext(binaryFileResponse("world", 1));
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getBinaryFileAlpha1(any(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class), any());
+
+    byte[] content = previewClient.getBinaryFileBytes("mystore", "file.txt").block();
+
+    assertArrayEquals("hello world".getBytes(StandardCharsets.UTF_8), content);
+  }
+
+  @Test
+  @DisplayName("getBinaryFileBytes should return an empty array for an empty file")
+  public void getBinaryFileBytesEmptyFileTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> observer =
+          (StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getBinaryFileAlpha1(any(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class), any());
+
+    byte[] content = previewClient.getBinaryFileBytes("mystore", "empty.txt").block();
+
+    assertNotNull(content);
+    assertEquals(0, content.length);
+  }
+
+  @Test
+  @DisplayName("getBinaryFile should keep the gRPC error code")
+  public void getBinaryFileNotFoundTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> observer =
+          (StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.onError(newStatusRuntimeException("NOT_FOUND", "binary file not found"));
+      return null;
+    }).when(daprStub).getBinaryFileAlpha1(any(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class), any());
+
+    assertThrowsDaprException(
+        StatusRuntimeException.class,
+        "NOT_FOUND",
+        "NOT_FOUND: binary file not found",
+        () -> previewClient.getBinaryFileBytes("mystore", "missing.txt").block());
+  }
+
+  @Test
+  @DisplayName("getBinaryFile should reject a null or blank store name or file name")
+  public void getBinaryFileInvalidArgumentsTest() {
+    assertThrows(IllegalArgumentException.class, () -> previewClient.getBinaryFile(null, "file.txt").blockLast());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.getBinaryFile("mystore", " ").blockLast());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.getBinaryFileBytes("", "file.txt").block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.getBinaryFileBytes("mystore", null).block());
+  }
+
+  @Test
+  @DisplayName("getBinaryFile should cancel the gRPC call when the subscriber cancels")
+  public void getBinaryFileCancelTest() {
+    ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> callStream =
+        mock(ClientCallStreamObserver.class);
+    doAnswer((Answer<Void>) invocation -> {
+      ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+          DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> observer =
+          (ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+              DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.beforeStart(callStream);
+      observer.onNext(binaryFileResponse("first", 0));
+      observer.onNext(binaryFileResponse("second", 1));
+      return null;
+    }).when(daprStub).getBinaryFileAlpha1(any(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class), any());
+
+    byte[] first = previewClient.getBinaryFile("mystore", "file.txt").take(1).blockLast();
+
+    assertArrayEquals("first".getBytes(StandardCharsets.UTF_8), first);
+    verify(callStream).cancel(any(), any());
+  }
+
+  private static DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1 binaryFileResponse(String data, long seq) {
+    return DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1.newBuilder()
+        .setPayload(CommonProtos.StreamPayload.newBuilder()
+            .setData(ByteString.copyFromUtf8(data))
+            .setSeq(seq)
+            .build())
+        .build();
   }
 }

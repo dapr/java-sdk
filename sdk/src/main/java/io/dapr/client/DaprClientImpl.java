@@ -118,6 +118,8 @@ import io.dapr.v1.DaprStateProtos;
 import io.grpc.Channel;
 import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,6 +132,7 @@ import reactor.util.retry.Retry;
 
 import javax.annotation.Nonnull;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
@@ -2539,5 +2542,66 @@ public class DaprClientImpl extends AbstractDaprClient {
     if (fileName == null || fileName.trim().isEmpty()) {
       throw new IllegalArgumentException("File name cannot be null or empty.");
     }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<byte[]> getBinaryFile(String storeName, String fileName) {
+    try {
+      validateBinaryFileArgs(storeName, fileName);
+
+      DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1 request =
+          DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.newBuilder()
+              .setComponentName(storeName)
+              .setFileName(fileName)
+              .build();
+
+      return Flux.deferContextual(context -> Flux.<byte[]>create(sink -> {
+        final ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+            DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> responseObserver =
+            new ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+                DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>() {
+              @Override
+              public void beforeStart(
+                  ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> requestStream) {
+                sink.onCancel(() -> requestStream.cancel("Subscriber cancelled the download.", null));
+              }
+
+              @Override
+              public void onNext(DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1 response) {
+                byte[] data = response.getPayload().getData().toByteArray();
+                if (data.length > 0) {
+                  sink.next(data);
+                }
+              }
+
+              @Override
+              public void onError(Throwable t) {
+                sink.error(DaprException.propagate(t));
+              }
+
+              @Override
+              public void onCompleted() {
+                sink.complete();
+              }
+            };
+
+        intercept(context, asyncStub).getBinaryFileAlpha1(request, responseObserver);
+      }));
+    } catch (Exception ex) {
+      return DaprException.wrapFlux(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<byte[]> getBinaryFileBytes(String storeName, String fileName) {
+    return getBinaryFile(storeName, fileName)
+        .collect(ByteArrayOutputStream::new, (out, chunk) -> out.write(chunk, 0, chunk.length))
+        .map(ByteArrayOutputStream::toByteArray);
   }
 }
