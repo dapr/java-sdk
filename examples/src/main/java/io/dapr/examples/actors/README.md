@@ -79,7 +79,7 @@ runtime.getConfig().addActorTypeConfig(new ActorTypeConfig()
     .setReentrancy(new ActorReentrancyConfig().setEnabled(false)));
 ```
 
-Actor methods that make nested actor calls should compose the returned `Mono` so the invocation context can carry Dapr's reentrancy id across scheduler changes and concurrent calls.
+For reactive actor methods, compose nested calls through the returned `Mono` so Reactor context can carry Dapr's reentrancy id across scheduler changes and concurrent calls. Synchronous actor methods can make nested calls through a blocking actor proxy; the SDK scopes the reentrancy id to the method invocation.
  
 
 `DaprApplication.start()` method will run the Spring Boot [DaprApplication](https://github.com/dapr/java-sdk/blob/master/sdk-tests/src/test/java/io/dapr/it/actors/services/springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](https://github.com/dapr/java-sdk/blob/master/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
