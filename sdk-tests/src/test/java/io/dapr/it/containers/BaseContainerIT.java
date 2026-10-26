@@ -16,6 +16,7 @@ package io.dapr.it.containers;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.config.Property;
 import io.dapr.it.AppRun;
@@ -305,6 +306,15 @@ public abstract class BaseContainerIT {
 
   protected static ActorClient newActorClient(DaprContainer dapr) {
     ActorClient client = new ActorClient(new Properties(daprOverrides(dapr)), null);
+    deferClose(client);
+    return client;
+  }
+
+  /**
+   * ActorClient overload with resiliency options, such as a timeout that cancels calls in daprd.
+   */
+  protected static ActorClient newActorClient(DaprContainer dapr, ResiliencyOptions resiliencyOptions) {
+    ActorClient client = new ActorClient(new Properties(daprOverrides(dapr)), resiliencyOptions);
     deferClose(client);
     return client;
   }
