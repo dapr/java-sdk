@@ -75,6 +75,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import org.reactivestreams.Subscription;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -2680,6 +2682,52 @@ public class DaprPreviewClientGrpcTest {
     byte[] first = previewClient.getBinaryFile("mystore", "file.txt").take(1).blockLast();
 
     assertArrayEquals("first".getBytes(StandardCharsets.UTF_8), first);
+    verify(callStream).cancel(any(), any());
+  }
+
+  @Test
+  @DisplayName("getBinaryFile should ask gRPC for messages only when the subscriber has demand")
+  public void getBinaryFileBackpressureTest() {
+    ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> callStream =
+        mock(ClientCallStreamObserver.class);
+    AtomicReference<StreamObserver<DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>> observerRef =
+        new AtomicReference<>();
+    doAnswer((Answer<Void>) invocation -> {
+      ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+          DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> observer =
+          (ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
+              DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.beforeStart(callStream);
+      observerRef.set(observer);
+      return null;
+    }).when(daprStub).getBinaryFileAlpha1(any(DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1.class), any());
+
+    List<byte[]> received = new ArrayList<>();
+    BaseSubscriber<byte[]> subscriber = new BaseSubscriber<byte[]>() {
+      @Override
+      protected void hookOnSubscribe(Subscription subscription) {
+        request(2);
+      }
+
+      @Override
+      protected void hookOnNext(byte[] value) {
+        received.add(value);
+      }
+    };
+    previewClient.getBinaryFile("mystore", "file.txt").subscribe(subscriber);
+
+    verify(callStream).disableAutoRequestWithInitial(0);
+    verify(callStream).request(2);
+
+    // An empty chunk uses no demand, so the client asks gRPC for one more message.
+    observerRef.get().onNext(binaryFileResponse("", 0));
+    verify(callStream).request(1);
+
+    observerRef.get().onNext(binaryFileResponse("first", 1));
+    assertEquals(1, received.size());
+    assertArrayEquals("first".getBytes(StandardCharsets.UTF_8), received.get(0));
+
+    subscriber.dispose();
     verify(callStream).cancel(any(), any());
   }
 

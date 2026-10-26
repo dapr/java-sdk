@@ -466,7 +466,8 @@ public interface DaprPreviewClient extends AutoCloseable {
   /**
    * Reads a whole file from a binary store component into memory.
    *
-   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   * <p>This method holds the whole file in memory. Use {@link #getBinaryFile(String, String)} for large files.
+   * This is an alpha API. Its name and behavior can change in a later release.
    *
    * @param storeName Name of the binary store component.
    * @param fileName  Name of the file to read.

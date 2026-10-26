@@ -148,6 +148,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -2559,6 +2561,10 @@ public class DaprClientImpl extends AbstractDaprClient {
               .build();
 
       return Flux.deferContextual(context -> Flux.<byte[]>create(sink -> {
+        final AtomicReference<ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1>> callStream =
+            new AtomicReference<>();
+        final AtomicBoolean unboundedDemand = new AtomicBoolean();
+
         final ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
             DaprBinaryStoreProtos.GetBinaryFileResponseAlpha1> responseObserver =
             new ClientResponseObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1,
@@ -2566,6 +2572,10 @@ public class DaprClientImpl extends AbstractDaprClient {
               @Override
               public void beforeStart(
                   ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> requestStream) {
+                // Receive messages only when the subscriber asks for them, so a slow subscriber
+                // does not make the client buffer the whole file.
+                requestStream.disableAutoRequestWithInitial(0);
+                callStream.set(requestStream);
                 sink.onCancel(() -> requestStream.cancel("Subscriber cancelled the download.", null));
               }
 
@@ -2574,12 +2584,22 @@ public class DaprClientImpl extends AbstractDaprClient {
                 byte[] data = response.getPayload().getData().toByteArray();
                 if (data.length > 0) {
                   sink.next(data);
+                  return;
+                }
+                // An empty chunk uses no subscriber demand, so ask for one more message.
+                // Unbounded demand has already asked for all messages.
+                ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> stream = callStream.get();
+                if (stream != null && !unboundedDemand.get()) {
+                  stream.request(1);
                 }
               }
 
               @Override
               public void onError(Throwable t) {
-                sink.error(DaprException.propagate(t));
+                // After a cancel, gRPC reports CANCELLED. The subscriber is gone, so drop it.
+                if (!sink.isCancelled()) {
+                  sink.error(DaprException.propagate(t));
+                }
               }
 
               @Override
@@ -2589,6 +2609,17 @@ public class DaprClientImpl extends AbstractDaprClient {
             };
 
         intercept(context, asyncStub).getBinaryFileAlpha1(request, responseObserver);
+
+        // The call has started, so gRPC now accepts requests. Forward subscriber demand to it.
+        ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> stream = callStream.get();
+        if (stream != null) {
+          sink.onRequest(n -> {
+            if (n == Long.MAX_VALUE) {
+              unboundedDemand.set(true);
+            }
+            stream.request((int) Math.min(n, Integer.MAX_VALUE));
+          });
+        }
       }));
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
