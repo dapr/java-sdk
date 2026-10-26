@@ -22,7 +22,15 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -113,6 +121,170 @@ public class ActorManagerTest {
     @Override
     public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
       return Mono.empty();
+    }
+  }
+
+  interface ActivationActor {
+    int increment();
+  }
+
+  @ActorType(name = "ActivationActor")
+  public static class ActivationActorImpl extends AbstractActor implements ActivationActor {
+
+    private int calls;
+
+    private int activations;
+
+    private int deactivations;
+
+    public ActivationActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+    }
+
+    @Override
+    protected Mono<Void> onActivate() {
+      return Mono.fromRunnable(() -> this.activations++);
+    }
+
+    @Override
+    protected Mono<Void> onDeactivate() {
+      return Mono.fromRunnable(() -> this.deactivations++);
+    }
+
+    @Override
+    public int increment() {
+      return ++this.calls;
+    }
+  }
+
+  interface GatedActor {
+    Mono<Void> write(String value);
+
+    int increment();
+  }
+
+  @ActorType(name = "GatedActor")
+  public static class GatedActorImpl extends AbstractActor implements GatedActor, Remindable<String> {
+
+    private final Mono<Void> gate;
+
+    private int calls;
+
+    private int deactivations;
+
+    public GatedActorImpl(ActorRuntimeContext runtimeContext, ActorId id, Mono<Void> gate) {
+      super(runtimeContext, id);
+      this.gate = gate;
+    }
+
+    @Override
+    protected Mono<Void> onDeactivate() {
+      return Mono.fromRunnable(() -> this.deactivations++);
+    }
+
+    @Override
+    public Mono<Void> write(String value) {
+      return this.gate.then(Mono.defer(() -> this.getActorStateManager().set("value", value)));
+    }
+
+    @Override
+    public int increment() {
+      return ++this.calls;
+    }
+
+    @Override
+    public TypeRef<String> getStateType() {
+      return TypeRef.STRING;
+    }
+
+    @Override
+    public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
+      return this.write(state);
+    }
+  }
+
+  @ActorType(name = "ActivateWriteActor")
+  public static class ActivateWriteActorImpl extends AbstractActor implements GatedActor {
+
+    private final Mono<Void> activateGate;
+
+    private final Mono<Void> callGate;
+
+    private final String tag;
+
+    private final boolean failDeactivate;
+
+    private int calls;
+
+    private int deactivations;
+
+    public ActivateWriteActorImpl(ActorRuntimeContext runtimeContext, ActorId id, Mono<Void> activateGate,
+        Mono<Void> callGate, String tag, boolean failDeactivate) {
+      super(runtimeContext, id);
+      this.activateGate = activateGate;
+      this.callGate = callGate;
+      this.tag = tag;
+      this.failDeactivate = failDeactivate;
+    }
+
+    @Override
+    protected Mono<Void> onActivate() {
+      return this.activateGate.then(Mono.defer(() -> this.getActorStateManager().set("value", this.tag)));
+    }
+
+    @Override
+    protected Mono<Void> onDeactivate() {
+      this.deactivations++;
+      return this.failDeactivate ? Mono.error(new IllegalArgumentException("deactivate failed")) : Mono.empty();
+    }
+
+    @Override
+    public Mono<Void> write(String value) {
+      return this.callGate.then(Mono.defer(() -> this.getActorStateManager().set("value", value)));
+    }
+
+    @Override
+    public int increment() {
+      return ++this.calls;
+    }
+  }
+
+  static class RecordingStateProvider extends DaprStateAsyncProvider {
+
+    private final List<String> saved = Collections.synchronizedList(new ArrayList<>());
+
+    RecordingStateProvider() {
+      super(mock(DaprClient.class), new DefaultObjectSerializer());
+    }
+
+    @Override
+    Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
+      return Mono.just(false);
+    }
+
+    @Override
+    Mono<Void> apply(String actorType, ActorId actorId, ActorStateChange... stateChanges) {
+      return Mono.fromRunnable(() -> {
+        for (ActorStateChange change : stateChanges) {
+          this.saved.add(change.getStateName() + "=" + change.getValue());
+        }
+      });
+    }
+  }
+
+  static class GetHookMap<K, V> extends HashMap<K, V> {
+
+    private Runnable onGet;
+
+    @Override
+    public V get(Object key) {
+      V value = super.get(key);
+      Runnable hook = this.onGet;
+      this.onGet = null;
+      if (hook != null) {
+        hook.run();
+      }
+      return value;
     }
   }
 
@@ -277,6 +449,452 @@ public class ActorManagerTest {
 
     this.manager.deactivateActor(actorId).block();
     assertThrows(IllegalArgumentException.class, () -> this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block());
+  }
+
+  @Test
+  public void sameActivationIdReusesActor() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    Assertions.assertEquals(1, increment(manager, actorId));
+    manager.activateActor(actorId, "a1").block();
+    Assertions.assertEquals(2, increment(manager, actorId));
+
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(1, created.get(0).activations);
+    Assertions.assertEquals(0, created.get(0).deactivations);
+  }
+
+  @Test
+  public void newActivationIdReplacesActor() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    Assertions.assertEquals(1, increment(manager, actorId));
+    Assertions.assertEquals(2, increment(manager, actorId));
+    manager.activateActor(actorId, "a2").block();
+
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(1, created.get(1).activations);
+    Assertions.assertEquals(0, created.get(1).deactivations);
+    Assertions.assertEquals(1, increment(manager, actorId));
+    Assertions.assertEquals(2, created.get(0).calls);
+  }
+
+  @Test
+  public void missingActivationIdNeverResets() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    Assertions.assertEquals(1, increment(manager, actorId));
+    manager.activateActor(actorId, "").block();
+    Assertions.assertEquals(2, increment(manager, actorId));
+    manager.activateActor(actorId, null).block();
+    Assertions.assertEquals(3, increment(manager, actorId));
+    manager.activateActor(actorId).block();
+    Assertions.assertEquals(4, increment(manager, actorId));
+
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(0, created.get(0).deactivations);
+  }
+
+  @Test
+  public void activationIdAfterMissingActivationIdResets() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId).block();
+    Assertions.assertEquals(1, increment(manager, actorId));
+    manager.activateActor(actorId, "a1").block();
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(1, increment(manager, actorId));
+
+    manager.activateActor(actorId, "a1").block();
+    Assertions.assertEquals(2, increment(manager, actorId));
+    Assertions.assertEquals(2, created.size());
+  }
+
+  @Test
+  public void activationIdIsKeptPerActor() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId first = newActorId();
+    ActorId second = newActorId();
+
+    manager.activateActor(first, "a1").block();
+    manager.activateActor(second, "b1").block();
+    manager.activateActor(first, "a2").block();
+    manager.activateActor(second, "b1").block();
+
+    Assertions.assertEquals(3, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(0, created.get(1).deactivations);
+  }
+
+  @Test
+  public void deactivateThenNewActivationIdCreatesFreshActor() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    increment(manager, actorId);
+    manager.deactivateActor(actorId).block();
+    manager.activateActor(actorId, "a2").block();
+
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(1, increment(manager, actorId));
+  }
+
+  @Test
+  public void activateWithNewActivationIdIsLazy() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    Mono<?> reset = manager.activateActor(actorId, "a2");
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(0, created.get(0).deactivations);
+
+    reset.block();
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+  }
+
+  @Test
+  public void replacedActivationSkipsStaleSave() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(provider, created, gate);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<byte[]> stale = write(manager, actorId, "stale").toFuture();
+    manager.activateActor(actorId, "a2").block();
+    write(manager, actorId, "fresh").block();
+    gate.complete(null);
+
+    Assertions.assertEquals(List.of("value=fresh"), provider.saved);
+    assertCause(IllegalStateException.class, stale);
+  }
+
+  @Test
+  public void replacedActivationSkipsStaleTimerSave() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(provider, created, gate);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<Void> stale = manager.invokeTimer(actorId, "t", createTimerParams("write", "stale")).toFuture();
+    manager.activateActor(actorId, "a2").block();
+    write(manager, actorId, "fresh").block();
+    gate.complete(null);
+
+    Assertions.assertEquals(List.of("value=fresh"), provider.saved);
+    assertCause(IllegalStateException.class, stale);
+  }
+
+  @Test
+  public void replacedActivationSkipsStaleReminderSave() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(provider, created, gate);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<Void> stale = manager.invokeReminder(actorId, "r", createReminderParams("stale")).toFuture();
+    manager.activateActor(actorId, "a2").block();
+    write(manager, actorId, "fresh").block();
+    gate.complete(null);
+
+    Assertions.assertEquals(List.of("value=fresh"), provider.saved);
+    assertCause(IllegalStateException.class, stale);
+  }
+
+  @Test
+  public void liveActivationSavesAfterSameOrMissingId() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(provider, created, gate);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<byte[]> call = write(manager, actorId, "live").toFuture();
+    manager.activateActor(actorId, "a1").block();
+    manager.activateActor(actorId, null).block();
+    manager.activateActor(actorId, "").block();
+    gate.complete(null);
+
+    call.get(5, TimeUnit.SECONDS);
+    Assertions.assertEquals(List.of("value=live"), provider.saved);
+    Assertions.assertEquals(1, created.size());
+  }
+
+  @Test
+  public void deactivatedActorSkipsSave() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(provider, created, gate);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<byte[]> call = write(manager, actorId, "stale").toFuture();
+    manager.deactivateActor(actorId).block();
+    gate.complete(null);
+
+    Assertions.assertEquals(List.of(), provider.saved);
+    assertCause(IllegalStateException.class, call);
+  }
+
+  @Test
+  public void previousActivationIdCreatesFreshActor() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    manager.activateActor(actorId, "a2").block();
+    Assertions.assertEquals(1, increment(manager, actorId));
+    manager.activateActor(actorId, "a1").block();
+
+    Assertions.assertEquals(3, created.size());
+    Assertions.assertEquals(1, created.get(1).deactivations);
+    Assertions.assertEquals(1, created.get(2).activations);
+    Assertions.assertEquals(1, increment(manager, actorId));
+  }
+
+  @Test
+  public void missingActivationIdAfterReplaceKeepsActor() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    manager.activateActor(actorId, "a2").block();
+    Assertions.assertEquals(1, increment(manager, actorId));
+    manager.activateActor(actorId, null).block();
+    manager.activateActor(actorId, "").block();
+    Assertions.assertEquals(2, increment(manager, actorId));
+    Assertions.assertEquals(2, created.size());
+  }
+
+  @Test
+  public void lateActivationWithDifferentIdFailsAndKeepsNewer() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<ActivateWriteActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> activateGate = new CompletableFuture<>();
+    CompletableFuture<Void> callGate = new CompletableFuture<>();
+    ActorManager<ActivateWriteActorImpl> manager =
+        createLateActivationManager(provider, created, activateGate, callGate, false);
+    ActorId actorId = newActorId();
+
+    CompletableFuture<?> late = manager.activateActor(actorId, "a").toFuture();
+    manager.activateActor(actorId, "b").block();
+    CompletableFuture<byte[]> inFlight = manager.invokeMethod(
+        actorId, "write", new DefaultObjectSerializer().serialize("fromB")).toFuture();
+    activateGate.complete(null);
+
+    assertCause(IllegalStateException.class, late);
+    callGate.complete(null);
+    inFlight.get(5, TimeUnit.SECONDS);
+
+    Assertions.assertEquals(List.of("value=newer", "value=fromB"), provider.saved);
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(0, created.get(1).deactivations);
+    manager.invokeMethod(actorId, "increment", null).block();
+    Assertions.assertEquals(0, created.get(0).calls);
+    Assertions.assertEquals(1, created.get(1).calls);
+  }
+
+  @Test
+  public void lateActivationWithSameIdReusesNewer() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<ActivateWriteActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> activateGate = new CompletableFuture<>();
+    ActorManager<ActivateWriteActorImpl> manager =
+        createLateActivationManager(provider, created, activateGate, new CompletableFuture<>(), false);
+    ActorId actorId = newActorId();
+
+    CompletableFuture<ActorManager.ActiveActor<ActivateWriteActorImpl>> late =
+        manager.activateActor(actorId, "a").toFuture();
+    manager.activateActor(actorId, "a").block();
+    activateGate.complete(null);
+
+    manager.invokeMethod(late.get(5, TimeUnit.SECONDS), "increment", null).block();
+    manager.invokeMethod(actorId, "increment", null).block();
+
+    Assertions.assertEquals(List.of("value=newer"), provider.saved);
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(0, created.get(0).calls);
+    Assertions.assertEquals(0, created.get(1).deactivations);
+    Assertions.assertEquals(2, created.get(1).calls);
+  }
+
+  @Test
+  public void lateActivationWithoutIdReusesNewer() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<ActivateWriteActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> activateGate = new CompletableFuture<>();
+    ActorManager<ActivateWriteActorImpl> manager =
+        createLateActivationManager(provider, created, activateGate, new CompletableFuture<>(), true);
+    ActorId actorId = newActorId();
+
+    CompletableFuture<ActorManager.ActiveActor<ActivateWriteActorImpl>> late =
+        manager.activateActor(actorId, null).toFuture();
+    manager.activateActor(actorId, "b").block();
+    activateGate.complete(null);
+
+    manager.invokeMethod(late.get(5, TimeUnit.SECONDS), "increment", null).block();
+
+    Assertions.assertEquals(List.of("value=newer"), provider.saved);
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(0, created.get(0).calls);
+    Assertions.assertEquals(1, created.get(1).calls);
+  }
+
+  @Test
+  public void resetSurvivesFailingDeactivate() throws Exception {
+    List<ActivateWriteActorImpl> created = new ArrayList<>();
+    ActorManager<ActivateWriteActorImpl> manager = createLateActivationManager(new RecordingStateProvider(), created,
+        CompletableFuture.completedFuture(null), new CompletableFuture<>(), true);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    manager.activateActor(actorId, "a2").block();
+    manager.invokeMethod(actorId, "increment", null).block();
+
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(0, created.get(0).calls);
+    Assertions.assertEquals(1, created.get(1).calls);
+  }
+
+  @Test
+  public void deactivateFailsWhenOnDeactivateThrows() throws Exception {
+    List<ActivateWriteActorImpl> created = new ArrayList<>();
+    ActorManager<ActivateWriteActorImpl> manager = createLateActivationManager(new RecordingStateProvider(), created,
+        CompletableFuture.completedFuture(null), new CompletableFuture<>(), true);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+
+    assertThrows(IllegalArgumentException.class, () -> manager.deactivateActor(actorId).block());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+  }
+
+  @Test
+  public void concurrentResetKeepsTheWinner() throws Exception {
+    List<ActivationActorImpl> created = new ArrayList<>();
+    ActorManager<ActivationActorImpl> manager = createActivationManager(created);
+    GetHookMap<Object, Object> activeActors = hookActiveActors(manager);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    List<ActorManager.ActiveActor<ActivationActorImpl>> winner = new ArrayList<>();
+    activeActors.onGet = () -> winner.add(manager.activateActor(actorId, "a2").block());
+    ActorManager.ActiveActor<ActivationActorImpl> loser = manager.activateActor(actorId, "a2").block();
+
+    Assertions.assertSame(winner.get(0), loser);
+    Assertions.assertEquals(3, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(0, created.get(1).deactivations);
+    Assertions.assertEquals(1, created.get(2).deactivations);
+    Assertions.assertEquals(1, increment(manager, actorId));
+  }
+
+  private static GetHookMap<Object, Object> hookActiveActors(ActorManager<?> manager) throws Exception {
+    Field actors = ActorManager.class.getDeclaredField("activeActors");
+    actors.setAccessible(true);
+    GetHookMap<Object, Object> map = new GetHookMap<>();
+    actors.set(manager, map);
+    return map;
+  }
+
+  private static ActorManager<ActivateWriteActorImpl> createLateActivationManager(
+      RecordingStateProvider provider, List<ActivateWriteActorImpl> created, CompletableFuture<Void> activateGate,
+      CompletableFuture<Void> callGate, boolean failLateDeactivate) {
+    ActorRuntimeContext<ActivateWriteActorImpl> context = new ActorRuntimeContext(
+      mock(ActorRuntime.class),
+      new DefaultObjectSerializer(),
+      (ActorFactory<ActivateWriteActorImpl>) (ctx, id) -> {
+        ActivateWriteActorImpl actor = created.isEmpty()
+            ? new ActivateWriteActorImpl(ctx, id, Mono.fromFuture(activateGate), Mono.empty(), "late",
+                failLateDeactivate)
+            : new ActivateWriteActorImpl(ctx, id, Mono.empty(), Mono.fromFuture(callGate), "newer", false);
+        created.add(actor);
+        return actor;
+      },
+      ActorTypeInformation.create(ActivateWriteActorImpl.class),
+      mock(DaprClient.class),
+      provider
+    );
+    return new ActorManager<>(context);
+  }
+
+  private static ActorManager<GatedActorImpl> createGatedManager(
+      RecordingStateProvider provider, List<GatedActorImpl> created, CompletableFuture<Void> gate) {
+    ActorRuntimeContext<GatedActorImpl> context = new ActorRuntimeContext(
+      mock(ActorRuntime.class),
+      new DefaultObjectSerializer(),
+      (ActorFactory<GatedActorImpl>) (ctx, id) -> {
+        Mono<Void> actorGate = created.isEmpty() ? Mono.fromFuture(gate) : Mono.empty();
+        GatedActorImpl actor = new GatedActorImpl(ctx, id, actorGate);
+        created.add(actor);
+        return actor;
+      },
+      ActorTypeInformation.create(GatedActorImpl.class),
+      mock(DaprClient.class),
+      provider
+    );
+    return new ActorManager<>(context);
+  }
+
+  private static Mono<byte[]> write(ActorManager<GatedActorImpl> manager, ActorId actorId, String value)
+      throws IOException {
+    return manager.invokeMethod(actorId, "write", new DefaultObjectSerializer().serialize(value));
+  }
+
+  private static void assertCause(Class<? extends Throwable> expected, CompletableFuture<?> future) {
+    ExecutionException e = assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
+    Assertions.assertTrue(expected.isInstance(e.getCause()), String.valueOf(e.getCause()));
+  }
+
+  private static ActorManager<ActivationActorImpl> createActivationManager(List<ActivationActorImpl> created) {
+    ActorRuntimeContext<ActivationActorImpl> context = new ActorRuntimeContext(
+      mock(ActorRuntime.class),
+      new DefaultObjectSerializer(),
+      (ActorFactory<ActivationActorImpl>) (ctx, id) -> {
+        ActivationActorImpl actor = new ActivationActorImpl(ctx, id);
+        created.add(actor);
+        return actor;
+      },
+      ActorTypeInformation.create(ActivationActorImpl.class),
+      mock(DaprClient.class),
+      mock(DaprStateAsyncProvider.class)
+    );
+    return new ActorManager<>(context);
+  }
+
+  private static int increment(ActorManager<ActivationActorImpl> manager, ActorId actorId) throws IOException {
+    byte[] response = manager.invokeMethod(actorId, "increment", null).block();
+    return new DefaultObjectSerializer().deserialize(response, Integer.class);
   }
 
   private byte[] createReminderParams(String data) throws IOException {

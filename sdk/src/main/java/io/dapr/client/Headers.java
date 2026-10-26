@@ -37,4 +37,7 @@ public final class Headers {
    * W3C Baggage header for context propagation.
    */
   public static final String BAGGAGE = "baggage";
+
+  /** Sent by Dapr on actor callbacks to identify one activation. */
+  public static final String DAPR_ACTOR_ACTIVATION_ID = "Dapr-Actor-Activation-Id";
 }
