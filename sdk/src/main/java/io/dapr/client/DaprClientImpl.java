@@ -103,6 +103,7 @@ import io.dapr.utils.FailurePolicyUtils;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprAiProtos;
+import io.dapr.v1.DaprBinaryStoreProtos;
 import io.dapr.v1.DaprBindingsProtos;
 import io.dapr.v1.DaprConfigurationProtos;
 import io.dapr.v1.DaprCryptoProtos;
@@ -159,6 +160,11 @@ import static io.dapr.internal.exceptions.DaprHttpException.parseHttpStatusCode;
  * @see io.dapr.client.DaprClient
  */
 public class DaprClientImpl extends AbstractDaprClient {
+
+  /**
+   * Maximum size of one upload chunk sent to the binary store API.
+   */
+  private static final int BINARY_FILE_CHUNK_SIZE = 32 * 1024;
 
   private final Logger logger;
 
@@ -2499,6 +2505,39 @@ public class DaprClientImpl extends AbstractDaprClient {
       });
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteBinaryFile(String storeName, String fileName) {
+    try {
+      validateBinaryFileArgs(storeName, fileName);
+
+      DaprBinaryStoreProtos.DeleteBinaryFileRequestAlpha1 request =
+          DaprBinaryStoreProtos.DeleteBinaryFileRequestAlpha1.newBuilder()
+              .setComponentName(storeName)
+              .setFileName(fileName)
+              .build();
+
+      return Mono.deferContextual(
+          context -> this.<DaprBinaryStoreProtos.DeleteBinaryFileResponseAlpha1>createMono(
+              it -> intercept(context, asyncStub).deleteBinaryFileAlpha1(request, it)
+          )
+      ).then();
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private static void validateBinaryFileArgs(String storeName, String fileName) {
+    if (storeName == null || storeName.trim().isEmpty()) {
+      throw new IllegalArgumentException("Store name cannot be null or empty.");
+    }
+    if (fileName == null || fileName.trim().isEmpty()) {
+      throw new IllegalArgumentException("File name cannot be null or empty.");
     }
   }
 }

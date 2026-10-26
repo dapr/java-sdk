@@ -55,6 +55,7 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprAiProtos;
 import io.dapr.v1.DaprAppCallbackProtos;
+import io.dapr.v1.DaprBinaryStoreProtos;
 import io.dapr.v1.DaprCryptoProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprLockProtos;
@@ -2524,5 +2525,53 @@ public class DaprPreviewClientGrpcTest {
 
     assertNotNull(results);
     assertEquals(1, results.size());
+  }
+
+  // ==================== Binary Store Tests ====================
+
+  @Test
+  @DisplayName("deleteBinaryFile should send the store name and file name")
+  public void deleteBinaryFileTest() {
+    ArgumentCaptor<DaprBinaryStoreProtos.DeleteBinaryFileRequestAlpha1> captor =
+        ArgumentCaptor.forClass(DaprBinaryStoreProtos.DeleteBinaryFileRequestAlpha1.class);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.DeleteBinaryFileResponseAlpha1> observer =
+          (StreamObserver<DaprBinaryStoreProtos.DeleteBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.onNext(DaprBinaryStoreProtos.DeleteBinaryFileResponseAlpha1.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).deleteBinaryFileAlpha1(captor.capture(), any());
+
+    previewClient.deleteBinaryFile("mystore", "file.txt").block();
+
+    assertEquals("mystore", captor.getValue().getComponentName());
+    assertEquals("file.txt", captor.getValue().getFileName());
+  }
+
+  @Test
+  @DisplayName("deleteBinaryFile should reject a null or blank store name or file name")
+  public void deleteBinaryFileInvalidArgumentsTest() {
+    assertThrows(IllegalArgumentException.class, () -> previewClient.deleteBinaryFile(null, "file.txt").block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.deleteBinaryFile(" ", "file.txt").block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.deleteBinaryFile("mystore", null).block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.deleteBinaryFile("mystore", "").block());
+  }
+
+  @Test
+  @DisplayName("deleteBinaryFile should keep the gRPC error code")
+  public void deleteBinaryFileNotFoundTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprBinaryStoreProtos.DeleteBinaryFileResponseAlpha1> observer =
+          (StreamObserver<DaprBinaryStoreProtos.DeleteBinaryFileResponseAlpha1>) invocation.getArguments()[1];
+      observer.onError(newStatusRuntimeException("NOT_FOUND", "binary file not found"));
+      return null;
+    }).when(daprStub).deleteBinaryFileAlpha1(
+        any(DaprBinaryStoreProtos.DeleteBinaryFileRequestAlpha1.class), any());
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "NOT_FOUND",
+        "NOT_FOUND: binary file not found",
+        () -> previewClient.deleteBinaryFile("mystore", "missing.txt").block());
   }
 }

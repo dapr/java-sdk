@@ -437,4 +437,16 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @throws IllegalArgumentException if required parameters are missing.
    */
   Flux<byte[]> decrypt(DecryptRequestAlpha1 request);
+
+  /**
+   * Deletes a file from a binary store component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the binary store component.
+   * @param fileName  Name of the file to delete.
+   * @return An empty Mono that completes when the sidecar deletes the file.
+   * @throws IllegalArgumentException if storeName or fileName is null or blank.
+   */
+  Mono<Void> deleteBinaryFile(String storeName, String fileName);
 }
