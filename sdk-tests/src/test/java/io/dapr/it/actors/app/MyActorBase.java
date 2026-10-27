@@ -31,12 +31,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public abstract class MyActorBase<T> extends AbstractActor implements MyActor, Remindable<T> {
   private final String TIMER_CALLBACK_METHOD = "clock";
 
   public static final List<String> ACTIVE_ACTOR = new ArrayList<>();
+
+  // Per actor id: turns of holdTurn in progress, the most seen at once, and how many finished.
+  private static final ConcurrentHashMap<String, AtomicInteger[]> TURNS = new ConcurrentHashMap<>();
 
   // this tracks method entries and is used to validate turn-based concurrency.
   public final ArrayList<MethodEntryTracker> callLog = new ArrayList<>();
@@ -253,6 +258,36 @@ public abstract class MyActorBase<T> extends AbstractActor implements MyActor, R
   @Override
   public boolean dotNetMethod() {
     return true;
+  }
+
+  @Override
+  public void holdTurn() {
+    AtomicInteger[] turns = turns();
+    int inProgress = turns[0].incrementAndGet();
+    turns[1].accumulateAndGet(inProgress, Math::max);
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } finally {
+      turns[0].decrementAndGet();
+      turns[2].incrementAndGet();
+    }
+  }
+
+  @Override
+  public int getMaxConcurrentTurns() {
+    return turns()[1].get();
+  }
+
+  @Override
+  public int getCompletedTurns() {
+    return turns()[2].get();
+  }
+
+  private AtomicInteger[] turns() {
+    return TURNS.computeIfAbsent(super.getId().toString(),
+        id -> new AtomicInteger[] {new AtomicInteger(), new AtomicInteger(), new AtomicInteger()});
   }
 
   private void formatAndLog(boolean isEnter, String methodName) {

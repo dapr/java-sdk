@@ -51,6 +51,11 @@ class ActorManager<T extends AbstractActor> {
   private final Map<ActorId, T> activeActors;
 
   /**
+   * Runs one call at a time per Actor.
+   */
+  private final ActorTurnLock turnLock = new ActorTurnLock();
+
+  /**
    * Instantiates a new manager for a given actor referenced in the runtimeContext.
    *
    * @param runtimeContext Runtime context for the Actor.
@@ -68,13 +73,13 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous void response.
    */
   Mono<Void> activateActor(ActorId actorId) {
-    return Mono.fromSupplier(() -> {
+    return this.turnLock.run(actorId, () -> Mono.fromSupplier(() -> {
       if (this.activeActors.containsKey(actorId)) {
         return null;
       }
 
       return this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId);
-    }).flatMap(actor -> actor.onActivateInternal().then(this.onActivatedActor(actorId, actor)));
+    }).flatMap(actor -> actor.onActivateInternal().then(this.onActivatedActor(actorId, actor))));
   }
 
   /**
@@ -84,7 +89,8 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous void response.
    */
   Mono<Void> deactivateActor(ActorId actorId) {
-    return Mono.fromSupplier(() -> this.activeActors.remove(actorId)).flatMap(actor -> actor.onDeactivateInternal());
+    return this.turnLock.run(actorId, () -> Mono.fromSupplier(() -> this.activeActors.remove(actorId))
+        .flatMap(actor -> actor.onDeactivateInternal()));
   }
 
   /**
@@ -307,6 +313,20 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous response for the returned object.
    */
   private <T> Mono<T> invoke(ActorId actorId, ActorMethodContext context, Function<AbstractActor, Mono<T>> func) {
+    return this.turnLock.run(actorId, () -> this.invokeInTurn(actorId, context, func));
+  }
+
+  /**
+   * Invokes a method, timer or reminder for an Actor while holding the Actor's turn.
+   *
+   * @param actorId Actor identifier.
+   * @param context Context for the method/timer/reminder call.
+   * @param func    Function to perform the method call.
+   * @param <T>     Expected return type for the function call.
+   * @return Asynchronous response for the returned object.
+   */
+  private <T> Mono<T> invokeInTurn(ActorId actorId, ActorMethodContext context,
+      Function<AbstractActor, Mono<T>> func) {
     try {
       AbstractActor actor = this.activeActors.getOrDefault(actorId, null);
       if (actor == null) {
