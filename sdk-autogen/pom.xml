@@ -112,6 +112,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>getBinaryStoreProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/binarystore.proto</url>
+              <outputFileName>binarystore.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>getBindingProto</id>
             <phase>initialize</phase>
             <goals>
@@ -229,6 +242,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>getSearchProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/search.proto</url>
+              <outputFileName>search.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>getSecretProto</id>
             <phase>initialize</phase>
             <goals>
@@ -251,6 +277,19 @@
               <skipCache>true</skipCache>
               <url>${dapr.proto.baseurl}/runtime/v1/state.proto</url>
               <outputFileName>state.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getVectorProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/vector.proto</url>
+              <outputFileName>vector.proto</outputFileName>
               <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
             </configuration>
           </execution>

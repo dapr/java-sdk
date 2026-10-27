@@ -16,6 +16,7 @@ package io.dapr.it.containers;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.config.Property;
 import io.dapr.it.AppRun;
@@ -205,6 +206,40 @@ public abstract class BaseContainerIT {
   }
 
   /**
+   * Starts an app that hosts actors over the Dapr actor event stream, then its daprd. The app listens on no
+   * port: it dials daprd, so daprd gets no app port. The app starts first and retries until daprd is up.
+   *
+   * @param appName      used both as the Dapr app id and the AppRun name
+   * @param serviceClass the class whose {@code main(String[])} the subprocess runs
+   * @param daprFactory  returns an UNSTARTED DaprContainer without an app port
+   */
+  protected static DaprAndApp startActorHostAndAttach(
+      String appName,
+      Class<?> serviceClass,
+      java.util.function.Supplier<DaprContainer> daprFactory) throws Exception {
+    DaprPorts ports = DaprPorts.build(false, true, true);
+    int daprHttpPort = ports.getHttpPort();
+    int daprGrpcPort = ports.getGrpcPort();
+
+    AppRun app = new AppRun(ports, "", serviceClass, 60_000, daprHttpPort, daprGrpcPort);
+    app.start();
+    deferStop(app);
+
+    DaprContainer dapr = daprFactory.get();
+    dapr.setPortBindings(java.util.List.of(
+        daprHttpPort + ":3500",
+        daprGrpcPort + ":50001"
+    ));
+    dapr.start();
+    deferStop(dapr);
+
+    try (DaprClient client = newDaprClient(dapr)) {
+      client.waitForSidecar(30_000).block();
+    }
+    return new DaprAndApp(dapr, app);
+  }
+
+  /**
    * Polls daprd's metadata endpoint until at least one actor is registered. Call from
    * {@code @BeforeAll} of actor ITs after {@link #startAppAndAttach} returns: the app
    * subprocess takes a moment to register its actor types with daprd, and tests will
@@ -271,6 +306,15 @@ public abstract class BaseContainerIT {
 
   protected static ActorClient newActorClient(DaprContainer dapr) {
     ActorClient client = new ActorClient(new Properties(daprOverrides(dapr)), null);
+    deferClose(client);
+    return client;
+  }
+
+  /**
+   * ActorClient overload with resiliency options, such as a timeout that cancels calls in daprd.
+   */
+  protected static ActorClient newActorClient(DaprContainer dapr, ResiliencyOptions resiliencyOptions) {
+    ActorClient client = new ActorClient(new Properties(daprOverrides(dapr)), resiliencyOptions);
     deferClose(client);
     return client;
   }

@@ -43,4 +43,10 @@ public interface MyActor {
 
   @ActorMethod(name = "DotNetMethodAsync")
   boolean dotNetMethod();
+
+  void holdTurn();
+
+  int getMaxConcurrentTurns();
+
+  int getCompletedTurns();
 }

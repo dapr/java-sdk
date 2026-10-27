@@ -19,7 +19,10 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -32,6 +35,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -265,6 +270,36 @@ public class ActorManagerTest {
     }
   }
 
+  @ActorType(name = "SaveOnDeactivateActor")
+  public static class SaveOnDeactivateActorImpl extends AbstractActor implements GatedActor {
+
+    private final Mono<Void> gate;
+
+    private final String tag;
+
+    public SaveOnDeactivateActorImpl(ActorRuntimeContext runtimeContext, ActorId id, Mono<Void> gate, String tag) {
+      super(runtimeContext, id);
+      this.gate = gate;
+      this.tag = tag;
+    }
+
+    @Override
+    protected Mono<Void> onDeactivate() {
+      return this.getActorStateManager().set("value", this.tag + "-deactivated").then(this.saveState());
+    }
+
+    @Override
+    public Mono<Void> write(String value) {
+      return this.gate.then(Mono.defer(() -> this.getActorStateManager().set("value", value)))
+          .then(this.saveState());
+    }
+
+    @Override
+    public int increment() {
+      return 0;
+    }
+  }
+
   static class RecordingStateProvider extends DaprStateAsyncProvider {
 
     private final List<String> saved = Collections.synchronizedList(new ArrayList<>());
@@ -301,6 +336,57 @@ public class ActorManagerTest {
         hook.run();
       }
       return value;
+    }
+  }
+
+  interface SlowActor {
+    Mono<Void> hold();
+
+    int getPostCount();
+  }
+
+  public static class SlowActorImpl extends AbstractActor implements SlowActor {
+
+    static final AtomicInteger CREATED = new AtomicInteger();
+
+    static final AtomicInteger POST_COUNT = new AtomicInteger();
+
+    static final AtomicInteger HOLDING = new AtomicInteger();
+
+    static volatile Sinks.Empty<Void> release = Sinks.empty();
+
+    public SlowActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+      CREATED.incrementAndGet();
+    }
+
+    @Override
+    public Mono<Void> hold() {
+      HOLDING.incrementAndGet();
+      return release.asMono();
+    }
+
+    @Override
+    public int getPostCount() {
+      return POST_COUNT.get();
+    }
+
+    @Override
+    protected Mono<Void> onActivate() {
+      // Widens the window in which two activations of the same actor could both create it.
+      return Mono.delay(Duration.ofMillis(50)).then();
+    }
+
+    @Override
+    protected Mono<Void> onPostActorMethod(ActorMethodContext actorMethodContext) {
+      return Mono.fromRunnable(POST_COUNT::incrementAndGet);
+    }
+
+    static void reset() {
+      CREATED.set(0);
+      POST_COUNT.set(0);
+      HOLDING.set(0);
+      release = Sinks.empty();
     }
   }
 
@@ -598,9 +684,10 @@ public class ActorManagerTest {
 
     manager.activateActor(actorId, "a1").block();
     CompletableFuture<byte[]> stale = write(manager, actorId, "stale").toFuture();
-    manager.activateActor(actorId, "a2").block();
-    write(manager, actorId, "fresh").block();
+    CompletableFuture<?> reset = manager.activateActor(actorId, "a2").toFuture();
     gate.complete(null);
+    reset.get(5, TimeUnit.SECONDS);
+    write(manager, actorId, "fresh").block();
 
     Assertions.assertEquals(List.of("value=fresh"), provider.saved);
     assertCause(IllegalStateException.class, stale);
@@ -616,9 +703,10 @@ public class ActorManagerTest {
 
     manager.activateActor(actorId, "a1").block();
     CompletableFuture<Void> stale = manager.invokeTimer(actorId, "t", createTimerParams("write", "stale")).toFuture();
-    manager.activateActor(actorId, "a2").block();
-    write(manager, actorId, "fresh").block();
+    CompletableFuture<?> reset = manager.activateActor(actorId, "a2").toFuture();
     gate.complete(null);
+    reset.get(5, TimeUnit.SECONDS);
+    write(manager, actorId, "fresh").block();
 
     Assertions.assertEquals(List.of("value=fresh"), provider.saved);
     assertCause(IllegalStateException.class, stale);
@@ -634,9 +722,10 @@ public class ActorManagerTest {
 
     manager.activateActor(actorId, "a1").block();
     CompletableFuture<Void> stale = manager.invokeReminder(actorId, "r", createReminderParams("stale")).toFuture();
-    manager.activateActor(actorId, "a2").block();
-    write(manager, actorId, "fresh").block();
+    CompletableFuture<?> reset = manager.activateActor(actorId, "a2").toFuture();
     gate.complete(null);
+    reset.get(5, TimeUnit.SECONDS);
+    write(manager, actorId, "fresh").block();
 
     Assertions.assertEquals(List.of("value=fresh"), provider.saved);
     assertCause(IllegalStateException.class, stale);
@@ -652,8 +741,9 @@ public class ActorManagerTest {
 
     manager.activateActor(actorId, "a1").block();
     CompletableFuture<byte[]> stale = write(manager, actorId, "stale").toFuture();
-    manager.activateActor(actorId, "a2").block();
+    CompletableFuture<?> reset = manager.activateActor(actorId, "a2").toFuture();
     gate.complete(null);
+    reset.get(5, TimeUnit.SECONDS);
 
     assertCause(IllegalStateException.class, stale);
     Assertions.assertEquals(1, created.get(0).postHooks);
@@ -670,8 +760,9 @@ public class ActorManagerTest {
 
     manager.activateActor(actorId, "a1").block();
     CompletableFuture<Void> stale = manager.invokeTimer(actorId, "t", createTimerParams("write", "stale")).toFuture();
-    manager.deactivateActor(actorId).block();
+    CompletableFuture<Void> deactivation = manager.deactivateActor(actorId).toFuture();
     gate.complete(null);
+    deactivation.get(5, TimeUnit.SECONDS);
 
     assertCause(IllegalStateException.class, stale);
     Assertions.assertEquals(1, created.get(0).postHooks);
@@ -725,8 +816,9 @@ public class ActorManagerTest {
 
     manager.activateActor(actorId, "a1").block();
     CompletableFuture<byte[]> call = write(manager, actorId, "stale").toFuture();
-    manager.deactivateActor(actorId).block();
+    CompletableFuture<Void> deactivation = manager.deactivateActor(actorId).toFuture();
     gate.complete(null);
+    deactivation.get(5, TimeUnit.SECONDS);
 
     Assertions.assertEquals(List.of(), provider.saved);
     assertCause(IllegalStateException.class, call);
@@ -765,35 +857,43 @@ public class ActorManagerTest {
   }
 
   @Test
-  public void lateActivationWithDifferentIdFailsAndKeepsNewer() throws Exception {
+  public void queuedActivationWithDifferentIdFailsAndKeepsFirst() throws Exception {
     RecordingStateProvider provider = new RecordingStateProvider();
     List<ActivateWriteActorImpl> created = new ArrayList<>();
     CompletableFuture<Void> activateGate = new CompletableFuture<>();
-    CompletableFuture<Void> callGate = new CompletableFuture<>();
-    ActorManager<ActivateWriteActorImpl> manager =
-        createLateActivationManager(provider, created, activateGate, callGate, false);
+    ActorManager<ActivateWriteActorImpl> manager = createLateActivationManager(
+        provider, created, activateGate, CompletableFuture.completedFuture(null), false);
     ActorId actorId = newActorId();
 
-    CompletableFuture<?> late = manager.activateActor(actorId, "a").toFuture();
-    manager.activateActor(actorId, "b").block();
-    CompletableFuture<byte[]> inFlight = manager.invokeMethod(
-        actorId, "write", new DefaultObjectSerializer().serialize("fromB")).toFuture();
+    CompletableFuture<?> first = manager.activateActor(actorId, "a").toFuture();
+    CompletableFuture<?> queued = manager.activateActor(actorId, "b").toFuture();
     activateGate.complete(null);
 
-    assertCause(IllegalStateException.class, late);
-    callGate.complete(null);
-    inFlight.get(5, TimeUnit.SECONDS);
+    first.get(5, TimeUnit.SECONDS);
+    assertCause(IllegalStateException.class, queued);
+    Assertions.assertEquals(1, created.size());
 
-    Assertions.assertEquals(List.of("value=newer", "value=fromB"), provider.saved);
-    Assertions.assertEquals(1, created.get(0).deactivations);
-    Assertions.assertEquals(0, created.get(1).deactivations);
+    // Dapr retries the failed call, which then replaces the first activation.
+    manager.activateActor(actorId, "b").block();
     manager.invokeMethod(actorId, "increment", null).block();
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
     Assertions.assertEquals(0, created.get(0).calls);
     Assertions.assertEquals(1, created.get(1).calls);
+    Assertions.assertEquals(List.of("value=late", "value=newer"), provider.saved);
   }
 
   @Test
-  public void lateActivationWithSameIdReusesNewer() throws Exception {
+  public void queuedActivationWithSameIdReusesFirst() throws Exception {
+    assertQueuedActivationReusesFirst("a");
+  }
+
+  @Test
+  public void queuedActivationWithoutIdReusesFirst() throws Exception {
+    assertQueuedActivationReusesFirst(null);
+  }
+
+  private static void assertQueuedActivationReusesFirst(String queuedId) throws Exception {
     RecordingStateProvider provider = new RecordingStateProvider();
     List<ActivateWriteActorImpl> created = new ArrayList<>();
     CompletableFuture<Void> activateGate = new CompletableFuture<>();
@@ -801,41 +901,51 @@ public class ActorManagerTest {
         createLateActivationManager(provider, created, activateGate, new CompletableFuture<>(), false);
     ActorId actorId = newActorId();
 
-    CompletableFuture<ActorManager.ActiveActor<ActivateWriteActorImpl>> late =
+    CompletableFuture<ActorManager.ActiveActor<ActivateWriteActorImpl>> first =
         manager.activateActor(actorId, "a").toFuture();
-    manager.activateActor(actorId, "a").block();
+    CompletableFuture<ActorManager.ActiveActor<ActivateWriteActorImpl>> queued =
+        manager.activateActor(actorId, queuedId).toFuture();
     activateGate.complete(null);
 
-    manager.invokeMethod(late.get(5, TimeUnit.SECONDS), "increment", null).block();
-    manager.invokeMethod(actorId, "increment", null).block();
-
-    Assertions.assertEquals(List.of("value=newer"), provider.saved);
-    Assertions.assertEquals(1, created.get(0).deactivations);
-    Assertions.assertEquals(0, created.get(0).calls);
-    Assertions.assertEquals(0, created.get(1).deactivations);
-    Assertions.assertEquals(2, created.get(1).calls);
+    Assertions.assertSame(first.get(5, TimeUnit.SECONDS), queued.get(5, TimeUnit.SECONDS));
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(List.of("value=late"), provider.saved);
   }
 
   @Test
-  public void lateActivationWithoutIdReusesNewer() throws Exception {
+  public void replacedActorCannotSaveFromOnDeactivate() throws Exception {
     RecordingStateProvider provider = new RecordingStateProvider();
-    List<ActivateWriteActorImpl> created = new ArrayList<>();
-    CompletableFuture<Void> activateGate = new CompletableFuture<>();
-    ActorManager<ActivateWriteActorImpl> manager =
-        createLateActivationManager(provider, created, activateGate, new CompletableFuture<>(), true);
+    List<SaveOnDeactivateActorImpl> created = new ArrayList<>();
+    ActorManager<SaveOnDeactivateActorImpl> manager =
+        createSaveOnDeactivateManager(provider, created, CompletableFuture.completedFuture(null));
     ActorId actorId = newActorId();
 
-    CompletableFuture<ActorManager.ActiveActor<ActivateWriteActorImpl>> late =
-        manager.activateActor(actorId, null).toFuture();
-    manager.activateActor(actorId, "b").block();
-    activateGate.complete(null);
+    manager.activateActor(actorId, "a1").block();
+    manager.activateActor(actorId, "a2").block();
+    Assertions.assertEquals(List.of(), provider.saved);
 
-    manager.invokeMethod(late.get(5, TimeUnit.SECONDS), "increment", null).block();
+    manager.deactivateActor(actorId).block();
+    Assertions.assertEquals(List.of("value=actor1-deactivated"), provider.saved);
+  }
 
-    Assertions.assertEquals(List.of("value=newer"), provider.saved);
-    Assertions.assertEquals(1, created.get(0).deactivations);
-    Assertions.assertEquals(0, created.get(0).calls);
-    Assertions.assertEquals(1, created.get(1).calls);
+  @Test
+  public void replacedActorCannotSaveFromRunningCall() throws Exception {
+    RecordingStateProvider provider = new RecordingStateProvider();
+    List<SaveOnDeactivateActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<SaveOnDeactivateActorImpl> manager = createSaveOnDeactivateManager(provider, created, gate);
+    ActorId actorId = newActorId();
+
+    manager.activateActor(actorId, "a1").block();
+    CompletableFuture<byte[]> stale = manager.invokeMethod(
+        actorId, "write", new DefaultObjectSerializer().serialize("stale")).toFuture();
+    CompletableFuture<?> reset = manager.activateActor(actorId, "a2").toFuture();
+    gate.complete(null);
+
+    assertCause(IllegalStateException.class, stale);
+    reset.get(5, TimeUnit.SECONDS);
+    Assertions.assertEquals(List.of(), provider.saved);
+    Assertions.assertEquals(2, created.size());
   }
 
   @Test
@@ -881,10 +991,9 @@ public class ActorManagerTest {
     ActorManager.ActiveActor<ActivationActorImpl> loser = manager.activateActor(actorId, "a2").block();
 
     Assertions.assertSame(winner.get(0), loser);
-    Assertions.assertEquals(3, created.size());
+    Assertions.assertEquals(2, created.size());
     Assertions.assertEquals(1, created.get(0).deactivations);
     Assertions.assertEquals(0, created.get(1).deactivations);
-    Assertions.assertEquals(1, created.get(2).deactivations);
     Assertions.assertEquals(1, increment(manager, actorId));
   }
 
@@ -911,6 +1020,25 @@ public class ActorManagerTest {
         return actor;
       },
       ActorTypeInformation.create(ActivateWriteActorImpl.class),
+      mock(DaprClient.class),
+      provider
+    );
+    return new ActorManager<>(context);
+  }
+
+  private static ActorManager<SaveOnDeactivateActorImpl> createSaveOnDeactivateManager(
+      RecordingStateProvider provider, List<SaveOnDeactivateActorImpl> created, CompletableFuture<Void> gate) {
+    ActorRuntimeContext<SaveOnDeactivateActorImpl> context = new ActorRuntimeContext(
+      mock(ActorRuntime.class),
+      new DefaultObjectSerializer(),
+      (ActorFactory<SaveOnDeactivateActorImpl>) (ctx, id) -> {
+        Mono<Void> actorGate = created.isEmpty() ? Mono.fromFuture(gate) : Mono.empty();
+        SaveOnDeactivateActorImpl actor =
+            new SaveOnDeactivateActorImpl(ctx, id, actorGate, "actor" + created.size());
+        created.add(actor);
+        return actor;
+      },
+      ActorTypeInformation.create(SaveOnDeactivateActorImpl.class),
       mock(DaprClient.class),
       provider
     );
@@ -964,6 +1092,70 @@ public class ActorManagerTest {
   private static int increment(ActorManager<ActivationActorImpl> manager, ActorId actorId) throws IOException {
     byte[] response = manager.invokeMethod(actorId, "increment", null).block();
     return new DefaultObjectSerializer().deserialize(response, Integer.class);
+  }
+
+  @Test
+  public void cancelledCallKeepsTurnThroughPostMethod() throws Exception {
+    SlowActorImpl.reset();
+    ActorManager<SlowActorImpl> manager = new ActorManager<>(createContext(SlowActorImpl.class));
+    ActorId actorId = newActorId();
+    manager.activateActor(actorId).block();
+
+    Disposable first = manager.invokeMethod(actorId, "hold", null).subscribe();
+    waitFor(() -> SlowActorImpl.HOLDING.get() == 1);
+    // Dapr stops waiting for the call, as when its caller cancels.
+    first.dispose();
+
+    CompletableFuture<byte[]> second = manager.invokeMethod(actorId, "getPostCount", null).toFuture();
+    Thread.sleep(100);
+    Assertions.assertFalse(second.isDone());
+
+    SlowActorImpl.release.tryEmitEmpty();
+    // The second call ran after the first call's post-method step.
+    Assertions.assertEquals("1", new String(second.get(5, TimeUnit.SECONDS)));
+  }
+
+  @Test
+  public void concurrentActivationsCreateOneActor() {
+    SlowActorImpl.reset();
+    ActorManager<SlowActorImpl> manager = new ActorManager<>(createContext(SlowActorImpl.class));
+    ActorId actorId = newActorId();
+
+    Mono.when(IntStream.range(0, 10)
+        .mapToObj(i -> manager.activateActor(actorId).subscribeOn(Schedulers.boundedElastic()))
+        .toArray(Mono[]::new))
+        .block(Duration.ofSeconds(5));
+
+    Assertions.assertEquals(1, SlowActorImpl.CREATED.get());
+  }
+
+  @Test
+  public void deactivationWaitsForRunningCall() throws Exception {
+    SlowActorImpl.reset();
+    ActorManager<SlowActorImpl> manager = new ActorManager<>(createContext(SlowActorImpl.class));
+    ActorId actorId = newActorId();
+    manager.activateActor(actorId).block();
+
+    Disposable call = manager.invokeMethod(actorId, "hold", null).subscribe();
+    waitFor(() -> SlowActorImpl.HOLDING.get() == 1);
+    CompletableFuture<Void> deactivation = manager.deactivateActor(actorId).toFuture();
+    Thread.sleep(100);
+    Assertions.assertFalse(deactivation.isDone());
+
+    SlowActorImpl.release.tryEmitEmpty();
+    deactivation.get(5, TimeUnit.SECONDS);
+    Assertions.assertEquals(1, SlowActorImpl.POST_COUNT.get());
+    call.dispose();
+  }
+
+  private static void waitFor(BooleanSupplier condition) throws InterruptedException {
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+    while (!condition.getAsBoolean()) {
+      if (System.nanoTime() > deadline) {
+        throw new AssertionError("timed out waiting for condition");
+      }
+      Thread.sleep(10);
+    }
   }
 
   private byte[] createReminderParams(String data) throws IOException {

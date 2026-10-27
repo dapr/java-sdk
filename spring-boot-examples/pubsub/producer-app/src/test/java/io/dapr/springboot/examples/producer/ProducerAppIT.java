@@ -62,6 +62,9 @@ class ProducerAppIT {
 
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
     DaprWait.forSubscription("pubsub", "topic").waitUntilReady(daprContainer);
+    // "topic" is declarative and is listed before daprd sees the app as healthy. "outbox-topic" comes
+    // from the app, so it is listed only once daprd starts subscribing, including to the outbox topic.
+    DaprWait.forSubscription("pubsub", "outbox-topic").waitUntilReady(daprContainer);
   }
 
   @AfterEach

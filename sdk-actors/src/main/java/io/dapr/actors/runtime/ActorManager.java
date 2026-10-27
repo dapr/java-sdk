@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
@@ -50,6 +51,11 @@ class ActorManager<T extends AbstractActor> {
   private final Map<ActorId, ActiveActor<T>> activeActors;
 
   /**
+   * Runs one call at a time per Actor.
+   */
+  private final ActorTurnLock turnLock = new ActorTurnLock();
+
+  /**
    * Instantiates a new manager for a given actor referenced in the runtimeContext.
    *
    * @param runtimeContext Runtime context for the Actor.
@@ -74,18 +80,20 @@ class ActorManager<T extends AbstractActor> {
   Mono<ActiveActor<T>> activateActor(ActorId actorId, String activationId) {
     return Mono.defer(() -> {
       ActiveActor<T> current = this.activeActors.get(actorId);
-      if (current == null) {
-        return this.createActor(actorId, activationId);
+      if (current != null) {
+        if (activationId == null || activationId.isEmpty() || activationId.equals(current.activationId)) {
+          return Mono.just(current);
+        }
+
+        // Dropped before waiting on the turn, so neither a call still running on it nor its onDeactivate can save.
+        if (this.activeActors.remove(actorId, current)) {
+          current.actor.discard();
+          return this.turnLock.run(actorId, () -> this.deactivateDiscarded(actorId, current.actor)
+              .then(this.createActor(actorId, activationId)));
+        }
       }
 
-      if (activationId == null || activationId.isEmpty() || activationId.equals(current.activationId)) {
-        return Mono.just(current);
-      }
-
-      Mono<Void> deactivate = this.activeActors.remove(actorId, current)
-          ? this.deactivateDiscarded(actorId, current.actor)
-          : Mono.empty();
-      return deactivate.then(Mono.defer(() -> this.createActor(actorId, activationId)));
+      return this.turnLock.run(actorId, () -> this.createActor(actorId, activationId));
     });
   }
 
@@ -96,8 +104,24 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous void response.
    */
   Mono<Void> deactivateActor(ActorId actorId) {
-    return Mono.fromSupplier(() -> this.activeActors.remove(actorId))
-        .flatMap(active -> active.actor.onDeactivateInternal());
+    return Mono.defer(() -> {
+      ActiveActor<T> active = this.activeActors.remove(actorId);
+      if (active == null) {
+        return Mono.empty();
+      }
+
+      // Removed before waiting on the turn, so a call still running on it skips its save.
+      return this.turnLock.run(actorId, active.actor::onDeactivateInternal);
+    });
+  }
+
+  /**
+   * Gets the serializer for this actor type's request and response objects.
+   *
+   * @return Object serializer.
+   */
+  DaprObjectSerializer getObjectSerializer() {
+    return this.runtimeContext.getObjectSerializer();
   }
 
   /**
@@ -165,31 +189,32 @@ class ActorManager<T extends AbstractActor> {
   }
 
   private Mono<ActiveActor<T>> createActor(ActorId actorId, String activationId) {
-    return Mono.fromSupplier(() -> this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId))
-        .flatMap(actor -> actor.onActivateInternal(() -> !this.activeActors.containsKey(actorId))
-            .then(this.onActivatedActor(actorId, actor, activationId)));
+    return Mono.defer(() -> {
+      ActiveActor<T> registered = this.activeActors.get(actorId);
+      if (registered != null) {
+        return this.joinRegistered(actorId, registered, activationId);
+      }
+
+      T actor = this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId);
+      ActiveActor<T> active = new ActiveActor<>(actor, activationId);
+      return actor.onActivateInternal().then(Mono.fromSupplier(() -> {
+        this.activeActors.put(actorId, active);
+        return active;
+      }));
+    });
   }
 
-  /** Discards the new instance if a concurrent activation registered first. */
-  private Mono<ActiveActor<T>> onActivatedActor(ActorId actorId, T actor, String activationId) {
-    return Mono.defer(() -> {
-      ActiveActor<T> active = new ActiveActor<>(actor, activationId);
-      ActiveActor<T> registered = this.activeActors.putIfAbsent(actorId, active);
-      if (registered == null) {
-        return Mono.just(active);
-      }
+  /** A queued activation with a different id fails, and Dapr retries it. */
+  private Mono<ActiveActor<T>> joinRegistered(ActorId actorId, ActiveActor<T> registered, String activationId) {
+    if (activationId == null || activationId.isEmpty() || activationId.equals(registered.activationId)) {
+      return Mono.just(registered);
+    }
 
-      Mono<Void> discard = this.deactivateDiscarded(actorId, actor);
-      if (activationId == null || activationId.isEmpty() || activationId.equals(registered.activationId)) {
-        return discard.thenReturn(registered);
-      }
-
-      return discard.then(Mono.error(new IllegalStateException(
-          String.format("Actor %s of type %s was activated by activation %s during this activation.",
-              actorId.toString(),
-              this.runtimeContext.getActorTypeInformation().getName(),
-              registered.activationId))));
-    });
+    return Mono.error(new IllegalStateException(
+        String.format("Actor %s of type %s was activated by activation %s during this activation.",
+            actorId.toString(),
+            this.runtimeContext.getActorTypeInformation().getName(),
+            registered.activationId)));
   }
 
   /** Logs errors so a failed cleanup doesn't fail the call. */
@@ -363,6 +388,20 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous response for the returned object.
    */
   private <R> Mono<R> invoke(ActiveActor<T> active, ActorMethodContext context, Function<AbstractActor, Mono<R>> func) {
+    return this.turnLock.run(active.actor.getId(), () -> this.invokeInTurn(active, context, func));
+  }
+
+  /**
+   * Invokes a method, timer or reminder for an Actor while holding the Actor's turn.
+   *
+   * @param active  Actor instance to invoke.
+   * @param context Context for the method/timer/reminder call.
+   * @param func    Function to perform the method call.
+   * @param <R>     Expected return type for the function call.
+   * @return Asynchronous response for the returned object.
+   */
+  private <R> Mono<R> invokeInTurn(ActiveActor<T> active, ActorMethodContext context,
+      Function<AbstractActor, Mono<R>> func) {
     try {
       AbstractActor actor = active.actor;
       return Mono.fromRunnable(() -> actor.rollback(true))

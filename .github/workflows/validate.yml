@@ -37,9 +37,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.18.0
-      DAPR_RUNTIME_VER: 1.19.0-rc.2
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.18.0/install/install.sh
+      DAPR_CLI_VER: 1.19.0-rc.1
+      DAPR_RUNTIME_VER: 1.19.0
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.19.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
     steps:
@@ -122,6 +122,7 @@ jobs:
           command: |
             set -e
             (cd examples && mm.py ./src/main/java/io/dapr/examples/crypto/README.md)
+            (cd examples && mm.py ./src/main/java/io/dapr/examples/binarystore/README.md)
             (cd examples && mm.py ./src/main/java/io/dapr/examples/workflows/README.md)
             (cd spring-boot-examples/pubsub && mm.py README.md)
             (cd spring-boot-examples/workflows/patterns && mm.py README.md)

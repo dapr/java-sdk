@@ -224,8 +224,8 @@ public class ActorRuntimeTest {
     private Runnable onPut;
 
     @Override
-    public V putIfAbsent(K key, V value) {
-      V previous = super.putIfAbsent(key, value);
+    public V put(K key, V value) {
+      V previous = super.put(key, value);
       Runnable hook = this.onPut;
       this.onPut = null;
       if (hook != null) {
@@ -704,8 +704,8 @@ public class ActorRuntimeTest {
 
     CompletableFuture<byte[]> late = this.runtime.invoke(GATED_ACTOR_NAME, actorId, "pause", null, "a1").toFuture();
     holdGate.complete(null);
-    live.get(0).get(5, TimeUnit.SECONDS);
     pauseGate.complete(null);
+    live.get(0).get(5, TimeUnit.SECONDS);
 
     Assertions.assertEquals(1, saved.size());
     Assertions.assertEquals("value", saved.get(0).getKey());

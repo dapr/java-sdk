@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
 
 /**
  * Represents the base class for actors.
@@ -337,18 +336,24 @@ public abstract class AbstractActor {
   }
 
   /**
+   * Refuses any later state save from this instance once a newer activation replaced it.
+   */
+  void discard() {
+    this.actorStateManager.discard();
+  }
+
+  /**
    * Internal callback when an Actor is activated.
    *
-   * @param canSave Checked after onActivate, false skips the state save.
    * @return Asynchronous void response.
    */
-  Mono<Void> onActivateInternal(BooleanSupplier canSave) {
+  Mono<Void> onActivateInternal() {
     return Mono.fromRunnable(() -> {
       this.actorTrace.writeInfo(TRACE_TYPE, this.id.toString(), "Activating ...");
       this.resetState();
     }).then(this.onActivate())
           .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Activated"))
-          .then(Mono.defer(() -> canSave.getAsBoolean() ? this.saveState() : Mono.<Void>empty()));
+          .then(this.saveState());
   }
 
   /**

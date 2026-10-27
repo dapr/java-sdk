@@ -174,6 +174,28 @@ Now, execute the following script in order to run DemoActorService:
 dapr run --resources-path ./components/actors --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
 ```
 <!-- END_STEP -->
+### Running the Demo actor service over gRPC (alpha)
+
+Instead of exposing HTTP endpoints for Dapr to call, the actor service can open a stream to Dapr and receive the actor invocations, reminders, timers and deactivations on it. The app then does not listen on any port. This needs Dapr 1.18.2 or later.
+
+The `DemoActorGrpcService.java` file registers the same `DemoActorImpl` and calls `subscribeActorEvents()`:
+
+```java
+ActorRuntime.getInstance().registerActor(DemoActorImpl.class);
+
+try (ActorEventSubscription subscription = ActorRuntime.getInstance().subscribeActorEvents()) {
+  subscription.awaitTermination();
+}
+```
+
+Run it without `--app-port`. Dapr rejects the stream when it has an HTTP app channel, so if you pass `--app-port` you must also pass `--app-protocol grpc`:
+
+```sh
+dapr run --resources-path ./components/actors --app-id demoactorservice -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorGrpcService
+```
+
+The stream reconnects if Dapr restarts. For an actor service that is idle for long periods, enable gRPC keepalive with `-Ddapr.grpc.enable.keep.alive=true`.
+
 ### Running the Actor client
 
 The actor client is a simple java class with a main method that uses the Dapr Actor capabilities in order to create the actors and execute the different methods based on the Actor pattern.
