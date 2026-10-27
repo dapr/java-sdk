@@ -19,11 +19,18 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -113,6 +120,57 @@ public class ActorManagerTest {
     @Override
     public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
       return Mono.empty();
+    }
+  }
+
+  interface SlowActor {
+    Mono<Void> hold();
+
+    int getPostCount();
+  }
+
+  public static class SlowActorImpl extends AbstractActor implements SlowActor {
+
+    static final AtomicInteger CREATED = new AtomicInteger();
+
+    static final AtomicInteger POST_COUNT = new AtomicInteger();
+
+    static final AtomicInteger HOLDING = new AtomicInteger();
+
+    static volatile Sinks.Empty<Void> release = Sinks.empty();
+
+    public SlowActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+      CREATED.incrementAndGet();
+    }
+
+    @Override
+    public Mono<Void> hold() {
+      HOLDING.incrementAndGet();
+      return release.asMono();
+    }
+
+    @Override
+    public int getPostCount() {
+      return POST_COUNT.get();
+    }
+
+    @Override
+    protected Mono<Void> onActivate() {
+      // Widens the window in which two activations of the same actor could both create it.
+      return Mono.delay(Duration.ofMillis(50)).then();
+    }
+
+    @Override
+    protected Mono<Void> onPostActorMethod(ActorMethodContext actorMethodContext) {
+      return Mono.fromRunnable(POST_COUNT::incrementAndGet);
+    }
+
+    static void reset() {
+      CREATED.set(0);
+      POST_COUNT.set(0);
+      HOLDING.set(0);
+      release = Sinks.empty();
     }
   }
 
@@ -277,6 +335,70 @@ public class ActorManagerTest {
 
     this.manager.deactivateActor(actorId).block();
     assertThrows(IllegalArgumentException.class, () -> this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block());
+  }
+
+  @Test
+  public void cancelledCallKeepsTurnThroughPostMethod() throws Exception {
+    SlowActorImpl.reset();
+    ActorManager<SlowActorImpl> manager = new ActorManager<>(createContext(SlowActorImpl.class));
+    ActorId actorId = newActorId();
+    manager.activateActor(actorId).block();
+
+    Disposable first = manager.invokeMethod(actorId, "hold", null).subscribe();
+    waitFor(() -> SlowActorImpl.HOLDING.get() == 1);
+    // Dapr stops waiting for the call, as when its caller cancels.
+    first.dispose();
+
+    CompletableFuture<byte[]> second = manager.invokeMethod(actorId, "getPostCount", null).toFuture();
+    Thread.sleep(100);
+    Assertions.assertFalse(second.isDone());
+
+    SlowActorImpl.release.tryEmitEmpty();
+    // The second call ran after the first call's post-method step.
+    Assertions.assertEquals("1", new String(second.get(5, TimeUnit.SECONDS)));
+  }
+
+  @Test
+  public void concurrentActivationsCreateOneActor() {
+    SlowActorImpl.reset();
+    ActorManager<SlowActorImpl> manager = new ActorManager<>(createContext(SlowActorImpl.class));
+    ActorId actorId = newActorId();
+
+    Mono.when(IntStream.range(0, 10)
+        .mapToObj(i -> manager.activateActor(actorId).subscribeOn(Schedulers.boundedElastic()))
+        .toArray(Mono[]::new))
+        .block(Duration.ofSeconds(5));
+
+    Assertions.assertEquals(1, SlowActorImpl.CREATED.get());
+  }
+
+  @Test
+  public void deactivationWaitsForRunningCall() throws Exception {
+    SlowActorImpl.reset();
+    ActorManager<SlowActorImpl> manager = new ActorManager<>(createContext(SlowActorImpl.class));
+    ActorId actorId = newActorId();
+    manager.activateActor(actorId).block();
+
+    Disposable call = manager.invokeMethod(actorId, "hold", null).subscribe();
+    waitFor(() -> SlowActorImpl.HOLDING.get() == 1);
+    CompletableFuture<Void> deactivation = manager.deactivateActor(actorId).toFuture();
+    Thread.sleep(100);
+    Assertions.assertFalse(deactivation.isDone());
+
+    SlowActorImpl.release.tryEmitEmpty();
+    deactivation.get(5, TimeUnit.SECONDS);
+    Assertions.assertEquals(1, SlowActorImpl.POST_COUNT.get());
+    call.dispose();
+  }
+
+  private static void waitFor(BooleanSupplier condition) throws InterruptedException {
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+    while (!condition.getAsBoolean()) {
+      if (System.nanoTime() > deadline) {
+        throw new AssertionError("timed out waiting for condition");
+      }
+      Thread.sleep(10);
+    }
   }
 
   private byte[] createReminderParams(String data) throws IOException {
