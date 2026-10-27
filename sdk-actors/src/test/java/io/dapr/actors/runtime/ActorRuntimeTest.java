@@ -256,6 +256,7 @@ public class ActorRuntimeTest {
   @BeforeEach
   public void setup() throws Exception {
     this.mockDaprClient = mock(DaprClient.class);
+    when(this.mockDaprClient.getRuntimeVersion()).thenReturn(Mono.just("1.19.1"));
     this.runtime = constructor.newInstance(null, this.mockDaprClient);
   }
 
@@ -537,6 +538,40 @@ public class ActorRuntimeTest {
     Assertions.assertEquals(2, created.size());
     Assertions.assertEquals(1, created.get(0).deactivations);
     Assertions.assertEquals(0, created.get(1).deactivations);
+  }
+
+  @Test
+  public void activationIdIgnoredOnOlderRuntime() throws Exception {
+    when(this.mockDaprClient.getRuntimeVersion()).thenReturn(Mono.just("1.19.0"));
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(2, invokeIncrement(actorId, "a2"));
+    this.runtime.invokeReminder(
+        ACTIVATION_ACTOR_NAME, actorId, "myReminder", createReminderParams("hello"), "a3").block();
+    this.runtime.invokeTimer(
+        ACTIVATION_ACTOR_NAME, actorId, "myTimer", createTimerParams("increment", "x"), "a4").block();
+
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(0, created.get(0).deactivations);
+    verify(this.mockDaprClient, times(1)).getRuntimeVersion();
+  }
+
+  @Test
+  public void activationIdIgnoredWhenVersionLookupFailsThenRetried() throws Exception {
+    when(this.mockDaprClient.getRuntimeVersion())
+        .thenReturn(Mono.error(new RuntimeException("unavailable")), Mono.just("1.19.1"));
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a2"));
+    Assertions.assertEquals(2, invokeIncrement(actorId, "a2"));
+
+    Assertions.assertEquals(2, created.size());
+    verify(this.mockDaprClient, times(2)).getRuntimeVersion();
   }
 
   @Test

@@ -21,6 +21,7 @@ import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.v1.DaprActorsProtos;
 import io.dapr.v1.DaprGrpc;
+import io.dapr.v1.DaprMetadataProtos;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Mono;
@@ -218,6 +219,16 @@ class DaprClientImpl implements DaprClient {
             .build();
 
     return Mono.<Empty>create(it -> client.unregisterActorTimer(req, createStreamObserver(it))).then().then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<String> getRuntimeVersion() {
+    DaprMetadataProtos.GetMetadataRequest req = DaprMetadataProtos.GetMetadataRequest.newBuilder().build();
+    return Mono.<DaprMetadataProtos.GetMetadataResponse>create(it -> client.getMetadata(req, createStreamObserver(it)))
+        .map(DaprMetadataProtos.GetMetadataResponse::getRuntimeVersion);
   }
 
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
