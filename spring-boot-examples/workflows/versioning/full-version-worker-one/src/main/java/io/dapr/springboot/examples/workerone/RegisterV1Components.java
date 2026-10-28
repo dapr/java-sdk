@@ -21,7 +21,6 @@ import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.spring.workflows.config.annotations.ActivityMetadata;
 import io.dapr.spring.workflows.config.annotations.WorkflowMetadata;
-import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
