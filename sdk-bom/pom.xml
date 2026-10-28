@@ -47,11 +47,13 @@
   <properties>
     <gpg.skip>true</gpg.skip>
     <dapr.sdk.version>1.18.1</dapr.sdk.version>
-    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.135 (CVE-2026-33871, CVE-2026-33870 and later fixes) -->
-    <netty.version>4.1.135.Final</netty.version>
-    <jackson.version>2.21.5</jackson.version>
+    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.139 (CVE-2026-75595 and later fixes) -->
+    <netty.version>4.1.139.Final</netty.version>
+    <jackson.version>2.21.8</jackson.version>
     <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
     <commons-compress.version>1.26.0</commons-compress.version>
+    <!-- TODO: Remove guava override once protobuf-java-util ships with guava >= 33.7.2 (CVE-2026-102554) -->
+    <guava.version>33.7.2-jre</guava.version>
   </properties>
 
   <build>
@@ -156,6 +158,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
