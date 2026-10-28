@@ -44,7 +44,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <jackson.version>2.21.5</jackson.version>
+    <jackson.version>2.21.8</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.fail>true</spotbugs.fail>
     <spotbugs.exclude.filter.file>${maven.multiModuleProjectDirectory}/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
@@ -59,8 +59,12 @@
     <assertj.version>3.27.7</assertj.version>
     <!-- Must be >= 1.62.0 for CVE-2026-45292 -->
     <opentelemetry.version>1.62.0</opentelemetry.version>
-    <!-- Must be >= 6.2.18 for CVE-2026-22735, CVE-2026-22737, CVE-2026-22741, CVE-2026-22745 -->
-    <spring-framework.version>6.2.18</spring-framework.version>
+    <!-- Must be >= 6.2.19 for CVE-2026-41841..41846, CVE-2026-41848, CVE-2026-41850..41854 -->
+    <spring-framework.version>6.2.19</spring-framework.version>
+    <!-- Must be >= 2025.0.12 (spring-data-commons 3.5.12) for CVE-2026-41695, CVE-2026-41716 -->
+    <spring-data.version>2025.0.13</spring-data.version>
+    <!-- Must be >= 1.15.12 for CVE-2026-40983, CVE-2026-40984 -->
+    <micrometer.version>1.15.12</micrometer.version>
     <wiremock.version>3.9.1</wiremock.version>
     <jakarta.annotation.version>2.1.1</jakarta.annotation.version>
     <javax.annotation.version>1.3.2</javax.annotation.version>
@@ -84,14 +88,16 @@
     <opentelemetry-bom.version>2.1.0</opentelemetry-bom.version>
     <kotlin.version>2.1.0</kotlin.version>
     <rest-assured.version>5.5.1</rest-assured.version>
-    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.135 (CVE-2026-33871, CVE-2026-33870 and later fixes) -->
-    <netty.version>4.1.135.Final</netty.version>
+    <!-- TODO: Remove netty-bom override once gRPC ships with Netty >= 4.1.139 (CVE-2026-75595 and later fixes) -->
+    <netty.version>4.1.139.Final</netty.version>
     <!-- TODO: Remove logback override once Spring Boot 3.4.x ships with logback >= 1.5.35 -->
     <logback.version>1.5.35</logback.version>
     <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
     <commons-compress.version>1.26.0</commons-compress.version>
-    <!-- TODO: Remove tomcat override once Spring Boot 3.4.x ships with tomcat >= 10.1.55 -->
-    <tomcat.version>10.1.55</tomcat.version>
+    <!-- TODO: Remove tomcat override once Spring Boot 3.4.x ships with tomcat >= 10.1.61 -->
+    <tomcat.version>10.1.61</tomcat.version>
+    <!-- TODO: Remove guava override once protobuf-java-util ships with guava >= 33.7.2 (CVE-2026-102554) -->
+    <guava.version>33.7.2-jre</guava.version>
   </properties>
 
   <distributionManagement>
@@ -144,11 +150,27 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!-- TODO: Remove spring-framework override once Spring Boot ships with spring-framework >= 6.2.18 (CVE-2026-22735, CVE-2026-22737, CVE-2026-22741, CVE-2026-22745) -->
+      <!-- TODO: Remove spring-framework override once Spring Boot ships with spring-framework >= 6.2.19 (CVE-2026-41841..41854) -->
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-framework-bom</artifactId>
         <version>${spring-framework.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- TODO: Remove spring-data override once Spring Boot ships with spring-data >= 2025.0.12 (CVE-2026-41695, CVE-2026-41716) -->
+      <dependency>
+        <groupId>org.springframework.data</groupId>
+        <artifactId>spring-data-bom</artifactId>
+        <version>${spring-data.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- TODO: Remove micrometer override once Spring Boot ships with micrometer >= 1.15.12 (CVE-2026-40983, CVE-2026-40984) -->
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-bom</artifactId>
+        <version>${micrometer.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -198,6 +220,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
