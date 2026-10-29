@@ -153,7 +153,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -180,11 +179,6 @@ public class DaprClientImpl extends AbstractDaprClient {
    * The GRPC managed channel to be used.
    */
   private final GrpcChannelFacade channel;
-
-  /**
-   * The retry policy.
-   */
-  private final RetryPolicy retryPolicy;
 
   /**
    * The async gRPC stub.
@@ -297,7 +291,6 @@ public class DaprClientImpl extends AbstractDaprClient {
     this.channel = channel;
     this.asyncStub = asyncStub;
     this.httpClient = httpClient;
-    this.retryPolicy = retryPolicy;
     this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken, timeoutPolicy);
     this.grpcCalls = new DaprGrpcCalls(asyncStub, this.grpcInterceptors, retryPolicy);
     this.logger = LoggerFactory.getLogger(DaprClientImpl.class);
