@@ -13,10 +13,12 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
+import io.dapr.actors.ActorTrace;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -29,13 +31,17 @@ class ActivationIdGate {
 
   private static final Pattern VERSION = Pattern.compile("^(\\d{1,9})\\.(\\d{1,9})\\.(\\d{1,9})([-+].*)?$");
 
-  private static final int[] MIN_VERSION = {1, 19, 1};
+  private static final ActorTrace ACTOR_TRACE = new ActorTrace();
+
+  private static final int[] MIN_VERSION = {1, 19, 0};
 
   private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
   private final Supplier<Mono<String>> runtimeVersion;
 
   private final AtomicReference<Mono<Boolean>> lookup = new AtomicReference<>();
+
+  private final AtomicBoolean failing = new AtomicBoolean();
 
   ActivationIdGate(Supplier<Mono<String>> runtimeVersion) {
     this.runtimeVersion = runtimeVersion;
@@ -65,8 +71,17 @@ class ActivationIdGate {
     Mono<Boolean> next = Mono.defer(this.runtimeVersion)
         .timeout(TIMEOUT)
         .defaultIfEmpty("")
-        .map(ActivationIdGate::supported)
-        .doOnError(e -> this.lookup.compareAndSet(self.get(), null))
+        .map(ActivationIdGate::checkSupported)
+        .doOnNext(v -> this.failing.set(false))
+        .doOnError(e -> {
+          this.lookup.compareAndSet(self.get(), null);
+          // Warns once per run of failures, since every callback with an id retries the lookup.
+          if (!this.failing.getAndSet(true)) {
+            ACTOR_TRACE.writeWarning(ActivationIdGate.class.getSimpleName(), null,
+                "Getting the Dapr runtime version failed, ignoring the actor activation id until it succeeds: %s",
+                e.toString());
+          }
+        })
         .cache();
     self.set(next);
     while (true) {
@@ -78,6 +93,16 @@ class ActivationIdGate {
         return next;
       }
     }
+  }
+
+  private static boolean checkSupported(String version) {
+    boolean supported = supported(version);
+    if (!supported) {
+      ACTOR_TRACE.writeWarning(ActivationIdGate.class.getSimpleName(), null,
+          "Dapr runtime version %s is not 1.19.0 or newer, ignoring the actor activation id",
+          version.isEmpty() ? "unknown" : version);
+    }
+    return supported;
   }
 
   static boolean supported(String version) {
@@ -94,6 +119,7 @@ class ActivationIdGate {
         return part > MIN_VERSION[i];
       }
     }
-    return true;
+    // A pre-release of the minimum version may predate the change.
+    return m.group(4) == null || !m.group(4).startsWith("-");
   }
 }

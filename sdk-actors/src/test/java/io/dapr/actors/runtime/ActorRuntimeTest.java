@@ -256,7 +256,7 @@ public class ActorRuntimeTest {
   @BeforeEach
   public void setup() throws Exception {
     this.mockDaprClient = mock(DaprClient.class);
-    when(this.mockDaprClient.getRuntimeVersion()).thenReturn(Mono.just("1.19.1"));
+    when(this.mockDaprClient.getRuntimeVersion()).thenReturn(Mono.just("1.19.0"));
     this.runtime = constructor.newInstance(null, this.mockDaprClient);
   }
 
@@ -542,7 +542,7 @@ public class ActorRuntimeTest {
 
   @Test
   public void activationIdIgnoredOnOlderRuntime() throws Exception {
-    when(this.mockDaprClient.getRuntimeVersion()).thenReturn(Mono.just("1.19.0"));
+    when(this.mockDaprClient.getRuntimeVersion()).thenReturn(Mono.just("1.18.9"));
     List<MyActivationActorImpl> created = registerActivationActor();
     String actorId = UUID.randomUUID().toString();
 
@@ -561,7 +561,7 @@ public class ActorRuntimeTest {
   @Test
   public void activationIdIgnoredWhenVersionLookupFailsThenRetried() throws Exception {
     when(this.mockDaprClient.getRuntimeVersion())
-        .thenReturn(Mono.error(new RuntimeException("unavailable")), Mono.just("1.19.1"));
+        .thenReturn(Mono.error(new RuntimeException("unavailable")), Mono.just("1.19.0"));
     List<MyActivationActorImpl> created = registerActivationActor();
     String actorId = UUID.randomUUID().toString();
 

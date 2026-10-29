@@ -1148,6 +1148,67 @@ public class ActorManagerTest {
     call.dispose();
   }
 
+  @Test
+  public void replacedActorDeactivatesAfterRunningCall() throws Exception {
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(new RecordingStateProvider(), created, gate);
+    ActorId actorId = newActorId();
+    manager.activateActor(actorId, "a1").block();
+
+    CompletableFuture<byte[]> stale = write(manager, actorId, "stale").toFuture();
+    CompletableFuture<?> reset = manager.activateActor(actorId, "a2").toFuture();
+    Thread.sleep(100);
+    Assertions.assertFalse(reset.isDone());
+    Assertions.assertEquals(0, created.get(0).deactivations);
+
+    gate.complete(null);
+    reset.get(5, TimeUnit.SECONDS);
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(2, created.size());
+    assertCause(IllegalStateException.class, stale);
+  }
+
+  @Test
+  public void cancelledReplacementStillDeactivatesStaleActor() throws Exception {
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(new RecordingStateProvider(), created, gate);
+    ActorId actorId = newActorId();
+    manager.activateActor(actorId, "a1").block();
+
+    CompletableFuture<byte[]> stale = write(manager, actorId, "stale").toFuture();
+    manager.activateActor(actorId, "a2").subscribe().dispose();
+    Thread.sleep(100);
+    Assertions.assertEquals(0, created.get(0).deactivations);
+
+    gate.complete(null);
+    waitFor(() -> created.get(0).deactivations == 1);
+    assertCause(IllegalStateException.class, stale);
+    Assertions.assertEquals(1, created.size());
+
+    manager.activateActor(actorId, "a2").block(Duration.ofSeconds(5));
+    Assertions.assertEquals(2, created.size());
+  }
+
+  @Test
+  public void cancelledDeactivationStillDeactivates() throws Exception {
+    List<GatedActorImpl> created = new ArrayList<>();
+    CompletableFuture<Void> gate = new CompletableFuture<>();
+    ActorManager<GatedActorImpl> manager = createGatedManager(new RecordingStateProvider(), created, gate);
+    ActorId actorId = newActorId();
+    manager.activateActor(actorId, "a1").block();
+
+    CompletableFuture<byte[]> running = write(manager, actorId, "value").toFuture();
+    manager.deactivateActor(actorId).subscribe().dispose();
+    Thread.sleep(100);
+    Assertions.assertEquals(0, created.get(0).deactivations);
+
+    gate.complete(null);
+    waitFor(() -> created.get(0).deactivations == 1);
+    assertCause(IllegalStateException.class, running);
+  }
+
   private static void waitFor(BooleanSupplier condition) throws InterruptedException {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
     while (!condition.getAsBoolean()) {

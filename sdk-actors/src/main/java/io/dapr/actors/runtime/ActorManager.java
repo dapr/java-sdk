@@ -17,13 +17,16 @@ import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
+import reactor.util.context.ContextView;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Manages actors of a specific type.
@@ -78,7 +81,7 @@ class ActorManager<T extends AbstractActor> {
 
   /** Replaces the live instance if Dapr reports a different activation. */
   Mono<ActiveActor<T>> activateActor(ActorId actorId, String activationId) {
-    return Mono.defer(() -> {
+    return Mono.deferContextual(context -> {
       ActiveActor<T> current = this.activeActors.get(actorId);
       if (current != null) {
         if (activationId == null || activationId.isEmpty() || activationId.equals(current.activationId)) {
@@ -88,8 +91,7 @@ class ActorManager<T extends AbstractActor> {
         // Dropped before waiting on the turn, so neither a call still running on it nor its onDeactivate can save.
         if (this.activeActors.remove(actorId, current)) {
           current.actor.discard();
-          return this.turnLock.run(actorId, () -> this.deactivateDiscarded(actorId, current.actor)
-              .then(this.createActor(actorId, activationId)));
+          this.deactivateInTurn(actorId, () -> this.deactivateDiscarded(actorId, current.actor), context);
         }
       }
 
@@ -104,15 +106,23 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous void response.
    */
   Mono<Void> deactivateActor(ActorId actorId) {
-    return Mono.defer(() -> {
+    return Mono.deferContextual(context -> {
       ActiveActor<T> active = this.activeActors.remove(actorId);
       if (active == null) {
         return Mono.empty();
       }
 
       // Removed before waiting on the turn, so a call still running on it skips its save.
-      return this.turnLock.run(actorId, active.actor::onDeactivateInternal);
+      return this.deactivateInTurn(actorId, active.actor::onDeactivateInternal, context);
     });
+  }
+
+  /**
+   * Queues a deactivation as its own turn, so it waits for a running call and still runs if the caller cancels.
+   */
+  private Mono<Void> deactivateInTurn(ActorId actorId, Supplier<Mono<Void>> deactivation, ContextView context) {
+    CompletableFuture<Void> done = this.turnLock.run(actorId, deactivation).contextWrite(context).toFuture();
+    return Mono.fromFuture(done, true);
   }
 
   /**
