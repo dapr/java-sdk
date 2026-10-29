@@ -21,6 +21,7 @@
     <module>patterns</module>
     <module>multi-app</module>
     <module>versioning</module>
+    <module>event-workflow</module>
   </modules>
 
   <build>
