@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
+import io.dapr.actors.internal.ActorReentrancyContext;
 import io.dapr.v1.DaprActorsProtos;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
@@ -29,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import static io.dapr.actors.TestUtils.assertThrowsDaprException;
@@ -53,6 +56,8 @@ public class DaprGrpcClientTest {
 
   private static final byte[] RESPONSE_PAYLOAD = "\"OK\"".getBytes();
 
+  private final Set<String> observedReentrancyIds = ConcurrentHashMap.newKeySet();
+
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
@@ -67,6 +72,11 @@ public class DaprGrpcClientTest {
               switch (request.getActorId()) {
                 case ACTOR_ID_OK:
                   assertArrayEquals(REQUEST_PAYLOAD, request.getData().toByteArray());
+                  String reentrancyId = request.getMetadataMap()
+                      .get(ActorReentrancyContext.REENTRANCY_ID_HEADER);
+                  if (reentrancyId != null) {
+                    observedReentrancyIds.add(reentrancyId);
+                  }
                   responseObserver.onNext(
                       DaprActorsProtos.InvokeActorResponse.newBuilder().setData(ByteString.copyFrom(RESPONSE_PAYLOAD))
                           .build());
@@ -113,6 +123,18 @@ public class DaprGrpcClientTest {
   public void invoke() {
     Mono<byte[]> result = client.invoke(ACTOR_TYPE, ACTOR_ID_OK, METHOD_NAME, REQUEST_PAYLOAD);
     assertArrayEquals(RESPONSE_PAYLOAD, result.block());
+  }
+
+  @Test
+  public void invokeUsesReentrancyIdFromEachSubscriberContext() {
+    Mono.when(
+        ActorReentrancyContext.withReentrancyId(
+            client.invoke(ACTOR_TYPE, ACTOR_ID_OK, METHOD_NAME, REQUEST_PAYLOAD), "chain-a"),
+        ActorReentrancyContext.withReentrancyId(
+            client.invoke(ACTOR_TYPE, ACTOR_ID_OK, METHOD_NAME, REQUEST_PAYLOAD), "chain-b"))
+        .block();
+
+    org.junit.jupiter.api.Assertions.assertEquals(Set.of("chain-a", "chain-b"), observedReentrancyIds);
   }
 
   @Test

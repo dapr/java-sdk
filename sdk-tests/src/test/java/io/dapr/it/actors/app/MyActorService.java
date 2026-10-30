@@ -14,6 +14,8 @@ limitations under the License.
 package io.dapr.it.actors.app;
 
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.actors.runtime.ActorReentrancyConfig;
+import io.dapr.actors.runtime.ActorTypeConfig;
 
 public class MyActorService {
   public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running";
@@ -30,6 +32,10 @@ public class MyActorService {
     ActorRuntime.getInstance().registerActor(MyActorStringImpl.class);
     ActorRuntime.getInstance().registerActor(MyActorBinaryImpl.class);
     ActorRuntime.getInstance().registerActor(MyActorObjectImpl.class);
+    ActorRuntime.getInstance().getConfig().addActorTypeConfig(new ActorTypeConfig()
+        .setActorTypeName(ReentrantActorImpl.TYPE)
+        .setReentrancy(new ActorReentrancyConfig().setEnabled(true).setMaxStackDepth(5)));
+    ActorRuntime.getInstance().registerActor(ReentrantActorImpl.class);
 
     TestApplication.start(port);
   }

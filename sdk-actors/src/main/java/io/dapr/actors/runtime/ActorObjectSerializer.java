@@ -160,6 +160,9 @@ public class ActorObjectSerializer extends ObjectSerializer {
       if (config.getRemindersStoragePartitions() != null) {
         generator.writeNumberField("remindersStoragePartitions", config.getRemindersStoragePartitions());
       }
+      if (config.getReentrancy() != null) {
+        writeReentrancy(generator, config.getReentrancy());
+      }
       if (!config.getActorTypeConfigs().isEmpty()) {
 
         generator.writeArrayFieldStart("entitiesConfig");
@@ -188,6 +191,9 @@ public class ActorObjectSerializer extends ObjectSerializer {
           if (actorTypeConfig.getRemindersStoragePartitions() != null) {
             generator.writeNumberField("remindersStoragePartitions", actorTypeConfig.getRemindersStoragePartitions());
           }
+          if (actorTypeConfig.getReentrancy() != null) {
+            writeReentrancy(generator, actorTypeConfig.getReentrancy());
+          }
 
           generator.writeEndObject();
         }
@@ -198,6 +204,15 @@ public class ActorObjectSerializer extends ObjectSerializer {
       writer.flush();
       return writer.toByteArray();
     }
+  }
+
+  private void writeReentrancy(JsonGenerator generator, ActorReentrancyConfig config) throws IOException {
+    generator.writeObjectFieldStart("reentrancy");
+    generator.writeBooleanField("enabled", config.isEnabled());
+    if (config.getMaxStackDepth() != null) {
+      generator.writeNumberField("maxStackDepth", config.getMaxStackDepth());
+    }
+    generator.writeEndObject();
   }
 
   /**

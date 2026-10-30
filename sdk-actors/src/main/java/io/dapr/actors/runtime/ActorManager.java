@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.internal.ActorReentrancyContext;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
@@ -23,6 +24,7 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -266,20 +268,21 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous object response.
    */
   private Mono<Object> invokeMethod(AbstractActor actor, Method method, Object input) {
-    return Mono.fromSupplier(() -> {
-      try {
-        if (method.getParameterCount() == 0) {
-          return method.invoke(actor);
-        } else {
-          // Actor methods must have a one or no parameter, which is guaranteed at this point.
-          return method.invoke(actor, input);
-        }
-      } catch (RuntimeException e) {
-        throw e;
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return Mono.deferContextual(context -> Mono.fromSupplier(() ->
+        ActorReentrancyContext.withReentrancyId(ActorReentrancyContext.getReentrancyId(context), () -> {
+          try {
+            if (method.getParameterCount() == 0) {
+              return method.invoke(actor);
+            } else {
+              // Actor methods must have a one or no parameter, which is guaranteed at this point.
+              return method.invoke(actor, input);
+            }
+          } catch (RuntimeException e) {
+            throw e;
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        })));
   }
 
   /**
@@ -291,16 +294,19 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous object response.
    */
   private Mono<Object> invokeMonoMethod(AbstractActor actor, Method method, Object input) {
-    try {
-      if (method.getParameterCount() == 0) {
-        return (Mono<Object>) method.invoke(actor);
-      } else {
-        // Actor methods must have a one or no parameter, which is guaranteed at this point.
-        return (Mono<Object>) method.invoke(actor, input);
-      }
-    } catch (Exception e) {
-      return Mono.error(e);
-    }
+    return Mono.deferContextual(context -> ActorReentrancyContext.withReentrancyId(
+        ActorReentrancyContext.getReentrancyId(context), () -> {
+          try {
+            if (method.getParameterCount() == 0) {
+              return (Mono<Object>) method.invoke(actor);
+            } else {
+              // Actor methods must have a one or no parameter, which is guaranteed at this point.
+              return (Mono<Object>) method.invoke(actor, input);
+            }
+          } catch (Exception e) {
+            return Mono.error(e);
+          }
+        }));
   }
 
   /**
@@ -341,12 +347,20 @@ class ActorManager<T extends AbstractActor> {
             actor.rollback(false);
             return throwable;
           })
-          .then(actor.onPreActorMethodInternal(context))
-          .then((Mono<Object>) func.apply(actor))
-          .switchIfEmpty(
-              actor.onPostActorMethodInternal(context))
-          .flatMap(r -> actor.onPostActorMethodInternal(context).thenReturn(r))
-          .map(o -> (T) o);
+          .then(Mono.defer(() -> {
+            AtomicBoolean callStarted = new AtomicBoolean();
+            return actor.onPreActorMethodInternal(context)
+                .then(Mono.fromRunnable(() -> callStarted.set(true)))
+                .then((Mono<Object>) func.apply(actor))
+                .switchIfEmpty(actor.onPostActorMethodInternal(context))
+                .flatMap(r -> actor.onPostActorMethodInternal(context).thenReturn(r))
+                .map(o -> (T) o)
+                .doFinally(signal -> {
+                  if (callStarted.get()) {
+                    actor.completeActorMethodCall();
+                  }
+                });
+          }));
     } catch (Exception e) {
       return Mono.error(e);
     }

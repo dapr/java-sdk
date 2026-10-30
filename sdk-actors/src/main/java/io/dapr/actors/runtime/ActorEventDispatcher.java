@@ -19,7 +19,9 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.dapr.actors.internal.ActorReentrancyContext;
 import io.dapr.v1.DaprActorsProtos.ActorEntityConfig;
+import io.dapr.v1.DaprActorsProtos.ActorReentrancyConfig;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsRequestAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsRequestDeactivateResponseAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsRequestFailedAlpha1;
@@ -70,6 +72,9 @@ final class ActorEventDispatcher {
     if (config.getDrainBalancedActors() != null) {
       builder.setDrainRebalancedActors(config.getDrainBalancedActors());
     }
+    if (config.getReentrancy() != null) {
+      builder.setReentrancy(toProto(config.getReentrancy()));
+    }
 
     for (ActorTypeConfig typeConfig : config.getActorTypeConfigs()) {
       ActorEntityConfig.Builder entityConfig = ActorEntityConfig.newBuilder()
@@ -82,6 +87,9 @@ final class ActorEventDispatcher {
       }
       if (typeConfig.getDrainBalancedActors() != null) {
         entityConfig.setDrainRebalancedActors(typeConfig.getDrainBalancedActors());
+      }
+      if (typeConfig.getReentrancy() != null) {
+        entityConfig.setReentrancy(toProto(typeConfig.getReentrancy()));
       }
       builder.addEntitiesConfig(entityConfig);
     }
@@ -148,7 +156,9 @@ final class ActorEventDispatcher {
 
     byte[] payload = request.getData().isEmpty() ? null : request.getData().toByteArray();
     String contentType = runtime.getObjectSerializer(request.getActorType()).getContentType();
-    return runtime.invoke(request.getActorType(), request.getActorId(), request.getMethod(), payload)
+    return ActorReentrancyContext.withReentrancyId(
+        runtime.invoke(request.getActorType(), request.getActorId(), request.getMethod(), payload),
+        ActorReentrancyContext.getReentrancyId(request.getMetadataMap()))
         .map(ByteString::copyFrom)
         .defaultIfEmpty(ByteString.EMPTY)
         .map(data -> SubscribeActorEventsRequestAlpha1.newBuilder()
@@ -167,9 +177,10 @@ final class ActorEventDispatcher {
       return Mono.just(notRegistered(id, request.getActorType()));
     }
 
-    return Mono.fromCallable(() -> buildCallbackBody(
+    return ActorReentrancyContext.withReentrancyId(Mono.fromCallable(() -> buildCallbackBody(
             null, request.getDueTime(), request.getPeriod(), request.hasData() ? request.getData() : null))
-        .flatMap(body -> runtime.invokeReminder(request.getActorType(), request.getActorId(), request.getName(), body))
+        .flatMap(body -> runtime.invokeReminder(request.getActorType(), request.getActorId(), request.getName(), body)),
+        ActorReentrancyContext.getReentrancyId(request.getMetadataMap()))
         .then(Mono.fromSupplier(() -> SubscribeActorEventsRequestAlpha1.newBuilder()
             .setReminderResponse(SubscribeActorEventsRequestReminderResponseAlpha1.newBuilder().setId(id))
             .build()))
@@ -183,10 +194,11 @@ final class ActorEventDispatcher {
       return Mono.just(notRegistered(id, request.getActorType()));
     }
 
-    return Mono.fromCallable(() -> buildCallbackBody(
+    return ActorReentrancyContext.withReentrancyId(Mono.fromCallable(() -> buildCallbackBody(
             request.getCallback(), request.getDueTime(), request.getPeriod(),
             request.hasData() ? request.getData() : null))
-        .flatMap(body -> runtime.invokeTimer(request.getActorType(), request.getActorId(), request.getName(), body))
+        .flatMap(body -> runtime.invokeTimer(request.getActorType(), request.getActorId(), request.getName(), body)),
+        ActorReentrancyContext.getReentrancyId(request.getMetadataMap()))
         .then(Mono.fromSupplier(() -> SubscribeActorEventsRequestAlpha1.newBuilder()
             .setTimerResponse(SubscribeActorEventsRequestReminderResponseAlpha1.newBuilder().setId(id))
             .build()))
@@ -277,5 +289,13 @@ final class ActorEventDispatcher {
         .setSeconds(duration.getSeconds())
         .setNanos(duration.getNano())
         .build();
+  }
+
+  private static ActorReentrancyConfig toProto(io.dapr.actors.runtime.ActorReentrancyConfig config) {
+    ActorReentrancyConfig.Builder builder = ActorReentrancyConfig.newBuilder().setEnabled(config.isEnabled());
+    if (config.getMaxStackDepth() != null) {
+      builder.setMaxStackDepth(config.getMaxStackDepth());
+    }
+    return builder.build();
   }
 }
