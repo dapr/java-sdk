@@ -83,6 +83,8 @@
     <netty.version>4.2.17.Final</netty.version>
     <!-- TODO: Remove commons-compress override once testcontainers ships with >= 1.26.0 -->
     <commons-compress.version>1.26.0</commons-compress.version>
+    <!-- TODO: Remove guava override once grpc and protobuf-java-util ship with guava >= 33.7.2 (CVE-2026-102554) -->
+    <guava.version>33.7.2-jre</guava.version>
   </properties>
 
   <distributionManagement>
@@ -183,6 +185,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
