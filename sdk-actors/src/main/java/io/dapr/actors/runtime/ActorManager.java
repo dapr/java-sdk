@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -326,12 +327,20 @@ class ActorManager<T extends AbstractActor> {
             actor.rollback(false);
             return throwable;
           })
-          .then(actor.onPreActorMethodInternal(context))
-          .then((Mono<Object>) func.apply(actor))
-          .switchIfEmpty(
-              actor.onPostActorMethodInternal(context))
-          .flatMap(r -> actor.onPostActorMethodInternal(context).thenReturn(r))
-          .map(o -> (T) o);
+          .then(Mono.defer(() -> {
+            AtomicBoolean callStarted = new AtomicBoolean();
+            return actor.onPreActorMethodInternal(context)
+                .then(Mono.fromRunnable(() -> callStarted.set(true)))
+                .then((Mono<Object>) func.apply(actor))
+                .switchIfEmpty(actor.onPostActorMethodInternal(context))
+                .flatMap(r -> actor.onPostActorMethodInternal(context).thenReturn(r))
+                .map(o -> (T) o)
+                .doFinally(signal -> {
+                  if (callStarted.get()) {
+                    actor.completeActorMethodCall();
+                  }
+                });
+          }));
     } catch (Exception e) {
       return Mono.error(e);
     }

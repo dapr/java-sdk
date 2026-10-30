@@ -13,15 +13,19 @@
 
 package io.dapr.it.actors.app;
 
+import io.dapr.actors.ActorMethod;
 import reactor.core.publisher.Mono;
 
 /** Actor API used by the actor reentrancy integration test. */
 public interface ReentrantActor {
 
+  @ActorMethod(returns = String.class)
   Mono<String> call(String targetActorId);
 
+  @ActorMethod(returns = String.class)
   Mono<String> returnTo(String actorId);
 
+  @ActorMethod(returns = String.class)
   Mono<String> finish();
 
   String callBlocking(String targetActorId);
