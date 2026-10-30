@@ -47,7 +47,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class ActorEventDispatcherTest {
 
@@ -188,6 +193,44 @@ public class ActorEventDispatcherTest {
 
     assertEquals("12", response.getInvokeResponse().getId());
     assertEquals("payload", LAST_TIMER_DATA.get());
+  }
+
+  @Test
+  public void callbacksPassTheActivationId() throws Exception {
+    ActorRuntime spied = spy(runtime);
+    String actorId = UUID.randomUUID().toString();
+
+    ActorEventDispatcher.dispatch(spied, SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setInvokeRequest(SubscribeActorEventsResponseInvokeRequestAlpha1.newBuilder()
+            .setId("1")
+            .setActorType("MyRemindableActor")
+            .setActorId(actorId)
+            .setMethod("receiveTimer")
+            .setData(ByteString.copyFrom(SERIALIZER.serialize("payload")))
+            .putMetadata("dapr-actor-activation-id", "a1"))
+        .build()).block();
+    ActorEventDispatcher.dispatch(spied, SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setReminderRequest(SubscribeActorEventsResponseReminderRequestAlpha1.newBuilder()
+            .setId("2")
+            .setActorType("MyRemindableActor")
+            .setActorId(actorId)
+            .setName("myreminder")
+            .putMetadata("Dapr-Actor-Activation-Id", "a2"))
+        .build()).block();
+    ActorEventDispatcher.dispatch(spied, SubscribeActorEventsResponseAlpha1.newBuilder()
+        .setTimerRequest(SubscribeActorEventsResponseTimerRequestAlpha1.newBuilder()
+            .setId("3")
+            .setActorType("MyRemindableActor")
+            .setActorId(actorId)
+            .setName("mytimer")
+            .setCallback("receiveTimer")
+            .setData(daprData("tick"))
+            .putMetadata("Dapr-Actor-Activation-Id", ""))
+        .build()).block();
+
+    verify(spied).invoke(eq("MyRemindableActor"), eq(actorId), eq("receiveTimer"), any(), eq("a1"));
+    verify(spied).invokeReminder(eq("MyRemindableActor"), eq(actorId), eq("myreminder"), any(), eq("a2"));
+    verify(spied).invokeTimer(eq("MyRemindableActor"), eq(actorId), eq("mytimer"), any(), isNull());
   }
 
   @Test
