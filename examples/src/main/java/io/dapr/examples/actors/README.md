@@ -196,6 +196,27 @@ dapr run --resources-path ./components/actors --app-id demoactorservice -- java 
 
 The stream reconnects if Dapr restarts. For an actor service that is idle for long periods, enable gRPC keepalive with `-Ddapr.grpc.enable.keep.alive=true`.
 
+### Hosting actors over gRPC with Spring Boot
+
+The Dapr Spring Boot starter can start the actor event subscription after application startup, once actor types registered by application beans and runners are available. Set the transport property:
+
+```properties
+dapr.actors.transport=grpc
+```
+
+Register actor types before the application is ready, for example from an `ApplicationRunner`:
+
+```java
+@Bean
+ApplicationRunner registerActors(ActorRuntime actorRuntime) {
+  return args -> actorRuntime.registerActor(DemoActorImpl.class);
+}
+```
+
+When the application is ready, the starter exposes the running `ActorEventSubscription` as a bean and closes it with the application context. A health indicator can look it up through `ObjectProvider<ActorEventSubscription>` and check `isRunning()`.
+
+The default transport remains HTTP. gRPC hosting requires Dapr to run without an HTTP app channel: omit `--app-port`, or configure `--app-protocol grpc` when an app port is present. If the Spring Boot application does not serve HTTP itself, set `spring.main.web-application-type=none` so it does not start an unrelated web server.
+
 ### Running the Actor client
 
 The actor client is a simple java class with a main method that uses the Dapr Actor capabilities in order to create the actors and execute the different methods based on the Actor pattern.
