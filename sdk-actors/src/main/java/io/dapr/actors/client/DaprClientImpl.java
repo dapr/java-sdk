@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
+import io.dapr.actors.internal.ActorReentrancyContext;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
@@ -80,19 +81,21 @@ class DaprClientImpl implements DaprClient {
    */
   @Override
   public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
-    DaprActorsProtos.InvokeActorRequest req =
-        DaprActorsProtos.InvokeActorRequest.newBuilder()
+    return Mono.deferContextual(context -> {
+      DaprActorsProtos.InvokeActorRequest.Builder requestBuilder = DaprActorsProtos.InvokeActorRequest.newBuilder()
             .setActorType(actorType)
             .setActorId(actorId)
             .setMethod(methodName)
             .putAllMetadata(this.metadata)
-            .setData(jsonPayload == null ? ByteString.EMPTY : ByteString.copyFrom(jsonPayload))
-            .build();
-    return Mono.deferContextual(
-        context -> this.<DaprActorsProtos.InvokeActorResponse>createMono(
-            it -> this.grpcInterceptors.intercept(client, context).invokeActor(req, it)
-        )
-    ).map(r -> r.getData().toByteArray());
+            .setData(jsonPayload == null ? ByteString.EMPTY : ByteString.copyFrom(jsonPayload));
+      String reentrancyId = ActorReentrancyContext.getReentrancyId(context);
+      if (reentrancyId != null) {
+        requestBuilder.putMetadata(ActorReentrancyContext.REENTRANCY_ID_HEADER, reentrancyId);
+      }
+      DaprActorsProtos.InvokeActorRequest request = requestBuilder.build();
+      return this.<DaprActorsProtos.InvokeActorResponse>createMono(
+          it -> this.grpcInterceptors.intercept(client, context).invokeActor(request, it));
+    }).map(r -> r.getData().toByteArray());
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {

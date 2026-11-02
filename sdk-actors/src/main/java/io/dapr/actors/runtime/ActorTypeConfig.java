@@ -32,10 +32,12 @@ public class ActorTypeConfig {
 
   private volatile Integer remindersStoragePartitions;
 
+  private volatile ActorReentrancyConfig reentrancy;
+
   /**
    * Instantiates a new config for the Actor Runtime.
    */
-  ActorTypeConfig() {
+  public ActorTypeConfig() {
   }
 
   /**
@@ -44,7 +46,7 @@ public class ActorTypeConfig {
    * @param actorTypeName Actor type that was registered.
    * @return This instance.
    */
-  ActorTypeConfig setActorTypeName(String actorTypeName) {
+  public ActorTypeConfig setActorTypeName(String actorTypeName) {
     if (actorTypeName == null) {
       throw new IllegalArgumentException("Registered actor must have a type name.");
     }
@@ -159,6 +161,26 @@ public class ActorTypeConfig {
    */
   public ActorTypeConfig setRemindersStoragePartitions(Integer remindersStoragePartitions) {
     this.remindersStoragePartitions = remindersStoragePartitions;
+    return this;
+  }
+
+  /**
+   * Gets this actor type's reentrancy configuration.
+   *
+   * @return Reentrancy configuration, or {@code null} to inherit the runtime default.
+   */
+  public ActorReentrancyConfig getReentrancy() {
+    return reentrancy;
+  }
+
+  /**
+   * Sets this actor type's reentrancy configuration.
+   *
+   * @param reentrancy Reentrancy configuration, or {@code null} to inherit the runtime default.
+   * @return This instance.
+   */
+  public ActorTypeConfig setReentrancy(ActorReentrancyConfig reentrancy) {
+    this.reentrancy = reentrancy;
     return this;
   }
 }

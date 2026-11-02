@@ -15,6 +15,8 @@ package io.dapr.it.actors.app;
 
 import io.dapr.actors.runtime.ActorEventSubscription;
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.actors.runtime.ActorReentrancyConfig;
+import io.dapr.actors.runtime.ActorTypeConfig;
 
 import java.time.Duration;
 
@@ -35,6 +37,10 @@ public class MyActorGrpcService {
     ActorRuntime.getInstance().registerActor(MyActorStringImpl.class);
     ActorRuntime.getInstance().registerActor(MyActorBinaryImpl.class);
     ActorRuntime.getInstance().registerActor(MyActorObjectImpl.class);
+    ActorRuntime.getInstance().getConfig().addActorTypeConfig(new ActorTypeConfig()
+        .setActorTypeName(ReentrantActorImpl.TYPE)
+        .setReentrancy(new ActorReentrancyConfig().setEnabled(true).setMaxStackDepth(5)));
+    ActorRuntime.getInstance().registerActor(ReentrantActorImpl.class);
 
     try (ActorEventSubscription subscription = ActorRuntime.getInstance().subscribeActorEvents()) {
       subscription.awaitTermination();

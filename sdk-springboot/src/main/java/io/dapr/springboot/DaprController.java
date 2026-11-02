@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot;
 
+import io.dapr.actors.internal.ActorReentrancyContext;
 import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.http.MediaType;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -82,14 +84,18 @@ public class DaprController {
    * @param id Actor Id.
    * @param method Actor method.
    * @param body Raw request body.
+   * @param reentrancyId Dapr reentrancy id, if present.
    * @return Raw response body.
    */
   @PutMapping(path = "/actors/{type}/{id}/method/{method}")
   public Mono<byte[]> invokeActorMethod(@PathVariable("type") String type,
                                         @PathVariable("id") String id,
                                         @PathVariable("method") String method,
-                                        @RequestBody(required = false) byte[] body) {
-    return ActorRuntime.getInstance().invoke(type, id, method, body);
+                                        @RequestBody(required = false) byte[] body,
+                                        @RequestHeader(value = ActorReentrancyContext.REENTRANCY_ID_HEADER,
+                                            required = false) String reentrancyId) {
+    return ActorReentrancyContext.withReentrancyId(
+        ActorRuntime.getInstance().invoke(type, id, method, body), reentrancyId);
   }
 
   /**
@@ -98,14 +104,18 @@ public class DaprController {
    * @param id Actor Id.
    * @param timer Actor timer's name.
    * @param body Raw request's body.
+   * @param reentrancyId Dapr reentrancy id, if present.
    * @return Void.
    */
   @PutMapping(path = "/actors/{type}/{id}/method/timer/{timer}")
   public Mono<Void> invokeActorTimer(@PathVariable("type") String type,
                                      @PathVariable("id") String id,
                                      @PathVariable("timer") String timer,
-                                     @RequestBody byte[] body) {
-    return ActorRuntime.getInstance().invokeTimer(type, id, timer, body);
+                                     @RequestBody byte[] body,
+                                     @RequestHeader(value = ActorReentrancyContext.REENTRANCY_ID_HEADER,
+                                         required = false) String reentrancyId) {
+    return ActorReentrancyContext.withReentrancyId(
+        ActorRuntime.getInstance().invokeTimer(type, id, timer, body), reentrancyId);
   }
 
   /**
@@ -114,13 +124,17 @@ public class DaprController {
    * @param id Actor Id.
    * @param reminder Actor reminder's name.
    * @param body Raw request's body.
+   * @param reentrancyId Dapr reentrancy id, if present.
    * @return Void.
    */
   @PutMapping(path = "/actors/{type}/{id}/method/remind/{reminder}")
   public Mono<Void> invokeActorReminder(@PathVariable("type") String type,
                                         @PathVariable("id") String id,
                                         @PathVariable("reminder") String reminder,
-                                        @RequestBody(required = false) byte[] body) {
-    return ActorRuntime.getInstance().invokeReminder(type, id, reminder, body);
+                                        @RequestBody(required = false) byte[] body,
+                                        @RequestHeader(value = ActorReentrancyContext.REENTRANCY_ID_HEADER,
+                                            required = false) String reentrancyId) {
+    return ActorReentrancyContext.withReentrancyId(
+        ActorRuntime.getInstance().invokeReminder(type, id, reminder, body), reentrancyId);
   }
 }

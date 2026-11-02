@@ -36,6 +36,8 @@ public class ActorRuntimeConfig {
 
   private volatile Integer remindersStoragePartitions;
 
+  private volatile ActorReentrancyConfig reentrancy;
+
   private volatile List<ActorTypeConfig> actorTypeConfigs = new CopyOnWriteArrayList<>();
 
   /**
@@ -169,12 +171,32 @@ public class ActorRuntimeConfig {
   }
 
   /**
-   * Adds a actor type config to the list of actors type configs.
-   * 
-   * @param actorTypeName Actor type that was registered.
+   * Gets the default reentrancy configuration for all actor types.
+   *
+   * @return Default reentrancy configuration, or {@code null} to use Dapr's default.
+   */
+  public ActorReentrancyConfig getReentrancy() {
+    return reentrancy;
+  }
+
+  /**
+   * Sets the default reentrancy configuration for all actor types.
+   *
+   * @param reentrancy Default reentrancy configuration, or {@code null} to use Dapr's default.
    * @return This instance.
    */
-  ActorRuntimeConfig addActorTypeConfig(ActorTypeConfig config) {
+  public ActorRuntimeConfig setReentrancy(ActorReentrancyConfig reentrancy) {
+    this.reentrancy = reentrancy;
+    return this;
+  }
+
+  /**
+   * Adds an actor type config to the list of actor type configs.
+   *
+   * @param config Actor type config to add.
+   * @return This instance.
+   */
+  public ActorRuntimeConfig addActorTypeConfig(ActorTypeConfig config) {
     if (config == null) {
       throw new IllegalArgumentException("Add actor type config failed.");
     }
