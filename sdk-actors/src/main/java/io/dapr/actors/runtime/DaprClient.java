@@ -87,4 +87,11 @@ interface DaprClient {
    * @return Asynchronous void result.
    */
   Mono<Void> unregisterTimer(String actorType, String actorId, String timerName);
+
+  /**
+   * Gets the Dapr runtime version.
+   *
+   * @return Asynchronous result with the runtime version.
+   */
+  Mono<String> getRuntimeVersion();
 }
