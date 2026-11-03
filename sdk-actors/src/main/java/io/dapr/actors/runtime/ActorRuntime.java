@@ -72,6 +72,11 @@ public class ActorRuntime implements Closeable {
   private final ActorRuntimeConfig config;
 
   /**
+   * Decides whether to trust the activation id sent by Dapr.
+   */
+  private final ActivationIdGate activationIdGate;
+
+  /**
    * A client used to communicate from the actor to the Dapr runtime.
    */
   private final DaprClient daprClient;
@@ -136,6 +141,7 @@ public class ActorRuntime implements Closeable {
     this.actorManagers = new ConcurrentHashMap<>();
     this.daprClient = daprClient;
     this.channel = channel;
+    this.activationIdGate = new ActivationIdGate(daprClient::getRuntimeVersion);
   }
 
   /**
@@ -348,10 +354,26 @@ public class ActorRuntime implements Closeable {
    * @return Response for the actor method.
    */
   public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
+    return invoke(actorTypeName, actorId, actorMethodName, payload, null);
+  }
+
+  /**
+   * Invokes the method on the activation Dapr sent.
+   *
+   * @param actorTypeName   Actor type name.
+   * @param actorId         Actor id.
+   * @param actorMethodName Method name.
+   * @param payload         RAW payload.
+   * @param activationId    Activation id sent by Dapr, or null if absent.
+   * @return Response for the actor method.
+   */
+  public Mono<byte[]> invoke(
+      String actorTypeName, String actorId, String actorMethodName, byte[] payload, String activationId) {
     ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-        .flatMap(m -> m.activateActor(id).thenReturn(m))
-        .flatMap(m -> ((ActorManager) m).invokeMethod(id, actorMethodName, payload));
+        .flatMap(m -> this.activationIdGate.filter(activationId)
+            .flatMap(a -> m.activateActor(id, a.orElse(null)))
+            .flatMap(a -> m.invokeMethod((ActorManager.ActiveActor) a, actorMethodName, payload)));
   }
 
   /**
@@ -364,10 +386,26 @@ public class ActorRuntime implements Closeable {
    * @return Async void task.
    */
   public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, byte[] params) {
+    return invokeReminder(actorTypeName, actorId, reminderName, params, null);
+  }
+
+  /**
+   * Fires a reminder on the activation Dapr sent.
+   *
+   * @param actorTypeName Actor type name.
+   * @param actorId       Actor id.
+   * @param reminderName  Reminder name.
+   * @param params        Reminder params.
+   * @param activationId  Activation id sent by Dapr, or null if absent.
+   * @return Async void task.
+   */
+  public Mono<Void> invokeReminder(
+      String actorTypeName, String actorId, String reminderName, byte[] params, String activationId) {
     ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-        .flatMap(m -> m.activateActor(id).thenReturn(m))
-        .flatMap(m -> ((ActorManager) m).invokeReminder(new ActorId(actorId), reminderName, params));
+        .flatMap(m -> this.activationIdGate.filter(activationId)
+            .flatMap(a -> m.activateActor(id, a.orElse(null)))
+            .flatMap(a -> m.invokeReminder((ActorManager.ActiveActor) a, reminderName, params)));
   }
 
   /**
@@ -380,10 +418,26 @@ public class ActorRuntime implements Closeable {
    * @return Async void task.
    */
   public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName, byte[] params) {
+    return invokeTimer(actorTypeName, actorId, timerName, params, null);
+  }
+
+  /**
+   * Fires a timer on the activation Dapr sent.
+   *
+   * @param actorTypeName Actor type name.
+   * @param actorId       Actor id.
+   * @param timerName     Timer name.
+   * @param params        Timer params.
+   * @param activationId  Activation id sent by Dapr, or null if absent.
+   * @return Async void task.
+   */
+  public Mono<Void> invokeTimer(
+      String actorTypeName, String actorId, String timerName, byte[] params, String activationId) {
     ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-        .flatMap(m -> m.activateActor(id).thenReturn(m))
-        .flatMap(m -> ((ActorManager) m).invokeTimer(new ActorId(actorId), timerName, params));
+        .flatMap(m -> this.activationIdGate.filter(activationId)
+            .flatMap(a -> m.activateActor(id, a.orElse(null)))
+            .flatMap(a -> m.invokeTimer((ActorManager.ActiveActor) a, timerName, params)));
   }
 
   /**

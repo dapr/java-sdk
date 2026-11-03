@@ -29,11 +29,19 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -137,6 +145,96 @@ public class ActorRuntimeTest {
     }
   }
 
+  private static final String ACTIVATION_ACTOR_NAME = "MyActivationActor";
+
+  public interface MyActivationActor {
+    int increment();
+  }
+
+  @ActorType(name = ACTIVATION_ACTOR_NAME)
+  public static class MyActivationActorImpl extends AbstractActor
+      implements MyActivationActor, Remindable<String> {
+
+    private int calls;
+
+    private int reminders;
+
+    private int deactivations;
+
+    public MyActivationActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+    }
+
+    @Override
+    protected Mono<Void> onDeactivate() {
+      return Mono.fromRunnable(() -> this.deactivations++);
+    }
+
+    @Override
+    public int increment() {
+      return ++this.calls;
+    }
+
+    @Override
+    public TypeRef<String> getStateType() {
+      return TypeRef.STRING;
+    }
+
+    @Override
+    public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
+      return Mono.fromRunnable(() -> this.reminders++);
+    }
+  }
+
+  private static final String GATED_ACTOR_NAME = "MyGatedActor";
+
+  public interface MyGatedActor {
+    Mono<Void> hold(String value);
+
+    Mono<Void> pause();
+  }
+
+  @ActorType(name = GATED_ACTOR_NAME)
+  public static class MyGatedActorImpl extends AbstractActor implements MyGatedActor {
+
+    private final Mono<Void> holdGate;
+
+    private final Mono<Void> pauseGate;
+
+    public MyGatedActorImpl(ActorRuntimeContext runtimeContext, ActorId id, Mono<Void> holdGate,
+        Mono<Void> pauseGate) {
+      super(runtimeContext, id);
+      this.holdGate = holdGate;
+      this.pauseGate = pauseGate;
+    }
+
+    @Override
+    public Mono<Void> hold(String value) {
+      return this.getActorStateManager().set("value", value).then(this.holdGate);
+    }
+
+    @Override
+    public Mono<Void> pause() {
+      return this.pauseGate;
+    }
+  }
+
+  static class RegisterHookMap<K, V> extends HashMap<K, V> {
+
+    private Runnable onPut;
+
+    @Override
+    public V put(K key, V value) {
+      V previous = super.put(key, value);
+      Runnable hook = this.onPut;
+      this.onPut = null;
+      if (hook != null) {
+        hook.run();
+      }
+      return previous;
+    }
+  }
+
   private static final ActorObjectSerializer ACTOR_STATE_SERIALIZER = new ActorObjectSerializer();
 
   private static Constructor<ActorRuntime> constructor;
@@ -158,6 +256,7 @@ public class ActorRuntimeTest {
   @BeforeEach
   public void setup() throws Exception {
     this.mockDaprClient = mock(DaprClient.class);
+    when(this.mockDaprClient.getRuntimeVersion()).thenReturn(Mono.just("1.19.0"));
     this.runtime = constructor.newInstance(null, this.mockDaprClient);
   }
 
@@ -415,6 +514,230 @@ public class ActorRuntimeTest {
     response = this.runtime.invoke(ACTOR_NAME, actorId, "count", null).block();
     count = ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
     Assertions.assertEquals(1, count);
+  }
+
+  @Test
+  public void invokeWithSameActivationIdReusesActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(2, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(1, created.size());
+  }
+
+  @Test
+  public void invokeWithNewActivationIdReplacesActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(2, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a2"));
+
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(0, created.get(1).deactivations);
+  }
+
+  @Test
+  public void activationIdIgnoredOnOlderRuntime() throws Exception {
+    when(this.mockDaprClient.getRuntimeVersion()).thenReturn(Mono.just("1.18.9"));
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(2, invokeIncrement(actorId, "a2"));
+    this.runtime.invokeReminder(
+        ACTIVATION_ACTOR_NAME, actorId, "myReminder", createReminderParams("hello"), "a3").block();
+    this.runtime.invokeTimer(
+        ACTIVATION_ACTOR_NAME, actorId, "myTimer", createTimerParams("increment", "x"), "a4").block();
+
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(0, created.get(0).deactivations);
+    verify(this.mockDaprClient, times(1)).getRuntimeVersion();
+  }
+
+  @Test
+  public void activationIdIgnoredWhenVersionLookupFailsThenRetried() throws Exception {
+    when(this.mockDaprClient.getRuntimeVersion())
+        .thenReturn(Mono.error(new RuntimeException("unavailable")), Mono.just("1.19.0"));
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a2"));
+    Assertions.assertEquals(2, invokeIncrement(actorId, "a2"));
+
+    Assertions.assertEquals(2, created.size());
+    verify(this.mockDaprClient, times(2)).getRuntimeVersion();
+  }
+
+  @Test
+  public void invokeWithoutActivationIdKeepsActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    Assertions.assertEquals(2, invokeIncrement(actorId, null));
+    Assertions.assertEquals(3, invokeIncrement(actorId, ""));
+    byte[] response = this.runtime.invoke(ACTIVATION_ACTOR_NAME, actorId, "increment", null).block();
+    Assertions.assertEquals(4, (int) ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class));
+
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(0, created.get(0).deactivations);
+  }
+
+  @Test
+  public void invokeWithActivationIdAfterLegacyActivationReplacesActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    this.runtime.invoke(ACTIVATION_ACTOR_NAME, actorId, "increment", null).block();
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+  }
+
+  @Test
+  public void invokeReminderWithNewActivationIdReplacesActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    this.runtime.invokeReminder(
+        ACTIVATION_ACTOR_NAME, actorId, "myReminder", createReminderParams("hello"), "a1").block();
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(1, created.get(0).reminders);
+
+    this.runtime.invokeReminder(
+        ACTIVATION_ACTOR_NAME, actorId, "myReminder", createReminderParams("hello"), "a2").block();
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(1, created.get(1).reminders);
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a2"));
+  }
+
+  @Test
+  public void invokeReminderWithoutActivationIdKeepsActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    invokeIncrement(actorId, "a1");
+    this.runtime.invokeReminder(
+        ACTIVATION_ACTOR_NAME, actorId, "myReminder", createReminderParams("hello"), null).block();
+    this.runtime.invokeReminder(
+        ACTIVATION_ACTOR_NAME, actorId, "myReminder", createReminderParams("hello"), "").block();
+
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(2, created.get(0).reminders);
+  }
+
+  @Test
+  public void invokeTimerWithNewActivationIdReplacesActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+    this.runtime.invokeTimer(
+        ACTIVATION_ACTOR_NAME, actorId, "myTimer", createTimerParams("increment", "x"), "a1").block();
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(2, created.get(0).calls);
+
+    this.runtime.invokeTimer(
+        ACTIVATION_ACTOR_NAME, actorId, "myTimer", createTimerParams("increment", "x"), "a2").block();
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+    Assertions.assertEquals(1, created.get(1).calls);
+  }
+
+  @Test
+  public void invokeTimerWithoutActivationIdKeepsActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    invokeIncrement(actorId, "a1");
+    this.runtime.invokeTimer(
+        ACTIVATION_ACTOR_NAME, actorId, "myTimer", createTimerParams("increment", "x"), null).block();
+    this.runtime.invokeTimer(
+        ACTIVATION_ACTOR_NAME, actorId, "myTimer", createTimerParams("increment", "x"), "").block();
+
+    Assertions.assertEquals(1, created.size());
+    Assertions.assertEquals(3, created.get(0).calls);
+  }
+
+  @Test
+  public void deactivateThenInvokeWithSameActivationIdCreatesActor() throws Exception {
+    List<MyActivationActorImpl> created = registerActivationActor();
+    String actorId = UUID.randomUUID().toString();
+
+    invokeIncrement(actorId, "a1");
+    this.runtime.deactivate(ACTIVATION_ACTOR_NAME, actorId).block();
+    Assertions.assertEquals(1, invokeIncrement(actorId, "a1"));
+
+    Assertions.assertEquals(2, created.size());
+    Assertions.assertEquals(1, created.get(0).deactivations);
+  }
+
+  @Test
+  public void callRunsOnTheActorItsActivationSettledOn() throws Exception {
+    List<ActorStateOperation> saved = new ArrayList<>();
+    when(this.mockDaprClient.getState(any(), any(), any())).thenReturn(Mono.empty());
+    when(this.mockDaprClient.saveStateTransactionally(any(), any(), any())).thenAnswer(invocation -> {
+      saved.addAll(invocation.getArgument(2));
+      return Mono.empty();
+    });
+
+    CompletableFuture<Void> holdGate = new CompletableFuture<>();
+    CompletableFuture<Void> pauseGate = new CompletableFuture<>();
+    this.runtime.registerActor(MyGatedActorImpl.class,
+        (context, id) -> new MyGatedActorImpl(context, id, Mono.fromFuture(holdGate), Mono.fromFuture(pauseGate)));
+
+    RegisterHookMap<Object, Object> activeActors = hookActiveActors(GATED_ACTOR_NAME);
+    String actorId = UUID.randomUUID().toString();
+    byte[] value = new DefaultObjectSerializer().serialize("fresh");
+    List<CompletableFuture<byte[]>> live = new ArrayList<>();
+    activeActors.onPut = () -> live.add(
+        this.runtime.invoke(GATED_ACTOR_NAME, actorId, "hold", value, "a2").toFuture());
+
+    CompletableFuture<byte[]> late = this.runtime.invoke(GATED_ACTOR_NAME, actorId, "pause", null, "a1").toFuture();
+    holdGate.complete(null);
+    pauseGate.complete(null);
+    live.get(0).get(5, TimeUnit.SECONDS);
+
+    Assertions.assertEquals(1, saved.size());
+    Assertions.assertEquals("value", saved.get(0).getKey());
+    Assertions.assertEquals("\"fresh\"", saved.get(0).getValue());
+    ExecutionException e = assertThrows(ExecutionException.class, () -> late.get(5, TimeUnit.SECONDS));
+    Assertions.assertTrue(e.getCause() instanceof IllegalStateException, String.valueOf(e.getCause()));
+  }
+
+  private RegisterHookMap<Object, Object> hookActiveActors(String actorType) throws Exception {
+    Field managers = ActorRuntime.class.getDeclaredField("actorManagers");
+    managers.setAccessible(true);
+    Object manager = ((Map<?, ?>) managers.get(this.runtime)).get(actorType);
+    Field actors = ActorManager.class.getDeclaredField("activeActors");
+    actors.setAccessible(true);
+    RegisterHookMap<Object, Object> map = new RegisterHookMap<>();
+    actors.set(manager, map);
+    return map;
+  }
+
+  private List<MyActivationActorImpl> registerActivationActor() {
+    List<MyActivationActorImpl> created = new ArrayList<>();
+    this.runtime.registerActor(MyActivationActorImpl.class, (context, id) -> {
+      MyActivationActorImpl actor = new MyActivationActorImpl(context, id);
+      created.add(actor);
+      return actor;
+    });
+    return created;
+  }
+
+  private int invokeIncrement(String actorId, String activationId) throws IOException {
+    byte[] response = this.runtime.invoke(ACTIVATION_ACTOR_NAME, actorId, "increment", null, activationId).block();
+    return ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
   }
 
   private static byte[] createReminderParams(String data) throws IOException {
