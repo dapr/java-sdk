@@ -60,8 +60,9 @@ public final class WorkflowTaskRetryPolicy {
     if (backoffCoefficient == null) {
       throw new IllegalArgumentException("backoffCoefficient cannot be null.");
     }
-    if (backoffCoefficient < 1.0) {
-      throw new IllegalArgumentException("The value for backoffCoefficient must be greater or equal to 1.0.");
+    if (!Double.isFinite(backoffCoefficient) || backoffCoefficient < 1.0) {
+      throw new IllegalArgumentException(
+          "The value for backoffCoefficient must be a finite number greater or equal to 1.0.");
     }
 
     // Range-check the RAW arguments, before the null coercion below. Only null means "unset"; an
@@ -188,8 +189,9 @@ public final class WorkflowTaskRetryPolicy {
      * @return This builder
      */
     public Builder setBackoffCoefficient(double backoffCoefficient) {
-      if (backoffCoefficient < 1.0) {
-        throw new IllegalArgumentException("The value for backoffCoefficient must be greater or equal to 1.0.");
+      if (!Double.isFinite(backoffCoefficient) || backoffCoefficient < 1.0) {
+        throw new IllegalArgumentException(
+            "The value for backoffCoefficient must be a finite number greater or equal to 1.0.");
       }
 
       this.backoffCoefficient = backoffCoefficient;

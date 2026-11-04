@@ -90,6 +90,14 @@ public class WorkflowTaskRetryPolicyTest {
   }
 
   @Test
+  public void nonFiniteBackoffCoefficientIsRejected() {
+    assertThrows(IllegalArgumentException.class,
+        () -> new WorkflowTaskRetryPolicy(1, Duration.ofSeconds(1), Double.NaN, null, null));
+    assertThrows(IllegalArgumentException.class,
+        () -> new WorkflowTaskRetryPolicy(1, Duration.ofSeconds(1), Double.POSITIVE_INFINITY, null, null));
+  }
+
+  @Test
   public void maxRetryIntervalBelowFirstRetryIntervalIsRejected() {
     assertThrows(IllegalArgumentException.class,
         () -> new WorkflowTaskRetryPolicy(1, Duration.ofSeconds(10), 1.0, Duration.ofSeconds(9), null));

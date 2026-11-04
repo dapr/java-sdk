@@ -75,6 +75,15 @@ public class WorkflowTaskRetryPolicyBuilderTest {
   }
 
   @Test
+  public void shouldRejectANonFiniteBackoffCoefficient() {
+    WorkflowTaskRetryPolicy.Builder builder = WorkflowTaskRetryPolicy.newBuilder();
+
+    assertThrows(IllegalArgumentException.class, () -> builder.setBackoffCoefficient(Double.NaN));
+    assertThrows(IllegalArgumentException.class,
+        () -> builder.setBackoffCoefficient(Double.POSITIVE_INFINITY));
+  }
+
+  @Test
   public void shouldRejectAMaxIntervalShorterThanTheFirstOne() {
     WorkflowTaskRetryPolicy.Builder builder = WorkflowTaskRetryPolicy.newBuilder()
         .setFirstRetryInterval(FIRST_INTERVAL);
