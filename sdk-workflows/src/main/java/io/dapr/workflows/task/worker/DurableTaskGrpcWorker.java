@@ -362,6 +362,13 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
 
   private void submitTracked(Runnable runner) {
     synchronized (this.inFlightLock) {
+      // close() sets isNormalShutdown before it drains, so a work item that arrives after the
+      // drain started is dropped here instead of running against a channel about to close. It
+      // was never completed, so the sidecar redelivers it.
+      if (this.isNormalShutdown) {
+        logger.log(Level.INFO, "Worker is closing; dropped a work item for the sidecar to redeliver.");
+        return;
+      }
       this.inFlight++;
     }
     try {
