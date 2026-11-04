@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.springboot.examples.orchestrator;
 
-import io.dapr.durabletask.TaskCanceledException;
-import io.dapr.durabletask.TaskFailedException;
+import io.dapr.workflows.task.exception.TaskCanceledException;
+import io.dapr.workflows.task.exception.TaskFailedException;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;

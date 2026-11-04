@@ -13,8 +13,8 @@
 
 package io.dapr.springboot.examples.wfp.historypropagation;
 
-import io.dapr.durabletask.PropagatedHistory;
-import io.dapr.durabletask.WorkflowResult;
+import io.dapr.workflows.task.history.PropagatedHistory;
+import io.dapr.workflows.task.history.WorkflowResult;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import org.springframework.stereotype.Component;

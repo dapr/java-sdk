@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot.examples.eventworkflow;
 
-import io.dapr.durabletask.TaskCanceledException;
+import io.dapr.workflows.task.exception.TaskCanceledException;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import org.springframework.stereotype.Component;
