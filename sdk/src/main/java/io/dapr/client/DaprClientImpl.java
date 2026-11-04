@@ -131,8 +131,6 @@ import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoSink;
-import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
 
 import javax.annotation.Nonnull;
@@ -155,7 +153,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -184,11 +181,6 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final GrpcChannelFacade channel;
 
   /**
-   * The retry policy.
-   */
-  private final RetryPolicy retryPolicy;
-
-  /**
    * The async gRPC stub.
    */
   private final DaprGrpc.DaprStub asyncStub;
@@ -201,6 +193,8 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprHttp httpClient;
 
   private final DaprClientGrpcInterceptors grpcInterceptors;
+
+  private final DaprGrpcCalls grpcCalls;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -297,8 +291,8 @@ public class DaprClientImpl extends AbstractDaprClient {
     this.channel = channel;
     this.asyncStub = asyncStub;
     this.httpClient = httpClient;
-    this.retryPolicy = retryPolicy;
     this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken, timeoutPolicy);
+    this.grpcCalls = new DaprGrpcCalls(asyncStub, this.grpcInterceptors, retryPolicy);
     this.logger = LoggerFactory.getLogger(DaprClientImpl.class);
   }
 
@@ -416,8 +410,8 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Mono.deferContextual(
           context ->
-              this.<Empty>createMono(
-                  it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
+              grpcCalls.<Empty>createMono(
+                  it -> grpcCalls.intercept(context).publishEvent(envelopeBuilder.build(), it)
               )
       ).then();
     } catch (Exception ex) {
@@ -489,8 +483,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
       return Mono.deferContextual(
           context ->
-              this.<DaprPubsubProtos.BulkPublishResponse>createMono(
-                  it -> intercept(context, asyncStub).bulkPublishEvent(envelopeBuilder.build(), it)
+              grpcCalls.<DaprPubsubProtos.BulkPublishResponse>createMono(
+                  it -> grpcCalls.intercept(context).bulkPublishEvent(envelopeBuilder.build(), it)
               ).onErrorResume(throwable -> {
                 // Check if the error is UNIMPLEMENTED, and try the alpha API just in case
                 // The exception might be wrapped in DaprException, so check both
@@ -502,8 +496,8 @@ public class DaprClientImpl extends AbstractDaprClient {
                 if (cause instanceof io.grpc.StatusRuntimeException) {
                   io.grpc.StatusRuntimeException statusException = (io.grpc.StatusRuntimeException) cause;
                   if (statusException.getStatus().getCode() == io.grpc.Status.Code.UNIMPLEMENTED) {
-                    return this.<DaprPubsubProtos.BulkPublishResponse>createMono(
-                        it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
+                    return grpcCalls.<DaprPubsubProtos.BulkPublishResponse>createMono(
+                        it -> grpcCalls.intercept(context).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
                     );
                   }
                 }
@@ -803,9 +797,9 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       Metadata responseMetadata = new Metadata();
       return Mono.deferContextual(
-          context -> this.<DaprBindingsProtos.InvokeBindingResponse>createMono(
+          context -> grpcCalls.<DaprBindingsProtos.InvokeBindingResponse>createMono(
               responseMetadata,
-              it -> intercept(context, asyncStub, m -> responseMetadata.merge(m)).invokeBinding(envelope, it)
+              it -> grpcCalls.intercept(context, m -> responseMetadata.merge(m)).invokeBinding(envelope, it)
           )
       ).flatMap(
           it -> {
@@ -863,8 +857,8 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Mono.deferContextual(
           context ->
-              this.<DaprStateProtos.GetStateResponse>createMono(
-                  it -> intercept(context, asyncStub).getState(envelope, it)
+              grpcCalls.<DaprStateProtos.GetStateResponse>createMono(
+                  it -> grpcCalls.intercept(context).getState(envelope, it)
               )
       ).map(
           it -> {
@@ -911,7 +905,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprStateProtos.GetBulkStateRequest envelope = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<DaprStateProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
+          context -> grpcCalls.<DaprStateProtos.GetBulkStateResponse>createMono(it -> grpcCalls.intercept(context)
               .getBulkState(envelope, it)
           )
       ).map(
@@ -1005,7 +999,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprStateProtos.ExecuteStateTransactionRequest req = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub)
+          context -> grpcCalls.<Empty>createMono(it -> grpcCalls.intercept(context)
               .executeStateTransaction(req, it))
       ).then();
     } catch (Exception e) {
@@ -1032,7 +1026,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprStateProtos.SaveStateRequest req = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))
+          context -> grpcCalls.<Empty>createMono(it -> grpcCalls.intercept(context).saveState(req, it))
       ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -1116,7 +1110,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprStateProtos.DeleteStateRequest req = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))
+          context -> grpcCalls.<Empty>createMono(it -> grpcCalls.intercept(context).deleteState(req, it))
       ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -1152,8 +1146,8 @@ public class DaprClientImpl extends AbstractDaprClient {
     DaprSecretProtos.GetSecretRequest req = requestBuilder.build();
 
     return Mono.deferContextual(
-        context -> this.<DaprSecretProtos.GetSecretResponse>createMono(
-            it -> intercept(context, asyncStub).getSecret(req, it))
+        context -> grpcCalls.<DaprSecretProtos.GetSecretResponse>createMono(
+            it -> grpcCalls.intercept(context).getSecret(req, it))
     ).map(DaprSecretProtos.GetSecretResponse::getDataMap);
   }
 
@@ -1179,8 +1173,8 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Mono.deferContextual(
           context ->
-              this.<DaprSecretProtos.GetBulkSecretResponse>createMono(
-                  it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
+              grpcCalls.<DaprSecretProtos.GetBulkSecretResponse>createMono(
+                  it -> grpcCalls.intercept(context).getBulkSecret(envelope, it)
               )
       ).map(it -> {
         Map<String, DaprSecretProtos.SecretResponse> secretsMap = it.getDataMap();
@@ -1230,8 +1224,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprLockProtos.TryLockRequest tryLockRequest = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<DaprLockProtos.TryLockResponse>createMono(
-                      it -> intercept(context, asyncStub).tryLockAlpha1(tryLockRequest, it)
+          context -> grpcCalls.<DaprLockProtos.TryLockResponse>createMono(
+                      it -> grpcCalls.intercept(context).tryLockAlpha1(tryLockRequest, it)
               )
       ).flatMap(response -> {
         try {
@@ -1273,8 +1267,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprLockProtos.UnlockRequest unlockRequest = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<DaprLockProtos.UnlockResponse>createMono(
-                      it -> intercept(context, asyncStub).unlockAlpha1(unlockRequest, it)
+          context -> grpcCalls.<DaprLockProtos.UnlockResponse>createMono(
+                      it -> grpcCalls.intercept(context).unlockAlpha1(unlockRequest, it)
               )
       ).flatMap(response -> {
         try {
@@ -1322,8 +1316,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprStateProtos.QueryStateRequest envelope = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<DaprStateProtos.QueryStateResponse>createMono(
-              it -> intercept(context, asyncStub).queryStateAlpha1(envelope, it)
+          context -> grpcCalls.<DaprStateProtos.QueryStateResponse>createMono(
+              it -> grpcCalls.intercept(context).queryStateAlpha1(envelope, it)
           )
       ).map(
           it -> {
@@ -1394,8 +1388,8 @@ public class DaprClientImpl extends AbstractDaprClient {
   public Mono<Void> shutdown() {
     DaprProtos.ShutdownRequest shutdownRequest = DaprProtos.ShutdownRequest.newBuilder().build();
     return Mono.deferContextual(
-        context -> this.<Empty>createMono(
-            it -> intercept(context, asyncStub).shutdown(shutdownRequest, it))
+        context -> grpcCalls.<Empty>createMono(
+            it -> grpcCalls.intercept(context).shutdown(shutdownRequest, it))
     ).then();
   }
 
@@ -1431,8 +1425,8 @@ public class DaprClientImpl extends AbstractDaprClient {
                                                                     .GetConfigurationRequest envelope) {
     return Mono.deferContextual(
         context ->
-            this.<DaprConfigurationProtos.GetConfigurationResponse>createMono(
-                it -> intercept(context, asyncStub).getConfiguration(envelope, it)
+            grpcCalls.<DaprConfigurationProtos.GetConfigurationResponse>createMono(
+                it -> grpcCalls.intercept(context).getConfiguration(envelope, it)
             )
     ).map(
         it -> {
@@ -1473,8 +1467,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       DaprConfigurationProtos.SubscribeConfigurationRequest envelope = builder.build();
-      return this.<DaprConfigurationProtos.SubscribeConfigurationResponse>createFlux(
-          it -> intercept(null, asyncStub).subscribeConfiguration(envelope, it)
+      return grpcCalls.<DaprConfigurationProtos.SubscribeConfigurationResponse>createFlux(
+          it -> grpcCalls.intercept(null).subscribeConfiguration(envelope, it)
       ).map(
           it -> {
             Map<String, ConfigurationItem> configMap = new HashMap<>();
@@ -1513,8 +1507,8 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       DaprConfigurationProtos.UnsubscribeConfigurationRequest envelope = builder.build();
 
-      return this.<DaprConfigurationProtos.UnsubscribeConfigurationResponse>createMono(
-          it -> intercept(null, asyncStub).unsubscribeConfiguration(envelope, it)
+      return grpcCalls.<DaprConfigurationProtos.UnsubscribeConfigurationResponse>createMono(
+          it -> grpcCalls.intercept(null).unsubscribeConfiguration(envelope, it)
       ).map(
           it -> new UnsubscribeConfigurationResponse(it.getOk(), it.getMessage())
       );
@@ -1568,13 +1562,13 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       Mono<DaprJobsProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context ->
-              this.<DaprJobsProtos.ScheduleJobResponse>createMono(
-                  it -> intercept(context, asyncStub).scheduleJob(request, it)
+              grpcCalls.<DaprJobsProtos.ScheduleJobResponse>createMono(
+                  it -> grpcCalls.intercept(context).scheduleJob(request, it)
               ).onErrorResume(throwable -> {
                 // The stable ScheduleJob RPC is unavailable on pre-1.18 sidecars, fall back to Alpha1.
                 if (isUnimplemented(throwable)) {
-                  return this.<DaprJobsProtos.ScheduleJobResponse>createMono(
-                      it -> intercept(context, asyncStub).scheduleJobAlpha1(request, it));
+                  return grpcCalls.<DaprJobsProtos.ScheduleJobResponse>createMono(
+                      it -> grpcCalls.intercept(context).scheduleJobAlpha1(request, it));
                 }
                 return Mono.error(throwable);
               })
@@ -1599,13 +1593,13 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       Mono<DaprJobsProtos.GetJobResponse> getJobResponseMono =
           Mono.deferContextual(context ->
-              this.<DaprJobsProtos.GetJobResponse>createMono(
-                  it -> intercept(context, asyncStub).getJob(request, it)
+              grpcCalls.<DaprJobsProtos.GetJobResponse>createMono(
+                  it -> grpcCalls.intercept(context).getJob(request, it)
               ).onErrorResume(throwable -> {
                 // The stable GetJob RPC is unavailable on pre-1.18 sidecars, fall back to Alpha1.
                 if (isUnimplemented(throwable)) {
-                  return this.<DaprJobsProtos.GetJobResponse>createMono(
-                      it -> intercept(context, asyncStub).getJobAlpha1(request, it));
+                  return grpcCalls.<DaprJobsProtos.GetJobResponse>createMono(
+                      it -> grpcCalls.intercept(context).getJobAlpha1(request, it));
                 }
                 return Mono.error(throwable);
               })
@@ -1672,13 +1666,13 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       Mono<DaprJobsProtos.DeleteJobResponse> deleteJobResponseMono =
           Mono.deferContextual(context ->
-              this.<DaprJobsProtos.DeleteJobResponse>createMono(
-                  it -> intercept(context, asyncStub).deleteJob(request, it)
+              grpcCalls.<DaprJobsProtos.DeleteJobResponse>createMono(
+                  it -> grpcCalls.intercept(context).deleteJob(request, it)
               ).onErrorResume(throwable -> {
                 // The stable DeleteJob RPC is unavailable on pre-1.18 sidecars, fall back to Alpha1.
                 if (isUnimplemented(throwable)) {
-                  return this.<DaprJobsProtos.DeleteJobResponse>createMono(
-                      it -> intercept(context, asyncStub).deleteJobAlpha1(request, it));
+                  return grpcCalls.<DaprJobsProtos.DeleteJobResponse>createMono(
+                      it -> grpcCalls.intercept(context).deleteJobAlpha1(request, it));
                 }
                 return Mono.error(throwable);
               })
@@ -1749,93 +1743,12 @@ public class DaprClientImpl extends AbstractDaprClient {
         configurationItem.getMetadataMap());
   }
 
-  /**
-   * Populates GRPC client with interceptors for telemetry.
-   *
-   * @param context Reactor's context.
-   * @param client  GRPC client for Dapr.
-   * @return Client after adding interceptors.
-   */
-  private DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
-    return this.grpcInterceptors.intercept(client, context);
-  }
-
-  /**
-   * Populates GRPC client with interceptors for telemetry.
-   *
-   * @param context Reactor's context.
-   * @param client  GRPC client for Dapr.
-   * @param metadataConsumer Consumer of gRPC metadata.
-   * @return Client after adding interceptors.
-   */
-  private DaprGrpc.DaprStub intercept(
-      ContextView context, DaprGrpc.DaprStub client, Consumer<Metadata> metadataConsumer) {
-    return this.grpcInterceptors.intercept(client, context, metadataConsumer);
-  }
-
-  private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
-    return this.createMono(null, consumer);
-  }
-
-  private <T> Mono<T> createMono(Metadata metadata, Consumer<StreamObserver<T>> consumer) {
-    return retryPolicy.apply(
-        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(
-            createStreamObserver(sink, metadata))).run()));
-  }
-
-  private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
-    return this.createFlux(null, consumer);
-  }
-
-  private <T> Flux<T> createFlux(Metadata metadata, Consumer<StreamObserver<T>> consumer) {
-    return retryPolicy.apply(
-        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink, metadata))).run()));
-  }
-
-  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink, Metadata grpcMetadata) {
-    return new StreamObserver<T>() {
-      @Override
-      public void onNext(T value) {
-        sink.success(value);
-      }
-
-      @Override
-      public void onError(Throwable t) {
-        sink.error(DaprException.propagate(DaprHttpException.fromGrpcExecutionException(grpcMetadata, t)));
-      }
-
-      @Override
-      public void onCompleted() {
-        sink.success();
-      }
-    };
-  }
-
-  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink, final Metadata grpcMetadata) {
-    return new StreamObserver<T>() {
-      @Override
-      public void onNext(T value) {
-        sink.next(value);
-      }
-
-      @Override
-      public void onError(Throwable t) {
-        sink.error(DaprException.propagate(DaprHttpException.fromGrpcExecutionException(grpcMetadata, t)));
-      }
-
-      @Override
-      public void onCompleted() {
-        sink.complete();
-      }
-    };
-  }
-
   @Override
   public Mono<DaprMetadata> getMetadata() {
     DaprMetadataProtos.GetMetadataRequest metadataRequest = DaprMetadataProtos.GetMetadataRequest.newBuilder().build();
     return Mono.deferContextual(
-            context -> this.<DaprMetadataProtos.GetMetadataResponse>createMono(
-                it -> intercept(context, asyncStub).getMetadata(metadataRequest, it)))
+            context -> grpcCalls.<DaprMetadataProtos.GetMetadataResponse>createMono(
+                it -> grpcCalls.intercept(context).getMetadata(metadataRequest, it)))
         .map(
             it -> {
               try {
@@ -1882,8 +1795,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       Mono<DaprAiProtos.ConversationResponse> conversationResponseMono = Mono.deferContextual(
-          context -> this.createMono(
-              it -> intercept(context, asyncStub)
+          context -> grpcCalls.createMono(
+              it -> grpcCalls.intercept(context)
                   .converseAlpha1(protosConversationRequestBuilder.build(), it)
           )
       );
@@ -1937,8 +1850,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprAiProtos.ConversationRequestAlpha2 protoRequest = buildConversationRequestProto(conversationRequestAlpha2);
 
       Mono<DaprAiProtos.ConversationResponseAlpha2> conversationResponseMono = Mono.deferContextual(
-          context -> this.createMono(
-              it -> intercept(context, asyncStub).converseAlpha2(protoRequest, it)
+          context -> grpcCalls.createMono(
+              it -> grpcCalls.intercept(context).converseAlpha2(protoRequest, it)
           )
       );
 
@@ -2393,7 +2306,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
         // Get the request stream observer from gRPC
         final StreamObserver<DaprCryptoProtos.EncryptRequest> requestObserver =
-            intercept(null, asyncStub).encryptAlpha1(responseObserver);
+            grpcCalls.intercept(null).encryptAlpha1(responseObserver);
 
         // Subscribe to the plaintext stream and send chunks
         request.getPlainTextStream()
@@ -2484,7 +2397,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
         // Get the request stream observer from gRPC
         final StreamObserver<DaprCryptoProtos.DecryptRequest> requestObserver =
-            intercept(null, asyncStub).decryptAlpha1(responseObserver);
+            grpcCalls.intercept(null).decryptAlpha1(responseObserver);
 
         // Subscribe to the ciphertext stream and send chunks
         request.getCipherTextStream()
@@ -2533,8 +2446,8 @@ public class DaprClientImpl extends AbstractDaprClient {
               .build();
 
       return Mono.deferContextual(
-          context -> this.<DaprBinaryStoreProtos.DeleteBinaryFileResponseAlpha1>createMono(
-              it -> intercept(context, asyncStub).deleteBinaryFileAlpha1(request, it)
+          context -> grpcCalls.<DaprBinaryStoreProtos.DeleteBinaryFileResponseAlpha1>createMono(
+              it -> grpcCalls.intercept(context).deleteBinaryFileAlpha1(request, it)
           )
       ).then();
     } catch (Exception ex) {
@@ -2616,7 +2529,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         if (sink.isCancelled()) {
           return;
         }
-        intercept(context, asyncStub).getBinaryFileAlpha1(request, responseObserver);
+        grpcCalls.intercept(context).getBinaryFileAlpha1(request, responseObserver);
 
         // The call has started, so gRPC now accepts cancel and request calls.
         ClientCallStreamObserver<DaprBinaryStoreProtos.GetBinaryFileRequestAlpha1> stream = callStream.get();
@@ -2708,7 +2621,7 @@ public class DaprClientImpl extends AbstractDaprClient {
             };
 
         final StreamObserver<DaprBinaryStoreProtos.SetBinaryFileRequestAlpha1> requestObserver =
-            intercept(context, asyncStub).setBinaryFileAlpha1(responseObserver);
+            grpcCalls.intercept(context).setBinaryFileAlpha1(responseObserver);
 
         // The sidecar must receive the initial request within 5 seconds, so send it before any content.
         requestObserver.onNext(initialMessage);
