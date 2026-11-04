@@ -71,6 +71,11 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
   private final TaskHubSidecarServiceGrpc.TaskHubSidecarServiceBlockingStub sidecarClient;
   private final boolean isExecutorServiceManaged;
 
+  // Runners submitted to workerPool that have not finished yet. close() cannot shut down a
+  // caller-supplied pool, so it waits on this count instead before the channel goes away.
+  private final Object inFlightLock = new Object();
+  private int inFlight = 0;
+
   // Per-stream cache of each instance's committed history for the stateful-history optimization,
   // or null when disabled. Reset on every reconnect and swept for idle entries by the janitor.
   private final WorkflowHistoryCache historyCache;
@@ -148,6 +153,9 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
    * <p>Only the internally managed GRPC Channel and Executor services are closed. If
    * any of them are supplied,
    * it is the responsibility of the supplier to take care of them.</p>
+   *
+   * <p>A supplied executor is not shut down, but this method still waits up to 60 seconds for
+   * the orchestrations and activities this worker submitted to it to finish.</p>
    *
    */
   public void close() {
@@ -247,7 +255,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
                 this.historyCache.noteDispatch(
                     orchestratorRequest.getInstanceId(), workItem.getCompletionToken());
               }
-              this.workerPool.submit(
+              this.submitTracked(
                   new OrchestratorRunner(workItem, taskOrchestrationExecutor, sidecarClient, tracer,
                       historyCache, teardownStream));
             } else if (requestType == OrchestratorService.WorkItem.RequestCase.ACTIVITYREQUEST) {
@@ -259,7 +267,7 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
                       activityRequest.getWorkflowInstance().getInstanceId(),
                       Context.current()));
 
-              this.workerPool.submit(new ActivityRunner(workItem, taskActivityExecutor, sidecarClient, tracer));
+              this.submitTracked(new ActivityRunner(workItem, taskActivityExecutor, sidecarClient, tracer));
 
             } else if (requestType == OrchestratorService.WorkItem.RequestCase.HEALTHPING) {
               continue;
@@ -352,6 +360,54 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
     }
   }
 
+  private void submitTracked(Runnable runner) {
+    synchronized (this.inFlightLock) {
+      this.inFlight++;
+    }
+    try {
+      this.workerPool.submit(() -> {
+        try {
+          runner.run();
+        } finally {
+          this.finishTracked();
+        }
+      });
+    } catch (RuntimeException e) {
+      this.finishTracked();
+      throw e;
+    }
+  }
+
+  private void finishTracked() {
+    synchronized (this.inFlightLock) {
+      this.inFlight--;
+      if (this.inFlight == 0) {
+        this.inFlightLock.notifyAll();
+      }
+    }
+  }
+
+  private void awaitInFlight(Duration timeout) {
+    long deadline = System.nanoTime() + timeout.toNanos();
+    synchronized (this.inFlightLock) {
+      while (this.inFlight > 0) {
+        long remainingMillis = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime());
+        if (remainingMillis <= 0) {
+          logger.log(Level.WARNING,
+              "Closing with {0} orchestrations or activities still running on the supplied executor.",
+              this.inFlight);
+          return;
+        }
+        try {
+          this.inFlightLock.wait(remainingMillis);
+        } catch (InterruptedException ex) {
+          Thread.currentThread().interrupt();
+          return;
+        }
+      }
+    }
+  }
+
   private void shutDownWorkerPool() {
     if (this.isExecutorServiceManaged) {
       if (!this.isNormalShutdown) {
@@ -367,6 +423,8 @@ public final class DurableTaskGrpcWorker implements AutoCloseable {
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
+    } else {
+      this.awaitInFlight(Duration.ofSeconds(60));
     }
   }
 
