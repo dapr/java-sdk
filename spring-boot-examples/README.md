@@ -6,5 +6,6 @@ folder per Dapr API:
 - [PubSub](pubsub/README.md): a producer app publishing messages with Spring Messaging and a consumer app subscribing to them.
 - Workflows:
   - [Patterns](workflows/patterns/README.md): common Dapr Workflow patterns.
+  - [Event Workflow](workflows/event-workflow/README.md): workflows started and continued by Pub/Sub events.
   - [Multi App](workflows/multi-app/README.md): workflows that span multiple applications.
   - [Versioning](workflows/versioning/README.md): versioning workflows.
