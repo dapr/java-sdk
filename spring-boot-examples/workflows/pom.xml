@@ -18,6 +18,7 @@
   </properties>
 
   <modules>
+    <module>simple-workflow</module>
     <module>patterns</module>
     <module>multi-app</module>
     <module>versioning</module>
