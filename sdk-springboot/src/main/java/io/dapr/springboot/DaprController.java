@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.springboot;
 
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.client.Headers;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -82,14 +84,29 @@ public class DaprController {
    * @param id Actor Id.
    * @param method Actor method.
    * @param body Raw request body.
+   * @param activationId Actor activation id sent by Dapr, or null if absent.
    * @return Raw response body.
    */
   @PutMapping(path = "/actors/{type}/{id}/method/{method}")
   public Mono<byte[]> invokeActorMethod(@PathVariable("type") String type,
                                         @PathVariable("id") String id,
                                         @PathVariable("method") String method,
-                                        @RequestBody(required = false) byte[] body) {
-    return ActorRuntime.getInstance().invoke(type, id, method, body);
+                                        @RequestBody(required = false) byte[] body,
+                                        @RequestHeader(value = Headers.DAPR_ACTOR_ACTIVATION_ID, required = false)
+                                        String activationId) {
+    return ActorRuntime.getInstance().invoke(type, id, method, body, activationId);
+  }
+
+  /**
+   * Kept for source compatibility, not mapped to a route.
+   * @param type Actor type.
+   * @param id Actor Id.
+   * @param method Actor method.
+   * @param body Raw request body.
+   * @return Raw response body.
+   */
+  public Mono<byte[]> invokeActorMethod(String type, String id, String method, byte[] body) {
+    return invokeActorMethod(type, id, method, body, null);
   }
 
   /**
@@ -98,14 +115,29 @@ public class DaprController {
    * @param id Actor Id.
    * @param timer Actor timer's name.
    * @param body Raw request's body.
+   * @param activationId Actor activation id sent by Dapr, or null if absent.
    * @return Void.
    */
   @PutMapping(path = "/actors/{type}/{id}/method/timer/{timer}")
   public Mono<Void> invokeActorTimer(@PathVariable("type") String type,
                                      @PathVariable("id") String id,
                                      @PathVariable("timer") String timer,
-                                     @RequestBody byte[] body) {
-    return ActorRuntime.getInstance().invokeTimer(type, id, timer, body);
+                                     @RequestBody byte[] body,
+                                     @RequestHeader(value = Headers.DAPR_ACTOR_ACTIVATION_ID, required = false)
+                                     String activationId) {
+    return ActorRuntime.getInstance().invokeTimer(type, id, timer, body, activationId);
+  }
+
+  /**
+   * Kept for source compatibility, not mapped to a route.
+   * @param type Actor type.
+   * @param id Actor Id.
+   * @param timer Actor timer's name.
+   * @param body Raw request's body.
+   * @return Void.
+   */
+  public Mono<Void> invokeActorTimer(String type, String id, String timer, byte[] body) {
+    return invokeActorTimer(type, id, timer, body, null);
   }
 
   /**
@@ -114,13 +146,28 @@ public class DaprController {
    * @param id Actor Id.
    * @param reminder Actor reminder's name.
    * @param body Raw request's body.
+   * @param activationId Actor activation id sent by Dapr, or null if absent.
    * @return Void.
    */
   @PutMapping(path = "/actors/{type}/{id}/method/remind/{reminder}")
   public Mono<Void> invokeActorReminder(@PathVariable("type") String type,
                                         @PathVariable("id") String id,
                                         @PathVariable("reminder") String reminder,
-                                        @RequestBody(required = false) byte[] body) {
-    return ActorRuntime.getInstance().invokeReminder(type, id, reminder, body);
+                                        @RequestBody(required = false) byte[] body,
+                                        @RequestHeader(value = Headers.DAPR_ACTOR_ACTIVATION_ID, required = false)
+                                        String activationId) {
+    return ActorRuntime.getInstance().invokeReminder(type, id, reminder, body, activationId);
+  }
+
+  /**
+   * Kept for source compatibility, not mapped to a route.
+   * @param type Actor type.
+   * @param id Actor Id.
+   * @param reminder Actor reminder's name.
+   * @param body Raw request's body.
+   * @return Void.
+   */
+  public Mono<Void> invokeActorReminder(String type, String id, String reminder, byte[] body) {
+    return invokeActorReminder(type, id, reminder, body, null);
   }
 }

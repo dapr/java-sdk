@@ -19,6 +19,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.dapr.client.Headers;
 import io.dapr.v1.DaprActorsProtos.ActorEntityConfig;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsRequestAlpha1;
 import io.dapr.v1.DaprActorsProtos.SubscribeActorEventsRequestDeactivateResponseAlpha1;
@@ -38,6 +39,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Maps messages received on the actor event stream to {@link ActorRuntime} calls, and their results back to
@@ -148,7 +150,8 @@ final class ActorEventDispatcher {
 
     byte[] payload = request.getData().isEmpty() ? null : request.getData().toByteArray();
     String contentType = runtime.getObjectSerializer(request.getActorType()).getContentType();
-    return runtime.invoke(request.getActorType(), request.getActorId(), request.getMethod(), payload)
+    return runtime.invoke(request.getActorType(), request.getActorId(), request.getMethod(), payload,
+            activationId(request.getMetadataMap()))
         .map(ByteString::copyFrom)
         .defaultIfEmpty(ByteString.EMPTY)
         .map(data -> SubscribeActorEventsRequestAlpha1.newBuilder()
@@ -169,7 +172,8 @@ final class ActorEventDispatcher {
 
     return Mono.fromCallable(() -> buildCallbackBody(
             null, request.getDueTime(), request.getPeriod(), request.hasData() ? request.getData() : null))
-        .flatMap(body -> runtime.invokeReminder(request.getActorType(), request.getActorId(), request.getName(), body))
+        .flatMap(body -> runtime.invokeReminder(request.getActorType(), request.getActorId(), request.getName(), body,
+            activationId(request.getMetadataMap())))
         .then(Mono.fromSupplier(() -> SubscribeActorEventsRequestAlpha1.newBuilder()
             .setReminderResponse(SubscribeActorEventsRequestReminderResponseAlpha1.newBuilder().setId(id))
             .build()))
@@ -186,7 +190,8 @@ final class ActorEventDispatcher {
     return Mono.fromCallable(() -> buildCallbackBody(
             request.getCallback(), request.getDueTime(), request.getPeriod(),
             request.hasData() ? request.getData() : null))
-        .flatMap(body -> runtime.invokeTimer(request.getActorType(), request.getActorId(), request.getName(), body))
+        .flatMap(body -> runtime.invokeTimer(request.getActorType(), request.getActorId(), request.getName(), body,
+            activationId(request.getMetadataMap())))
         .then(Mono.fromSupplier(() -> SubscribeActorEventsRequestAlpha1.newBuilder()
             .setTimerResponse(SubscribeActorEventsRequestReminderResponseAlpha1.newBuilder().setId(id))
             .build()))
@@ -247,6 +252,15 @@ final class ActorEventDispatcher {
 
   private static boolean isRegistered(ActorRuntime runtime, String actorType) {
     return runtime.getConfig().getRegisteredActorTypes().contains(actorType);
+  }
+
+  private static String activationId(Map<String, String> metadata) {
+    for (Map.Entry<String, String> entry : metadata.entrySet()) {
+      if (Headers.DAPR_ACTOR_ACTIVATION_ID.equalsIgnoreCase(entry.getKey()) && !entry.getValue().isEmpty()) {
+        return entry.getValue();
+      }
+    }
+    return null;
   }
 
   private static SubscribeActorEventsRequestAlpha1 notRegistered(String id, String actorType) {

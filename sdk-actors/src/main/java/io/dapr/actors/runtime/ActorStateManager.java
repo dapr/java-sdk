@@ -50,6 +50,11 @@ public class ActorStateManager {
   private final Map<String, StateChangeMetadata> stateChangeTracker;
 
   /**
+   * Set once the Actor's instance is replaced, so it can't overwrite newer state.
+   */
+  private volatile boolean discarded;
+
+  /**
    * Instantiates a new state manager for the given Actor's instance.
    *
    * @param stateProvider State store provider.
@@ -254,6 +259,12 @@ public class ActorStateManager {
    */
   public Mono<Void> save() {
     return Mono.fromSupplier(() -> {
+      if (this.discarded) {
+        throw new IllegalStateException(
+            String.format("Actor %s of type %s was replaced by a newer activation, state not saved.",
+                this.actorId, this.actorTypeName));
+      }
+
       if (this.stateChangeTracker.isEmpty()) {
         return null;
       }
@@ -270,6 +281,13 @@ public class ActorStateManager {
       return changes.toArray(new ActorStateChange[0]);
     }).flatMap(changes -> this.stateProvider.apply(this.actorTypeName, this.actorId, changes))
         .then(Mono.fromRunnable(() -> this.flush()));
+  }
+
+  /**
+   * Refuses every later save.
+   */
+  void discard() {
+    this.discarded = true;
   }
 
   /**
