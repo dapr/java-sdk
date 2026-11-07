@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.BatchQueryVectorsRequestAlpha1;
+import io.dapr.client.domain.BatchQueryVectorsResultAlpha1;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
@@ -21,14 +23,24 @@ import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationRequestAlpha2;
 import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.ConversationResponseAlpha2;
+import io.dapr.client.domain.CreateVectorCollectionRequestAlpha1;
 import io.dapr.client.domain.DecryptRequestAlpha1;
+import io.dapr.client.domain.DeleteVectorsRequestAlpha1;
 import io.dapr.client.domain.EncryptRequestAlpha1;
+import io.dapr.client.domain.GetVectorCollectionResponseAlpha1;
+import io.dapr.client.domain.GetVectorsRequestAlpha1;
+import io.dapr.client.domain.IndexAck;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.QueryVectorsRequestAlpha1;
+import io.dapr.client.domain.QueryVectorsResponseAlpha1;
 import io.dapr.client.domain.SetBinaryFileRequestAlpha1;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
+import io.dapr.client.domain.UpsertVectorsRequestAlpha1;
+import io.dapr.client.domain.UpsertVectorsResponseAlpha1;
+import io.dapr.client.domain.VectorRecord;
 import io.dapr.client.domain.query.Query;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
@@ -512,4 +524,157 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @throws IllegalArgumentException if storeName, fileName, or content is missing.
    */
   Mono<Void> setBinaryFile(String storeName, String fileName, byte[] content, boolean overwrite);
+
+  /**
+   * Creates a collection in a vector store component.
+   *
+   * <p>If the collection exists, the Mono fails with an error from the component.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, collection name, dimensions, metric and metadata.
+   * @return An empty Mono that completes when the sidecar creates the collection.
+   * @throws IllegalArgumentException if the request, store name or collection name is missing, or the
+   *     dimensions are not positive.
+   */
+  Mono<Void> createVectorCollection(CreateVectorCollectionRequestAlpha1 request);
+
+  /**
+   * Gets a collection of a vector store component.
+   *
+   * <p>If the collection does not exist, the Mono fails with the NOT_FOUND error code.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName  Name of the vector store component.
+   * @param collection Name of the collection.
+   * @return A Mono with the collection's dimensions, metric, approximate record count and properties.
+   * @throws IllegalArgumentException if storeName or collection is null or blank.
+   */
+  Mono<GetVectorCollectionResponseAlpha1> getVectorCollection(String storeName, String collection);
+
+  /**
+   * Gets a collection of a vector store component, passing metadata to the component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName  Name of the vector store component.
+   * @param collection Name of the collection.
+   * @param metadata   Metadata passed to the component. Can be null.
+   * @return A Mono with the collection's dimensions, metric, approximate record count and properties.
+   * @throws IllegalArgumentException if storeName or collection is null or blank.
+   */
+  Mono<GetVectorCollectionResponseAlpha1> getVectorCollection(
+      String storeName, String collection, Map<String, String> metadata);
+
+  /**
+   * Lists the collections of a vector store component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the vector store component.
+   * @return A Mono with the collection names.
+   * @throws IllegalArgumentException if storeName is null or blank.
+   */
+  Mono<List<String>> listVectorCollections(String storeName);
+
+  /**
+   * Lists the collections of a vector store component, passing metadata to the component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the vector store component.
+   * @param metadata  Metadata passed to the component. Can be null.
+   * @return A Mono with the collection names.
+   * @throws IllegalArgumentException if storeName is null or blank.
+   */
+  Mono<List<String>> listVectorCollections(String storeName, Map<String, String> metadata);
+
+  /**
+   * Deletes a collection and all its records from a vector store component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName  Name of the vector store component.
+   * @param collection Name of the collection.
+   * @return An empty Mono that completes when the sidecar deletes the collection.
+   * @throws IllegalArgumentException if storeName or collection is null or blank.
+   */
+  Mono<Void> deleteVectorCollection(String storeName, String collection);
+
+  /**
+   * Deletes a collection and all its records from a vector store component, passing metadata to the component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName  Name of the vector store component.
+   * @param collection Name of the collection.
+   * @param metadata   Metadata passed to the component. Can be null.
+   * @return An empty Mono that completes when the sidecar deletes the collection.
+   * @throws IllegalArgumentException if storeName or collection is null or blank.
+   */
+  Mono<Void> deleteVectorCollection(String storeName, String collection, Map<String, String> metadata);
+
+  /**
+   * Inserts or replaces records in a vector collection, by record ID.
+   *
+   * <p>Without indexing options, the call returns once the store accepts the write, and the records may not be
+   * searchable yet. Records the store rejects are listed in the response; the call itself still succeeds.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, collection name, records, metadata and indexing options.
+   * @return A Mono with the acknowledgement and the records that failed.
+   * @throws IllegalArgumentException if the request, store name, collection name or records are missing, a record
+   *     has no ID or vector or has metadata of an unsupported type, or the indexing options are not valid.
+   */
+  Mono<UpsertVectorsResponseAlpha1> upsertVectors(UpsertVectorsRequestAlpha1 request);
+
+  /**
+   * Reads records from a vector collection by ID.
+   *
+   * <p>The records come back in request order. IDs that do not exist are left out.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, collection name, IDs, include-values flag and metadata.
+   * @return A Mono with the records that exist.
+   * @throws IllegalArgumentException if the request, store name, collection name or IDs are missing, or an ID is
+   *     blank.
+   */
+  Mono<List<VectorRecord>> getVectors(GetVectorsRequestAlpha1 request);
+
+  /**
+   * Deletes records from a vector collection by ID.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, collection name, IDs, metadata and indexing options.
+   * @return A Mono with the acknowledgement.
+   * @throws IllegalArgumentException if the request, store name, collection name or IDs are missing, an ID is
+   *     blank, or the indexing options are not valid.
+   */
+  Mono<IndexAck> deleteVectors(DeleteVectorsRequestAlpha1 request);
+
+  /**
+   * Finds the records in a vector collection that are closest to a vector or to a stored record.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, collection name, query and metadata.
+   * @return A Mono with the matches, in the order the store returned them, and the metric that scored them.
+   * @throws IllegalArgumentException if the request, store name, collection name or query is missing, or the query
+   *     is not valid.
+   */
+  Mono<QueryVectorsResponseAlpha1> queryVectors(QueryVectorsRequestAlpha1 request);
+
+  /**
+   * Runs several queries against one vector collection in one call.
+   *
+   * <p>Each query succeeds or fails on its own: the results come back in query order, each with its matches or
+   * its error. The Mono fails only if the whole call fails.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, collection name, queries and metadata.
+   * @return A Mono with one result per query, in query order.
+   * @throws IllegalArgumentException if the request, store name, collection name or queries are missing, or a
+   *     query is not valid.
+   */
+  Mono<List<BatchQueryVectorsResultAlpha1>> batchQueryVectors(BatchQueryVectorsRequestAlpha1 request);
 }
