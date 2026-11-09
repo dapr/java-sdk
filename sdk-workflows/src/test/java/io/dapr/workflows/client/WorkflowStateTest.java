@@ -13,10 +13,9 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
-import io.dapr.durabletask.FailureDetails;
-import io.dapr.durabletask.OrchestrationMetadata;
-import io.dapr.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.runtime.DefaultWorkflowState;
+import io.dapr.workflows.task.client.OrchestrationMetadata;
+import io.dapr.workflows.task.exception.WorkflowFailureDetails;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,7 +88,7 @@ public class WorkflowStateTest {
 
   @Test
   public void getFailureDetails() {
-    FailureDetails mockFailureDetails = mock(FailureDetails.class);
+    WorkflowFailureDetails mockFailureDetails = mock(WorkflowFailureDetails.class);
 
     when(mockFailureDetails.getErrorType()).thenReturn("errorType");
     when(mockFailureDetails.getErrorMessage()).thenReturn("errorMessage");
@@ -111,7 +110,7 @@ public class WorkflowStateTest {
   public void getRuntimeStatus() {
     WorkflowRuntimeStatus expected = WorkflowRuntimeStatus.RUNNING;
 
-    when(mockOrchestrationMetadata.getRuntimeStatus()).thenReturn(OrchestrationRuntimeStatus.RUNNING);
+    when(mockOrchestrationMetadata.getRuntimeStatus()).thenReturn(WorkflowRuntimeStatus.RUNNING);
 
     WorkflowRuntimeStatus result = workflowMetadata.getRuntimeStatus();
 

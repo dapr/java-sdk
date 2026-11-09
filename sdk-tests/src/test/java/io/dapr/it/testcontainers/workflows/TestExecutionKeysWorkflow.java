@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.workflows;
 
-import io.dapr.durabletask.Task;
+import io.dapr.workflows.task.Task;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;

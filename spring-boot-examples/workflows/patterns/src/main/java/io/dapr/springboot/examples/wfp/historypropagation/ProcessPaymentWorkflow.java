@@ -13,7 +13,7 @@
 
 package io.dapr.springboot.examples.wfp.historypropagation;
 
-import io.dapr.durabletask.HistoryPropagationScope;
+import io.dapr.workflows.task.history.HistoryPropagationScope;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;

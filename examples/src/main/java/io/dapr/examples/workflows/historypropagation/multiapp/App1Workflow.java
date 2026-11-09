@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.historypropagation.multiapp;
 
-import io.dapr.durabletask.HistoryPropagationScope;
+import io.dapr.workflows.task.history.HistoryPropagationScope;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;
