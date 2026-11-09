@@ -15,22 +15,14 @@ package io.dapr.client;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import com.google.protobuf.ListValue;
-import com.google.protobuf.NullValue;
-import com.google.protobuf.Struct;
-import com.google.protobuf.Value;
-import com.google.rpc.Status;
 import io.dapr.client.domain.BatchQueryVectorsRequestAlpha1;
 import io.dapr.client.domain.BatchQueryVectorsResultAlpha1;
 import io.dapr.client.domain.CreateVectorCollectionRequestAlpha1;
 import io.dapr.client.domain.DeleteVectorsRequestAlpha1;
 import io.dapr.client.domain.DistanceMetric;
-import io.dapr.client.domain.FailedItem;
 import io.dapr.client.domain.GetVectorCollectionResponseAlpha1;
 import io.dapr.client.domain.GetVectorsRequestAlpha1;
 import io.dapr.client.domain.IndexAck;
-import io.dapr.client.domain.IndexingOptions;
-import io.dapr.client.domain.IndexingWaitTimeoutAction;
 import io.dapr.client.domain.QueryVectorsRequestAlpha1;
 import io.dapr.client.domain.QueryVectorsResponseAlpha1;
 import io.dapr.client.domain.UpsertVectorsRequestAlpha1;
@@ -38,18 +30,13 @@ import io.dapr.client.domain.UpsertVectorsResponseAlpha1;
 import io.dapr.client.domain.VectorMatch;
 import io.dapr.client.domain.VectorQuery;
 import io.dapr.client.domain.VectorRecord;
-import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
-import io.dapr.v1.DaprSearchProtos;
 import io.dapr.v1.DaprVectorProtos;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Implements the vector building block (alpha) of {@link DaprPreviewClient} over gRPC.
@@ -64,7 +51,7 @@ final class DaprVectorClient {
 
   Mono<Void> createVectorCollection(CreateVectorCollectionRequestAlpha1 request) {
     try {
-      requireRequest(request);
+      SearchVectorHelper.requireRequest(request);
       validateCollection(request.getStoreName(), request.getCollection());
       if (request.getDimensions() <= 0) {
         throw new IllegalArgumentException("Dimensions must be greater than zero.");
@@ -76,7 +63,7 @@ final class DaprVectorClient {
               .setCollection(request.getCollection())
               .setDimensions(request.getDimensions())
               .setMetric(toProto(request.getMetric()));
-      putMetadata(builder::putAllMetadata, request.getMetadata());
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, request.getMetadata());
       DaprVectorProtos.CreateCollectionRequestAlpha1 protoRequest = builder.build();
 
       return Mono.deferContextual(
@@ -98,7 +85,7 @@ final class DaprVectorClient {
           DaprVectorProtos.GetCollectionRequestAlpha1.newBuilder()
               .setStoreName(storeName)
               .setCollection(collection);
-      putMetadata(builder::putAllMetadata, metadata);
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, metadata);
       DaprVectorProtos.GetCollectionRequestAlpha1 protoRequest = builder.build();
 
       return Mono.deferContextual(
@@ -118,11 +105,11 @@ final class DaprVectorClient {
 
   Mono<List<String>> listVectorCollections(String storeName, Map<String, String> metadata) {
     try {
-      validateStoreName(storeName);
+      SearchVectorHelper.validateStoreName(storeName);
 
       DaprVectorProtos.ListCollectionsRequestAlpha1.Builder builder =
           DaprVectorProtos.ListCollectionsRequestAlpha1.newBuilder().setStoreName(storeName);
-      putMetadata(builder::putAllMetadata, metadata);
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, metadata);
       DaprVectorProtos.ListCollectionsRequestAlpha1 protoRequest = builder.build();
 
       return Mono.deferContextual(
@@ -143,7 +130,7 @@ final class DaprVectorClient {
           DaprVectorProtos.DeleteCollectionRequestAlpha1.newBuilder()
               .setStoreName(storeName)
               .setCollection(collection);
-      putMetadata(builder::putAllMetadata, metadata);
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, metadata);
       DaprVectorProtos.DeleteCollectionRequestAlpha1 protoRequest = builder.build();
 
       return Mono.deferContextual(
@@ -158,7 +145,7 @@ final class DaprVectorClient {
 
   Mono<UpsertVectorsResponseAlpha1> upsertVectors(UpsertVectorsRequestAlpha1 request) {
     try {
-      requireRequest(request);
+      SearchVectorHelper.requireRequest(request);
       validateCollection(request.getStoreName(), request.getCollection());
       if (request.getRecords() == null) {
         throw new IllegalArgumentException("Records cannot be null.");
@@ -171,9 +158,9 @@ final class DaprVectorClient {
       for (VectorRecord record : request.getRecords()) {
         builder.addRecords(toProto(record));
       }
-      putMetadata(builder::putAllMetadata, request.getMetadata());
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, request.getMetadata());
       if (request.getOptions() != null) {
-        builder.setOptions(toProto(request.getOptions()));
+        builder.setOptions(SearchVectorHelper.toIndexingOptions(request.getOptions()));
       }
       DaprVectorProtos.UpsertVectorsRequestAlpha1 protoRequest = builder.build();
 
@@ -182,7 +169,8 @@ final class DaprVectorClient {
               it -> grpcCalls.intercept(context).upsertVectorsAlpha1(protoRequest, it)
           )
       ).map(response -> new UpsertVectorsResponseAlpha1(
-          fromProto(response.getAck()), fromProto(response.getFailedItemsList())));
+          SearchVectorHelper.toIndexAck(response.getAck()),
+          SearchVectorHelper.toFailedItems(response.getFailedItemsList())));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -190,9 +178,9 @@ final class DaprVectorClient {
 
   Mono<List<VectorRecord>> getVectors(GetVectorsRequestAlpha1 request) {
     try {
-      requireRequest(request);
+      SearchVectorHelper.requireRequest(request);
       validateCollection(request.getStoreName(), request.getCollection());
-      validateIds(request.getIds());
+      SearchVectorHelper.validateIds(request.getIds());
 
       DaprVectorProtos.GetVectorsRequestAlpha1.Builder builder =
           DaprVectorProtos.GetVectorsRequestAlpha1.newBuilder()
@@ -202,7 +190,7 @@ final class DaprVectorClient {
       if (request.getIncludeValues() != null) {
         builder.setIncludeValues(request.getIncludeValues());
       }
-      putMetadata(builder::putAllMetadata, request.getMetadata());
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, request.getMetadata());
       DaprVectorProtos.GetVectorsRequestAlpha1 protoRequest = builder.build();
 
       return Mono.deferContextual(
@@ -223,18 +211,18 @@ final class DaprVectorClient {
 
   Mono<IndexAck> deleteVectors(DeleteVectorsRequestAlpha1 request) {
     try {
-      requireRequest(request);
+      SearchVectorHelper.requireRequest(request);
       validateCollection(request.getStoreName(), request.getCollection());
-      validateIds(request.getIds());
+      SearchVectorHelper.validateIds(request.getIds());
 
       DaprVectorProtos.DeleteVectorsRequestAlpha1.Builder builder =
           DaprVectorProtos.DeleteVectorsRequestAlpha1.newBuilder()
               .setStoreName(request.getStoreName())
               .setCollection(request.getCollection())
               .addAllIds(request.getIds());
-      putMetadata(builder::putAllMetadata, request.getMetadata());
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, request.getMetadata());
       if (request.getOptions() != null) {
-        builder.setOptions(toProto(request.getOptions()));
+        builder.setOptions(SearchVectorHelper.toIndexingOptions(request.getOptions()));
       }
       DaprVectorProtos.DeleteVectorsRequestAlpha1 protoRequest = builder.build();
 
@@ -242,7 +230,7 @@ final class DaprVectorClient {
           context -> grpcCalls.<DaprVectorProtos.DeleteVectorsResponseAlpha1>createMono(
               it -> grpcCalls.intercept(context).deleteVectorsAlpha1(protoRequest, it)
           )
-      ).map(response -> fromProto(response.getAck()));
+      ).map(response -> SearchVectorHelper.toIndexAck(response.getAck()));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -250,7 +238,7 @@ final class DaprVectorClient {
 
   Mono<QueryVectorsResponseAlpha1> queryVectors(QueryVectorsRequestAlpha1 request) {
     try {
-      requireRequest(request);
+      SearchVectorHelper.requireRequest(request);
       validateCollection(request.getStoreName(), request.getCollection());
 
       DaprVectorProtos.QueryVectorsRequestAlpha1.Builder builder =
@@ -258,7 +246,7 @@ final class DaprVectorClient {
               .setStoreName(request.getStoreName())
               .setCollection(request.getCollection())
               .setQuery(toProto(request.getQuery()));
-      putMetadata(builder::putAllMetadata, request.getMetadata());
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, request.getMetadata());
       DaprVectorProtos.QueryVectorsRequestAlpha1 protoRequest = builder.build();
 
       return Mono.deferContextual(
@@ -273,7 +261,7 @@ final class DaprVectorClient {
 
   Mono<List<BatchQueryVectorsResultAlpha1>> batchQueryVectors(BatchQueryVectorsRequestAlpha1 request) {
     try {
-      requireRequest(request);
+      SearchVectorHelper.requireRequest(request);
       validateCollection(request.getStoreName(), request.getCollection());
       if (request.getQueries() == null) {
         throw new IllegalArgumentException("Queries cannot be null.");
@@ -286,7 +274,7 @@ final class DaprVectorClient {
       for (VectorQuery query : request.getQueries()) {
         builder.addQueries(toProto(query));
       }
-      putMetadata(builder::putAllMetadata, request.getMetadata());
+      SearchVectorHelper.putMetadata(builder::putAllMetadata, request.getMetadata());
       DaprVectorProtos.BatchQueryVectorsRequestAlpha1 protoRequest = builder.build();
 
       return Mono.deferContextual(
@@ -299,43 +287,10 @@ final class DaprVectorClient {
     }
   }
 
-  private static void requireRequest(Object request) {
-    if (request == null) {
-      throw new IllegalArgumentException("Request cannot be null.");
-    }
-  }
-
-  private static void validateStoreName(String storeName) {
-    if (isBlank(storeName)) {
-      throw new IllegalArgumentException("Store name cannot be null or empty.");
-    }
-  }
-
   private static void validateCollection(String storeName, String collection) {
-    validateStoreName(storeName);
-    if (isBlank(collection)) {
+    SearchVectorHelper.validateStoreName(storeName);
+    if (SearchVectorHelper.isBlank(collection)) {
       throw new IllegalArgumentException("Collection name cannot be null or empty.");
-    }
-  }
-
-  private static void validateIds(List<String> ids) {
-    if (ids == null) {
-      throw new IllegalArgumentException("IDs cannot be null.");
-    }
-    for (String id : ids) {
-      if (isBlank(id)) {
-        throw new IllegalArgumentException("IDs cannot contain a null or empty ID.");
-      }
-    }
-  }
-
-  private static boolean isBlank(String value) {
-    return value == null || value.trim().isEmpty();
-  }
-
-  private static void putMetadata(Consumer<Map<String, String>> target, Map<String, String> metadata) {
-    if (metadata != null) {
-      target.accept(metadata);
     }
   }
 
@@ -343,7 +298,7 @@ final class DaprVectorClient {
     if (record == null) {
       throw new IllegalArgumentException("Records cannot contain a null record.");
     }
-    if (isBlank(record.getId())) {
+    if (SearchVectorHelper.isBlank(record.getId())) {
       throw new IllegalArgumentException("Record ID cannot be null or empty.");
     }
     if (record.getValues() == null) {
@@ -357,7 +312,7 @@ final class DaprVectorClient {
       builder.setPayload(ByteString.copyFrom(record.getPayload()));
     }
     if (record.getMetadata() != null) {
-      builder.setMetadata(toStruct(record.getMetadata()));
+      builder.setMetadata(SearchVectorHelper.toStruct(record.getMetadata()));
     }
     return builder.build();
   }
@@ -382,7 +337,7 @@ final class DaprVectorClient {
       addValues(vector, query.getVector());
       builder.setVector(vector);
     } else {
-      if (isBlank(query.getById())) {
+      if (SearchVectorHelper.isBlank(query.getById())) {
         throw new IllegalArgumentException("The query record ID cannot be empty.");
       }
       builder.setById(query.getById());
@@ -391,7 +346,7 @@ final class DaprVectorClient {
       builder.setTopK(query.getTopK());
     }
     if (query.getFilter() != null) {
-      builder.setFilter(toStruct(query.getFilter()));
+      builder.setFilter(SearchVectorHelper.toStruct(query.getFilter()));
     }
     if (query.getIncludeValues() != null) {
       builder.setIncludeValues(query.getIncludeValues());
@@ -404,40 +359,6 @@ final class DaprVectorClient {
       builder.setScoreThreshold(query.getScoreThreshold());
     }
     return builder.build();
-  }
-
-  private static DaprSearchProtos.IndexingOptionsAlpha1 toProto(IndexingOptions options) {
-    if (!options.isWaitForCompletion()) {
-      return DaprSearchProtos.IndexingOptionsAlpha1.newBuilder()
-          .setMode(DaprSearchProtos.IndexingMode.INDEXING_MODE_RETURN_ON_ACCEPTANCE)
-          .build();
-    }
-
-    Duration waitTimeout = options.getWaitTimeout();
-    if (waitTimeout == null || waitTimeout.isZero() || waitTimeout.isNegative()) {
-      throw new IllegalArgumentException("Waiting for completion needs a positive wait timeout.");
-    }
-    if (options.getOnWaitTimeout() == null) {
-      throw new IllegalArgumentException("Waiting for completion needs an action for when the wait times out.");
-    }
-    return DaprSearchProtos.IndexingOptionsAlpha1.newBuilder()
-        .setMode(DaprSearchProtos.IndexingMode.INDEXING_MODE_WAIT_FOR_COMPLETION)
-        .setWaitTimeout(com.google.protobuf.Duration.newBuilder()
-            .setSeconds(waitTimeout.getSeconds())
-            .setNanos(waitTimeout.getNano()))
-        .setOnWaitTimeout(toProto(options.getOnWaitTimeout()))
-        .build();
-  }
-
-  private static DaprSearchProtos.IndexingWaitTimeoutAction toProto(IndexingWaitTimeoutAction action) {
-    switch (action) {
-      case CONTINUE_ASYNC:
-        return DaprSearchProtos.IndexingWaitTimeoutAction.INDEXING_WAIT_TIMEOUT_ACTION_CONTINUE_ASYNC;
-      case FAIL_REQUEST:
-        return DaprSearchProtos.IndexingWaitTimeoutAction.INDEXING_WAIT_TIMEOUT_ACTION_FAIL_REQUEST;
-      default:
-        throw new IllegalArgumentException("Unknown wait timeout action: " + action);
-    }
   }
 
   private static DaprVectorProtos.DistanceMetric toProto(DistanceMetric metric) {
@@ -465,27 +386,8 @@ final class DaprVectorClient {
       case DISTANCE_METRIC_EUCLIDEAN:
         return DistanceMetric.EUCLIDEAN;
       default:
-        throw invalidResponse("Vector store returned an invalid distance metric: " + metric + ".");
+        throw SearchVectorHelper.invalidResponse("Vector store returned an invalid distance metric: " + metric + ".");
     }
-  }
-
-  private static IndexAck fromProto(DaprSearchProtos.IndexAck ack) {
-    switch (ack) {
-      case INDEX_ACK_QUEUED:
-        return IndexAck.QUEUED;
-      case INDEX_ACK_COMPLETED:
-        return IndexAck.COMPLETED;
-      default:
-        throw invalidResponse("Vector store returned an invalid write acknowledgement: " + ack + ".");
-    }
-  }
-
-  private static List<FailedItem> fromProto(List<DaprSearchProtos.FailedItem> failedItems) {
-    List<FailedItem> items = new ArrayList<>();
-    for (DaprSearchProtos.FailedItem failedItem : failedItems) {
-      items.add(new FailedItem(failedItem.getId(), toDaprException(failedItem.getError())));
-    }
-    return items;
   }
 
   private static VectorRecord fromProto(DaprVectorProtos.VectorRecord record) {
@@ -507,7 +409,7 @@ final class DaprVectorClient {
     List<VectorMatch> matches = new ArrayList<>();
     for (DaprVectorProtos.VectorMatch match : response.getMatchesList()) {
       if (!match.hasRecord()) {
-        throw invalidResponse("Vector store returned a match without a record.");
+        throw SearchVectorHelper.invalidResponse("Vector store returned a match without a record.");
       }
       matches.add(new VectorMatch(fromProto(match.getRecord()), match.getScore()));
     }
@@ -518,7 +420,7 @@ final class DaprVectorClient {
       DaprVectorProtos.BatchQueryVectorsResponseAlpha1 response, int queryCount) {
     // Results are matched to queries by position, so a reply of the wrong shape is rejected.
     if (response.getResultsCount() != queryCount) {
-      throw invalidResponse(
+      throw SearchVectorHelper.invalidResponse(
           "Vector store returned " + response.getResultsCount() + " results for " + queryCount + " queries.");
     }
 
@@ -529,71 +431,19 @@ final class DaprVectorClient {
           results.add(BatchQueryVectorsResultAlpha1.ofResponse(fromProto(result.getResponse())));
           break;
         case ERROR:
-          results.add(BatchQueryVectorsResultAlpha1.ofError(toDaprException(result.getError())));
+          results.add(BatchQueryVectorsResultAlpha1.ofError(SearchVectorHelper.toDaprException(result.getError())));
           break;
         default:
-          throw invalidResponse("Vector store returned a batch result with neither a response nor an error.");
+          throw SearchVectorHelper.invalidResponse(
+              "Vector store returned a batch result with neither a response nor an error.");
       }
     }
     return List.copyOf(results);
-  }
-
-  private static DaprException toDaprException(Status status) {
-    io.grpc.Status.Code code = io.grpc.Status.fromCodeValue(status.getCode()).getCode();
-    if (code == io.grpc.Status.Code.OK) {
-      throw invalidResponse("Vector store returned an error with an OK status code.");
-    }
-    return new DaprException(code.toString(), status.getMessage(), new DaprErrorDetails(status), status.toByteArray());
-  }
-
-  private static DaprException invalidResponse(String message) {
-    return new DaprException(io.grpc.Status.Code.INTERNAL.toString(), message, (Throwable) null);
   }
 
   private static void addValues(DaprVectorProtos.VectorRecord.Builder builder, float[] values) {
     for (float value : values) {
       builder.addValues(value);
     }
-  }
-
-  // Unlike ProtobufValueHelper.toProtobufValue, this rejects unsupported types instead of sending their toString(),
-  // which a filter would silently fail to match.
-  private static Struct toStruct(Map<?, ?> map) {
-    Struct.Builder builder = Struct.newBuilder();
-    for (Map.Entry<?, ?> entry : map.entrySet()) {
-      if (!(entry.getKey() instanceof String)) {
-        throw new IllegalArgumentException("Filter and metadata keys must be strings.");
-      }
-      builder.putFields((String) entry.getKey(), toValue(entry.getValue()));
-    }
-    return builder.build();
-  }
-
-  private static Value toValue(Object value) {
-    Value.Builder builder = Value.newBuilder();
-    if (value == null) {
-      return builder.setNullValue(NullValue.NULL_VALUE).build();
-    }
-    if (value instanceof Boolean) {
-      return builder.setBoolValue((Boolean) value).build();
-    }
-    if (value instanceof Number) {
-      return builder.setNumberValue(((Number) value).doubleValue()).build();
-    }
-    if (value instanceof String) {
-      return builder.setStringValue((String) value).build();
-    }
-    if (value instanceof Collection) {
-      ListValue.Builder list = ListValue.newBuilder();
-      for (Object item : (Collection<?>) value) {
-        list.addValues(toValue(item));
-      }
-      return builder.setListValue(list).build();
-    }
-    if (value instanceof Map) {
-      return builder.setStructValue(toStruct((Map<?, ?>) value)).build();
-    }
-    throw new IllegalArgumentException("Filter and metadata values must be null, a Boolean, a Number, a String, "
-        + "a Collection or a Map, not " + value.getClass().getName() + ".");
   }
 }

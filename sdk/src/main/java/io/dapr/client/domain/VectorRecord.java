@@ -91,7 +91,8 @@ public class VectorRecord {
    * Sets structured attributes that queries can filter on.
    *
    * <p>Values can be null, a Boolean, a Number, a String, a Collection or a Map with string keys. Other types
-   * are rejected with an {@link IllegalArgumentException} when the record is sent.
+   * are rejected with an {@link IllegalArgumentException} when the record is sent, and so are numbers that a double
+   * cannot hold exactly, such as a long above 2^53.
    *
    * @param metadata the metadata
    * @return this record for method chaining
