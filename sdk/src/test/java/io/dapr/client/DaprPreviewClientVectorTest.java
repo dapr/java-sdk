@@ -540,6 +540,31 @@ public class DaprPreviewClientVectorTest {
   }
 
   @Test
+  @DisplayName("filters and metadata should reject NaN and infinite numbers")
+  public void nonFiniteStructNumbersTest() {
+    List<Number> numbers = List.of(
+        Double.NaN,
+        Double.POSITIVE_INFINITY,
+        Double.NEGATIVE_INFINITY,
+        Float.NaN,
+        Float.POSITIVE_INFINITY,
+        Float.NEGATIVE_INFINITY);
+    for (Number number : numbers) {
+      assertNotFinite(() -> previewClient.queryVectors(new QueryVectorsRequestAlpha1(STORE, COLLECTION,
+          VectorQuery.byId("a").setFilter(Map.of("price", Map.of("$lt", number))))));
+      assertNotFinite(() -> previewClient.upsertVectors(new UpsertVectorsRequestAlpha1(STORE, COLLECTION, List.of(
+          new VectorRecord("a", new float[] {1f}).setMetadata(Map.of("price", number))))));
+    }
+    verify(daprStub, never()).upsertVectorsAlpha1(any(), any());
+    verify(daprStub, never()).queryVectorsAlpha1(any(), any());
+  }
+
+  private static void assertNotFinite(Supplier<Mono<?>> call) {
+    IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> call.get().block(TIMEOUT));
+    assertTrue(error.getMessage().contains("must be finite"), error.getMessage());
+  }
+
+  @Test
   @DisplayName("upsertVectors should reject missing records, records without an ID or vector, and bad options")
   public void upsertVectorsInvalidArgumentsTest() {
     List<VectorRecord> records = List.of(new VectorRecord("a", new float[] {1f}));

@@ -127,6 +127,11 @@ public class DaprPreviewClientSearchTest {
     assertTrue(error.getMessage().contains("cannot be represented exactly"), error.getMessage());
   }
 
+  private static void assertNotFinite(Supplier<Mono<?>> call) {
+    IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> call.get().block(TIMEOUT));
+    assertTrue(error.getMessage().contains("must be finite"), error.getMessage());
+  }
+
   private static Value string(String value) {
     return Value.newBuilder().setStringValue(value).build();
   }
@@ -877,6 +882,25 @@ public class DaprPreviewClientSearchTest {
     for (Number number : numbers) {
       assertInexact(() -> previewClient.search(new SearchRequestAlpha1(STORE, INDEX,
           SearchQuery.matchAll().setFilter(Map.of("id", number)))));
+    }
+    verify(daprStub, never()).searchAlpha1(any(), any());
+  }
+
+  @Test
+  @DisplayName("search should reject NaN and infinite numbers")
+  public void searchNonFiniteNumbersTest() {
+    List<Number> numbers = List.of(
+        Double.NaN,
+        Double.POSITIVE_INFINITY,
+        Double.NEGATIVE_INFINITY,
+        Float.NaN,
+        Float.POSITIVE_INFINITY,
+        Float.NEGATIVE_INFINITY);
+    for (Number number : numbers) {
+      assertNotFinite(() -> previewClient.search(new SearchRequestAlpha1(STORE, INDEX,
+          SearchQuery.matchAll().setFilter(Map.of("year", Map.of("$lt", number))))));
+      assertNotFinite(() -> previewClient.search(new SearchRequestAlpha1(STORE, INDEX,
+          SearchQuery.byNative(Map.of("year", number)))));
     }
     verify(daprStub, never()).searchAlpha1(any(), any());
   }

@@ -181,15 +181,16 @@ final class SearchVectorHelper {
         + "a Collection or a Map, not " + value.getClass().getName() + ".");
   }
 
-  // A Struct keeps every number as a double. A number that would change on the way is rejected, because a filter
-  // holding it would match the wrong documents or records.
+  // A Struct keeps every number as a double. A number that would change on the way, NaN or an infinity is rejected,
+  // because a filter holding it would match the wrong documents or records.
   private static double toDouble(Number number) {
-    if (number instanceof Double) {
-      return number.doubleValue();
-    }
-    if (number instanceof Float) {
-      // Through its decimal form, so that 1.1f stays 1.1 rather than becoming 1.100000023841858.
-      return Double.parseDouble(number.toString());
+    if (number instanceof Double || number instanceof Float) {
+      // A float goes through its decimal form, so that 1.1f stays 1.1 rather than becoming 1.100000023841858.
+      double value = number instanceof Float ? Double.parseDouble(number.toString()) : number.doubleValue();
+      if (!Double.isFinite(value)) {
+        throw new IllegalArgumentException("Numbers must be finite, not " + number + ".");
+      }
+      return value;
     }
     double value = number.doubleValue();
     if (!Double.isFinite(value) || !holdsExactly(value, new BigDecimal(number.toString()))) {

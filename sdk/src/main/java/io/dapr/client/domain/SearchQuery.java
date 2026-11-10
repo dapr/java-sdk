@@ -65,8 +65,8 @@ public class SearchQuery {
    * Creates a query in the store's own format, passed to the store as is. Not every store supports this.
    *
    * <p>Values can be null, a Boolean, a Number, a String, a Collection or a Map with string keys. Other types
-   * are rejected with an {@link IllegalArgumentException} when the query is sent, and so are numbers that a double
-   * cannot hold exactly, such as the long 9007199254740993.
+   * are rejected with an {@link IllegalArgumentException} when the query is sent, and so are NaN,
+   * infinities and numbers that a double cannot hold exactly, such as the long 9007199254740993.
    *
    * @param query the native query. Must not be empty.
    * @return the query
@@ -115,8 +115,8 @@ public class SearchQuery {
    * Sets a filter on document content, written in the Dapr filter format.
    *
    * <p>Values can be null, a Boolean, a Number, a String, a Collection or a Map with string keys. Other types
-   * are rejected with an {@link IllegalArgumentException} when the query is sent, and so are numbers that a double
-   * cannot hold exactly, such as the long 9007199254740993.
+   * are rejected with an {@link IllegalArgumentException} when the query is sent, and so are NaN,
+   * infinities and numbers that a double cannot hold exactly, such as the long 9007199254740993.
    *
    * @param filter the filter
    * @return this query for method chaining
