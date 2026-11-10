@@ -122,6 +122,11 @@ public class DaprPreviewClientSearchTest {
     assertThrows(IllegalArgumentException.class, () -> call.get().block(TIMEOUT));
   }
 
+  private static void assertInexact(Supplier<Mono<?>> call) {
+    IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> call.get().block(TIMEOUT));
+    assertTrue(error.getMessage().contains("cannot be represented exactly"), error.getMessage());
+  }
+
   private static Value string(String value) {
     return Value.newBuilder().setStringValue(value).build();
   }
@@ -843,8 +848,11 @@ public class DaprPreviewClientSearchTest {
         "long", 1L << 53,
         "float", 1.1f,
         "double", 2.5d,
-        "decimal", new BigDecimal("1.1"),
-        "big", BigInteger.valueOf(1965)))).getQuery();
+        "decimal", new BigDecimal("1.10"),
+        "big", BigInteger.valueOf(1965),
+        "power", 1L << 60,
+        "min", Long.MIN_VALUE,
+        "bigPower", BigInteger.TWO.pow(70)))).getQuery();
 
     Map<String, Value> sent = query.getFilter().getFieldsMap();
     assertEquals(5d, sent.get("int").getNumberValue());
@@ -853,6 +861,9 @@ public class DaprPreviewClientSearchTest {
     assertEquals(2.5d, sent.get("double").getNumberValue());
     assertEquals(1.1d, sent.get("decimal").getNumberValue());
     assertEquals(1965d, sent.get("big").getNumberValue());
+    assertEquals(0x1p60, sent.get("power").getNumberValue());
+    assertEquals(-0x1p63, sent.get("min").getNumberValue());
+    assertEquals(0x1p70, sent.get("bigPower").getNumberValue());
   }
 
   @Test
@@ -864,7 +875,7 @@ public class DaprPreviewClientSearchTest {
         new BigDecimal("0.1000000000000000055"),
         BigInteger.TEN.pow(400));
     for (Number number : numbers) {
-      assertRejected(() -> previewClient.search(new SearchRequestAlpha1(STORE, INDEX,
+      assertInexact(() -> previewClient.search(new SearchRequestAlpha1(STORE, INDEX,
           SearchQuery.matchAll().setFilter(Map.of("id", number)))));
     }
     verify(daprStub, never()).searchAlpha1(any(), any());

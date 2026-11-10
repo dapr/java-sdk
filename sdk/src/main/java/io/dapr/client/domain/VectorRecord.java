@@ -92,7 +92,7 @@ public class VectorRecord {
    *
    * <p>Values can be null, a Boolean, a Number, a String, a Collection or a Map with string keys. Other types
    * are rejected with an {@link IllegalArgumentException} when the record is sent, and so are numbers that a double
-   * cannot hold exactly, such as a long above 2^53.
+   * cannot hold exactly, such as the long 9007199254740993.
    *
    * @param metadata the metadata
    * @return this record for method chaining

@@ -182,7 +182,7 @@ final class SearchVectorHelper {
   }
 
   // A Struct keeps every number as a double. A number that would change on the way is rejected, because a filter
-  // holding it would match the wrong documents.
+  // holding it would match the wrong documents or records.
   private static double toDouble(Number number) {
     if (number instanceof Double) {
       return number.doubleValue();
@@ -192,9 +192,14 @@ final class SearchVectorHelper {
       return Double.parseDouble(number.toString());
     }
     double value = number.doubleValue();
-    if (Double.isInfinite(value) || new BigDecimal(number.toString()).compareTo(BigDecimal.valueOf(value)) != 0) {
+    if (!Double.isFinite(value) || !holdsExactly(value, new BigDecimal(number.toString()))) {
       throw new IllegalArgumentException("The number " + number + " cannot be represented exactly as a double.");
     }
     return value;
+  }
+
+  // 2^60 only equals the double's binary value, and BigDecimal("0.1") only equals its decimal form.
+  private static boolean holdsExactly(double value, BigDecimal number) {
+    return number.compareTo(new BigDecimal(value)) == 0 || number.compareTo(BigDecimal.valueOf(value)) == 0;
   }
 }
