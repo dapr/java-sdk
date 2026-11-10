@@ -31,9 +31,39 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProtobufValueHelperTest {
+
+  @Test
+  public void testFromProtobufValue_Scalars() {
+    assertNull(ProtobufValueHelper.fromProtobufValue(Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build()));
+    assertNull(ProtobufValueHelper.fromProtobufValue(Value.getDefaultInstance()));
+    assertEquals(true, ProtobufValueHelper.fromProtobufValue(Value.newBuilder().setBoolValue(true).build()));
+    assertEquals(42.5, ProtobufValueHelper.fromProtobufValue(Value.newBuilder().setNumberValue(42.5).build()));
+    assertEquals("text", ProtobufValueHelper.fromProtobufValue(Value.newBuilder().setStringValue("text").build()));
+  }
+
+  @Test
+  public void testFromProtobufStruct_RoundTrip() throws IOException {
+    Map<String, Object> nested = new LinkedHashMap<>();
+    nested.put("flag", false);
+    nested.put("nothing", null);
+    Map<String, Object> original = new LinkedHashMap<>();
+    original.put("name", "dune");
+    original.put("year", 1965);
+    original.put("tags", Arrays.asList("classic", 3, nested));
+    original.put("details", nested);
+
+    Struct struct = ProtobufValueHelper.toProtobufValue(original).getStructValue();
+    Map<String, Object> result = ProtobufValueHelper.fromProtobufStruct(struct);
+
+    assertEquals("dune", result.get("name"));
+    assertEquals(1965.0, result.get("year"));
+    assertEquals(Arrays.asList("classic", 3.0, nested), result.get("tags"));
+    assertEquals(nested, result.get("details"));
+  }
 
   @Test
   public void testToProtobufValue_Null() throws IOException {
