@@ -23,7 +23,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.lifecycle.Startable;
-import org.testcontainers.utility.DockerImageName;
 import reactor.util.retry.Retry;
 
 import java.io.IOException;
@@ -35,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static io.dapr.it.testcontainers.ContainerConstants.JDK_17_TEMURIN_JAMMY;
 
 /** Owns one application, its sidecar, control plane and private network. */
 public final class DaprTestEnvironment implements Startable {
@@ -67,8 +68,7 @@ public final class DaprTestEnvironment implements Startable {
     scheduler = new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG)
         .withNetwork(network).withNetworkAliases("scheduler").withLabels(labels)
         .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(2)));
-    app = new GenericContainer<>(DockerImageName.parse(javaImage(
-        Runtime.version().feature(), System.getProperty("dapr.it.java.image"))))
+    app = new GenericContainer<>(JDK_17_TEMURIN_JAMMY)
         .withNetwork(network).withNetworkAliases("app").withLabels(labels)
         .withExposedPorts(APP_PORT)
         .waitingFor(Wait.forHttp("/health").forPort(APP_PORT).forStatusCode(200)
@@ -96,12 +96,7 @@ public final class DaprTestEnvironment implements Startable {
     container.withLogConsumer(frame -> {
       String text = frame.getUtf8String();
       if ("app".equals(alias)) {
-        synchronized (appOutput) {
-          appOutput.append(text);
-          if (appOutput.length() > 32768) {
-            appOutput.delete(0, appOutput.length() - 32768);
-          }
-        }
+        appOutput.append(text);
       }
       if (!text.isEmpty()) {
         System.out.print("[" + identity + " " + alias + "] " + text);
@@ -109,27 +104,9 @@ public final class DaprTestEnvironment implements Startable {
     });
   }
 
-  private static String javaImage(int major, String override) {
-    if (override != null) {
-      if (override.isBlank()) {
-        throw new IllegalArgumentException("dapr.it.java.image must not be blank");
-      }
-      DockerImageName.parse(override).assertValid();
-      return override;
-    }
-    if (major != 17 && major != 21 && major != 25) {
-      throw new IllegalArgumentException("Unsupported test JVM " + major + "; set -Ddapr.it.java.image explicitly");
-    }
-    return "eclipse-temurin:" + major + "-jdk-jammy";
-  }
-
   private void configureApplication() {
     Path runtime = Path.of("target", "it-runtime").toAbsolutePath().normalize();
     Path lib = runtime.resolve("lib");
-    if (!Files.isDirectory(runtime.resolve("classes")) || !Files.isDirectory(runtime.resolve("test-classes"))
-        || !Files.isDirectory(lib)) {
-      throw new IllegalStateException("Missing staged IT runtime at " + runtime + "; run Maven verify");
-    }
     List<String> classpath = new ArrayList<>();
     classpath.add(APP_RUNTIME + "/test-classes");
     classpath.add(APP_RUNTIME + "/classes");
@@ -147,11 +124,6 @@ public final class DaprTestEnvironment implements Startable {
   @Override
   public void start() {
     try {
-      System.out.printf("[%s] test JVM major=%d%n", identity, Runtime.version().feature());
-      for (GenericContainer<?> container : new GenericContainer<?>[]{placement, scheduler, app, dapr}) {
-        System.out.printf("[%s] image=%s aliases=%s%n", identity, container.getDockerImageName(),
-            container.getNetworkAliases());
-      }
       resources.start(placement);
       System.out.printf("[%s] placement id=%s%n", identity, placement.getContainerId());
       resources.start(scheduler);

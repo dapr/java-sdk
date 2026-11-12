@@ -61,10 +61,11 @@ class DaprTestEnvironmentIT {
 
   @Test
   void failedApplicationRollsBackAllOwnedResources() {
+    String missingMainClass = "io.dapr.it.testcontainers.support.MissingApplication";
     DaprTestEnvironment environment = new DaprTestEnvironment("foundation-failure-it",
-        FailingApplication.class.getName(), Duration.ofSeconds(5));
+        missingMainClass, Duration.ofSeconds(5));
     assertThrows(RuntimeException.class, environment::start);
-    assertTrue(environment.appOutput().contains("Intentional application startup failure"),
+    assertTrue(environment.appOutput().contains(missingMainClass),
         "expected the failing application's logs, got: " + environment.appOutput());
     environment.stop();
     assertClean(environment.identity());
