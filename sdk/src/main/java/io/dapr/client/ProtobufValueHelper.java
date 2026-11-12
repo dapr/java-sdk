@@ -20,11 +20,13 @@ import com.google.protobuf.Value;
 import io.dapr.serializer.DaprObjectSerializer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Helper class to convert Java objects to Google Protobuf Value types.
+ * Helper class to convert between Java objects and Google Protobuf Value types.
  */
 public class ProtobufValueHelper {
 
@@ -72,5 +74,46 @@ public class ProtobufValueHelper {
 
     // Fallback: convert to string
     return Value.newBuilder().setStringValue(obj.toString()).build();
+  }
+
+  /**
+   * Converts a Google Protobuf Value to a Java object: null, Boolean, Double, String, List or Map.
+   *
+   * @param value the Protobuf Value to convert
+   * @return the corresponding Java object
+   */
+  static Object fromProtobufValue(Value value) {
+    switch (value.getKindCase()) {
+      case BOOL_VALUE:
+        return value.getBoolValue();
+      case NUMBER_VALUE:
+        return value.getNumberValue();
+      case STRING_VALUE:
+        return value.getStringValue();
+      case LIST_VALUE:
+        List<Object> list = new ArrayList<>();
+        for (Value item : value.getListValue().getValuesList()) {
+          list.add(fromProtobufValue(item));
+        }
+        return list;
+      case STRUCT_VALUE:
+        return fromProtobufStruct(value.getStructValue());
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Converts a Google Protobuf Struct to a Java map.
+   *
+   * @param struct the Protobuf Struct to convert
+   * @return a map with the same fields, converted by {@link #fromProtobufValue(Value)}
+   */
+  static Map<String, Object> fromProtobufStruct(Struct struct) {
+    Map<String, Object> map = new LinkedHashMap<>();
+    for (Map.Entry<String, Value> field : struct.getFieldsMap().entrySet()) {
+      map.put(field.getKey(), fromProtobufValue(field.getValue()));
+    }
+    return map;
   }
 }

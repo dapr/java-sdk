@@ -20,6 +20,8 @@ import com.google.protobuf.Empty;
 import io.dapr.client.domain.ActorMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
+import io.dapr.client.domain.BatchQueryVectorsRequestAlpha1;
+import io.dapr.client.domain.BatchQueryVectorsResultAlpha1;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
@@ -32,10 +34,12 @@ import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationRequestAlpha2;
 import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.ConversationResponseAlpha2;
+import io.dapr.client.domain.CreateVectorCollectionRequestAlpha1;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DecryptRequestAlpha1;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.DeleteVectorsRequestAlpha1;
 import io.dapr.client.domain.DropFailurePolicy;
 import io.dapr.client.domain.EncryptRequestAlpha1;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -47,8 +51,11 @@ import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.GetVectorCollectionResponseAlpha1;
+import io.dapr.client.domain.GetVectorsRequestAlpha1;
 import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.IndexAck;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.JobSchedule;
@@ -56,6 +63,8 @@ import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.QueryVectorsRequestAlpha1;
+import io.dapr.client.domain.QueryVectorsResponseAlpha1;
 import io.dapr.client.domain.RuleMetadata;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.ScheduleJobRequest;
@@ -68,6 +77,9 @@ import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
+import io.dapr.client.domain.UpsertVectorsRequestAlpha1;
+import io.dapr.client.domain.UpsertVectorsResponseAlpha1;
+import io.dapr.client.domain.VectorRecord;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.exceptions.DaprHttpException;
@@ -176,6 +188,8 @@ public class DaprClientImpl extends AbstractDaprClient {
 
   private final DaprStateClient stateClient;
 
+  private final DaprVectorClient vectorClient;
+
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
@@ -275,6 +289,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     this.grpcCalls = new DaprGrpcCalls(asyncStub, this.grpcInterceptors, retryPolicy);
     this.conversationClient = new DaprConversationClient(this.grpcCalls, objectSerializer);
     this.stateClient = new DaprStateClient(this.grpcCalls, stateSerializer);
+    this.vectorClient = new DaprVectorClient(this.grpcCalls);
     this.logger = LoggerFactory.getLogger(DaprClientImpl.class);
   }
 
@@ -1949,5 +1964,102 @@ public class DaprClientImpl extends AbstractDaprClient {
       parts.add(ByteString.copyFrom(chunk, offset, length));
     }
     return parts;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> createVectorCollection(CreateVectorCollectionRequestAlpha1 request) {
+    return vectorClient.createVectorCollection(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<GetVectorCollectionResponseAlpha1> getVectorCollection(String storeName, String collection) {
+    return vectorClient.getVectorCollection(storeName, collection, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<GetVectorCollectionResponseAlpha1> getVectorCollection(
+      String storeName, String collection, Map<String, String> metadata) {
+    return vectorClient.getVectorCollection(storeName, collection, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<String>> listVectorCollections(String storeName) {
+    return vectorClient.listVectorCollections(storeName, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<String>> listVectorCollections(String storeName, Map<String, String> metadata) {
+    return vectorClient.listVectorCollections(storeName, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteVectorCollection(String storeName, String collection) {
+    return vectorClient.deleteVectorCollection(storeName, collection, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteVectorCollection(String storeName, String collection, Map<String, String> metadata) {
+    return vectorClient.deleteVectorCollection(storeName, collection, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UpsertVectorsResponseAlpha1> upsertVectors(UpsertVectorsRequestAlpha1 request) {
+    return vectorClient.upsertVectors(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<VectorRecord>> getVectors(GetVectorsRequestAlpha1 request) {
+    return vectorClient.getVectors(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<IndexAck> deleteVectors(DeleteVectorsRequestAlpha1 request) {
+    return vectorClient.deleteVectors(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<QueryVectorsResponseAlpha1> queryVectors(QueryVectorsRequestAlpha1 request) {
+    return vectorClient.queryVectors(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<BatchQueryVectorsResultAlpha1>> batchQueryVectors(BatchQueryVectorsRequestAlpha1 request) {
+    return vectorClient.batchQueryVectors(request);
   }
 }
