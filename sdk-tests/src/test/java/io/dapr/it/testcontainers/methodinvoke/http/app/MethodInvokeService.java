@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.methodinvoke.http;
+package io.dapr.it.testcontainers.methodinvoke.http.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
