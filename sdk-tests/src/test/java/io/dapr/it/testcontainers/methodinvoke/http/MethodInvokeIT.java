@@ -11,20 +11,25 @@
 limitations under the License.
 */
 
-package io.dapr.it.methodinvoke.http;
+package io.dapr.it.testcontainers.methodinvoke.http;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
-import io.dapr.it.AppRun;
-import io.dapr.it.MethodInvokeServiceProtos;
-import io.dapr.it.containers.BaseContainerIT;
-import io.dapr.testcontainers.DaprContainer;
-import org.junit.jupiter.api.BeforeAll;
+import io.dapr.it.testcontainers.methodinvoke.http.app.MethodInvokeService;
+import io.dapr.it.testcontainers.methodinvoke.http.model.Person;
+import io.dapr.it.testcontainers.support.DaprTestEnvironment;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -38,33 +43,27 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("deprecation")
-public class MethodInvokeIT extends BaseContainerIT {
+@Testcontainers
+@Tag("testcontainers")
+public class MethodInvokeIT {
 
     private static final String APP_NAME = "methodinvoke-http-it";
     private static final int NUM_MESSAGES = 10;
 
-    private static DaprContainer dapr;
-    private static AppRun app;
+    @Container
+    private static final DaprTestEnvironment ENVIRONMENT = new DaprTestEnvironment(APP_NAME, MethodInvokeService.class);
 
-    @BeforeAll
-    public static void init() throws Exception {
-        var pair = startAppAndAttach(
-            APP_NAME,
-            MethodInvokeService.class,
-            AppRun.AppProtocol.HTTP,
-            appPort -> {
-                DaprContainer d = daprBuilder(APP_NAME)
-                    .withAppPort(appPort)
-                    .withAppChannelAddress("host.testcontainers.internal");
-                return d;
-            });
-        dapr = pair.dapr();
-        app = pair.app();
+    @BeforeEach
+    public void reset() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(ENVIRONMENT.appEndpoint().resolve("/reset"))
+            .timeout(Duration.ofSeconds(10)).POST(HttpRequest.BodyPublishers.noBody()).build();
+        HttpResponse<Void> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
+        assertEquals(200, response.statusCode());
     }
 
     @Test
     public void testInvoke() throws Exception {
-        try (DaprClient client = newDaprClient(dapr)) {
+        try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
@@ -89,7 +88,7 @@ public class MethodInvokeIT extends BaseContainerIT {
 
     @Test
     public void testInvokeWithObjects() throws Exception {
-        try (DaprClient client = newDaprClient(dapr)) {
+        try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 Person person = new Person();
@@ -100,12 +99,14 @@ public class MethodInvokeIT extends BaseContainerIT {
                 System.out.println("Invoke method persons with parameter : " + person);
             }
 
-            List<Person> persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null, HttpExtension.GET, Person[].class).block());
+            List<Person> persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null,
+                HttpExtension.GET, Person[].class).block());
             assertEquals(10, persons.size());
 
             client.invokeMethod(APP_NAME, "persons/1", null, HttpExtension.DELETE).block();
 
-            persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null,
+                HttpExtension.GET, Person[].class).block());
             assertEquals(9, persons.size());
 
             Person person = new Person();
@@ -115,7 +116,8 @@ public class MethodInvokeIT extends BaseContainerIT {
 
             client.invokeMethod(APP_NAME, "persons/2", person, HttpExtension.PUT).block();
 
-            persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(client.invokeMethod(APP_NAME, "persons", null,
+                HttpExtension.GET, Person[].class).block());
             Person resultPerson = persons.get(1);
             assertEquals("John", resultPerson.getName());
             assertEquals("Smith", resultPerson.getLastName());
@@ -124,7 +126,7 @@ public class MethodInvokeIT extends BaseContainerIT {
 
     @Test
     public void testInvokeTimeout() throws Exception {
-        try (DaprClient client = newDaprClient(dapr)) {
+        try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
             long started = System.currentTimeMillis();
             String message = assertThrows(IllegalStateException.class, () -> {
@@ -141,9 +143,8 @@ public class MethodInvokeIT extends BaseContainerIT {
 
     @Test
     public void testInvokeException() throws Exception {
-        try (DaprClient client = newDaprClient(dapr)) {
+        try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
-            MethodInvokeServiceProtos.SleepRequest req = MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(APP_NAME, "sleep", -9, HttpExtension.POST).block());
 
@@ -157,7 +158,7 @@ public class MethodInvokeIT extends BaseContainerIT {
 
     @Test
     public void testInvokeQueryParamEncoding() throws Exception {
-        try (DaprClient client = newDaprClient(dapr)) {
+        try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
 
             String uri = "abc/pqr";
