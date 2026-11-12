@@ -43,6 +43,12 @@ class DaprTestEnvironmentIT {
       var attached = DockerClientFactory.instance().client().inspectNetworkCmd()
           .withNetworkId(network.getId()).exec().getContainers();
       assertEquals(4, attached.size(), "unexpected containers attached to the private network");
+      var mounts = DockerClientFactory.instance().client().inspectContainerCmd(environment.appContainerId())
+          .exec().getMounts();
+      var runtime = mounts.stream().filter(mount -> "/it-runtime".equals(mount.getDestination().getPath()))
+          .findFirst().orElseThrow(() -> new AssertionError("application runtime is not mounted"));
+      assertEquals(Boolean.FALSE, runtime.getRW(), "application runtime must be read-only");
+      assertTrue(runtime.getSource().replace('\\', '/').endsWith("/sdk-tests/target/it-runtime"));
       try (DaprClient client = environment.clientBuilder().build()) {
         client.invokeMethod("foundation-it", "health", null, HttpExtension.GET).block();
       }

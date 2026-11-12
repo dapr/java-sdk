@@ -14,10 +14,8 @@ package io.dapr.it.testcontainers.support;
 
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.config.Properties;
-import io.dapr.config.Property;
 
 import java.net.URI;
-import java.util.Map;
 
 /** Addresses for either the Docker network or the test JVM. */
 public final class Endpoints {
@@ -34,13 +32,11 @@ public final class Endpoints {
 
   /** Creates a client with explicit mapped endpoints. */
   public static DaprClientBuilder client(String host, int httpPort, int grpcPort) {
-    return new DaprClientBuilder().withPropertyOverrides(overrides(host, httpPort, grpcPort));
-  }
-
-  static Map<Property<?>, String> overrides(String host, int httpPort, int grpcPort) {
-    String grpc = http(host, grpcPort).getRawAuthority();
-    return Map.of(Properties.HTTP_ENDPOINT, http(host, httpPort).toString(), Properties.GRPC_ENDPOINT, grpc,
-        Properties.SIDECAR_IP, host, Properties.HTTP_PORT, Integer.toString(httpPort),
-        Properties.GRPC_PORT, Integer.toString(grpcPort));
+    return new DaprClientBuilder()
+        .withPropertyOverride(Properties.HTTP_ENDPOINT, http(host, httpPort).toString())
+        .withPropertyOverride(Properties.GRPC_ENDPOINT, http(host, grpcPort).getRawAuthority())
+        .withPropertyOverride(Properties.SIDECAR_IP, host)
+        .withPropertyOverride(Properties.HTTP_PORT, Integer.toString(httpPort))
+        .withPropertyOverride(Properties.GRPC_PORT, Integer.toString(grpcPort));
   }
 }

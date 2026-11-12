@@ -18,41 +18,46 @@ import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprContainerConstants;
 import io.dapr.testcontainers.DaprPlacementContainer;
 import io.dapr.testcontainers.DaprSchedulerContainer;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.lifecycle.Startable;
+import org.testcontainers.utility.DockerImageName;
 import reactor.util.retry.Retry;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /** Owns one application, its sidecar, control plane and private network. */
 public final class DaprTestEnvironment implements Startable {
   private static final int APP_PORT = 8080;
+  private static final String APP_RUNTIME = "/it-runtime";
   private final String identity;
+  private final String mainClass;
   private final Network network;
   private final OwnedResources resources;
   private final DaprPlacementContainer placement;
   private final DaprSchedulerContainer scheduler;
-  private final JavaApplicationContainer app;
+  private final GenericContainer<?> app;
   private final DaprContainer dapr;
   private final StringBuffer appOutput = new StringBuffer();
 
   /** Defines an isolated topology; no container is started during construction. */
   public DaprTestEnvironment(String appId, Class<?> mainClass) {
-    this(appId, mainClass.getName());
-  }
-
-  /** Defines an isolated topology using the named application entry point. */
-  public DaprTestEnvironment(String appId, String mainClass) {
-    this(appId, mainClass, Duration.ofMinutes(2));
+    this(appId, mainClass.getName(), Duration.ofMinutes(2));
   }
 
   DaprTestEnvironment(String appId, String mainClass, Duration appReadinessTimeout) {
     identity = appId + "-" + UUID.randomUUID();
+    this.mainClass = mainClass;
     Map<String, String> labels = Map.of("io.dapr.it.environment", identity);
     network = Network.builder().createNetworkCmdModifier(cmd -> cmd.withLabels(labels)).build();
     resources = new OwnedResources(network);
@@ -62,8 +67,12 @@ public final class DaprTestEnvironment implements Startable {
     scheduler = new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG)
         .withNetwork(network).withNetworkAliases("scheduler").withLabels(labels)
         .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(2)));
-    app = new JavaApplicationContainer(mainClass, APP_PORT, appReadinessTimeout)
+    app = new GenericContainer<>(DockerImageName.parse(javaImage(
+        Runtime.version().feature(), System.getProperty("dapr.it.java.image"))))
         .withNetwork(network).withNetworkAliases("app").withLabels(labels)
+        .withExposedPorts(APP_PORT)
+        .waitingFor(Wait.forHttp("/health").forPort(APP_PORT).forStatusCode(200)
+            .withStartupTimeout(appReadinessTimeout))
         .withEnv("DAPR_HTTP_ENDPOINT", Endpoints.http("dapr", 3500).toString())
         .withEnv("DAPR_GRPC_ENDPOINT", "dapr:50001")
         .withEnv("DAPR_SIDECAR_IP", "dapr")
@@ -100,6 +109,41 @@ public final class DaprTestEnvironment implements Startable {
     });
   }
 
+  private static String javaImage(int major, String override) {
+    if (override != null) {
+      if (override.isBlank()) {
+        throw new IllegalArgumentException("dapr.it.java.image must not be blank");
+      }
+      DockerImageName.parse(override).assertValid();
+      return override;
+    }
+    if (major != 17 && major != 21 && major != 25) {
+      throw new IllegalArgumentException("Unsupported test JVM " + major + "; set -Ddapr.it.java.image explicitly");
+    }
+    return "eclipse-temurin:" + major + "-jdk-jammy";
+  }
+
+  private void configureApplication() {
+    Path runtime = Path.of("target", "it-runtime").toAbsolutePath().normalize();
+    Path lib = runtime.resolve("lib");
+    if (!Files.isDirectory(runtime.resolve("classes")) || !Files.isDirectory(runtime.resolve("test-classes"))
+        || !Files.isDirectory(lib)) {
+      throw new IllegalStateException("Missing staged IT runtime at " + runtime + "; run Maven verify");
+    }
+    List<String> classpath = new ArrayList<>();
+    classpath.add(APP_RUNTIME + "/test-classes");
+    classpath.add(APP_RUNTIME + "/classes");
+    try (var files = Files.walk(lib)) {
+      classpath.addAll(files.filter(path -> path.toString().endsWith(".jar"))
+          .sorted().map(path -> APP_RUNTIME + "/lib/" + lib.relativize(path).toString().replace('\\', '/'))
+          .toList());
+    } catch (IOException e) {
+      throw new IllegalStateException("Cannot read staged IT dependencies", e);
+    }
+    app.withFileSystemBind(runtime.toString(), APP_RUNTIME, BindMode.READ_ONLY);
+    app.withCommand("java", "-cp", String.join(":", classpath), mainClass, Integer.toString(APP_PORT));
+  }
+
   @Override
   public void start() {
     try {
@@ -112,6 +156,7 @@ public final class DaprTestEnvironment implements Startable {
       System.out.printf("[%s] placement id=%s%n", identity, placement.getContainerId());
       resources.start(scheduler);
       System.out.printf("[%s] scheduler id=%s%n", identity, scheduler.getContainerId());
+      configureApplication();
       resources.start(app);
       System.out.printf("[%s] app id=%s endpoint=%s%n", identity, app.getContainerId(), appEndpoint());
       resources.start(dapr);
@@ -158,5 +203,9 @@ public final class DaprTestEnvironment implements Startable {
 
   String appOutput() {
     return appOutput.toString();
+  }
+
+  String appContainerId() {
+    return app.getContainerId();
   }
 }
