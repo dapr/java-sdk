@@ -47,6 +47,15 @@ final class DaprGrpcCalls {
   }
 
   /**
+   * Populates GRPC client with interceptors, without a Reactor context.
+   *
+   * @return Client after adding interceptors.
+   */
+  DaprGrpc.DaprStub intercept() {
+    return this.grpcInterceptors.intercept(this.asyncStub);
+  }
+
+  /**
    * Populates GRPC client with interceptors for telemetry.
    *
    * @param context Reactor's context.
