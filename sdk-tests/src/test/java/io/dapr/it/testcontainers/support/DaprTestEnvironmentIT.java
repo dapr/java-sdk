@@ -42,6 +42,7 @@ class DaprTestEnvironmentIT {
   @Test
   void startsExactlyFourChildrenAndStopsOnlyItsOwnResources() throws Exception {
     DaprTestEnvironment environment = new DaprTestEnvironment("foundation-it", MethodInvokeService.class);
+
     try {
       environment.start();
       assertEquals(4, containers(environment.identity()));
@@ -57,6 +58,7 @@ class DaprTestEnvironmentIT {
           .findFirst().orElseThrow(() -> new AssertionError("application runtime is not mounted"));
       assertEquals(Boolean.FALSE, runtime.getRW(), "application runtime must be read-only");
       assertTrue(runtime.getSource().replace('\\', '/').endsWith("/sdk-tests/target/it-runtime"));
+
       try (DaprClient client = environment.clientBuilder().build()) {
         client.invokeMethod("foundation-it", "health", null, HttpExtension.GET).block();
       }
@@ -64,6 +66,7 @@ class DaprTestEnvironmentIT {
       environment.stop();
       environment.stop();
     }
+
     assertClean(environment.identity());
   }
 
@@ -83,6 +86,7 @@ class DaprTestEnvironmentIT {
   void grpcCallbackAndRoutedInvocationAreReady() throws Exception {
     DaprTestEnvironment environment = new DaprTestEnvironment("foundation-grpc-it",
         io.dapr.it.testcontainers.methodinvoke.grpc.app.MethodInvokeService.class, DaprProtocol.GRPC);
+
     try {
       environment.start();
       assertEquals(4, containers(environment.identity()));
@@ -94,6 +98,7 @@ class DaprTestEnvironmentIT {
       assertTrue(environment.appOutput().contains("Artificial delay of 10 seconds"));
       assertThrows(IllegalStateException.class, environment::appEndpoint);
       ManagedChannel channel = ManagedChannelBuilder.forTarget(environment.appAddress()).usePlaintext().build();
+
       try {
         AppCallbackHealthCheckGrpc.newBlockingStub(channel).withDeadlineAfter(5, TimeUnit.SECONDS)
             .healthCheck(Empty.getDefaultInstance());
@@ -101,6 +106,7 @@ class DaprTestEnvironmentIT {
         channel.shutdownNow();
         assertTrue(channel.awaitTermination(5, TimeUnit.SECONDS));
       }
+
       try (DaprClient client = environment.clientBuilder().build()) {
         var stub = client.newGrpcStub("foundation-grpc-it", MethodInvokeServiceGrpc::newBlockingStub);
         assertTrue(stub.getMessages(MethodInvokeServiceProtos.GetMessagesRequest.getDefaultInstance())
@@ -110,6 +116,7 @@ class DaprTestEnvironmentIT {
       environment.stop();
       environment.stop();
     }
+
     assertClean(environment.identity());
   }
 

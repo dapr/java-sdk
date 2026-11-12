@@ -35,6 +35,7 @@ final class GrpcCallbackWaitStrategy extends AbstractWaitStrategy {
   protected void waitUntilReady() {
     String host = waitStrategyTarget.getHost();
     int mappedPort = waitStrategyTarget.getMappedPort(port);
+
     try {
       awaitCallback(ManagedChannelBuilder.forAddress(host, mappedPort).usePlaintext().build(), startupTimeout);
     } catch (RuntimeException e) {
@@ -49,15 +50,19 @@ final class GrpcCallbackWaitStrategy extends AbstractWaitStrategy {
   static void awaitCallback(ManagedChannel channel, Duration timeout) {
     long end = System.nanoTime() + timeout.toNanos();
     StatusRuntimeException last = null;
+
     try {
       while (System.nanoTime() < end) {
         if (Thread.currentThread().isInterrupted()) {
           throw new InterruptedException("gRPC callback readiness interrupted");
         }
+
         long remaining = end - System.nanoTime();
+
         if (remaining <= 0) {
           break;
         }
+
         try {
           AppCallbackHealthCheckGrpc.newBlockingStub(channel)
               .withDeadlineAfter(Math.min(remaining, TimeUnit.MILLISECONDS.toNanos(500)), TimeUnit.NANOSECONDS)
@@ -67,17 +72,22 @@ final class GrpcCallbackWaitStrategy extends AbstractWaitStrategy {
           if (Thread.currentThread().isInterrupted()) {
             throw new InterruptedException("gRPC callback readiness interrupted");
           }
+
           if (e.getStatus().getCode() != Status.Code.UNAVAILABLE
               && e.getStatus().getCode() != Status.Code.DEADLINE_EXCEEDED) {
             throw e;
           }
+
           last = e;
         }
+
         remaining = end - System.nanoTime();
+
         if (remaining > 0) {
           TimeUnit.NANOSECONDS.sleep(Math.min(remaining, TimeUnit.MILLISECONDS.toNanos(100)));
         }
       }
+
       throw new IllegalStateException("Timed out waiting for gRPC callback health after " + timeout, last);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -85,6 +95,7 @@ final class GrpcCallbackWaitStrategy extends AbstractWaitStrategy {
     } finally {
       channel.shutdownNow();
       boolean interrupted = Thread.interrupted();
+
       try {
         if (!channel.awaitTermination(5, TimeUnit.SECONDS)) {
           throw new IllegalStateException("gRPC callback probe channel did not terminate");

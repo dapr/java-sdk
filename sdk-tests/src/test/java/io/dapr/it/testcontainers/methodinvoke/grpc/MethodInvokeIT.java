@@ -61,12 +61,15 @@ public class MethodInvokeIT {
     @BeforeEach
     public void reset() throws InterruptedException {
         ManagedChannel channel = ManagedChannelBuilder.forTarget(ENVIRONMENT.appAddress()).usePlaintext().build();
+
         try {
             var stub = MethodInvokeServiceGrpc.newBlockingStub(channel).withDeadlineAfter(10, TimeUnit.SECONDS);
             var request = GetMessagesRequest.getDefaultInstance();
+
             for (int id : stub.getMessages(request).getMessagesMap().keySet()) {
                 stub.deleteMessage(DeleteMessageRequest.newBuilder().setId(id).build());
             }
+
             assertTrue(stub.getMessages(request).getMessagesMap().isEmpty());
         } finally {
             channel.shutdownNow();

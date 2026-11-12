@@ -47,6 +47,7 @@ class GrpcCallbackWaitStrategyTest {
   void successfulHealthClosesProbeChannel() throws Exception {
     Server server = ServerBuilder.forPort(0).addService(new GrpcHealthCheckService()).build().start();
     ManagedChannel channel = channel(server);
+
     try {
       GrpcCallbackWaitStrategy.awaitCallback(channel, Duration.ofSeconds(5));
       assertTrue(channel.isTerminated());
@@ -71,6 +72,7 @@ class GrpcCallbackWaitStrategyTest {
           }
         }).build().start();
     ManagedChannel channel = channel(server);
+
     try {
       GrpcCallbackWaitStrategy.awaitCallback(channel, Duration.ofSeconds(5));
       assertTrue(attempts.get() >= 2);
@@ -84,6 +86,7 @@ class GrpcCallbackWaitStrategyTest {
   void missingCallbackFailsAndClosesProbeChannel() throws Exception {
     Server server = ServerBuilder.forPort(0).build().start();
     ManagedChannel channel = channel(server);
+
     try {
       assertThrows(StatusRuntimeException.class,
           () -> GrpcCallbackWaitStrategy.awaitCallback(channel, Duration.ofSeconds(5)));
@@ -101,6 +104,7 @@ class GrpcCallbackWaitStrategyTest {
           public void healthCheck(Empty request, StreamObserver<HealthCheckResponse> response) { }
         }).build().start();
     ManagedChannel channel = channel(server);
+
     try {
       long start = System.nanoTime();
       assertThrows(IllegalStateException.class,
@@ -115,6 +119,7 @@ class GrpcCallbackWaitStrategyTest {
   @Test
   void interruptionIsPreservedAndChannelIsClosed() {
     ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 1).usePlaintext().build();
+
     try {
       Thread.currentThread().interrupt();
       assertThrows(IllegalStateException.class,

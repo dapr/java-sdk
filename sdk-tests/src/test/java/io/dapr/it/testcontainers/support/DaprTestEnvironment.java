@@ -77,6 +77,7 @@ public final class DaprTestEnvironment implements Startable {
     if (protocol != DaprProtocol.HTTP && protocol != DaprProtocol.GRPC) {
       throw new IllegalArgumentException("Unsupported application protocol: " + protocol);
     }
+
     identity = appId + "-" + UUID.randomUUID();
     this.mainClass = mainClass;
     this.protocol = protocol;
@@ -118,9 +119,11 @@ public final class DaprTestEnvironment implements Startable {
   private void attachLogs(GenericContainer<?> container, String alias) {
     container.withLogConsumer(frame -> {
       String text = frame.getUtf8String();
+
       if ("app".equals(alias)) {
         appOutput.append(text);
       }
+
       if (!text.isEmpty()) {
         System.out.print("[" + identity + " " + alias + "] " + text);
       }
@@ -133,6 +136,7 @@ public final class DaprTestEnvironment implements Startable {
     List<String> classpath = new ArrayList<>();
     classpath.add(APP_RUNTIME + "/test-classes");
     classpath.add(APP_RUNTIME + "/classes");
+
     try (var files = Files.walk(lib)) {
       classpath.addAll(files.filter(path -> path.toString().endsWith(".jar"))
           .sorted().map(path -> APP_RUNTIME + "/lib/" + lib.relativize(path).toString().replace('\\', '/'))
@@ -140,6 +144,7 @@ public final class DaprTestEnvironment implements Startable {
     } catch (IOException e) {
       throw new IllegalStateException("Cannot read staged IT dependencies", e);
     }
+
     app.withFileSystemBind(runtime.toString(), APP_RUNTIME, BindMode.READ_ONLY);
     app.withCommand("java", "-cp", String.join(":", classpath), mainClass, Integer.toString(APP_PORT));
   }
@@ -158,12 +163,14 @@ public final class DaprTestEnvironment implements Startable {
       resources.start(dapr);
       System.out.printf("[%s] dapr id=%s endpoint=%s grpc=%s:%d%n", identity, dapr.getContainerId(),
           Endpoints.http(dapr.getHost(), dapr.getHttpPort()), dapr.getHost(), dapr.getGrpcPort());
+
       try (DaprClient client = clientBuilder().build()) {
         client.waitForSidecar(30_000).block(Duration.ofSeconds(35));
         client.getMetadata().retryWhen(Retry.fixedDelay(30, Duration.ofSeconds(1))).block(Duration.ofSeconds(35));
       } catch (Exception e) {
         throw new IllegalStateException("Sidecar client readiness failed", e);
       }
+
       System.out.printf("[%s] app=%s (%s, %s), dapr=%s (%s), placement=%s, scheduler=%s%n", identity,
           appAddress(), protocol, app.getContainerId(), Endpoints.http(dapr.getHost(), dapr.getHttpPort()),
           dapr.getContainerId(), placement.getContainerId(), scheduler.getContainerId());
@@ -173,6 +180,7 @@ public final class DaprTestEnvironment implements Startable {
       } catch (RuntimeException | Error cleanup) {
         failure.addSuppressed(cleanup);
       }
+
       throw failure;
     }
   }
@@ -187,6 +195,7 @@ public final class DaprTestEnvironment implements Startable {
     if (protocol != DaprProtocol.HTTP) {
       throw new IllegalStateException("Application is not HTTP: " + protocol);
     }
+
     return Endpoints.http(app.getHost(), app.getMappedPort(APP_PORT));
   }
 
