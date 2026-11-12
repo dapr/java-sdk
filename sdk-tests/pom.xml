@@ -270,6 +270,8 @@
                     <include name="io/dapr/it/methodinvoke/http/MethodInvokeService*.class"/>
                     <include name="io/dapr/it/methodinvoke/http/MethodInvokeController*.class"/>
                     <include name="io/dapr/it/methodinvoke/http/Person*.class"/>
+                    <include name="io/dapr/it/methodinvoke/grpc/MethodInvokeIT*.class"/>
+                    <include name="io/dapr/it/methodinvoke/grpc/MethodInvokeService*.class"/>
                   </fileset>
                 </delete>
               </target>

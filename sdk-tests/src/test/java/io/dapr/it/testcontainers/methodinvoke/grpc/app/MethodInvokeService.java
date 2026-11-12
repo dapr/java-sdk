@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.methodinvoke.grpc;
+package io.dapr.it.testcontainers.methodinvoke.grpc.app;
 
 import io.dapr.grpc.GrpcHealthCheckService;
 import io.dapr.it.MethodInvokeServiceGrpc;
@@ -83,7 +83,7 @@ public class MethodInvokeService {
      * {@inheritDoc}
      */
     public void postMessage(io.dapr.it.MethodInvokeServiceProtos.PostMessageRequest request,
-                            io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse> responseObserver) {
+        io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse> responseObserver) {
       this.messages.put(request.getId(), request.getMessage());
 
       io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse.Builder responseBuilder =
@@ -96,7 +96,7 @@ public class MethodInvokeService {
      * {@inheritDoc}
      */
     public void deleteMessage(io.dapr.it.MethodInvokeServiceProtos.DeleteMessageRequest request,
-                              io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.DeleteMessageResponse> responseObserver) {
+        io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.DeleteMessageResponse> responseObserver) {
       this.messages.remove(request.getId());
 
       io.dapr.it.MethodInvokeServiceProtos.DeleteMessageResponse.Builder responseBuilder =
@@ -109,7 +109,7 @@ public class MethodInvokeService {
      * {@inheritDoc}
      */
     public void getMessages(io.dapr.it.MethodInvokeServiceProtos.GetMessagesRequest request,
-                            io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse> responseObserver) {
+        io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse> responseObserver) {
       GetMessagesResponse res = GetMessagesResponse.newBuilder().putAllMessages(this.messages).build();
 
       io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse.Builder responseBuilder
@@ -122,7 +122,7 @@ public class MethodInvokeService {
      * {@inheritDoc}
      */
     public void sleep(io.dapr.it.MethodInvokeServiceProtos.SleepRequest request,
-                      io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.SleepResponse> responseObserver) {
+        io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.SleepResponse> responseObserver) {
       SleepResponse res = this.sleep(request);
 
       io.dapr.it.MethodInvokeServiceProtos.SleepResponse.Builder responseBuilder =
