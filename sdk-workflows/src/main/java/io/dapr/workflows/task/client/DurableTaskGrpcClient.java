@@ -561,6 +561,12 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
 
   @Override
   public OrchestratorService.ListInstanceIDsResponse listInstanceIds(
+      @Nullable String continuationToken, @Nullable Integer pageSize) {
+    return this.listInstanceIds(continuationToken, pageSize, null);
+  }
+
+  @Override
+  public OrchestratorService.ListInstanceIDsResponse listInstanceIds(
       @Nullable String continuationToken, @Nullable Integer pageSize, @Nullable String instanceIdPrefix) {
     OrchestratorService.ListInstanceIDsRequest.Builder builder =
         OrchestratorService.ListInstanceIDsRequest.newBuilder();
