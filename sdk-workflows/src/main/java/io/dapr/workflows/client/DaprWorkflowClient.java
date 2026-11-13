@@ -494,11 +494,29 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return a page of workflow instance IDs and an optional continuation token for the next page
    */
   public WorkflowInstancePage listInstanceIds(@Nullable String continuationToken, @Nullable Integer pageSize) {
+    return this.listInstanceIds(continuationToken, pageSize, null);
+  }
+
+  /**
+   * Lists the IDs of the workflow instances whose ID starts with a prefix, with pagination.
+   *
+   * <p>The runs of a workflow schedule are the instances whose ID starts with {@code <schedule name>_}.
+   *
+   * <p>A Dapr runtime that predates the prefix filter ignores it and lists all instance IDs.
+   *
+   * @param continuationToken the continuation token from a previous call, or null for the first page
+   * @param pageSize          the maximum number of instance IDs to return, or null for no limit; must be
+   *                          greater than zero when set
+   * @param instanceIdPrefix  only instance IDs that start with this prefix are returned; null or empty for all
+   * @return a page of workflow instance IDs and an optional continuation token for the next page
+   */
+  public WorkflowInstancePage listInstanceIds(@Nullable String continuationToken, @Nullable Integer pageSize,
+      @Nullable String instanceIdPrefix) {
     if (pageSize != null && pageSize <= 0) {
       throw new IllegalArgumentException("pageSize must be greater than zero.");
     }
     OrchestratorService.ListInstanceIDsResponse response =
-        this.innerClient.listInstanceIds(continuationToken, pageSize);
+        this.innerClient.listInstanceIds(continuationToken, pageSize, instanceIdPrefix);
     return WorkflowClientConverter.toWorkflowInstancePage(response);
   }
 
@@ -554,6 +572,124 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
     return this.innerClient.rerunWorkflowFromEvent(sourceInstanceId, eventId,
         options.getNewInstanceId(), options.getInput(), options.isOverwriteInput());
+  }
+
+  /**
+   * Creates a schedule that starts a workflow repeatedly.
+   *
+   * <p>The schedule uses the syntax of the Dapr Jobs API: a 6-field cron expression with seconds
+   * ({@code "0 30 9 * * MON"}), {@code "@every <duration>"} of at least one second, or one of {@code "@yearly"},
+   * {@code "@monthly"}, {@code "@weekly"}, {@code "@daily"} and {@code "@hourly"}. A {@code "CRON_TZ=<zone> "}
+   * prefix sets the time zone of a cron expression, which is UTC otherwise.
+   *
+   * <p>Each run is a new, detached workflow instance; see {@link WorkflowSchedule} for its instance ID. By default,
+   * a schedule catches up durably: every time it missed while the app was down starts its own run, one after
+   * another. {@link WorkflowScheduleOptions#setSkipMissed(boolean)} starts one run for the missed times instead.
+   *
+   * <p>The runtime reports errors as a {@link StatusRuntimeException}: INVALID_ARGUMENT for an invalid name,
+   * schedule or option, ALREADY_EXISTS when the name is taken and overwrite is not set, and UNIMPLEMENTED when the
+   * Dapr runtime does not support workflow schedules.
+   *
+   * @param name         the name of the schedule: 1 to 30 letters, digits or '-'
+   * @param workflowName the name of the workflow each run starts
+   * @param schedule     when runs start
+   * @param options      the options of the schedule; may be null
+   */
+  public void createWorkflowSchedule(String name, String workflowName, String schedule,
+      @Nullable WorkflowScheduleOptions options) {
+    requireNonEmpty(name, "name");
+    requireNonEmpty(workflowName, "workflowName");
+    requireNonEmpty(schedule, "schedule");
+    if (options == null) {
+      options = new WorkflowScheduleOptions();
+    }
+    this.innerClient.createWorkflowSchedule(
+        WorkflowClientConverter.toWorkflowScheduleProto(name, workflowName, schedule, options),
+        options.getInput(), options.isOverwrite());
+  }
+
+  /**
+   * Creates a schedule that starts a workflow repeatedly.
+   *
+   * <p>See {@link #createWorkflowSchedule(String, String, String, WorkflowScheduleOptions)}.
+   *
+   * @param <T>      any Workflow type
+   * @param name     the name of the schedule: 1 to 30 letters, digits or '-'
+   * @param clazz    Class extending Workflow that each run starts.
+   * @param schedule when runs start
+   * @param options  the options of the schedule; may be null
+   */
+  public <T extends Workflow> void createWorkflowSchedule(String name, Class<T> clazz, String schedule,
+      @Nullable WorkflowScheduleOptions options) {
+    this.createWorkflowSchedule(name, clazz.getCanonicalName(), schedule, options);
+  }
+
+  /**
+   * Gets a workflow schedule with its status, including how its last run stands.
+   *
+   * <p>A schedule that does not exist is reported as a {@link StatusRuntimeException} with status NOT_FOUND.
+   *
+   * @param name the name of the schedule
+   * @return the schedule
+   */
+  public WorkflowSchedule getWorkflowSchedule(String name) {
+    requireNonEmpty(name, "name");
+    return new WorkflowSchedule(this.innerClient.getWorkflowSchedule(name));
+  }
+
+  /**
+   * Lists the app's workflow schedules with their status. Returns the first page with no size limit.
+   *
+   * @return a page of workflow schedules
+   */
+  public WorkflowSchedulePage listWorkflowSchedules() {
+    return this.listWorkflowSchedules(null, null);
+  }
+
+  /**
+   * Lists the app's workflow schedules with their status, with pagination.
+   *
+   * <p>A page can hold fewer than pageSize schedules while more remain, so follow the continuation token until it
+   * is null rather than relying on the page length.
+   *
+   * @param continuationToken the continuation token from a previous call, or null for the first page
+   * @param pageSize          the maximum number of schedules to return, or null for no limit; must be
+   *                          greater than zero when set
+   * @return a page of workflow schedules and an optional continuation token for the next page
+   */
+  public WorkflowSchedulePage listWorkflowSchedules(@Nullable String continuationToken, @Nullable Integer pageSize) {
+    if (pageSize != null && pageSize <= 0) {
+      throw new IllegalArgumentException("pageSize must be greater than zero.");
+    }
+    return new WorkflowSchedulePage(this.innerClient.listWorkflowSchedules(continuationToken, pageSize));
+  }
+
+  /**
+   * Deletes a workflow schedule, so it starts no more runs. Runs it already started are not affected.
+   *
+   * <p>A schedule that does not exist is reported as a {@link StatusRuntimeException} with status NOT_FOUND.
+   *
+   * @param name the name of the schedule
+   */
+  public void deleteWorkflowSchedule(String name) {
+    requireNonEmpty(name, "name");
+    this.innerClient.deleteWorkflowSchedule(name);
+  }
+
+  /**
+   * Starts a run of a workflow schedule now, without changing when its next scheduled run is.
+   *
+   * <p>The run's instance ID is {@code <name>_<owner>_<trigger time>_manual}, with the trigger time in milliseconds,
+   * so triggers within the same millisecond start one run. A triggered run counts towards the schedule's repeats. A
+   * schedule that does not exist is reported as a {@link StatusRuntimeException} with status NOT_FOUND, and one that
+   * has completed, or whose target app has no workflow worker connected, with status FAILED_PRECONDITION.
+   *
+   * @param name the name of the schedule
+   * @return the instance ID of the run
+   */
+  public String triggerWorkflowSchedule(String name) {
+    requireNonEmpty(name, "name");
+    return this.innerClient.triggerWorkflowSchedule(name);
   }
 
   /**
@@ -670,6 +806,12 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
     String description = e.getStatus().getDescription();
     return description != null && description.contains("an active workflow with ID");
+  }
+
+  private static void requireNonEmpty(String value, String name) {
+    if (value == null || value.isEmpty()) {
+      throw new IllegalArgumentException(name + " must not be null or empty.");
+    }
   }
 
   private static NewOrchestrationInstanceOptions fromNewWorkflowOptions(NewWorkflowOptions options) {

@@ -15,6 +15,8 @@ package io.dapr.workflows.task.client;
 
 import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
+import io.dapr.durabletask.implementation.protobuf.WorkflowScheduleOuterClass.ListWorkflowSchedulesResponse;
+import io.dapr.durabletask.implementation.protobuf.WorkflowScheduleOuterClass.WorkflowSchedule;
 import io.dapr.workflows.WorkflowContext;
 
 import javax.annotation.Nullable;
@@ -527,6 +529,24 @@ public abstract class DurableTaskClient implements AutoCloseable {
       @Nullable String continuationToken, @Nullable Integer pageSize);
 
   /**
+   * Lists workflow instance IDs with optional pagination, keeping only the IDs that start with a prefix.
+   *
+   * @param continuationToken the continuation token from a previous call, or null for the first page
+   * @param pageSize          the maximum number of instance IDs to return, or null for no limit
+   * @param instanceIdPrefix  only instance IDs that start with this prefix are returned, or null for all
+   * @return the raw list-instance-IDs response from the sidecar
+   * @throws UnsupportedOperationException if a prefix is given and this implementation cannot filter by one
+   */
+  public OrchestratorService.ListInstanceIDsResponse listInstanceIds(
+      @Nullable String continuationToken, @Nullable Integer pageSize, @Nullable String instanceIdPrefix) {
+    if (instanceIdPrefix == null || instanceIdPrefix.isEmpty()) {
+      return this.listInstanceIds(continuationToken, pageSize);
+    }
+    throw new UnsupportedOperationException(
+        "listing instance IDs by prefix is not supported by this DurableTaskClient implementation");
+  }
+
+  /**
    * Gets the full execution history of a workflow instance.
    *
    * @param instanceId the ID of the workflow instance to get history for
@@ -546,6 +566,67 @@ public abstract class DurableTaskClient implements AutoCloseable {
    */
   public abstract String rerunWorkflowFromEvent(String sourceInstanceId, int eventId,
       @Nullable String newInstanceId, @Nullable Object input, boolean overwriteInput);
+
+  /**
+   * Creates a workflow schedule.
+   *
+   * @param schedule  the schedule to create; its input and status are ignored
+   * @param input     the input given to every run. Must be serializable. May be null.
+   * @param overwrite true to replace an existing schedule of the same name
+   */
+  public void createWorkflowSchedule(WorkflowSchedule schedule, @Nullable Object input, boolean overwrite) {
+    throw schedulesUnsupported();
+  }
+
+  /**
+   * Gets a workflow schedule with its status.
+   *
+   * @param name the name of the schedule
+   * @return the schedule
+   */
+  public WorkflowSchedule getWorkflowSchedule(String name) {
+    throw schedulesUnsupported();
+  }
+
+  /**
+   * Lists workflow schedules with their status, with optional pagination.
+   *
+   * @param continuationToken the continuation token from a previous call, or null for the first page
+   * @param pageSize          the maximum number of schedules to return, or null for no limit
+   * @return the raw list-workflow-schedules response from the sidecar
+   */
+  public ListWorkflowSchedulesResponse listWorkflowSchedules(
+      @Nullable String continuationToken, @Nullable Integer pageSize) {
+    throw schedulesUnsupported();
+  }
+
+  /**
+   * Deletes a workflow schedule. Runs it already started are not affected.
+   *
+   * @param name the name of the schedule
+   */
+  public void deleteWorkflowSchedule(String name) {
+    throw schedulesUnsupported();
+  }
+
+  /**
+   * Starts a run of a workflow schedule now, without changing when its next scheduled run is.
+   *
+   * @param name the name of the schedule
+   * @return the instance ID of the run
+   */
+  public String triggerWorkflowSchedule(String name) {
+    throw schedulesUnsupported();
+  }
+
+  /**
+   * Rejects a workflow schedule call on a client that does not implement schedules. Implementations that
+   * support them override the schedule methods, so this is only reached on ones that do not.
+   */
+  private static UnsupportedOperationException schedulesUnsupported() {
+    return new UnsupportedOperationException(
+        "workflow schedules are not supported by this DurableTaskClient implementation");
+  }
 
   /**
    * Rejects a cross-app target on a client that does not implement cross-app routing. Implementations that

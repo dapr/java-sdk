@@ -19,6 +19,8 @@ import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
 import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
+import io.dapr.durabletask.implementation.protobuf.WorkflowScheduleOuterClass;
+import io.dapr.durabletask.implementation.protobuf.WorkflowScheduleOuterClass.WorkflowSchedule;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.workflows.task.internal.Helpers;
 import io.dapr.workflows.task.serialization.DataConverter;
@@ -560,6 +562,12 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
   @Override
   public OrchestratorService.ListInstanceIDsResponse listInstanceIds(
       @Nullable String continuationToken, @Nullable Integer pageSize) {
+    return this.listInstanceIds(continuationToken, pageSize, null);
+  }
+
+  @Override
+  public OrchestratorService.ListInstanceIDsResponse listInstanceIds(
+      @Nullable String continuationToken, @Nullable Integer pageSize, @Nullable String instanceIdPrefix) {
     OrchestratorService.ListInstanceIDsRequest.Builder builder =
         OrchestratorService.ListInstanceIDsRequest.newBuilder();
     if (continuationToken != null) {
@@ -570,6 +578,9 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
         throw new IllegalArgumentException("pageSize must be greater than zero.");
       }
       builder.setPageSize(pageSize);
+    }
+    if (instanceIdPrefix != null && !instanceIdPrefix.isEmpty()) {
+      builder.setInstanceIdPrefix(instanceIdPrefix);
     }
     return this.sidecarClient.listInstanceIDs(builder.build());
   }
@@ -606,6 +617,62 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
     OrchestratorService.RerunWorkflowFromEventResponse response =
         this.sidecarClient.rerunWorkflowFromEvent(builder.build());
     return response.getNewInstanceID();
+  }
+
+  @Override
+  public void createWorkflowSchedule(WorkflowSchedule schedule, @Nullable Object input, boolean overwrite) {
+    Helpers.throwIfArgumentNull(schedule, "schedule");
+    WorkflowSchedule.Builder builder = schedule.toBuilder().clearInput().clearStatus();
+    String serializedInput = this.dataConverter.serialize(input);
+    if (serializedInput != null) {
+      builder.setInput(StringValue.of(serializedInput));
+    }
+    this.sidecarClient.createWorkflowSchedule(WorkflowScheduleOuterClass.CreateWorkflowScheduleRequest.newBuilder()
+        .setSchedule(builder)
+        .setOverwrite(overwrite)
+        .build());
+  }
+
+  @Override
+  public WorkflowSchedule getWorkflowSchedule(String name) {
+    Helpers.throwIfArgumentNull(name, "name");
+    return this.sidecarClient.getWorkflowSchedule(WorkflowScheduleOuterClass.GetWorkflowScheduleRequest.newBuilder()
+        .setName(name)
+        .build()).getSchedule();
+  }
+
+  @Override
+  public WorkflowScheduleOuterClass.ListWorkflowSchedulesResponse listWorkflowSchedules(
+      @Nullable String continuationToken, @Nullable Integer pageSize) {
+    WorkflowScheduleOuterClass.ListWorkflowSchedulesRequest.Builder builder =
+        WorkflowScheduleOuterClass.ListWorkflowSchedulesRequest.newBuilder();
+    if (continuationToken != null) {
+      builder.setContinuationToken(continuationToken);
+    }
+    if (pageSize != null) {
+      if (pageSize <= 0) {
+        throw new IllegalArgumentException("pageSize must be greater than zero.");
+      }
+      builder.setPageSize(pageSize);
+    }
+    return this.sidecarClient.listWorkflowSchedules(builder.build());
+  }
+
+  @Override
+  public void deleteWorkflowSchedule(String name) {
+    Helpers.throwIfArgumentNull(name, "name");
+    this.sidecarClient.deleteWorkflowSchedule(WorkflowScheduleOuterClass.DeleteWorkflowScheduleRequest.newBuilder()
+        .setName(name)
+        .build());
+  }
+
+  @Override
+  public String triggerWorkflowSchedule(String name) {
+    Helpers.throwIfArgumentNull(name, "name");
+    return this.sidecarClient.triggerWorkflowSchedule(WorkflowScheduleOuterClass.TriggerWorkflowScheduleRequest
+        .newBuilder()
+        .setName(name)
+        .build()).getInstanceId();
   }
 
   private PurgeResult toPurgeResult(OrchestratorService.PurgeInstancesResponse response) {
