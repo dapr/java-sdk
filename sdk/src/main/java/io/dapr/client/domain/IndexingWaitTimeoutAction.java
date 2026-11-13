@@ -28,6 +28,9 @@ public enum IndexingWaitTimeoutAction {
 
   /**
    * Fail the call with DEADLINE_EXCEEDED. The store may still finish the write.
+   *
+   * <p>The client's retry policy treats DEADLINE_EXCEEDED as retryable, so with retries enabled
+   * ({@code dapr.api.maxRetries}) the SDK sends the write again before the call fails.
    */
   FAIL_REQUEST
 }

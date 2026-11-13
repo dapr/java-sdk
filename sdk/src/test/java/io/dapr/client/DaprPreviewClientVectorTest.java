@@ -56,6 +56,8 @@ import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -461,6 +463,105 @@ public class DaprPreviewClientVectorTest {
         VectorQuery.byId("a").setFilter(Map.of("published", Duration.ofDays(1))))));
     verify(daprStub, never()).upsertVectorsAlpha1(any(), any());
     verify(daprStub, never()).queryVectorsAlpha1(any(), any());
+  }
+
+  @Test
+  @DisplayName("filters and metadata should send numbers as doubles without changing them")
+  public void structNumbersTest() {
+    ArgumentCaptor<DaprVectorProtos.QueryVectorsRequestAlpha1> query =
+        ArgumentCaptor.forClass(DaprVectorProtos.QueryVectorsRequestAlpha1.class);
+    doAnswer(respond(DaprVectorProtos.QueryVectorsResponseAlpha1.newBuilder()
+        .setMetric(DaprVectorProtos.DistanceMetric.DISTANCE_METRIC_COSINE)
+        .build())).when(daprStub).queryVectorsAlpha1(query.capture(), any());
+    ArgumentCaptor<DaprVectorProtos.UpsertVectorsRequestAlpha1> upsert =
+        ArgumentCaptor.forClass(DaprVectorProtos.UpsertVectorsRequestAlpha1.class);
+    doAnswer(respond(DaprVectorProtos.UpsertVectorsResponseAlpha1.newBuilder()
+        .setAck(DaprSearchProtos.IndexAck.INDEX_ACK_COMPLETED)
+        .build())).when(daprStub).upsertVectorsAlpha1(upsert.capture(), any());
+    Map<String, Object> numbers = Map.of(
+        "int", 5,
+        "long", 1L << 53,
+        "float", 1.1f,
+        "double", 2.5d,
+        "decimal", new BigDecimal("1.10"),
+        "integer", BigInteger.valueOf(1965),
+        "power", 1L << 60,
+        "min", Long.MIN_VALUE,
+        "bigPower", BigInteger.TWO.pow(70),
+        "nested", Map.of("$in", List.of(1.1f)));
+
+    previewClient.queryVectors(new QueryVectorsRequestAlpha1(
+        STORE, COLLECTION, VectorQuery.byId("a").setFilter(numbers))).block();
+    previewClient.upsertVectors(new UpsertVectorsRequestAlpha1(STORE, COLLECTION, List.of(
+        new VectorRecord("a", new float[] {1f}).setMetadata(numbers)))).block();
+
+    assertSentNumbers(query.getValue().getQuery().getFilter());
+    assertSentNumbers(upsert.getValue().getRecords(0).getMetadata());
+  }
+
+  private static void assertSentNumbers(Struct sent) {
+    Map<String, Value> fields = sent.getFieldsMap();
+    assertEquals(5d, fields.get("int").getNumberValue());
+    assertEquals(0x1p53, fields.get("long").getNumberValue());
+    assertEquals(1.1d, fields.get("float").getNumberValue());
+    assertEquals(2.5d, fields.get("double").getNumberValue());
+    assertEquals(1.1d, fields.get("decimal").getNumberValue());
+    assertEquals(1965d, fields.get("integer").getNumberValue());
+    assertEquals(0x1p60, fields.get("power").getNumberValue());
+    assertEquals(-0x1p63, fields.get("min").getNumberValue());
+    assertEquals(0x1p70, fields.get("bigPower").getNumberValue());
+    assertEquals(1.1d, fields.get("nested").getStructValue().getFieldsOrThrow("$in").getListValue()
+        .getValues(0).getNumberValue());
+  }
+
+  @Test
+  @DisplayName("filters and metadata should reject numbers that a double cannot hold exactly")
+  public void inexactStructNumbersTest() {
+    List<Number> numbers = List.of(
+        (1L << 53) + 1,
+        Long.MAX_VALUE,
+        new BigDecimal("0.1000000000000000055"),
+        BigInteger.TEN.pow(400));
+    for (Number number : numbers) {
+      assertInexact(() -> previewClient.queryVectors(new QueryVectorsRequestAlpha1(STORE, COLLECTION,
+          VectorQuery.byId("a").setFilter(Map.of("id", number)))));
+      assertInexact(() -> previewClient.upsertVectors(new UpsertVectorsRequestAlpha1(STORE, COLLECTION, List.of(
+          new VectorRecord("a", new float[] {1f}).setMetadata(Map.of("id", number))))));
+    }
+    assertInexact(() -> previewClient.queryVectors(new QueryVectorsRequestAlpha1(STORE, COLLECTION,
+        VectorQuery.byId("a").setFilter(Map.of("id", Map.of("$in", List.of((1L << 53) + 1)))))));
+    verify(daprStub, never()).upsertVectorsAlpha1(any(), any());
+    verify(daprStub, never()).queryVectorsAlpha1(any(), any());
+  }
+
+  private static void assertInexact(Supplier<Mono<?>> call) {
+    IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> call.get().block(TIMEOUT));
+    assertTrue(error.getMessage().contains("cannot be represented exactly"), error.getMessage());
+  }
+
+  @Test
+  @DisplayName("filters and metadata should reject NaN and infinite numbers")
+  public void nonFiniteStructNumbersTest() {
+    List<Number> numbers = List.of(
+        Double.NaN,
+        Double.POSITIVE_INFINITY,
+        Double.NEGATIVE_INFINITY,
+        Float.NaN,
+        Float.POSITIVE_INFINITY,
+        Float.NEGATIVE_INFINITY);
+    for (Number number : numbers) {
+      assertNotFinite(() -> previewClient.queryVectors(new QueryVectorsRequestAlpha1(STORE, COLLECTION,
+          VectorQuery.byId("a").setFilter(Map.of("price", Map.of("$lt", number))))));
+      assertNotFinite(() -> previewClient.upsertVectors(new UpsertVectorsRequestAlpha1(STORE, COLLECTION, List.of(
+          new VectorRecord("a", new float[] {1f}).setMetadata(Map.of("price", number))))));
+    }
+    verify(daprStub, never()).upsertVectorsAlpha1(any(), any());
+    verify(daprStub, never()).queryVectorsAlpha1(any(), any());
+  }
+
+  private static void assertNotFinite(Supplier<Mono<?>> call) {
+    IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> call.get().block(TIMEOUT));
+    assertTrue(error.getMessage().contains("must be finite"), error.getMessage());
   }
 
   @Test

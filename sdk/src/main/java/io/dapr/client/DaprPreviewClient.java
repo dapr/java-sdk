@@ -25,16 +25,24 @@ import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.ConversationResponseAlpha2;
 import io.dapr.client.domain.CreateVectorCollectionRequestAlpha1;
 import io.dapr.client.domain.DecryptRequestAlpha1;
+import io.dapr.client.domain.DeleteSearchDocumentsRequestAlpha1;
 import io.dapr.client.domain.DeleteVectorsRequestAlpha1;
 import io.dapr.client.domain.EncryptRequestAlpha1;
+import io.dapr.client.domain.GetSearchDocumentsRequestAlpha1;
+import io.dapr.client.domain.GetSearchIndexResponseAlpha1;
 import io.dapr.client.domain.GetVectorCollectionResponseAlpha1;
 import io.dapr.client.domain.GetVectorsRequestAlpha1;
 import io.dapr.client.domain.IndexAck;
+import io.dapr.client.domain.IndexSearchDocumentsRequestAlpha1;
+import io.dapr.client.domain.IndexSearchDocumentsResponseAlpha1;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.QueryVectorsRequestAlpha1;
 import io.dapr.client.domain.QueryVectorsResponseAlpha1;
+import io.dapr.client.domain.SearchDocument;
+import io.dapr.client.domain.SearchRequestAlpha1;
+import io.dapr.client.domain.SearchResponseAlpha1;
 import io.dapr.client.domain.SetBinaryFileRequestAlpha1;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
@@ -677,4 +685,155 @@ public interface DaprPreviewClient extends AutoCloseable {
    *     query is not valid.
    */
   Mono<List<BatchQueryVectorsResultAlpha1>> batchQueryVectors(BatchQueryVectorsRequestAlpha1 request);
+
+  /**
+   * Creates an index in a search store component.
+   *
+   * <p>If the index exists, the Mono fails with the ALREADY_EXISTS error code.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the search store component.
+   * @param index     Name of the index.
+   * @return An empty Mono that completes when the sidecar creates the index.
+   * @throws IllegalArgumentException if storeName or index is null or blank.
+   */
+  Mono<Void> createSearchIndex(String storeName, String index);
+
+  /**
+   * Creates an index in a search store component, passing metadata to the component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the search store component.
+   * @param index     Name of the index.
+   * @param metadata  Metadata passed to the component, such as index settings. Can be null.
+   * @return An empty Mono that completes when the sidecar creates the index.
+   * @throws IllegalArgumentException if storeName or index is null or blank.
+   */
+  Mono<Void> createSearchIndex(String storeName, String index, Map<String, String> metadata);
+
+  /**
+   * Gets an index of a search store component.
+   *
+   * <p>If the index does not exist, the Mono fails with the NOT_FOUND error code.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the search store component.
+   * @param index     Name of the index.
+   * @return A Mono with the index's approximate document count and properties.
+   * @throws IllegalArgumentException if storeName or index is null or blank.
+   */
+  Mono<GetSearchIndexResponseAlpha1> getSearchIndex(String storeName, String index);
+
+  /**
+   * Gets an index of a search store component, passing metadata to the component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the search store component.
+   * @param index     Name of the index.
+   * @param metadata  Metadata passed to the component. Can be null.
+   * @return A Mono with the index's approximate document count and properties.
+   * @throws IllegalArgumentException if storeName or index is null or blank.
+   */
+  Mono<GetSearchIndexResponseAlpha1> getSearchIndex(String storeName, String index, Map<String, String> metadata);
+
+  /**
+   * Lists the indexes of a search store component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the search store component.
+   * @return A Mono with the index names.
+   * @throws IllegalArgumentException if storeName is null or blank.
+   */
+  Mono<List<String>> listSearchIndexes(String storeName);
+
+  /**
+   * Lists the indexes of a search store component, passing metadata to the component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the search store component.
+   * @param metadata  Metadata passed to the component. Can be null.
+   * @return A Mono with the index names.
+   * @throws IllegalArgumentException if storeName is null or blank.
+   */
+  Mono<List<String>> listSearchIndexes(String storeName, Map<String, String> metadata);
+
+  /**
+   * Deletes an index and all its documents from a search store component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the search store component.
+   * @param index     Name of the index.
+   * @return An empty Mono that completes when the sidecar deletes the index.
+   * @throws IllegalArgumentException if storeName or index is null or blank.
+   */
+  Mono<Void> deleteSearchIndex(String storeName, String index);
+
+  /**
+   * Deletes an index and all its documents from a search store component, passing metadata to the component.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param storeName Name of the search store component.
+   * @param index     Name of the index.
+   * @param metadata  Metadata passed to the component. Can be null.
+   * @return An empty Mono that completes when the sidecar deletes the index.
+   * @throws IllegalArgumentException if storeName or index is null or blank.
+   */
+  Mono<Void> deleteSearchIndex(String storeName, String index, Map<String, String> metadata);
+
+  /**
+   * Inserts or replaces documents in a search index, by document ID.
+   *
+   * <p>Without indexing options, the call returns once the store accepts the write, and the documents may not be
+   * searchable yet. Documents the store rejects, including content that is not a JSON object, are listed in the
+   * response; the call itself still succeeds.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, index name, documents, metadata and indexing options.
+   * @return A Mono with the acknowledgement and the documents that failed.
+   * @throws IllegalArgumentException if the request, store name, index name or documents are missing, a document
+   *     has no ID or content, or the indexing options are not valid.
+   */
+  Mono<IndexSearchDocumentsResponseAlpha1> indexSearchDocuments(IndexSearchDocumentsRequestAlpha1 request);
+
+  /**
+   * Reads documents from a search index by ID.
+   *
+   * <p>The documents come back in request order. IDs that do not exist are left out.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, index name, IDs, include-content flag and metadata.
+   * @return A Mono with the documents that exist.
+   * @throws IllegalArgumentException if the request, store name, index name or IDs are missing, or an ID is blank.
+   */
+  Mono<List<SearchDocument>> getSearchDocuments(GetSearchDocumentsRequestAlpha1 request);
+
+  /**
+   * Deletes documents from a search index by ID. IDs that do not exist are not an error.
+   *
+   * <p>This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, index name, IDs, metadata and indexing options.
+   * @return A Mono with the acknowledgement.
+   * @throws IllegalArgumentException if the request, store name, index name or IDs are missing, an ID is blank, or
+   *     the indexing options are not valid.
+   */
+  Mono<IndexAck> deleteSearchDocuments(DeleteSearchDocumentsRequestAlpha1 request);
+
+  /**
+   * Searches an index.
+   *
+   * <p>To read the next page, send the same query with the continuation token from the response.
+   * This is an alpha API. Its name and behavior can change in a later release.
+   *
+   * @param request The request with the store name, index name, query and metadata.
+   * @return A Mono with one page of hits, the total if the store reports one, and the token of the next page.
+   * @throws IllegalArgumentException if the request, store name or index name is missing, or the query is not valid.
+   */
+  Mono<SearchResponseAlpha1> search(SearchRequestAlpha1 request);
 }

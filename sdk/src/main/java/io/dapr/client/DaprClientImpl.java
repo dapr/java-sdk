@@ -34,6 +34,7 @@ import io.dapr.client.domain.CreateVectorCollectionRequestAlpha1;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DecryptRequestAlpha1;
 import io.dapr.client.domain.DeleteJobRequest;
+import io.dapr.client.domain.DeleteSearchDocumentsRequestAlpha1;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DeleteVectorsRequestAlpha1;
 import io.dapr.client.domain.DropFailurePolicy;
@@ -45,6 +46,8 @@ import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
+import io.dapr.client.domain.GetSearchDocumentsRequestAlpha1;
+import io.dapr.client.domain.GetSearchIndexResponseAlpha1;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetVectorCollectionResponseAlpha1;
@@ -52,6 +55,8 @@ import io.dapr.client.domain.GetVectorsRequestAlpha1;
 import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.IndexAck;
+import io.dapr.client.domain.IndexSearchDocumentsRequestAlpha1;
+import io.dapr.client.domain.IndexSearchDocumentsResponseAlpha1;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.JobSchedule;
@@ -64,6 +69,9 @@ import io.dapr.client.domain.QueryVectorsResponseAlpha1;
 import io.dapr.client.domain.RuleMetadata;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.ScheduleJobRequest;
+import io.dapr.client.domain.SearchDocument;
+import io.dapr.client.domain.SearchRequestAlpha1;
+import io.dapr.client.domain.SearchResponseAlpha1;
 import io.dapr.client.domain.SetBinaryFileRequestAlpha1;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
@@ -176,6 +184,8 @@ public class DaprClientImpl extends AbstractDaprClient {
 
   private final DaprVectorClient vectorClient;
 
+  private final DaprSearchClient searchClient;
+
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
@@ -276,6 +286,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     this.pubSubClient = new DaprPubSubClient(this.grpcCalls, objectSerializer);
     this.stateClient = new DaprStateClient(this.grpcCalls, stateSerializer);
     this.vectorClient = new DaprVectorClient(this.grpcCalls);
+    this.searchClient = new DaprSearchClient(this.grpcCalls);
     this.logger = LoggerFactory.getLogger(DaprClientImpl.class);
   }
 
@@ -1825,5 +1836,102 @@ public class DaprClientImpl extends AbstractDaprClient {
   @Override
   public Mono<List<BatchQueryVectorsResultAlpha1>> batchQueryVectors(BatchQueryVectorsRequestAlpha1 request) {
     return vectorClient.batchQueryVectors(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> createSearchIndex(String storeName, String index) {
+    return searchClient.createSearchIndex(storeName, index, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> createSearchIndex(String storeName, String index, Map<String, String> metadata) {
+    return searchClient.createSearchIndex(storeName, index, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<GetSearchIndexResponseAlpha1> getSearchIndex(String storeName, String index) {
+    return searchClient.getSearchIndex(storeName, index, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<GetSearchIndexResponseAlpha1> getSearchIndex(
+      String storeName, String index, Map<String, String> metadata) {
+    return searchClient.getSearchIndex(storeName, index, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<String>> listSearchIndexes(String storeName) {
+    return searchClient.listSearchIndexes(storeName, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<String>> listSearchIndexes(String storeName, Map<String, String> metadata) {
+    return searchClient.listSearchIndexes(storeName, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteSearchIndex(String storeName, String index) {
+    return searchClient.deleteSearchIndex(storeName, index, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteSearchIndex(String storeName, String index, Map<String, String> metadata) {
+    return searchClient.deleteSearchIndex(storeName, index, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<IndexSearchDocumentsResponseAlpha1> indexSearchDocuments(IndexSearchDocumentsRequestAlpha1 request) {
+    return searchClient.indexSearchDocuments(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<SearchDocument>> getSearchDocuments(GetSearchDocumentsRequestAlpha1 request) {
+    return searchClient.getSearchDocuments(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<IndexAck> deleteSearchDocuments(DeleteSearchDocumentsRequestAlpha1 request) {
+    return searchClient.deleteSearchDocuments(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<SearchResponseAlpha1> search(SearchRequestAlpha1 request) {
+    return searchClient.search(request);
   }
 }
