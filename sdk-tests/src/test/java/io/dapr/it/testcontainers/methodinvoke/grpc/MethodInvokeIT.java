@@ -11,22 +11,29 @@
 limitations under the License.
 */
 
-package io.dapr.it.methodinvoke.grpc;
+package io.dapr.it.testcontainers.methodinvoke.grpc;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.resiliency.ResiliencyOptions;
-import io.dapr.it.AppRun;
 import io.dapr.it.MethodInvokeServiceGrpc;
-import io.dapr.it.containers.BaseContainerIT;
-import io.dapr.testcontainers.DaprContainer;
+import io.dapr.it.testcontainers.methodinvoke.grpc.app.MethodInvokeService;
+import io.dapr.it.testcontainers.support.DaprTestEnvironment;
 import io.dapr.testcontainers.DaprProtocol;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static io.dapr.it.MethodInvokeServiceProtos.DeleteMessageRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesRequest;
@@ -36,7 +43,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MethodInvokeIT extends BaseContainerIT {
+@Testcontainers
+@Tag("testcontainers")
+@Execution(ExecutionMode.SAME_THREAD)
+public class MethodInvokeIT {
 
     private static final String APP_NAME = "methodinvoke-grpc-it";
     private static final int NUM_MESSAGES = 10;
@@ -44,29 +54,32 @@ public class MethodInvokeIT extends BaseContainerIT {
     private static final ResiliencyOptions RESILIENCY_OPTIONS = new ResiliencyOptions()
         .setTimeout(Duration.ofMillis(TIMEOUT_MS));
 
-    private static DaprContainer dapr;
-    private static AppRun app;
+    @Container
+    private static final DaprTestEnvironment ENVIRONMENT =
+        new DaprTestEnvironment(APP_NAME, MethodInvokeService.class, DaprProtocol.GRPC);
 
-    @BeforeAll
-    public static void init() throws Exception {
-        var pair = startAppAndAttach(
-            APP_NAME,
-            MethodInvokeService.class,
-            AppRun.AppProtocol.GRPC,
-            appPort -> {
-                DaprContainer d = daprBuilder(APP_NAME)
-                    .withAppPort(appPort)
-                    .withAppChannelAddress("host.testcontainers.internal")
-                    .withAppProtocol(DaprProtocol.GRPC);
-                return d;
-            });
-        dapr = pair.dapr();
-        app = pair.app();
+    @BeforeEach
+    public void reset() throws InterruptedException {
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(ENVIRONMENT.appAddress()).usePlaintext().build();
+
+        try {
+            var stub = MethodInvokeServiceGrpc.newBlockingStub(channel).withDeadlineAfter(10, TimeUnit.SECONDS);
+            var request = GetMessagesRequest.getDefaultInstance();
+
+            for (int id : stub.getMessages(request).getMessagesMap().keySet()) {
+                stub.deleteMessage(DeleteMessageRequest.newBuilder().setId(id).build());
+            }
+
+            assertTrue(stub.getMessages(request).getMessagesMap().isEmpty());
+        } finally {
+            channel.shutdownNow();
+            assertTrue(channel.awaitTermination(5, TimeUnit.SECONDS), "reset channel did not terminate");
+        }
     }
 
     @Test
     public void testInvoke() throws Exception {
-        try (DaprClient client = newDaprClient(dapr)) {
+        try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
 
             MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
@@ -97,7 +110,7 @@ public class MethodInvokeIT extends BaseContainerIT {
 
     @Test
     public void testInvokeTimeout() throws Exception {
-        try (DaprClient client = newDaprClientBuilder(dapr).withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
+        try (DaprClient client = ENVIRONMENT.clientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
             client.waitForSidecar(10000).block();
 
             MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
@@ -114,7 +127,7 @@ public class MethodInvokeIT extends BaseContainerIT {
 
     @Test
     public void testInvokeException() throws Exception {
-        try (DaprClient client = newDaprClient(dapr)) {
+        try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
 
             MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);

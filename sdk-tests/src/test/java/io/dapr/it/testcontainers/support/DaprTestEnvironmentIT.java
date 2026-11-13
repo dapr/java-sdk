@@ -12,9 +12,16 @@
  */
 package io.dapr.it.testcontainers.support;
 
+import com.google.protobuf.Empty;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.it.MethodInvokeServiceGrpc;
+import io.dapr.it.MethodInvokeServiceProtos;
 import io.dapr.it.testcontainers.methodinvoke.http.app.MethodInvokeService;
+import io.dapr.testcontainers.DaprProtocol;
+import io.dapr.v1.AppCallbackHealthCheckGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
@@ -22,6 +29,7 @@ import org.testcontainers.DockerClientFactory;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,6 +42,7 @@ class DaprTestEnvironmentIT {
   @Test
   void startsExactlyFourChildrenAndStopsOnlyItsOwnResources() throws Exception {
     DaprTestEnvironment environment = new DaprTestEnvironment("foundation-it", MethodInvokeService.class);
+
     try {
       environment.start();
       assertEquals(4, containers(environment.identity()));
@@ -49,6 +58,7 @@ class DaprTestEnvironmentIT {
           .findFirst().orElseThrow(() -> new AssertionError("application runtime is not mounted"));
       assertEquals(Boolean.FALSE, runtime.getRW(), "application runtime must be read-only");
       assertTrue(runtime.getSource().replace('\\', '/').endsWith("/sdk-tests/target/it-runtime"));
+
       try (DaprClient client = environment.clientBuilder().build()) {
         client.invokeMethod("foundation-it", "health", null, HttpExtension.GET).block();
       }
@@ -56,6 +66,7 @@ class DaprTestEnvironmentIT {
       environment.stop();
       environment.stop();
     }
+
     assertClean(environment.identity());
   }
 
@@ -68,6 +79,44 @@ class DaprTestEnvironmentIT {
     assertTrue(environment.appOutput().contains(missingMainClass),
         "expected the failing application's logs, got: " + environment.appOutput());
     environment.stop();
+    assertClean(environment.identity());
+  }
+
+  @Test
+  void grpcCallbackAndRoutedInvocationAreReady() throws Exception {
+    DaprTestEnvironment environment = new DaprTestEnvironment("foundation-grpc-it",
+        io.dapr.it.testcontainers.methodinvoke.grpc.app.MethodInvokeService.class, DaprProtocol.GRPC);
+
+    try {
+      environment.start();
+      assertEquals(4, containers(environment.identity()));
+      assertEquals(1, networks(environment.identity()));
+      var network = DockerClientFactory.instance().client().listNetworksCmd()
+          .withFilter("label", List.of(LABEL + "=" + environment.identity())).exec().get(0);
+      assertEquals(4, DockerClientFactory.instance().client().inspectNetworkCmd()
+          .withNetworkId(network.getId()).exec().getContainers().size());
+      assertTrue(environment.appOutput().contains("Artificial delay of 10 seconds"));
+      assertThrows(IllegalStateException.class, environment::appEndpoint);
+      ManagedChannel channel = ManagedChannelBuilder.forTarget(environment.appAddress()).usePlaintext().build();
+
+      try {
+        AppCallbackHealthCheckGrpc.newBlockingStub(channel).withDeadlineAfter(5, TimeUnit.SECONDS)
+            .healthCheck(Empty.getDefaultInstance());
+      } finally {
+        channel.shutdownNow();
+        assertTrue(channel.awaitTermination(5, TimeUnit.SECONDS));
+      }
+
+      try (DaprClient client = environment.clientBuilder().build()) {
+        var stub = client.newGrpcStub("foundation-grpc-it", MethodInvokeServiceGrpc::newBlockingStub);
+        assertTrue(stub.getMessages(MethodInvokeServiceProtos.GetMessagesRequest.getDefaultInstance())
+            .getMessagesMap().isEmpty());
+      }
+    } finally {
+      environment.stop();
+      environment.stop();
+    }
+
     assertClean(environment.identity());
   }
 

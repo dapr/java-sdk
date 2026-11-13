@@ -65,6 +65,7 @@ public class MethodInvokeIT {
     public void testInvoke() throws Exception {
         try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
+
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
                 client.invokeMethod(APP_NAME, "messages", message.getBytes(), HttpExtension.POST).block();
@@ -90,6 +91,7 @@ public class MethodInvokeIT {
     public void testInvokeWithObjects() throws Exception {
         try (DaprClient client = ENVIRONMENT.clientBuilder().build()) {
             client.waitForSidecar(10000).block();
+
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 Person person = new Person();
                 person.setName(String.format("Name %d", i));
