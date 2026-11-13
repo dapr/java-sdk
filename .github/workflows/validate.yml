@@ -31,8 +31,14 @@ jobs:
       fail-fast: false # Keep running if one leg fails.
       matrix:
         java: [ 17, 21, 25 ]
+        dapr_ref: [ '' ]
+        include:
+          - java: 17
+            dapr_ref: master
+    # The dapr master leg tracks a moving target, so it must not block the release legs.
+    continue-on-error: ${{ matrix.dapr_ref != '' }}
     env:
-      GOVER: "1.20"
+      GOVER: "1.26"
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
@@ -41,7 +47,7 @@ jobs:
       DAPR_RUNTIME_VER: 1.19.1
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.19.0-rc.1/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF:
+      DAPR_REF: ${{ matrix.dapr_ref }}
     steps:
       - uses: actions/checkout@v7
       - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -104,6 +110,12 @@ jobs:
           docker stop dapr_placement
           cd dapr
           ./dist/linux_amd64/release/placement &
+      - name: Override scheduler service.
+        if: env.DAPR_REF != ''
+        run: |
+          docker stop dapr_scheduler
+          cd dapr
+          ./dist/linux_amd64/release/scheduler --etcd-data-dir /tmp/dapr-scheduler --override-broadcast-host-port=localhost:50006 --etcd-client-listen-address=0.0.0.0 --healthz-port 8081 --metrics-port 9091 &
       - name: Install utilities dependencies
         run: |
           echo "PATH=$PATH:$HOME/.local/bin" >> $GITHUB_ENV
@@ -143,3 +155,8 @@ jobs:
             (cd examples && mm.py ./src/main/java/io/dapr/examples/actors/README.md)
             (cd examples && mm.py ./src/main/java/io/dapr/examples/querystate/README.md)
             (cd examples && mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md)
+      - name: Validate examples that need dapr master
+        if: env.DAPR_REF != ''
+        run: |
+          set -e
+          (cd examples && mm.py ./src/main/java/io/dapr/examples/workflows/schedule/README.md)
