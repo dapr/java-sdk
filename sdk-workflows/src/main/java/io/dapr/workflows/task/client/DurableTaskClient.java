@@ -167,6 +167,36 @@ public abstract class DurableTaskClient implements AutoCloseable {
    *     a default instance if no such instance is found. Please refer to method
    *     {@link OrchestrationMetadata#isInstanceFound()} to check if an instance is found.
    */
+  /**
+   * Raises an error for the oldest matching external-event wait in a workflow instance.
+   *
+   * <p>The matching {@link WorkflowContext#waitForExternalEvent(String)} task fails with a
+   * {@link io.dapr.workflows.task.exception.TaskFailedException}. If the workflow has not started waiting
+   * yet, the failure is buffered and delivered when the matching wait is registered.</p>
+   *
+   * @param instanceId the ID of the orchestration instance
+   * @param eventName the case-insensitive name of the external event
+   * @param exception the exception whose structured details are delivered to the workflow
+   */
+  public abstract void raiseError(String instanceId, String eventName, Exception exception);
+
+  /**
+   * Raises an error for an external-event wait on a workflow instance owned by another app.
+   *
+   * @param instanceId the ID of the orchestration instance
+   * @param eventName the case-insensitive name of the external event
+   * @param exception the exception whose structured details are delivered to the workflow
+   * @param appID the ID of the app that owns the target workflow instance, or null for the local app
+   */
+  public void raiseError(
+      String instanceId,
+      String eventName,
+      Exception exception,
+      @Nullable String appID) {
+    requireLocalRouting(appID);
+    this.raiseError(instanceId, eventName, exception);
+  }
+
   @Nullable
   public abstract OrchestrationMetadata getInstanceMetadata(String instanceId, boolean getInputsAndOutputs);
 

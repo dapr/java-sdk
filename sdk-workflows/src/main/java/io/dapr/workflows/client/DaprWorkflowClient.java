@@ -481,6 +481,36 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    * @return a page of workflow instance IDs
    */
+  /**
+   * Raises an exception for the oldest matching external-event wait in a workflow instance.
+   *
+   * @param workflowInstanceId the ID of the workflow instance that will handle the error
+   * @param eventName the case-insensitive name of the external event
+   * @param exception the exception whose structured details are delivered to the workflow
+   */
+  public void raiseError(String workflowInstanceId, String eventName, Exception exception) {
+    this.innerClient.raiseError(workflowInstanceId, eventName, exception);
+  }
+
+  /**
+   * Raises an exception for an external-event wait on a workflow instance owned by another app.
+   *
+   * <p>Permission to operate on workflows owned by another app is governed by the target app's
+   * WorkflowAccessPolicy.</p>
+   *
+   * @param workflowInstanceId the ID of the workflow instance that will handle the error
+   * @param eventName the case-insensitive name of the external event
+   * @param exception the exception whose structured details are delivered to the workflow
+   * @param appId the ID of the app that owns the target workflow instance, or null for the local app
+   */
+  public void raiseError(
+      String workflowInstanceId,
+      String eventName,
+      Exception exception,
+      @Nullable String appId) {
+    this.innerClient.raiseError(workflowInstanceId, eventName, exception, appId);
+  }
+
   public WorkflowInstancePage listInstanceIds() {
     return this.listInstanceIds(null, null);
   }

@@ -835,21 +835,31 @@ public final class TaskOrchestrationExecutor {
     private void handleEventRaised(HistoryEvents.HistoryEvent e) {
       HistoryEvents.EventRaisedEvent eventRaised = e.getEventRaised();
       String eventName = eventRaised.getName();
+      String normalizedEventName = eventName.toLowerCase(Locale.ROOT);
 
-      Queue<TaskRecord<?>> outstandingEventQueue = this.outstandingEvents.get(eventName);
+      Queue<TaskRecord<?>> outstandingEventQueue = this.outstandingEvents.get(normalizedEventName);
       if (outstandingEventQueue == null) {
         // No code is waiting for this event. Buffer it in case user-code waits for it later.
         this.unprocessedEvents.add(e);
         return;
       }
 
-      // Signal the first waiter in the queue with this event payload.
+      // Signal the first waiter in the queue with this event payload or failure.
       TaskRecord<?> matchingTaskRecord = outstandingEventQueue.remove();
       if (outstandingEventQueue.isEmpty()) {
-        this.outstandingEvents.remove(eventName);
+        this.outstandingEvents.remove(normalizedEventName);
       }
-      String rawResult = eventRaised.getInput().getValue();
       CompletableTask task = matchingTaskRecord.getTask();
+      if (eventRaised.hasFailureDetails()) {
+        ExternalEventTask<?> externalEventTask = (ExternalEventTask<?>) task;
+        task.completeExceptionally(new TaskFailedException(
+            eventName,
+            externalEventTask.taskId,
+            new WorkflowFailureDetails(eventRaised.getFailureDetails())));
+        return;
+      }
+
+      String rawResult = eventRaised.hasInput() ? eventRaised.getInput().getValue() : null;
       try {
         Object result = this.dataConverter.deserialize(
             rawResult,

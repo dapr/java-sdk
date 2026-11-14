@@ -27,7 +27,9 @@ import javax.annotation.Nullable;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Class that represents the details of a task failure.
@@ -81,6 +83,7 @@ public final class WorkflowFailureDetails {
   private final String errorMessage;
   private final String stackTrace;
   private final boolean isNonRetriable;
+  @Nullable private final WorkflowFailureDetails innerFailure;
 
   /**
    * Creates failure details from their individual parts.
@@ -98,16 +101,37 @@ public final class WorkflowFailureDetails {
       @Nullable String errorMessage,
       @Nullable String errorDetails,
       boolean isNonRetriable) {
+    this(errorType, errorMessage, errorDetails, isNonRetriable, null);
+  }
+
+  public WorkflowFailureDetails(
+      String errorType,
+      @Nullable String errorMessage,
+      @Nullable String errorDetails,
+      boolean isNonRetriable,
+      @Nullable WorkflowFailureDetails innerFailure) {
     this.errorType = errorType;
     this.stackTrace = errorDetails;
 
     // Error message can be null for things like NullPointerException but the gRPC contract doesn't allow null
     this.errorMessage = errorMessage != null ? errorMessage : "";
     this.isNonRetriable = isNonRetriable;
+    this.innerFailure = innerFailure;
   }
 
   public WorkflowFailureDetails(Exception exception) {
-    this(exception.getClass().getName(), exception.getMessage(), getFullStackTrace(exception), false);
+    this(exception, Collections.newSetFromMap(new IdentityHashMap<>()));
+  }
+
+  private WorkflowFailureDetails(Exception exception, Set<Throwable> seen) {
+    this(
+        exception.getClass().getName(),
+        exception.getMessage(),
+        getFullStackTrace(exception),
+        false,
+        exception.getCause() == null || !seen.add(exception)
+            ? null
+            : new WorkflowFailureDetails(exception.getCause(), seen));
   }
 
   /**
@@ -121,8 +145,9 @@ public final class WorkflowFailureDetails {
   public WorkflowFailureDetails(TaskFailureDetails proto) {
     this(proto.getErrorType(),
         proto.getErrorMessage(),
-        proto.getStackTrace().getValue(),
-        proto.getIsNonRetriable());
+        proto.hasStackTrace() ? proto.getStackTrace().getValue() : null,
+        proto.getIsNonRetriable(),
+        proto.hasInnerFailure() ? new WorkflowFailureDetails(proto.getInnerFailure()) : null);
   }
 
   /**
@@ -168,6 +193,16 @@ public final class WorkflowFailureDetails {
   }
 
   /**
+   * Gets the underlying failure that caused this failure, if one was provided.
+   *
+   * @return the nested failure details, or null when this is the root failure
+   */
+  @Nullable
+  public WorkflowFailureDetails getInnerFailure() {
+    return this.innerFailure;
+  }
+
+  /**
    * Returns {@code true} if the task failure was provided by the specified exception type, otherwise {@code false}.
    *
    * <p>This method allows checking if a task failed due to a specific exception type by attempting to load the class
@@ -188,15 +223,16 @@ public final class WorkflowFailureDetails {
       // Try using reflection to load the failure's class type and see if it's a subtype of the specified
       // exception. For example, this should always succeed if exceptionClass is System.Exception.
       Class<?> actualExceptionClass = Class.forName(resolvedClassName);
-      return exceptionClass.isAssignableFrom(actualExceptionClass);
+      if (exceptionClass.isAssignableFrom(actualExceptionClass)) {
+        return true;
+      }
     } catch (ClassNotFoundException ex) {
-      // Can't load the class and thus can't tell if it's related. Say so rather than failing silently:
-      // an unloadable error type is usually history written by a different application or SDK version,
-      // and a quiet false here is indistinguishable from a genuine "not caused by".
+      // The failure may have originated in another application or SDK version.
       LOGGER.warn("Cannot determine whether failure type '{}' is a {}: the class is not on the "
-          + "classpath, so isCausedBy is answering false.", actualClassName, exceptionClass.getName());
-      return false;
+          + "classpath; checking any nested cause instead.", actualClassName, exceptionClass.getName());
     }
+
+    return this.innerFailure != null && this.innerFailure.isCausedBy(exceptionClass);
   }
 
   /**
@@ -225,10 +261,14 @@ public final class WorkflowFailureDetails {
    * @return the protobuf failure details.
    */
   public TaskFailureDetails toProto() {
-    return TaskFailureDetails.newBuilder()
+    TaskFailureDetails.Builder builder = TaskFailureDetails.newBuilder()
         .setErrorType(this.getErrorType())
         .setErrorMessage(this.getErrorMessage())
         .setStackTrace(StringValue.of(this.getStackTrace() != null ? this.getStackTrace() : ""))
-        .build();
+        .setIsNonRetriable(this.isNonRetriable());
+    if (this.innerFailure != null) {
+      builder.setInnerFailure(this.innerFailure.toProto());
+    }
+    return builder.build();
   }
 }

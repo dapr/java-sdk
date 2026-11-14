@@ -21,6 +21,7 @@ import io.dapr.durabletask.implementation.protobuf.OrchestratorService;
 import io.dapr.durabletask.implementation.protobuf.TaskHubSidecarServiceGrpc;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.workflows.task.internal.Helpers;
+import io.dapr.workflows.task.exception.WorkflowFailureDetails;
 import io.dapr.workflows.task.serialization.DataConverter;
 import io.dapr.workflows.task.serialization.JacksonDataConverter;
 import io.grpc.Channel;
@@ -323,6 +324,29 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
     OrchestratorService.RaiseEventRequest request = builder.build();
     this.sidecarClient.raiseEvent(request);
 
+  }
+
+  @Override
+  public void raiseError(String instanceId, String eventName, Exception exception) {
+    this.raiseError(instanceId, eventName, exception, null);
+  }
+
+  @Override
+  public void raiseError(String instanceId, String eventName, Exception exception, @Nullable String appID) {
+    Helpers.throwIfArgumentNull(instanceId, "instanceId");
+    Helpers.throwIfArgumentNull(eventName, "eventName");
+    Helpers.throwIfArgumentNull(exception, "exception");
+
+    OrchestratorService.RaiseEventRequest.Builder builder = OrchestratorService.RaiseEventRequest.newBuilder()
+        .setInstanceId(instanceId)
+        .setName(eventName)
+        .setFailureDetails(new WorkflowFailureDetails(exception).toProto());
+
+    if (hasAppID(appID)) {
+      builder.setRouter(buildTaskRouter(appID));
+    }
+
+    this.sidecarClient.raiseError(builder.build());
   }
 
   @Override
