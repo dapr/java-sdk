@@ -300,6 +300,46 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
+   * Terminates a workflow and records the supplied reason in its durable history.
+   *
+   * @param workflowInstanceId workflow instance ID to terminate
+   * @param reason reason retained with the terminated workflow history
+   */
+  public void terminateWorkflowWithReason(String workflowInstanceId, String reason) {
+    this.terminateWorkflowWithReason(workflowInstanceId, reason, null, null);
+  }
+
+  /**
+   * Terminates a workflow and records the supplied reason in its durable history.
+   *
+   * @param workflowInstanceId workflow instance ID to terminate
+   * @param reason reason retained with the terminated workflow history
+   * @param output optional output to set for the terminated instance
+   */
+  public void terminateWorkflowWithReason(String workflowInstanceId, String reason, @Nullable Object output) {
+    this.terminateWorkflowWithReason(workflowInstanceId, reason, output, null);
+  }
+
+  /**
+   * Terminates a workflow and records the supplied reason in its durable history.
+   *
+   * @param workflowInstanceId workflow instance ID to terminate
+   * @param reason reason retained with the terminated workflow history
+   * @param output optional output to set for the terminated instance
+   * @param appId ID of the app that owns the workflow instance, or {@code null} for the local app
+   */
+  public void terminateWorkflowWithReason(
+      String workflowInstanceId,
+      String reason,
+      @Nullable Object output,
+      @Nullable String appId) {
+    if (reason == null) {
+      throw new IllegalArgumentException("reason must not be null");
+    }
+    this.innerClient.terminate(workflowInstanceId, output, appId, reason);
+  }
+
+  /**
    * Fetches workflow instance metadata from the configured durable store.
    *
    * @param instanceId          the unique ID of the workflow instance to fetch
