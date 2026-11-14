@@ -428,6 +428,11 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
 
   @Override
   public void terminate(String instanceId, @Nullable Object output, @Nullable String appID) {
+    this.terminate(instanceId, output, appID, null);
+  }
+
+  @Override
+  public void terminate(String instanceId, @Nullable Object output, @Nullable String appID, @Nullable String reason) {
     Helpers.throwIfArgumentNull(instanceId, "instanceId");
     String serializeOutput = this.dataConverter.serialize(output);
     this.logger.fine(() -> String.format(
@@ -441,6 +446,9 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
     }
     if (hasAppID(appID)) {
       builder.setRouter(buildTaskRouter(appID));
+    }
+    if (reason != null) {
+      builder.setReason(StringValue.of(reason));
     }
     this.sidecarClient.terminateInstance(builder.build());
   }
