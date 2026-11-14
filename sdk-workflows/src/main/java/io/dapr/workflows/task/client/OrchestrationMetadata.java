@@ -43,6 +43,7 @@ public final class OrchestrationMetadata {
   private final String serializedOutput;
   private final String serializedCustomStatus;
   private final WorkflowFailureDetails failureDetails;
+  @Nullable private final String terminationReason;
 
   OrchestrationMetadata(
       OrchestratorService.GetInstanceResponse fetchResponse,
@@ -67,6 +68,7 @@ public final class OrchestrationMetadata {
     this.serializedOutput = state.getOutput().getValue();
     this.serializedCustomStatus = state.getCustomStatus().getValue();
     this.failureDetails = new WorkflowFailureDetails(state.getFailureDetails());
+    this.terminationReason = state.hasTerminationReason() ? state.getTerminationReason().getValue() : null;
   }
 
   /**
@@ -142,6 +144,16 @@ public final class OrchestrationMetadata {
    */
   public WorkflowFailureDetails getFailureDetails() {
     return this.failureDetails;
+  }
+
+  /**
+   * Gets the reason supplied when this orchestration was terminated, if any.
+   *
+   * @return the termination reason, or {@code null} when no reason was supplied
+   */
+  @Nullable
+  public String getTerminationReason() {
+    return this.terminationReason;
   }
 
   /**
