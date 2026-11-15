@@ -91,10 +91,15 @@ public interface WorkflowState {
   /**
    * Gets the reason supplied when the workflow was terminated, if any.
    *
+   * <p>The default implementation returns {@code null} so existing custom
+   * implementations of this interface remain compatible.</p>
+   *
    * @return the termination reason, or {@code null} when no reason was supplied
    */
   @Nullable
-  String getTerminationReason();
+  default String getTerminationReason() {
+    return null;
+  }
 
   /**
    * Gets a value indicating whether the workflow instance was running at the time
