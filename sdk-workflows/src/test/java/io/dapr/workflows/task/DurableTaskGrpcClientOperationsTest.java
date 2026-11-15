@@ -283,7 +283,7 @@ class DurableTaskGrpcClientOperationsTest {
 
     OrchestratorService.TerminateRequest request = terminateRequest.get();
     assertEquals(INSTANCE_ID, request.getInstanceId());
-    assertEquals("\\"cancelled\\"", request.getOutput().getValue());
+    assertEquals("\"cancelled\"", request.getOutput().getValue());
     assertTrue(request.hasReason());
     assertEquals("operator requested", request.getReason().getValue());
   }
