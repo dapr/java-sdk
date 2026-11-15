@@ -83,6 +83,22 @@ public class ObservationDaprWorkflowClient extends DaprWorkflowClient {
     return Observation.createNotStarted(name, observationRegistry);
   }
 
+  private void observeTerminationWithReason(String workflowInstanceId, Runnable termination) {
+    Observation obs = observation("dapr.workflow.terminate")
+        .highCardinalityKeyValue("dapr.workflow.instance_id", workflowInstanceId)
+        .start();
+    try {
+      try (Observation.Scope ignored = obs.openScope()) {
+        termination.run();
+      }
+    } catch (RuntimeException e) {
+      obs.error(e);
+      throw e;
+    } finally {
+      obs.stop();
+    }
+  }
+
   // -------------------------------------------------------------------------
   // scheduleNewWorkflow — only String-based "leaf" overloads are overridden.
   // Class<T>-based overloads in the parent delegate to this.scheduleNewWorkflow(String, ...)
@@ -217,6 +233,30 @@ public class ObservationDaprWorkflowClient extends DaprWorkflowClient {
     } finally {
       obs.stop();
     }
+  }
+
+  @Override
+  public void terminateWorkflowWithReason(String workflowInstanceId, String reason) {
+    observeTerminationWithReason(
+        workflowInstanceId, () -> super.terminateWorkflowWithReason(workflowInstanceId, reason));
+  }
+
+  @Override
+  public void terminateWorkflowWithReason(
+      String workflowInstanceId, String reason, @Nullable Object output) {
+    observeTerminationWithReason(
+        workflowInstanceId, () -> super.terminateWorkflowWithReason(workflowInstanceId, reason, output));
+  }
+
+  @Override
+  public void terminateWorkflowWithReason(
+      String workflowInstanceId,
+      String reason,
+      @Nullable Object output,
+      @Nullable String appId) {
+    observeTerminationWithReason(
+        workflowInstanceId,
+        () -> super.terminateWorkflowWithReason(workflowInstanceId, reason, output, appId));
   }
 
   // -------------------------------------------------------------------------
