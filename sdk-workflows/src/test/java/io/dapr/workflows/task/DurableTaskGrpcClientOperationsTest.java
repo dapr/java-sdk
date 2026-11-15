@@ -65,6 +65,7 @@ class DurableTaskGrpcClientOperationsTest {
   private final AtomicReference<OrchestratorService.RerunWorkflowFromEventRequest> rerunRequest =
       new AtomicReference<>();
   private final AtomicReference<OrchestratorService.CreateInstanceRequest> createRequest = new AtomicReference<>();
+  private final AtomicReference<OrchestratorService.TerminateRequest> terminateRequest = new AtomicReference<>();
 
   @BeforeEach
   void setUp() throws Exception {
@@ -145,6 +146,15 @@ class DurableTaskGrpcClientOperationsTest {
             responseObserver.onNext(OrchestratorService.CreateInstanceResponse.newBuilder()
                 .setInstanceId(request.getInstanceId().isEmpty() ? "generated-1" : request.getInstanceId())
                 .build());
+            responseObserver.onCompleted();
+          }
+
+          @Override
+          public void terminateInstance(
+              OrchestratorService.TerminateRequest request,
+              StreamObserver<OrchestratorService.TerminateResponse> responseObserver) {
+            terminateRequest.set(request);
+            responseObserver.onNext(OrchestratorService.TerminateResponse.getDefaultInstance());
             responseObserver.onCompleted();
           }
         })
@@ -265,6 +275,34 @@ class DurableTaskGrpcClientOperationsTest {
   void shouldRequireASourceInstanceToRerunFrom() {
     assertThrows(IllegalArgumentException.class,
         () -> client.rerunWorkflowFromEvent(null, 5, null, null, false));
+  }
+
+  @Test
+  void shouldSendTheTerminationReasonAndOutputToTheSidecar() {
+    client.terminate(INSTANCE_ID, "cancelled", null, "operator requested");
+
+    OrchestratorService.TerminateRequest request = terminateRequest.get();
+    assertEquals(INSTANCE_ID, request.getInstanceId());
+    assertEquals("\\"cancelled\\"", request.getOutput().getValue());
+    assertTrue(request.hasReason());
+    assertEquals("operator requested", request.getReason().getValue());
+  }
+
+  @Test
+  void shouldPreserveAnExplicitlyEmptyTerminationReason() {
+    client.terminate(INSTANCE_ID, null, null, "");
+
+    OrchestratorService.TerminateRequest request = terminateRequest.get();
+    assertTrue(request.hasReason());
+    assertEquals("", request.getReason().getValue());
+    assertFalse(request.hasOutput());
+  }
+
+  @Test
+  void shouldOmitTheReasonForLegacyTerminationCalls() {
+    client.terminate(INSTANCE_ID, null);
+
+    assertFalse(terminateRequest.get().hasReason());
   }
 
   @Test
