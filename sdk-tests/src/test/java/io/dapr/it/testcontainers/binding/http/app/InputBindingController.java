@@ -11,8 +11,10 @@
 limitations under the License.
 */
 
-package io.dapr.it.binding.http;
+package io.dapr.it.testcontainers.binding.http.app;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -20,9 +22,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
 
 /**
  * SpringBoot Controller to handle input binding.
@@ -30,16 +31,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RestController
 public class InputBindingController {
 
-  private static final List<String> messagesReceived = Collections.synchronizedList(new ArrayList());
+  private final List<String> messagesReceived = new ArrayList<>();
 
-  private static final AtomicBoolean initialized = new AtomicBoolean(false);
+  private boolean initialized;
 
   @PostMapping(path = "/sample123")
   @PutMapping(path = "/sample123")
-  public void handleInputBinding(@RequestBody(required = false) String body) {
+  public synchronized void handleInputBinding(@RequestBody(required = false) String body) {
     if ("\"ping\"".equals(body)) {
       // Initialization messages are useful to detect if input binding is up.
-      initialized.set(true);
+      initialized = true;
       System.out.println("Input binding is up: " + body);
       return;
     }
@@ -49,8 +50,8 @@ public class InputBindingController {
   }
 
   @GetMapping(path = "/messages")
-  public List<String> getMessages() {
-    return messagesReceived;
+  public synchronized List<String> getMessages() {
+    return new ArrayList<>(messagesReceived);
   }
 
   @GetMapping(path = "/")
@@ -63,10 +64,19 @@ public class InputBindingController {
   }
 
   @GetMapping(path = "/initialized")
-  public void initialized() {
-    if (!initialized.get()) {
-      throw new RuntimeException("Input binding is not initialized yet.");
-    }
+  public synchronized boolean initialized() {
+    return initialized;
+  }
+
+  @PostMapping(path = "/reset")
+  public synchronized void reset() {
+    messagesReceived.clear();
+    initialized = false;
+  }
+
+  @GetMapping(path = "/fixture/upstream/not-found")
+  public ResponseEntity<Map<String, String>> upstreamNotFound() {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("marker", "binding-fixture-not-found"));
   }
 
 }

@@ -17,7 +17,9 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.MethodInvokeServiceGrpc;
 import io.dapr.it.MethodInvokeServiceProtos;
+import io.dapr.it.testcontainers.binding.http.app.InputBindingService;
 import io.dapr.it.testcontainers.methodinvoke.http.app.MethodInvokeService;
+import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprProtocol;
 import io.dapr.v1.AppCallbackHealthCheckGrpc;
 import io.grpc.ManagedChannel;
@@ -25,6 +27,8 @@ import io.grpc.ManagedChannelBuilder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.kafka.KafkaContainer;
 
 import java.time.Duration;
 import java.util.List;
@@ -118,6 +122,70 @@ class DaprTestEnvironmentIT {
     }
 
     assertClean(environment.identity());
+  }
+
+  @Test
+  void ownsKafkaAndFiveChildrenOnOneNetwork() {
+    KafkaContainer kafka = kafka();
+    DaprTestEnvironment environment = new DaprTestEnvironment("foundation-kafka-it", InputBindingService.class)
+        .withPrerequisite(kafka, "kafka", List.of(kafkaBinding()));
+    try {
+      environment.start();
+      assertEquals(5, containers(environment.identity()));
+      assertEquals(1, networks(environment.identity()));
+      var network = DockerClientFactory.instance().client().listNetworksCmd()
+          .withFilter("label", List.of(LABEL + "=" + environment.identity())).exec().get(0);
+      assertEquals(5, DockerClientFactory.instance().client().inspectNetworkCmd()
+          .withNetworkId(network.getId()).exec().getContainers().size());
+      var kafkaNetwork = DockerClientFactory.instance().client().inspectContainerCmd(kafka.getContainerId())
+          .exec().getNetworkSettings().getNetworks().values().iterator().next();
+      assertTrue(kafkaNetwork.getAliases().contains("kafka"));
+      assertTrue(kafka.getEnvMap().containsKey("KAFKA_NUM_PARTITIONS"));
+      assertEquals("1", kafka.getEnvMap().get("KAFKA_NUM_PARTITIONS"));
+    } finally {
+      environment.stop();
+    }
+    assertClean(environment.identity());
+  }
+
+  @Test
+  void failedKafkaReadinessRollsBackItsNetwork() {
+    KafkaContainer failure = kafka().withStartupAttempts(1)
+        .waitingFor(Wait.forLogMessage(".*never-a-broker-readiness-message.*\\n", 1)
+            .withStartupTimeout(Duration.ofSeconds(5)));
+    DaprTestEnvironment environment = new DaprTestEnvironment("foundation-prerequisite-failure", MethodInvokeService.class)
+        .withPrerequisite(failure, "kafka", List.of());
+    try {
+      assertThrows(RuntimeException.class, environment::start);
+    } finally {
+      environment.stop();
+    }
+    assertClean(environment.identity());
+  }
+
+  @Test
+  void failedSidecarRollsBackKafkaAndOtherChildren() {
+    DaprTestEnvironment environment = new DaprTestEnvironment("foundation-sidecar-failure", InputBindingService.class)
+        .withPrerequisite(kafka(), "kafka", List.of(
+            new Component("invalid", "bindings.nonexistent", "v1", Map.of())));
+    try {
+      assertThrows(RuntimeException.class, environment::start);
+      assertTrue(environment.daprOutput().contains("couldn't find binding invalid"), environment.daprOutput());
+    } finally {
+      environment.stop();
+    }
+    assertClean(environment.identity());
+  }
+
+  private static KafkaContainer kafka() {
+    return new KafkaContainer("apache/kafka:3.8.0").withListener("kafka:19092")
+        .withEnv("KAFKA_NUM_PARTITIONS", "1");
+  }
+
+  private static Component kafkaBinding() {
+    return new Component("sample123", "bindings.kafka", "v1", Map.of(
+        "brokers", "kafka:19092", "topics", "foundation-it", "publishTopic", "foundation-it",
+        "consumerGroup", "foundation-it", "authRequired", "false", "initialOffset", "oldest"));
   }
 
   private static long containers(String identity) {
