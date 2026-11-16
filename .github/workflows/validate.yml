@@ -109,13 +109,13 @@ jobs:
         run: |
           docker stop dapr_placement
           cd dapr
-          ./dist/linux_amd64/release/placement &
+          ./dist/linux_amd64/release/placement --healthz-port 58080 --metrics-port 59090 &
       - name: Override scheduler service.
         if: env.DAPR_REF != ''
         run: |
           docker stop dapr_scheduler
           cd dapr
-          ./dist/linux_amd64/release/scheduler --etcd-data-dir /tmp/dapr-scheduler --override-broadcast-host-port=localhost:50006 --etcd-client-listen-address=0.0.0.0 --healthz-port 8081 --metrics-port 9091 &
+          ./dist/linux_amd64/release/scheduler --etcd-data-dir /tmp/dapr-scheduler --override-broadcast-host-port=localhost:50006 --etcd-client-listen-address=0.0.0.0 --healthz-port 58081 --metrics-port 59091 &
       - name: Install utilities dependencies
         run: |
           echo "PATH=$PATH:$HOME/.local/bin" >> $GITHUB_ENV
