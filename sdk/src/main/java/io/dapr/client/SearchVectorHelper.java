@@ -185,10 +185,14 @@ final class SearchVectorHelper {
   // because a filter holding it would match the wrong documents or records.
   private static double toDouble(Number number) {
     if (number instanceof Double || number instanceof Float) {
-      // A float goes through its decimal form, so that 1.1f stays 1.1 rather than becoming 1.100000023841858.
-      double value = number instanceof Float ? Double.parseDouble(number.toString()) : number.doubleValue();
+      double value = number.doubleValue();
       if (!Double.isFinite(value)) {
         throw new IllegalArgumentException("Numbers must be finite, not " + number + ".");
+      }
+      // A fractional float goes through its decimal form, so that 1.1f stays 1.1 rather than becoming
+      // 1.100000023841858. A whole float is sent as is: its decimal form can name another integer.
+      if (number instanceof Float && value != Math.rint(value)) {
+        return Double.parseDouble(number.toString());
       }
       return value;
     }
@@ -199,8 +203,13 @@ final class SearchVectorHelper {
     return value;
   }
 
-  // 2^60 only equals the double's binary value, and BigDecimal("0.1") only equals its decimal form.
+  // 2^60 equals the double's binary value. A fraction such as BigDecimal("0.1") may equal its shortest decimal form
+  // instead, but an integer must not: for 2^60 that form is 1152921504606846980 on JDK 17 and 1152921504606847000
+  // on later JDKs, and neither is the integer that is sent.
   private static boolean holdsExactly(double value, BigDecimal number) {
-    return number.compareTo(new BigDecimal(value)) == 0 || number.compareTo(BigDecimal.valueOf(value)) == 0;
+    if (number.compareTo(new BigDecimal(value)) == 0) {
+      return true;
+    }
+    return number.stripTrailingZeros().scale() > 0 && number.compareTo(BigDecimal.valueOf(value)) == 0;
   }
 }

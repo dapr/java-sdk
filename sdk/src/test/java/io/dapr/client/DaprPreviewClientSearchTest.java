@@ -857,7 +857,8 @@ public class DaprPreviewClientSearchTest {
         "big", BigInteger.valueOf(1965),
         "power", 1L << 60,
         "min", Long.MIN_VALUE,
-        "bigPower", BigInteger.TWO.pow(70)))).getQuery();
+        "bigPower", BigInteger.TWO.pow(70),
+        "wholeFloat", 0x1p60f))).getQuery();
 
     Map<String, Value> sent = query.getFilter().getFieldsMap();
     assertEquals(5d, sent.get("int").getNumberValue());
@@ -869,6 +870,7 @@ public class DaprPreviewClientSearchTest {
     assertEquals(0x1p60, sent.get("power").getNumberValue());
     assertEquals(-0x1p63, sent.get("min").getNumberValue());
     assertEquals(0x1p70, sent.get("bigPower").getNumberValue());
+    assertEquals(0x1p60, sent.get("wholeFloat").getNumberValue());
   }
 
   @Test
@@ -877,6 +879,13 @@ public class DaprPreviewClientSearchTest {
     List<Number> numbers = List.of(
         (1L << 53) + 1,
         Long.MAX_VALUE,
+        // Each is sent as 2^60, whose shortest decimal form is 1152921504606846980 on JDK 17 and
+        // 1152921504606847000 on JDK 19 and later.
+        1152921504606846980L,
+        1152921504606847000L,
+        new BigDecimal("1152921504606847000"),
+        new BigDecimal("1152921504606846980.0"),
+        new BigDecimal("1152921504606847000.0"),
         new BigDecimal("0.1000000000000000055"),
         BigInteger.TEN.pow(400));
     for (Number number : numbers) {
