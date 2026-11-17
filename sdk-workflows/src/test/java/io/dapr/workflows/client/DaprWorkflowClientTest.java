@@ -380,6 +380,17 @@ public class DaprWorkflowClientTest {
   }
 
   @Test
+  public void raiseError() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedEventName = "TestEventName";
+    Exception expectedException = new IllegalStateException("test failure");
+
+    client.raiseError(expectedInstanceId, expectedEventName, expectedException);
+
+    verify(mockInnerClient, times(1)).raiseError(expectedInstanceId, expectedEventName, expectedException);
+  }
+
+  @Test
   public void suspendResumeInstance() {
     String expectedArgument = "TestWorkflowInstanceId";
     client.suspendWorkflow(expectedArgument, "suspending workflow instance");
@@ -601,6 +612,19 @@ public class DaprWorkflowClientTest {
 
     verify(mockInnerClient, times(1)).raiseEvent(expectedInstanceId,
         expectedEventName, expectedEventPayload, expectedAppId);
+  }
+
+  @Test
+  public void raiseErrorWithAppId() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedEventName = "TestEventName";
+    Exception expectedException = new IllegalStateException("test failure");
+    String expectedAppId = "targetApp";
+
+    client.raiseError(expectedInstanceId, expectedEventName, expectedException, expectedAppId);
+
+    verify(mockInnerClient, times(1)).raiseError(
+        expectedInstanceId, expectedEventName, expectedException, expectedAppId);
   }
 
   @Test
