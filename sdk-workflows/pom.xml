@@ -197,6 +197,19 @@
               <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>getWorkflowScheduleProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${durabletask.proto.baseurl}/workflow_schedule.proto</url>
+              <outputFileName>workflow_schedule.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>

@@ -16,6 +16,8 @@ package io.dapr.workflows.client;
 import com.google.protobuf.Timestamp;
 import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService.ListInstanceIDsResponse;
+import io.dapr.durabletask.implementation.protobuf.WorkflowScheduleOuterClass;
+import io.dapr.workflows.task.serialization.DataConverter;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,6 +36,34 @@ final class WorkflowClientConverter {
     return new WorkflowInstancePage(
         new ArrayList<>(response.getInstanceIdsList()),
         response.hasContinuationToken() ? response.getContinuationToken() : null);
+  }
+
+  static WorkflowScheduleOuterClass.WorkflowSchedule toWorkflowScheduleProto(
+      String name, String workflowName, String schedule, WorkflowScheduleOptions options) {
+    WorkflowScheduleOuterClass.WorkflowSchedule.Builder builder = WorkflowScheduleOuterClass.WorkflowSchedule
+        .newBuilder()
+        .setName(name)
+        .setWorkflowName(workflowName)
+        .setSchedule(schedule);
+    if (options.getDueTime() != null) {
+      builder.setDueTime(DataConverter.getTimestampFromInstant(options.getDueTime()));
+    }
+    if (options.getExpirationTime() != null) {
+      builder.setExpirationTime(DataConverter.getTimestampFromInstant(options.getExpirationTime()));
+    }
+    if (options.getRepeats() != null) {
+      builder.setRepeats(options.getRepeats());
+    }
+    if (options.getTargetAppId() != null) {
+      builder.setTargetAppID(options.getTargetAppId());
+    }
+    if (options.getTargetAppNamespace() != null) {
+      builder.setTargetAppNamespace(options.getTargetAppNamespace());
+    }
+    if (options.isSkipMissed()) {
+      builder.setSkipMissed(true);
+    }
+    return builder.build();
   }
 
   static List<WorkflowHistoryEvent> toWorkflowHistory(List<HistoryEvent> events) {

@@ -13,11 +13,14 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
+import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import io.dapr.config.Properties;
 import io.dapr.durabletask.implementation.protobuf.HistoryEvents;
 import io.dapr.durabletask.implementation.protobuf.HistoryEvents.HistoryEvent;
+import io.dapr.durabletask.implementation.protobuf.Orchestration;
 import io.dapr.durabletask.implementation.protobuf.OrchestratorService.ListInstanceIDsResponse;
+import io.dapr.durabletask.implementation.protobuf.WorkflowScheduleOuterClass;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
@@ -403,11 +406,11 @@ public class DaprWorkflowClientTest {
         .addInstanceIds("id-1").addInstanceIds("id-2")
         .setContinuationToken("next-token")
         .build();
-    when(mockInnerClient.listInstanceIds("tok", 50)).thenReturn(response);
+    when(mockInnerClient.listInstanceIds("tok", 50, null)).thenReturn(response);
 
     WorkflowInstancePage page = client.listInstanceIds("tok", 50);
 
-    verify(mockInnerClient, times(1)).listInstanceIds("tok", 50);
+    verify(mockInnerClient, times(1)).listInstanceIds("tok", 50, null);
     assertEquals(Arrays.asList("id-1", "id-2"), page.getInstanceIds());
     assertEquals("next-token", page.getContinuationToken());
   }
@@ -415,11 +418,11 @@ public class DaprWorkflowClientTest {
   @Test
   public void listInstanceIdsNoArgs() {
     ListInstanceIDsResponse response = ListInstanceIDsResponse.newBuilder().addInstanceIds("id-1").build();
-    when(mockInnerClient.listInstanceIds(null, null)).thenReturn(response);
+    when(mockInnerClient.listInstanceIds(null, null, null)).thenReturn(response);
 
     WorkflowInstancePage page = client.listInstanceIds();
 
-    verify(mockInnerClient, times(1)).listInstanceIds(null, null);
+    verify(mockInnerClient, times(1)).listInstanceIds(null, null, null);
     assertEquals(Arrays.asList("id-1"), page.getInstanceIds());
     assertNull(page.getContinuationToken());
   }
@@ -427,7 +430,221 @@ public class DaprWorkflowClientTest {
   @Test
   public void listInstanceIdsRejectsNonPositivePageSize() {
     assertThrows(IllegalArgumentException.class, () -> client.listInstanceIds(null, 0));
-    verify(mockInnerClient, never()).listInstanceIds(any(), any());
+    verify(mockInnerClient, never()).listInstanceIds(any(), any(), any());
+  }
+
+  @Test
+  public void listInstanceIdsWithPrefix() {
+    ListInstanceIDsResponse response = ListInstanceIDsResponse.newBuilder().addInstanceIds("nightly_1").build();
+    when(mockInnerClient.listInstanceIds(null, 10, "nightly_")).thenReturn(response);
+
+    WorkflowInstancePage page = client.listInstanceIds(null, 10, "nightly_");
+
+    assertEquals(Arrays.asList("nightly_1"), page.getInstanceIds());
+  }
+
+  @Test
+  public void createWorkflowSchedule() {
+    Instant dueTime = Instant.ofEpochSecond(100);
+    Instant expirationTime = Instant.ofEpochSecond(200);
+    WorkflowScheduleOptions options = new WorkflowScheduleOptions()
+        .setInput("payload")
+        .setDueTime(dueTime)
+        .setExpirationTime(expirationTime)
+        .setRepeats(3)
+        .setTargetAppId("app")
+        .setTargetAppNamespace("ns")
+        .setOverwrite(true)
+        .setSkipMissed(true);
+
+    client.createWorkflowSchedule("nightly", "wf", "@daily", options);
+
+    ArgumentCaptor<WorkflowScheduleOuterClass.WorkflowSchedule> captor =
+        ArgumentCaptor.forClass(WorkflowScheduleOuterClass.WorkflowSchedule.class);
+    verify(mockInnerClient, times(1)).createWorkflowSchedule(captor.capture(), eq("payload"), eq(true));
+    WorkflowScheduleOuterClass.WorkflowSchedule schedule = captor.getValue();
+    assertEquals("nightly", schedule.getName());
+    assertEquals("wf", schedule.getWorkflowName());
+    assertEquals("@daily", schedule.getSchedule());
+    assertEquals(100, schedule.getDueTime().getSeconds());
+    assertEquals(200, schedule.getExpirationTime().getSeconds());
+    assertEquals(3, schedule.getRepeats());
+    assertEquals("app", schedule.getTargetAppID());
+    assertEquals("ns", schedule.getTargetAppNamespace());
+    assertTrue(schedule.getSkipMissed());
+    assertFalse(schedule.hasInput());
+  }
+
+  @Test
+  public void createWorkflowScheduleWithClassAndNoOptions() {
+    client.createWorkflowSchedule("nightly", TestWorkflow.class, "@every 1h", null);
+
+    ArgumentCaptor<WorkflowScheduleOuterClass.WorkflowSchedule> captor =
+        ArgumentCaptor.forClass(WorkflowScheduleOuterClass.WorkflowSchedule.class);
+    verify(mockInnerClient, times(1)).createWorkflowSchedule(captor.capture(), eq(null), eq(false));
+    WorkflowScheduleOuterClass.WorkflowSchedule schedule = captor.getValue();
+    assertEquals(TestWorkflow.class.getCanonicalName(), schedule.getWorkflowName());
+    assertFalse(schedule.hasDueTime());
+    assertFalse(schedule.hasExpirationTime());
+    assertFalse(schedule.hasRepeats());
+    assertFalse(schedule.hasTargetAppID());
+    assertFalse(schedule.hasTargetAppNamespace());
+    assertFalse(schedule.hasSkipMissed());
+  }
+
+  @Test
+  public void createWorkflowScheduleRejectsEmptyName() {
+    assertThrows(IllegalArgumentException.class, () -> client.createWorkflowSchedule("", "wf", "@daily", null));
+    verify(mockInnerClient, never()).createWorkflowSchedule(any(), any(), anyBoolean());
+  }
+
+  @Test
+  public void workflowScheduleOptionsRejectsZeroRepeats() {
+    assertThrows(IllegalArgumentException.class, () -> new WorkflowScheduleOptions().setRepeats(0));
+  }
+
+  @Test
+  public void getWorkflowSchedule() {
+    WorkflowScheduleOuterClass.WorkflowSchedule proto = WorkflowScheduleOuterClass.WorkflowSchedule.newBuilder()
+        .setName("nightly")
+        .setWorkflowName("wf")
+        .setSchedule("@daily")
+        .setInput(StringValue.of("\"payload\""))
+        .setRepeats(5)
+        .setSkipMissed(true)
+        .setStatus(WorkflowScheduleOuterClass.WorkflowScheduleStatus.newBuilder()
+            .setState(WorkflowScheduleOuterClass.WorkflowScheduleState.WORKFLOW_SCHEDULE_STATE_ACTIVE)
+            .setCreatedAt(Timestamp.newBuilder().setSeconds(10))
+            .setNextRunTime(Timestamp.newBuilder().setSeconds(30))
+            .setLastRunTime(Timestamp.newBuilder().setSeconds(20))
+            .setRunCount(2)
+            .setLastRun(WorkflowScheduleOuterClass.WorkflowScheduleRun.newBuilder()
+                .setInstanceId("nightly_19700101T000020Z")
+                .setRuntimeStatus(Orchestration.OrchestrationStatus.ORCHESTRATION_STATUS_FAILED)
+                .setCreatedTimestamp(Timestamp.newBuilder().setSeconds(20))
+                .setLastUpdatedTimestamp(Timestamp.newBuilder().setSeconds(21))
+                .setFailureDetails(Orchestration.TaskFailureDetails.newBuilder()
+                    .setErrorType("java.lang.IllegalStateException")
+                    .setErrorMessage("boom"))))
+        .build();
+    when(mockInnerClient.getWorkflowSchedule("nightly")).thenReturn(proto);
+
+    WorkflowSchedule schedule = client.getWorkflowSchedule("nightly");
+
+    assertEquals("nightly", schedule.getName());
+    assertEquals("wf", schedule.getWorkflowName());
+    assertEquals("@daily", schedule.getSchedule());
+    assertEquals("\"payload\"", schedule.getSerializedInput());
+    assertEquals(5, schedule.getRepeats());
+    assertTrue(schedule.isSkipMissed());
+    assertNull(schedule.getDueTime());
+    assertNull(schedule.getExpirationTime());
+    assertNull(schedule.getTargetAppId());
+    assertNull(schedule.getTargetAppNamespace());
+
+    WorkflowScheduleStatus status = schedule.getStatus();
+    assertEquals(WorkflowScheduleState.ACTIVE, status.getState());
+    assertEquals(Instant.ofEpochSecond(10), status.getCreatedAt());
+    assertEquals(Instant.ofEpochSecond(30), status.getNextRunTime());
+    assertEquals(Instant.ofEpochSecond(20), status.getLastRunTime());
+    assertEquals(2, status.getRunCount());
+    assertNull(status.getFailureMessage());
+
+    WorkflowScheduleRun lastRun = status.getLastRun();
+    assertEquals("nightly_19700101T000020Z", lastRun.getInstanceId());
+    assertEquals(WorkflowRuntimeStatus.FAILED, lastRun.getRuntimeStatus());
+    assertEquals(Instant.ofEpochSecond(20), lastRun.getCreatedAt());
+    assertEquals(Instant.ofEpochSecond(21), lastRun.getLastUpdatedAt());
+    assertNull(lastRun.getSerializedOutput());
+    assertEquals("boom", lastRun.getFailureDetails().getErrorMessage());
+    assertTrue(lastRun.getFailureDetails().isCausedBy(IllegalStateException.class));
+  }
+
+  @Test
+  public void getWorkflowScheduleWithPurgedLastRun() {
+    when(mockInnerClient.getWorkflowSchedule("nightly")).thenReturn(
+        WorkflowScheduleOuterClass.WorkflowSchedule.newBuilder()
+            .setName("nightly")
+            .setStatus(WorkflowScheduleOuterClass.WorkflowScheduleStatus.newBuilder()
+                .setState(WorkflowScheduleOuterClass.WorkflowScheduleState.WORKFLOW_SCHEDULE_STATE_FAILED)
+                .setFailureMessage(StringValue.of("broken"))
+                .setLastRun(WorkflowScheduleOuterClass.WorkflowScheduleRun.newBuilder().setInstanceId("nightly_x")))
+            .build());
+
+    WorkflowScheduleStatus status = client.getWorkflowSchedule("nightly").getStatus();
+
+    assertEquals(WorkflowScheduleState.FAILED, status.getState());
+    assertEquals("broken", status.getFailureMessage());
+    assertNull(status.getNextRunTime());
+    WorkflowScheduleRun lastRun = status.getLastRun();
+    assertEquals("nightly_x", lastRun.getInstanceId());
+    assertNull(lastRun.getRuntimeStatus());
+    assertNull(lastRun.getCreatedAt());
+    assertNull(lastRun.getFailureDetails());
+  }
+
+  @Test
+  public void getWorkflowSchedulePropagatesNotFound() {
+    when(mockInnerClient.getWorkflowSchedule("missing")).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
+
+    StatusRuntimeException e = assertThrows(StatusRuntimeException.class,
+        () -> client.getWorkflowSchedule("missing"));
+    assertEquals(Status.Code.NOT_FOUND, e.getStatus().getCode());
+  }
+
+  @Test
+  public void listWorkflowSchedules() {
+    when(mockInnerClient.listWorkflowSchedules("tok", 2)).thenReturn(
+        WorkflowScheduleOuterClass.ListWorkflowSchedulesResponse.newBuilder()
+            .addSchedules(WorkflowScheduleOuterClass.WorkflowSchedule.newBuilder().setName("a"))
+            .addSchedules(WorkflowScheduleOuterClass.WorkflowSchedule.newBuilder().setName("b"))
+            .setContinuationToken("next")
+            .build());
+
+    WorkflowSchedulePage page = client.listWorkflowSchedules("tok", 2);
+
+    assertEquals(2, page.getSchedules().size());
+    assertEquals("a", page.getSchedules().get(0).getName());
+    assertFalse(page.getSchedules().get(0).isSkipMissed());
+    assertNull(page.getSchedules().get(0).getStatus());
+    assertEquals("b", page.getSchedules().get(1).getName());
+    assertEquals("next", page.getContinuationToken());
+  }
+
+  @Test
+  public void listWorkflowSchedulesNoArgs() {
+    when(mockInnerClient.listWorkflowSchedules(null, null)).thenReturn(
+        WorkflowScheduleOuterClass.ListWorkflowSchedulesResponse.getDefaultInstance());
+
+    WorkflowSchedulePage page = client.listWorkflowSchedules();
+
+    assertTrue(page.getSchedules().isEmpty());
+    assertNull(page.getContinuationToken());
+  }
+
+  @Test
+  public void listWorkflowSchedulesRejectsNonPositivePageSize() {
+    assertThrows(IllegalArgumentException.class, () -> client.listWorkflowSchedules(null, 0));
+    verify(mockInnerClient, never()).listWorkflowSchedules(any(), any());
+  }
+
+  @Test
+  public void deleteWorkflowSchedule() {
+    client.deleteWorkflowSchedule("nightly");
+    verify(mockInnerClient, times(1)).deleteWorkflowSchedule("nightly");
+  }
+
+  @Test
+  public void triggerWorkflowSchedule() {
+    when(mockInnerClient.triggerWorkflowSchedule("nightly")).thenReturn("nightly_20260101T000000Z_manual");
+
+    assertEquals("nightly_20260101T000000Z_manual", client.triggerWorkflowSchedule("nightly"));
+  }
+
+  @Test
+  public void triggerWorkflowScheduleRejectsNullName() {
+    assertThrows(IllegalArgumentException.class, () -> client.triggerWorkflowSchedule(null));
+    verify(mockInnerClient, never()).triggerWorkflowSchedule(any());
   }
 
   @Test
