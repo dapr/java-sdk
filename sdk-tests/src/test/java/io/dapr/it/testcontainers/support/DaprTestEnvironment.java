@@ -14,6 +14,7 @@ package io.dapr.it.testcontainers.support;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprContainerConstants;
 import io.dapr.testcontainers.DaprPlacementContainer;
@@ -52,7 +53,11 @@ public final class DaprTestEnvironment implements Startable {
   private final DaprSchedulerContainer scheduler;
   private final GenericContainer<?> app;
   private final DaprContainer dapr;
+  private GenericContainer<?> prerequisite;
+  private String prerequisiteAlias;
+  private boolean started;
   private final StringBuffer appOutput = new StringBuffer();
+  private final StringBuffer daprOutput = new StringBuffer();
 
   /** Defines an isolated topology; no container is started during construction. */
   public DaprTestEnvironment(String appId, Class<?> mainClass) {
@@ -67,6 +72,28 @@ public final class DaprTestEnvironment implements Startable {
    */
   public DaprTestEnvironment(String appId, Class<?> mainClass, DaprProtocol protocol) {
     this(appId, mainClass.getName(), protocol, Duration.ofMinutes(2));
+  }
+
+  /**
+   * Adds one unstarted backing service and explicit sidecar components before startup.
+   * @param container Backing service owned by this environment.
+   * @param alias Stable private network alias.
+   * @param components Components using private network addresses.
+   * @return this environment.
+   */
+  public DaprTestEnvironment withPrerequisite(GenericContainer<?> container, String alias, List<Component> components) {
+    if (started || prerequisite != null) {
+      throw new IllegalStateException("Prerequisite already configured or environment started");
+    }
+    if (container.getContainerId() != null || alias == null || alias.isBlank()) {
+      throw new IllegalArgumentException("Prerequisite must be unstarted and have a network alias");
+    }
+    prerequisite = container.withNetwork(network).withNetworkAliases(alias)
+        .withLabels(Map.of("io.dapr.it.environment", identity));
+    prerequisiteAlias = alias;
+    attachLogs(prerequisite, alias);
+    components.forEach(dapr::withComponent);
+    return this;
   }
 
   DaprTestEnvironment(String appId, String mainClass, Duration appReadinessTimeout) {
@@ -122,6 +149,8 @@ public final class DaprTestEnvironment implements Startable {
 
       if ("app".equals(alias)) {
         appOutput.append(text);
+      } else if ("dapr".equals(alias)) {
+        daprOutput.append(text);
       }
 
       if (!text.isEmpty()) {
@@ -151,7 +180,16 @@ public final class DaprTestEnvironment implements Startable {
 
   @Override
   public void start() {
+    if (started) {
+      throw new IllegalStateException("Environment already started");
+    }
+    started = true;
     try {
+      if (prerequisite != null) {
+        resources.start(prerequisite);
+        System.out.printf("[%s] %s id=%s image=%s%n", identity, prerequisiteAlias,
+            prerequisite.getContainerId(), prerequisite.getDockerImageName());
+      }
       resources.start(placement);
       System.out.printf("[%s] placement id=%s%n", identity, placement.getContainerId());
       resources.start(scheduler);
@@ -175,6 +213,11 @@ public final class DaprTestEnvironment implements Startable {
           appAddress(), protocol, app.getContainerId(), Endpoints.http(dapr.getHost(), dapr.getHttpPort()),
           dapr.getContainerId(), placement.getContainerId(), scheduler.getContainerId());
     } catch (RuntimeException | Error failure) {
+      diagnosticLogs(prerequisite, prerequisiteAlias);
+      diagnosticLogs(app, "app");
+      diagnosticLogs(dapr, "dapr");
+      diagnosticLogs(placement, "placement");
+      diagnosticLogs(scheduler, "scheduler");
       try {
         resources.stop();
       } catch (RuntimeException | Error cleanup) {
@@ -182,6 +225,18 @@ public final class DaprTestEnvironment implements Startable {
       }
 
       throw failure;
+    }
+  }
+
+  private void diagnosticLogs(GenericContainer<?> container, String alias) {
+    if (container == null || container.getContainerId() == null) {
+      return;
+    }
+    try {
+      System.err.printf("[%s] %s id=%s image=%s logs:%n%s%n", identity, alias,
+          container.getContainerId(), container.getDockerImageName(), container.getLogs());
+    } catch (RuntimeException | Error e) {
+      System.err.printf("[%s] could not collect %s logs: %s%n", identity, alias, e);
     }
   }
 
@@ -219,6 +274,10 @@ public final class DaprTestEnvironment implements Startable {
 
   String appOutput() {
     return appOutput.toString();
+  }
+
+  String daprOutput() {
+    return daprOutput.toString();
   }
 
   DaprProtocol appProtocol() {

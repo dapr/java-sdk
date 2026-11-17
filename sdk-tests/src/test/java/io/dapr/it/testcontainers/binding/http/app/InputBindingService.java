@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.binding.http;
+package io.dapr.it.testcontainers.binding.http.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

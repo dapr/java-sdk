@@ -272,6 +272,12 @@
                     <include name="io/dapr/it/methodinvoke/http/Person*.class"/>
                     <include name="io/dapr/it/methodinvoke/grpc/MethodInvokeIT*.class"/>
                     <include name="io/dapr/it/methodinvoke/grpc/MethodInvokeService*.class"/>
+                    <include name="io/dapr/it/binding/http/BindingIT.class"/>
+                    <include name="io/dapr/it/binding/http/BindingIT$*.class"/>
+                    <include name="io/dapr/it/binding/http/InputBindingService.class"/>
+                    <include name="io/dapr/it/binding/http/InputBindingService$*.class"/>
+                    <include name="io/dapr/it/binding/http/InputBindingController.class"/>
+                    <include name="io/dapr/it/binding/http/InputBindingController$*.class"/>
                   </fileset>
                 </delete>
               </target>
