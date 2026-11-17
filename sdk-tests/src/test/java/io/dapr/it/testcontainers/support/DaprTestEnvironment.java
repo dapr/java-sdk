@@ -15,6 +15,7 @@ package io.dapr.it.testcontainers.support;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprContainerConstants;
 import io.dapr.testcontainers.DaprPlacementContainer;
@@ -93,6 +94,19 @@ public final class DaprTestEnvironment implements Startable {
     prerequisiteAlias = alias;
     attachLogs(prerequisite, alias);
     components.forEach(dapr::withComponent);
+    return this;
+  }
+
+  /**
+   * Configures the sidecar before startup.
+   * @param configuration Dapr sidecar configuration.
+   * @return this environment.
+   */
+  public DaprTestEnvironment withConfiguration(Configuration configuration) {
+    if (started) {
+      throw new IllegalStateException("Environment already started");
+    }
+    dapr.withConfiguration(configuration);
     return this;
   }
 
