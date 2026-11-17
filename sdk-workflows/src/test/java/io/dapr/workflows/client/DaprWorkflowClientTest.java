@@ -25,6 +25,7 @@ import io.dapr.workflows.task.client.DurableTaskClient;
 import io.dapr.workflows.task.client.DurableTaskGrpcClientBuilder;
 import io.dapr.workflows.task.client.NewOrchestrationInstanceOptions;
 import io.dapr.workflows.task.client.OrchestrationMetadata;
+import io.dapr.workflows.task.exception.WorkflowFailureDetails;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -391,6 +392,31 @@ public class DaprWorkflowClientTest {
   }
 
   @Test
+  public void raiseError() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedEventName = "TestEventName";
+    Exception expectedException = new IllegalStateException("test failure");
+
+    client.raiseError(expectedInstanceId, expectedEventName, expectedException);
+
+    verify(mockInnerClient, times(1)).raiseError(expectedInstanceId, expectedEventName, expectedException);
+  }
+
+  @Test
+  public void raisedFailureDetailsPreserveEmptyMessageAndCause() {
+    IllegalArgumentException cause = new IllegalArgumentException();
+    RuntimeException exception = new RuntimeException("outer failure", cause);
+
+    WorkflowFailureDetails details = new WorkflowFailureDetails(exception);
+
+    assertEquals(RuntimeException.class.getName(), details.getErrorType());
+    assertEquals("outer failure", details.getErrorMessage());
+    assertNotEquals(null, details.getInnerFailure());
+    assertEquals(IllegalArgumentException.class.getName(), details.getInnerFailure().getErrorType());
+    assertEquals("", details.getInnerFailure().getErrorMessage());
+  }
+
+  @Test
   public void suspendResumeInstance() {
     String expectedArgument = "TestWorkflowInstanceId";
     client.suspendWorkflow(expectedArgument, "suspending workflow instance");
@@ -612,6 +638,19 @@ public class DaprWorkflowClientTest {
 
     verify(mockInnerClient, times(1)).raiseEvent(expectedInstanceId,
         expectedEventName, expectedEventPayload, expectedAppId);
+  }
+
+  @Test
+  public void raiseErrorWithAppId() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedEventName = "TestEventName";
+    Exception expectedException = new IllegalStateException("test failure");
+    String expectedAppId = "targetApp";
+
+    client.raiseError(expectedInstanceId, expectedEventName, expectedException, expectedAppId);
+
+    verify(mockInnerClient, times(1)).raiseError(
+        expectedInstanceId, expectedEventName, expectedException, expectedAppId);
   }
 
   @Test
