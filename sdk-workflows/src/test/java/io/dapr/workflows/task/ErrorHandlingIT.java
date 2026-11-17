@@ -70,6 +70,40 @@ public class ErrorHandlingIT extends IntegrationTestBase {
     }
   }
 
+  @Test
+  void raisedErrorFailsTheMatchingExternalEventWait() throws TimeoutException {
+    final String orchestratorName = "OrchestratorWaitingForExternalEvent";
+    final String eventName = "Approval";
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+        .addOrchestrator(orchestratorName, ctx -> {
+          try {
+            ctx.waitForExternalEvent(eventName).await();
+            ctx.complete("unexpected success");
+          } catch (TaskFailedException ex) {
+            WorkflowFailureDetails details = ex.getErrorDetails();
+            ctx.complete(details.getErrorType() + "|" + details.getErrorMessage());
+          }
+        })
+        .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName);
+      OrchestrationMetadata started = client.waitForInstanceStart(instanceId, defaultTimeout, false);
+      assertNotNull(started);
+
+      client.raiseError(instanceId, eventName, new IllegalStateException());
+
+      OrchestrationMetadata result = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(result);
+      assertEquals(WorkflowRuntimeStatus.COMPLETED, result.getRuntimeStatus());
+      assertEquals(
+          "java.lang.IllegalStateException|",
+          result.readOutputAs(String.class));
+    }
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void activityException(boolean handleException) throws TimeoutException {
