@@ -65,6 +65,7 @@ class DurableTaskGrpcClientOperationsTest {
   private final AtomicReference<OrchestratorService.RerunWorkflowFromEventRequest> rerunRequest =
       new AtomicReference<>();
   private final AtomicReference<OrchestratorService.CreateInstanceRequest> createRequest = new AtomicReference<>();
+  private final AtomicReference<OrchestratorService.RaiseEventRequest> raiseErrorRequest = new AtomicReference<>();
 
   @BeforeEach
   void setUp() throws Exception {
@@ -120,6 +121,15 @@ class DurableTaskGrpcClientOperationsTest {
           }
 
           @Override
+          public void raiseError(
+              OrchestratorService.RaiseEventRequest request,
+              StreamObserver<OrchestratorService.RaiseEventResponse> responseObserver) {
+            raiseErrorRequest.set(request);
+            responseObserver.onNext(OrchestratorService.RaiseEventResponse.getDefaultInstance());
+            responseObserver.onCompleted();
+          }
+
+          @Override
           public void getInstance(
               OrchestratorService.GetInstanceRequest request,
               StreamObserver<OrchestratorService.GetInstanceResponse> responseObserver) {
@@ -166,6 +176,19 @@ class DurableTaskGrpcClientOperationsTest {
     if (server != null) {
       server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
+  }
+
+  @Test
+  void shouldRaiseStructuredFailureDetailsWithoutRequiringAnErrorMessage() {
+    client.raiseError(INSTANCE_ID, "Approval", new IllegalStateException());
+
+    OrchestratorService.RaiseEventRequest request = raiseErrorRequest.get();
+    assertEquals(INSTANCE_ID, request.getInstanceId());
+    assertEquals("Approval", request.getName());
+    assertTrue(request.hasFailureDetails());
+    assertEquals(IllegalStateException.class.getName(), request.getFailureDetails().getErrorType());
+    assertEquals("", request.getFailureDetails().getErrorMessage());
+    assertFalse(request.hasInput());
   }
 
   @Test
