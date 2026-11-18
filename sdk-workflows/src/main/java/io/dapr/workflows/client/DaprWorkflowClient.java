@@ -303,7 +303,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Terminates a workflow and records the supplied reason in its durable history.
    *
    * @param workflowInstanceId workflow instance ID to terminate
-   * @param reason reason retained with the terminated workflow history
+   * @param reason optional termination input exposed as custom status
    */
   public void terminateWorkflowWithReason(String workflowInstanceId, String reason) {
     this.terminateWorkflowWithReason(workflowInstanceId, reason, null, null);
@@ -314,7 +314,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    * @param workflowInstanceId workflow instance ID to terminate
    * @param reason reason retained with the terminated workflow history
-   * @param output optional output to set for the terminated instance
+   * @param output optional output to set for the terminated instance; mutually exclusive with reason
    */
   public void terminateWorkflowWithReason(String workflowInstanceId, String reason, @Nullable Object output) {
     this.terminateWorkflowWithReason(workflowInstanceId, reason, output, null);
