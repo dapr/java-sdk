@@ -362,7 +362,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
   }
 
   /**
-   * Terminates an orchestration and optionally records a reason in its durable history.
+   * Terminates an orchestration and optionally records a reason as its termination input. The runtime exposes the value through workflow custom status.
    *
    * <p>The default implementation preserves compatibility with custom clients that do not support
    * termination reasons. Such clients reject a non-null reason instead of silently discarding it.</p>
@@ -370,7 +370,7 @@ public abstract class DurableTaskClient implements AutoCloseable {
    * @param instanceId the unique ID of the orchestration instance to terminate
    * @param output the optional output to set for the terminated orchestration instance
    * @param appID the app that owns the orchestration instance, or {@code null} for the local app
-   * @param reason the optional reason to retain with the terminated orchestration history
+   * @param reason the optional reason recorded as termination input and exposed through custom status
    */
   public void terminate(
       String instanceId,
