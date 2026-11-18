@@ -300,7 +300,8 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Terminates a workflow and records the supplied reason as its termination input. The reason is exposed through the existing workflow custom-status metadata.
+   * Terminates a workflow and records the supplied reason as its termination input.
+   * The reason is exposed through the existing workflow custom-status metadata.
    *
    * @param workflowInstanceId workflow instance ID to terminate
    * @param reason optional termination input exposed as custom status
@@ -310,7 +311,8 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Terminates a workflow and records the supplied reason as its termination input. The reason is exposed through the existing workflow custom-status metadata.
+   * Terminates a workflow and records the supplied reason as its termination input.
+   * The reason is exposed through the existing workflow custom-status metadata.
    *
    * @param workflowInstanceId workflow instance ID to terminate
    * @param reason reason recorded as termination input and exposed through custom status
@@ -321,7 +323,8 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Terminates a workflow and records the supplied reason as its termination input. The reason is exposed through the existing workflow custom-status metadata.
+   * Terminates a workflow and records the supplied reason as its termination input.
+   * The reason is exposed through the existing workflow custom-status metadata.
    *
    * @param workflowInstanceId workflow instance ID to terminate
    * @param reason reason recorded as termination input and exposed through custom status
