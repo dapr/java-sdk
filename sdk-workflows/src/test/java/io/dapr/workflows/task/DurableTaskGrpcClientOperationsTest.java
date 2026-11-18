@@ -278,14 +278,13 @@ class DurableTaskGrpcClientOperationsTest {
   }
 
   @Test
-  void shouldSendTheTerminationReasonAndOutputToTheSidecar() {
-    client.terminate(INSTANCE_ID, "cancelled", null, "operator requested");
+  void shouldSendTheTerminationReasonUsingTheExistingOutputField() {
+    client.terminate(INSTANCE_ID, null, null, "operator requested");
 
     OrchestratorService.TerminateRequest request = terminateRequest.get();
     assertEquals(INSTANCE_ID, request.getInstanceId());
-    assertEquals("\"cancelled\"", request.getOutput().getValue());
-    assertTrue(request.hasReason());
-    assertEquals("operator requested", request.getReason().getValue());
+    assertTrue(request.hasOutput());
+    assertEquals("operator requested", request.getOutput().getValue());
   }
 
   @Test
@@ -293,16 +292,21 @@ class DurableTaskGrpcClientOperationsTest {
     client.terminate(INSTANCE_ID, null, null, "");
 
     OrchestratorService.TerminateRequest request = terminateRequest.get();
-    assertTrue(request.hasReason());
-    assertEquals("", request.getReason().getValue());
-    assertFalse(request.hasOutput());
+    assertTrue(request.hasOutput());
+    assertEquals("", request.getOutput().getValue());
   }
 
   @Test
-  void shouldOmitTheReasonForLegacyTerminationCalls() {
+  void shouldRejectCombiningTerminationOutputAndReason() {
+    assertThrows(IllegalArgumentException.class,
+        () -> client.terminate(INSTANCE_ID, "cancelled", null, "operator requested"));
+  }
+
+  @Test
+  void shouldOmitTheTerminationInputForLegacyTerminationCalls() {
     client.terminate(INSTANCE_ID, null);
 
-    assertFalse(terminateRequest.get().hasReason());
+    assertFalse(terminateRequest.get().hasOutput());
   }
 
   @Test
