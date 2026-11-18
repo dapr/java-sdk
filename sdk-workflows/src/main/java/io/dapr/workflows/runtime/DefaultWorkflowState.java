@@ -127,16 +127,6 @@ public class DefaultWorkflowState implements WorkflowState {
   }
 
   /**
-   * Gets the reason supplied when the workflow was terminated, if any.
-   *
-   * @return the termination reason, or {@code null} when no reason was supplied
-   */
-  @Nullable
-  public String getTerminationReason() {
-    return orchestrationMetadata.getTerminationReason();
-  }
-
-  /**
    * Gets a value indicating whether the workflow instance was running at the time
    * this object was fetched.
    *
