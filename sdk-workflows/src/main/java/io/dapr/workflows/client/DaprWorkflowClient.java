@@ -300,7 +300,7 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Terminates a workflow and records the supplied reason in its durable history.
+   * Terminates a workflow and records the supplied reason as its termination input. The reason is exposed through the existing workflow custom-status metadata.
    *
    * @param workflowInstanceId workflow instance ID to terminate
    * @param reason optional termination input exposed as custom status
@@ -310,10 +310,10 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Terminates a workflow and records the supplied reason in its durable history.
+   * Terminates a workflow and records the supplied reason as its termination input. The reason is exposed through the existing workflow custom-status metadata.
    *
    * @param workflowInstanceId workflow instance ID to terminate
-   * @param reason reason retained with the terminated workflow history
+   * @param reason reason recorded as termination input and exposed through custom status
    * @param output optional output to set for the terminated instance; mutually exclusive with reason
    */
   public void terminateWorkflowWithReason(String workflowInstanceId, String reason, @Nullable Object output) {
@@ -321,11 +321,11 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Terminates a workflow and records the supplied reason in its durable history.
+   * Terminates a workflow and records the supplied reason as its termination input. The reason is exposed through the existing workflow custom-status metadata.
    *
    * @param workflowInstanceId workflow instance ID to terminate
-   * @param reason reason retained with the terminated workflow history
-   * @param output optional output to set for the terminated instance
+   * @param reason reason recorded as termination input and exposed through custom status
+   * @param output optional output to set for the terminated instance; mutually exclusive with reason
    * @param appId ID of the app that owns the workflow instance, or {@code null} for the local app
    */
   public void terminateWorkflowWithReason(
