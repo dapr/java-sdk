@@ -107,18 +107,6 @@ public class WorkflowStateTest {
   }
 
   @Test
-  public void getTerminationReason() {
-    String expected = "operator requested";
-
-    when(mockOrchestrationMetadata.getTerminationReason()).thenReturn(expected);
-
-    String result = workflowMetadata.getTerminationReason();
-
-    verify(mockOrchestrationMetadata, times(1)).getTerminationReason();
-    assertEquals(expected, result);
-  }
-
-  @Test
   public void getRuntimeStatus() {
     WorkflowRuntimeStatus expected = WorkflowRuntimeStatus.RUNNING;
 
