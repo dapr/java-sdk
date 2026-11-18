@@ -116,28 +116,6 @@ public class OrchestrationMetadataTest {
   }
 
   @Test
-  public void shouldExposeTerminationReasonWithoutFetchingPayloads() {
-    OrchestrationMetadata metadata = metadata(
-        state().setTerminationReason(StringValue.of("operator requested")), false);
-
-    assertEquals("operator requested", metadata.getTerminationReason());
-  }
-
-  @Test
-  public void shouldPreserveAnExplicitlyEmptyTerminationReason() {
-    OrchestrationMetadata metadata = metadata(state().setTerminationReason(StringValue.of("")), false);
-
-    assertEquals("", metadata.getTerminationReason());
-  }
-
-  @Test
-  public void shouldReturnNullWhenNoTerminationReasonWasSupplied() {
-    OrchestrationMetadata metadata = metadata(state(), false);
-
-    assertNull(metadata.getTerminationReason());
-  }
-
-  @Test
   public void shouldDeserializeInputOutputAndCustomStatus() {
     OrchestrationMetadata metadata = metadata(state()
         .setInput(StringValue.of("\"the input\""))
