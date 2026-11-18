@@ -362,7 +362,8 @@ public abstract class DurableTaskClient implements AutoCloseable {
   }
 
   /**
-   * Terminates an orchestration and optionally records a reason as its termination input. The runtime exposes the value through workflow custom status.
+   * Terminates an orchestration and optionally records a reason as its termination input.
+   * The runtime exposes the value through workflow custom status.
    *
    * <p>The default implementation preserves compatibility with custom clients that do not support
    * termination reasons. Such clients reject a non-null reason instead of silently discarding it.</p>
