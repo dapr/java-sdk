@@ -89,19 +89,6 @@ public interface WorkflowState {
   WorkflowFailureDetails getFailureDetails();
 
   /**
-   * Gets the reason supplied when the workflow was terminated, if any.
-   *
-   * <p>The default implementation returns {@code null} so existing custom
-   * implementations of this interface remain compatible.</p>
-   *
-   * @return the termination reason, or {@code null} when no reason was supplied
-   */
-  @Nullable
-  default String getTerminationReason() {
-    return null;
-  }
-
-  /**
    * Gets a value indicating whether the workflow instance was running at the time
    * this object was fetched.
    *
