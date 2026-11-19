@@ -109,6 +109,47 @@ public class ErrorHandlingIT extends IntegrationTestBase {
     }
   }
 
+  @Test
+  void raisedErrorIsDeliveredWhenTheWorkflowStartsWaitingLater() throws TimeoutException {
+    final String orchestratorName = "OrchestratorWithBufferedExternalEventFailure";
+    final String startEventName = "Start";
+    final String approvalEventName = "Approval";
+    final String expected = "java.lang.IllegalStateException|Approval rejected|"
+        + "java.util.concurrent.TimeoutException|Risk service unavailable";
+
+    DurableTaskGrpcWorker worker = this.createWorkerBuilder()
+        .addOrchestrator(orchestratorName, ctx -> {
+          ctx.waitForExternalEvent(startEventName).await();
+          try {
+            ctx.waitForExternalEvent(approvalEventName).await();
+            ctx.complete("unexpected success");
+          } catch (TaskFailedException ex) {
+            WorkflowFailureDetails details = ex.getErrorDetails();
+            WorkflowFailureDetails inner = details.getInnerFailure();
+            ctx.complete(details.getErrorType() + "|" + details.getErrorMessage() + "|"
+                + inner.getErrorType() + "|" + inner.getErrorMessage());
+          }
+        })
+        .buildAndStart();
+
+    DurableTaskClient client = new DurableTaskGrpcClientBuilder().build();
+    try (worker; client) {
+      String instanceId = client.scheduleNewOrchestrationInstance(orchestratorName);
+      client.raiseError(
+          instanceId,
+          approvalEventName,
+          new IllegalStateException(
+              "Approval rejected",
+              new java.util.concurrent.TimeoutException("Risk service unavailable")));
+      client.raiseEvent(instanceId, startEventName);
+
+      OrchestrationMetadata result = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
+      assertNotNull(result);
+      assertEquals(WorkflowRuntimeStatus.COMPLETED, result.getRuntimeStatus());
+      assertEquals(expected, result.readOutputAs(String.class));
+    }
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void activityException(boolean handleException) throws TimeoutException {
