@@ -346,7 +346,7 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
       builder.setRouter(buildTaskRouter(appID));
     }
 
-    this.sidecarClient.raiseError(builder.build());
+    this.sidecarClient.raiseEvent(builder.build());
   }
 
   @Override
