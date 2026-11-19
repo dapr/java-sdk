@@ -82,7 +82,9 @@ public class ErrorHandlingIT extends IntegrationTestBase {
             ctx.complete("unexpected success");
           } catch (TaskFailedException ex) {
             WorkflowFailureDetails details = ex.getErrorDetails();
-            ctx.complete(details.getErrorType() + "|" + details.getErrorMessage());
+            WorkflowFailureDetails inner = details.getInnerFailure();
+            ctx.complete(details.getErrorType() + "|" + details.getErrorMessage() + "|"
+                + inner.getErrorType() + "|" + inner.getErrorMessage());
           }
         })
         .buildAndStart();
@@ -93,13 +95,16 @@ public class ErrorHandlingIT extends IntegrationTestBase {
       OrchestrationMetadata started = client.waitForInstanceStart(instanceId, defaultTimeout, false);
       assertNotNull(started);
 
-      client.raiseError(instanceId, eventName, new IllegalStateException());
+      client.raiseError(
+          instanceId,
+          eventName,
+          new IllegalStateException("Approval was rejected", new java.util.concurrent.TimeoutException("Risk service unavailable")));
 
       OrchestrationMetadata result = client.waitForInstanceCompletion(instanceId, defaultTimeout, true);
       assertNotNull(result);
       assertEquals(WorkflowRuntimeStatus.COMPLETED, result.getRuntimeStatus());
       assertEquals(
-          "java.lang.IllegalStateException|",
+          "java.lang.IllegalStateException|Approval was rejected|java.util.concurrent.TimeoutException|Risk service unavailable",
           result.readOutputAs(String.class));
     }
   }
