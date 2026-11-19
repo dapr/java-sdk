@@ -16,11 +16,12 @@ package io.dapr.workflows.task.exception;
 import io.dapr.workflows.task.Task;
 
 /**
- * Exception that gets thrown when awaiting a {@link Task} for an activity or sub-orchestration that fails with an
- * unhandled exception.
+ * Exception thrown when awaiting a workflow task that failed, including an activity, sub-orchestration,
+ * or external-event wait failed through {@code RaiseError}.
  *
  * <p>Detailed information associated with a particular task failure can be retrieved
- * using the {@link #getErrorDetails()} method.</p>
+ * using the {@link #getErrorDetails()} method. For externally raised failures, the details include
+ * the original error type, message, stack trace, and any nested cause supplied by the caller.</p>
  */
 public class TaskFailedException extends RuntimeException {
   private final WorkflowFailureDetails details;
