@@ -695,9 +695,16 @@ public final class TaskOrchestrationExecutor {
       for (HistoryEvents.HistoryEvent e : this.unprocessedEvents) {
         HistoryEvents.EventRaisedEvent existing = e.getEventRaised();
         if (name.equalsIgnoreCase(existing.getName())) {
-          String rawEventData = existing.getInput().getValue();
-          V data = this.dataConverter.deserialize(rawEventData, dataType);
-          eventTask.complete(data);
+          if (existing.hasFailureDetails()) {
+            eventTask.completeExceptionally(new TaskFailedException(
+                name,
+                id,
+                new WorkflowFailureDetails(existing.getFailureDetails())));
+          } else {
+            String rawEventData = existing.hasInput() ? existing.getInput().getValue() : null;
+            V data = this.dataConverter.deserialize(rawEventData, dataType);
+            eventTask.complete(data);
+          }
           this.unprocessedEvents.remove(e);
           return eventTask;
         }
