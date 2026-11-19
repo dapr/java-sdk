@@ -107,7 +107,8 @@ public class VectorQuery {
    * Sets a filter on record metadata, written in the Dapr filter format.
    *
    * <p>Values can be null, a Boolean, a Number, a String, a Collection or a Map with string keys. Other types
-   * are rejected with an {@link IllegalArgumentException} when the query is sent.
+   * are rejected with an {@link IllegalArgumentException} when the query is sent, and so are NaN,
+   * infinities and numbers that a double cannot hold exactly, such as the long 9007199254740993.
    *
    * @param filter the filter
    * @return this query for method chaining
