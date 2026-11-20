@@ -278,6 +278,18 @@
                     <include name="io/dapr/it/binding/http/InputBindingService$*.class"/>
                     <include name="io/dapr/it/binding/http/InputBindingController.class"/>
                     <include name="io/dapr/it/binding/http/InputBindingController$*.class"/>
+                    <include name="io/dapr/it/tracing/http/TracingIT.class"/>
+                    <include name="io/dapr/it/tracing/http/TracingIT$*.class"/>
+                    <include name="io/dapr/it/tracing/http/Service.class"/>
+                    <include name="io/dapr/it/tracing/http/Service$*.class"/>
+                    <include name="io/dapr/it/tracing/http/Controller.class"/>
+                    <include name="io/dapr/it/tracing/http/Controller$*.class"/>
+                    <include name="io/dapr/it/tracing/http/OpenTelemetryConfig.class"/>
+                    <include name="io/dapr/it/tracing/http/OpenTelemetryConfig$*.class"/>
+                    <include name="io/dapr/it/tracing/http/OpenTelemetryInterceptor.class"/>
+                    <include name="io/dapr/it/tracing/http/OpenTelemetryInterceptor$*.class"/>
+                    <include name="io/dapr/it/tracing/http/OpenTelemetryInterceptorConfig.class"/>
+                    <include name="io/dapr/it/tracing/http/OpenTelemetryInterceptorConfig$*.class"/>
                   </fileset>
                 </delete>
               </target>

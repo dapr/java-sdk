@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.tracing.http;
+package io.dapr.it.testcontainers.tracing.http.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
