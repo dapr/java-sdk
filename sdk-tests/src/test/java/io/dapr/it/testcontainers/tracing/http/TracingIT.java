@@ -12,9 +12,6 @@
  */
 package io.dapr.it.testcontainers.tracing.http;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.testcontainers.support.DaprTestEnvironment;
@@ -41,19 +38,15 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static io.dapr.it.testcontainers.tracing.TraceAssertions.awaitTrace;
 import static io.dapr.it.tracing.OpenTelemetry.getReactorContext;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /** Exercises trace propagation through a real HTTP invocation. */
 @Testcontainers
@@ -94,61 +87,7 @@ public class TracingIT {
 
       CompletableResultCode flushed = provider.forceFlush().join(10, TimeUnit.SECONDS);
       assertTrue(flushed.isSuccess(), "Client span export did not flush within 10 seconds");
-      awaitTrace(zipkin, span.getSpanContext().getTraceId(), span.getSpanContext().getSpanId(), spanName);
+      awaitTrace(zipkin, span.getSpanContext().getTraceId(), span.getSpanContext().getSpanId(), spanName, CHILD_NAME);
     }
-  }
-
-  private static void awaitTrace(URI zipkin, String traceId, String parentId, String spanName) throws Exception {
-    HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
-    ObjectMapper mapper = new ObjectMapper();
-    URI traceUri = zipkin.resolve("/api/v2/trace/" + traceId);
-    long deadline = System.nanoTime() + Duration.ofSeconds(45).toNanos();
-    String lastObservation = "no response";
-    String lastError = "none";
-    while (System.nanoTime() < deadline) {
-      HttpRequest request = HttpRequest.newBuilder(traceUri).timeout(Duration.ofSeconds(3)).GET().build();
-      try {
-        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
-        lastObservation = "HTTP " + response.statusCode() + ": " + response.body();
-        if (response.statusCode() == 200) {
-          JsonNode spans = mapper.readTree(response.body());
-          if (!spans.isArray()) {
-            throw new IllegalStateException("Unexpected Zipkin trace response: " + lastObservation);
-          }
-          boolean parentFound = false;
-          boolean childFound = false;
-          for (JsonNode candidate : spans) {
-            if (!traceId.equals(candidate.path("traceId").asText())) {
-              continue;
-            }
-            parentFound |= parentId.equals(candidate.path("id").asText())
-                && spanName.equals(candidate.path("name").asText());
-            childFound |= parentId.equals(candidate.path("parentId").asText())
-                && CHILD_NAME.equals(candidate.path("name").asText())
-                && candidate.path("duration").asLong() > 1_000_000;
-          }
-          if (parentFound && childFound) {
-            System.out.printf("Trace validated: %s%n", response.body());
-            return;
-          }
-        }
-      } catch (JsonProcessingException e) {
-        throw new IllegalStateException("Invalid Zipkin trace response: " + lastObservation, e);
-      } catch (IOException e) {
-        lastError = e.toString();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw e;
-      }
-      try {
-        Thread.sleep(250);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw e;
-      }
-    }
-    fail("Timed out waiting for traceId=" + traceId + " client=" + spanName + " parentId=" + parentId
-        + " child=" + CHILD_NAME + " duration > 1000000us; last observation: " + lastObservation
-        + "; last request error: " + lastError);
   }
 }

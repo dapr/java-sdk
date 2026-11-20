@@ -8,10 +8,10 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * limitations under the License.
+ */
 
-package io.dapr.it.tracing.grpc;
+package io.dapr.it.testcontainers.tracing.grpc.app;
 
 import com.google.protobuf.Any;
 import io.dapr.grpc.GrpcHealthCheckService;
@@ -22,10 +22,12 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepResponse;
 
+/** Dapr application callback fixture for the gRPC tracing integration test. */
 public class Service {
 
   public static final String SUCCESS_MESSAGE = "application discovered on port ";
@@ -51,16 +53,34 @@ public class Service {
           .forPort(port)
           .addService(this)
           .addService(new GrpcHealthCheckService())
-          .build()
-          .start();
+          .build();
+      this.server.start();
       System.out.printf("Server: started listening on port %d\n", port);
 
       // Now we handle ctrl+c (or any other JVM shutdown)
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         System.out.println("Server: shutting down gracefully ...");
-        MyDaprService.this.server.shutdown();
+        MyDaprService.this.stop();
         System.out.println("Server: Bye.");
       }));
+    }
+
+    private void stop() {
+      if (server == null) {
+        return;
+      }
+      server.shutdown();
+      try {
+        if (!server.awaitTermination(5, TimeUnit.SECONDS)) {
+          server.shutdownNow();
+          if (!server.awaitTermination(5, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("gRPC callback server did not terminate");
+          }
+        }
+      } catch (InterruptedException e) {
+        server.shutdownNow();
+        Thread.currentThread().interrupt();
+      }
     }
 
     /**
@@ -93,10 +113,9 @@ public class Service {
           responseBuilder.setData(Any.pack(res));
           responseObserver.onNext(responseBuilder.build());
         }
+        responseObserver.onCompleted();
       } catch (Exception e) {
         responseObserver.onError(e);
-      } finally {
-        responseObserver.onCompleted();
       }
     }
 
@@ -109,7 +128,7 @@ public class Service {
         Thread.sleep(request.getSeconds() * 1000);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        new RuntimeException(e);
+        throw new IllegalStateException("gRPC callback sleep interrupted", e);
       }
 
       // Now respond with current timestamp.
@@ -128,7 +147,11 @@ public class Service {
     System.out.printf("Service starting on port %d ...\n", port);
 
     final MyDaprService service = new MyDaprService();
-    service.start(port);
-    service.awaitTermination();
+    try {
+      service.start(port);
+      service.awaitTermination();
+    } finally {
+      service.stop();
+    }
   }
 }
