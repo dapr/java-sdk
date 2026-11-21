@@ -150,6 +150,47 @@ class ObservationDaprWorkflowClientTest {
         .hasError();
   }
 
+  @Test
+  @DisplayName("terminateWorkflowWithReason(String, String) creates span dapr.workflow.terminate")
+  void terminateWorkflowWithReasonCreatesSpan() {
+    assertThatThrownBy(() -> client.terminateWorkflowWithReason("instance-1", "operator requested"))
+        .isInstanceOf(RuntimeException.class);
+
+    TestObservationRegistryAssert.assertThat(registry)
+        .hasObservationWithNameEqualTo("dapr.workflow.terminate")
+        .that()
+        .hasHighCardinalityKeyValue("dapr.workflow.instance_id", "instance-1")
+        .hasError();
+  }
+
+  @Test
+  @DisplayName("terminateWorkflowWithReason(String, String, Object) creates span dapr.workflow.terminate")
+  void terminateWorkflowWithReasonAndOutputCreatesSpan() {
+    assertThatThrownBy(() ->
+        client.terminateWorkflowWithReason("instance-1", "operator requested", "cancelled"))
+        .isInstanceOf(RuntimeException.class);
+
+    TestObservationRegistryAssert.assertThat(registry)
+        .hasObservationWithNameEqualTo("dapr.workflow.terminate")
+        .that()
+        .hasHighCardinalityKeyValue("dapr.workflow.instance_id", "instance-1")
+        .hasError();
+  }
+
+  @Test
+  @DisplayName("terminateWorkflowWithReason cross-app overload creates span dapr.workflow.terminate")
+  void terminateWorkflowWithReasonAndAppIdCreatesSpan() {
+    assertThatThrownBy(() ->
+        client.terminateWorkflowWithReason("instance-1", "operator requested", "cancelled", "other-app"))
+        .isInstanceOf(RuntimeException.class);
+
+    TestObservationRegistryAssert.assertThat(registry)
+        .hasObservationWithNameEqualTo("dapr.workflow.terminate")
+        .that()
+        .hasHighCardinalityKeyValue("dapr.workflow.instance_id", "instance-1")
+        .hasError();
+  }
+
   // -------------------------------------------------------------------------
   // State queries
   // -------------------------------------------------------------------------

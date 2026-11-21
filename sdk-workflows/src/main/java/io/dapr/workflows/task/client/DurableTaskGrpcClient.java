@@ -430,10 +430,18 @@ public final class DurableTaskGrpcClient extends DurableTaskClient {
 
   @Override
   public void terminate(String instanceId, @Nullable Object output, @Nullable String appID) {
+    this.terminate(instanceId, output, appID, null);
+  }
+
+  @Override
+  public void terminate(String instanceId, @Nullable Object output, @Nullable String appID, @Nullable String reason) {
     Helpers.throwIfArgumentNull(instanceId, "instanceId");
-    String serializeOutput = this.dataConverter.serialize(output);
+    if (output != null && reason != null) {
+      throw new IllegalArgumentException("output and reason cannot be supplied together");
+    }
+    String serializeOutput = reason != null ? reason : this.dataConverter.serialize(output);
     this.logger.fine(() -> String.format(
-        "Terminating instance %s and setting output to: %s",
+        "Terminating instance %s and setting termination input to: %s",
         instanceId,
         serializeOutput != null ? serializeOutput : "(null)"));
     OrchestratorService.TerminateRequest.Builder builder = OrchestratorService.TerminateRequest.newBuilder()
