@@ -1,2 +1,3 @@
 io.dapr.spring.boot.autoconfigure.client.DaprJackson3AutoConfiguration
 io.dapr.spring.boot.autoconfigure.client.DaprClientAutoConfiguration
+io.dapr.spring.boot.autoconfigure.actors.DaprActorAutoConfiguration
