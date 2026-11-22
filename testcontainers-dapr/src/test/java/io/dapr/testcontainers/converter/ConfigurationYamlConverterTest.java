@@ -18,6 +18,7 @@ import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.ComponentsConfigurationSettings;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.Feature;
 import io.dapr.testcontainers.HttpMetricsConfigurationSettings;
 import io.dapr.testcontainers.HttpPipeline;
 import io.dapr.testcontainers.ListEntry;
@@ -170,6 +171,28 @@ class ConfigurationYamlConverterTest {
         + "    enabled: true\n"
         + "    workloadCertTTL: 24h\n"
         + "    allowedClockSkew: 15m\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithFeaturesToYaml() {
+    List<Feature> features = new ArrayList<>();
+    features.add(new Feature("ActorStateTTL", true));
+
+    Configuration configuration = new Configuration(
+        "my-config", null, null, null, null, null, null, null, null, null, features);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  features:\n"
+        + "  - name: ActorStateTTL\n"
+        + "    enabled: true\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
