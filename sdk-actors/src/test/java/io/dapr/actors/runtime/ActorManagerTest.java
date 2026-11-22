@@ -317,7 +317,7 @@ public class ActorManagerTest {
     Mono<Void> apply(String actorType, ActorId actorId, ActorStateChange... stateChanges) {
       return Mono.fromRunnable(() -> {
         for (ActorStateChange change : stateChanges) {
-          this.saved.add(change.getStateName() + "=" + change.getValue());
+          this.saved.add(change.getState().getName() + "=" + change.getState().getValue());
         }
       });
     }

@@ -20,7 +20,6 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -76,8 +75,26 @@ public class ActorStateManager {
    *
    * @param stateName Name of the state being added.
    * @param value     Value to be added.
-   * @param expiration State's expiration.
    * @param <T>       Type of the object being added.
+   * @return Asynchronous void operation.
+   */
+  public <T> Mono<Void> add(String stateName, T value) {
+    return this.add(stateName, value, null);
+  }
+
+  /**
+   * Adds a given key/value to the Actor's state store's cache, with an expiration.
+   * The cached value is not served once it expires.
+   *
+   * <p>Actor state TTL is a preview feature in the Dapr runtime: saving a state with an
+   * expiration fails unless the ActorStateTTL feature is enabled. The cache only knows
+   * the expiration when the state store returns it (ttlExpireTime); stores that do not,
+   * such as Redis, keep serving the cached value until the store itself expires it.
+   *
+   * @param stateName  Name of the state being added.
+   * @param value      Value to be added.
+   * @param expiration When the state expires, or null for no expiration.
+   * @param <T>        Type of the object being added.
    * @return Asynchronous void operation.
    */
   public <T> Mono<Void> add(String stateName, T value, Instant expiration) {
@@ -165,21 +182,25 @@ public class ActorStateManager {
 
   /**
    * Updates a given key/value pair in the state store's cache.
-   * Use the variation that takes in an TTL instead.
    *
    * @param stateName Name of the state being updated.
    * @param value     Value to be set for given state.
    * @param <T>       Type of the value being set.
    * @return Asynchronous void result.
    */
-  @Deprecated
   public <T> Mono<Void> set(String stateName, T value) {
     return this.set(stateName, value, Duration.ZERO);
   }
 
   /**
-   * Updates a given key/value pair in the state store's cache.
-   * Using TTL is highly recommended to avoid state to be left in the state store forever.
+   * Updates a given key/value pair in the state store's cache, with a time to live.
+   * A null, zero, or negative TTL stores the value with no expiration.
+   * Using a TTL is recommended to avoid state being left in the store forever.
+   *
+   * <p>Actor state TTL is a preview feature in the Dapr runtime: saving a state with a
+   * TTL fails unless the ActorStateTTL feature is enabled. The cache only knows the
+   * expiration when the state store returns it (ttlExpireTime); stores that do not,
+   * such as Redis, keep serving the cached value until the store itself expires it.
    *
    * @param stateName Name of the state being updated.
    * @param value     Value to be set for given state.
