@@ -44,7 +44,6 @@ import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetVectorCollectionResponseAlpha1;
 import io.dapr.client.domain.GetVectorsRequestAlpha1;
-import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.IndexAck;
 import io.dapr.client.domain.IndexSearchDocumentsRequestAlpha1;
 import io.dapr.client.domain.IndexSearchDocumentsResponseAlpha1;
@@ -93,13 +92,9 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.Function;
 
 import static io.dapr.internal.exceptions.DaprHttpException.isSuccessfulHttpStatusCode;
@@ -133,6 +128,8 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprGrpcCalls grpcCalls;
 
   private final DaprConversationClient conversationClient;
+
+  private final DaprServiceInvocationClient serviceInvocationClient;
 
   private final DaprMetadataClient metadataClient;
 
@@ -253,6 +250,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken, timeoutPolicy);
     this.grpcCalls = new DaprGrpcCalls(asyncStub, this.grpcInterceptors, retryPolicy);
     this.conversationClient = new DaprConversationClient(this.grpcCalls, objectSerializer);
+    this.serviceInvocationClient = new DaprServiceInvocationClient(this.httpClient, objectSerializer);
     this.metadataClient = new DaprMetadataClient(this.grpcCalls);
     this.configurationClient = new DaprConfigurationClient(this.grpcCalls);
     this.lockClient = new DaprLockClient(this.grpcCalls);
@@ -415,82 +413,12 @@ public class DaprClientImpl extends AbstractDaprClient {
   @Override
   @Deprecated
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
-    try {
-      final String appId = invokeMethodRequest.getAppId();
-      final String method = invokeMethodRequest.getMethod();
-      final Object request = invokeMethodRequest.getBody();
-      final HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
-      final String contentType = invokeMethodRequest.getContentType();
-      final Map<String, String> metadata = invokeMethodRequest.getMetadata();
-
-      if (httpExtension == null) {
-        throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
-      }
-      // If the httpExtension is not null, then the method will not be null based on checks in constructor
-      final String httpMethod = httpExtension.getMethod().toString();
-      if (appId == null || appId.trim().isEmpty()) {
-        throw new IllegalArgumentException("App Id cannot be null or empty.");
-      }
-      if (method == null || method.trim().isEmpty()) {
-        throw new IllegalArgumentException("Method name cannot be null or empty.");
-      }
-
-
-      String[] methodSegments = method.split("/");
-
-      List<String> pathSegments = new ArrayList<>(Arrays.asList(DaprHttp.API_VERSION, "invoke", appId, "method"));
-      pathSegments.addAll(Arrays.asList(methodSegments));
-
-      final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-      headers.putAll(httpExtension.getHeaders());
-      if (metadata != null) {
-        headers.putAll(metadata);
-      }
-      byte[] serializedRequestBody = objectSerializer.serialize(request);
-      if (contentType != null && !contentType.isEmpty()) {
-        headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE, contentType);
-      } else {
-        headers.putIfAbsent(io.dapr.client.domain.Metadata.CONTENT_TYPE, objectSerializer.getContentType());
-      }
-      Mono<DaprHttp.Response> response = Mono.deferContextual(
-          context -> this.httpClient.invokeApi(httpMethod, pathSegments.toArray(new String[0]),
-              httpExtension.getQueryParams(), serializedRequestBody, headers, context)
-      );
-      return response.flatMap(r -> getMonoForHttpResponse(type, r));
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
+    return this.serviceInvocationClient.invokeMethod(invokeMethodRequest, type);
   }
 
   @Override
   public DaprInvokeHttpClient invokeHttpClient(String appId) {
-    if (appId == null || appId.trim().isEmpty()) {
-      throw new IllegalArgumentException("App Id cannot be null or empty.");
-    }
-    URI invokeBase = this.httpClient.getBaseUri()
-        .resolve("/" + DaprHttp.API_VERSION + "/invoke/" + appId + "/method/");
-    return new DaprInvokeHttpClient(
-        this.httpClient.getHttpClient(),
-        invokeBase,
-        this.httpClient.getDaprApiToken(),
-        this.httpClient.getReadTimeout());
-  }
-
-  private <T> Mono<T> getMonoForHttpResponse(TypeRef<T> type, DaprHttp.Response r) {
-    try {
-      if (type == null) {
-        return Mono.empty();
-      }
-
-      T object = objectSerializer.deserialize(r.getBody(), type);
-      if (object == null) {
-        return Mono.empty();
-      }
-
-      return Mono.just(object);
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
+    return this.serviceInvocationClient.invokeHttpClient(appId);
   }
 
   /**

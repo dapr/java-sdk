@@ -700,6 +700,55 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void invokeServiceRequestContentTypeOverridesHeader() {
+    HttpRequest request = invokeRequestAndCaptureRequest(new InvokeMethodRequest("41", "neworder")
+        .setBody("request")
+        .setHttpExtension(new HttpExtension(DaprHttp.HttpMethods.POST, null,
+            Map.of("Content-Type", "application/xml")))
+        .setContentType("text/plain"));
+
+    assertEquals(List.of("text/plain"), request.headers().allValues("content-type"));
+  }
+
+  @Test
+  public void invokeServiceEmptyRequestContentTypeDefaultsToSerializer() {
+    HttpRequest request = invokeRequestAndCaptureRequest(new InvokeMethodRequest("41", "neworder")
+        .setBody("request")
+        .setHttpExtension(HttpExtension.POST)
+        .setContentType(""));
+
+    assertEquals(List.of("application/json"), request.headers().allValues("content-type"));
+  }
+
+  @Test
+  public void invokeServiceNullTypeReturnsEmpty() {
+    MockHttpResponse mockHttpResponse = new MockHttpResponse("\"hello world\"".getBytes(), HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
+        .setHttpExtension(HttpExtension.GET);
+
+    StepVerifier.create(daprClientHttp.invokeMethod(req, (TypeRef<String>) null))
+        .verifyComplete();
+    verify(httpClient).sendAsync(any(), any());
+  }
+
+  private HttpRequest invokeRequestAndCaptureRequest(InvokeMethodRequest invokeMethodRequest) {
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(new byte[0], HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    daprClientHttp.invokeMethod(invokeMethodRequest, TypeRef.get(Void.class)).block();
+
+    verify(httpClient).sendAsync(requestCaptor.capture(), any());
+    return requestCaptor.getValue();
+  }
+
+  @Test
   public void invokeServiceExplicitHeaderOverridesTracingContextOnce() {
     String contextTraceparent = "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01";
     String inboundTraceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
