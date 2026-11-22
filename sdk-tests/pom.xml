@@ -290,6 +290,10 @@
                     <include name="io/dapr/it/tracing/http/OpenTelemetryInterceptor$*.class"/>
                     <include name="io/dapr/it/tracing/http/OpenTelemetryInterceptorConfig.class"/>
                     <include name="io/dapr/it/tracing/http/OpenTelemetryInterceptorConfig$*.class"/>
+                    <include name="io/dapr/it/tracing/grpc/TracingIT.class"/>
+                    <include name="io/dapr/it/tracing/grpc/TracingIT$*.class"/>
+                    <include name="io/dapr/it/tracing/grpc/Service.class"/>
+                    <include name="io/dapr/it/tracing/grpc/Service$*.class"/>
                   </fileset>
                 </delete>
               </target>
