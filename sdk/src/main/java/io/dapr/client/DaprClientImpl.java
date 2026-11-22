@@ -15,14 +15,10 @@ package io.dapr.client;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import io.dapr.client.domain.ActorMetadata;
-import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
-import io.dapr.client.domain.AppConnectionPropertiesMetadata;
 import io.dapr.client.domain.BatchQueryVectorsRequestAlpha1;
 import io.dapr.client.domain.BatchQueryVectorsResultAlpha1;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationRequestAlpha2;
@@ -48,7 +44,6 @@ import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetVectorCollectionResponseAlpha1;
 import io.dapr.client.domain.GetVectorsRequestAlpha1;
-import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.IndexAck;
 import io.dapr.client.domain.IndexSearchDocumentsRequestAlpha1;
@@ -61,7 +56,6 @@ import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.QueryVectorsRequestAlpha1;
 import io.dapr.client.domain.QueryVectorsResponseAlpha1;
-import io.dapr.client.domain.RuleMetadata;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.client.domain.SearchDocument;
@@ -71,7 +65,6 @@ import io.dapr.client.domain.SetBinaryFileRequestAlpha1;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.SubscriptionMetadata;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
@@ -87,14 +80,9 @@ import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
-import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprBindingsProtos;
-import io.dapr.v1.DaprConfigurationProtos;
 import io.dapr.v1.DaprGrpc;
-import io.dapr.v1.DaprLockProtos;
-import io.dapr.v1.DaprMetadataProtos;
 import io.dapr.v1.DaprProtos;
-import io.dapr.v1.DaprSecretProtos;
 import io.grpc.Channel;
 import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
@@ -109,14 +97,10 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static io.dapr.internal.exceptions.DaprHttpException.isSuccessfulHttpStatusCode;
 import static io.dapr.internal.exceptions.DaprHttpException.isValidHttpStatusCode;
@@ -149,6 +133,14 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprGrpcCalls grpcCalls;
 
   private final DaprConversationClient conversationClient;
+
+  private final DaprMetadataClient metadataClient;
+
+  private final DaprConfigurationClient configurationClient;
+
+  private final DaprLockClient lockClient;
+
+  private final DaprSecretsClient secretsClient;
 
   private final DaprCryptoClient cryptoClient;
 
@@ -261,6 +253,10 @@ public class DaprClientImpl extends AbstractDaprClient {
     this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken, timeoutPolicy);
     this.grpcCalls = new DaprGrpcCalls(asyncStub, this.grpcInterceptors, retryPolicy);
     this.conversationClient = new DaprConversationClient(this.grpcCalls, objectSerializer);
+    this.metadataClient = new DaprMetadataClient(this.grpcCalls);
+    this.configurationClient = new DaprConfigurationClient(this.grpcCalls);
+    this.lockClient = new DaprLockClient(this.grpcCalls);
+    this.secretsClient = new DaprSecretsClient(this.grpcCalls);
     this.cryptoClient = new DaprCryptoClient(this.grpcCalls);
     this.jobsClient = new DaprJobsClient(this.grpcCalls);
     this.binaryFileClient = new DaprBinaryFileClient(this.grpcCalls);
@@ -602,33 +598,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public Mono<Map<String, String>> getSecret(GetSecretRequest request) {
-    String secretStoreName = request.getStoreName();
-    String key = request.getKey();
-    Map<String, String> metadata = request.getMetadata();
-    try {
-      if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Secret store name cannot be null or empty.");
-      }
-      if ((key == null) || (key.trim().isEmpty())) {
-        throw new IllegalArgumentException("Secret key cannot be null or empty.");
-      }
-    } catch (Exception e) {
-      return DaprException.wrapMono(e);
-    }
-
-    DaprSecretProtos.GetSecretRequest.Builder requestBuilder = DaprSecretProtos.GetSecretRequest.newBuilder()
-        .setStoreName(secretStoreName)
-        .setKey(key);
-
-    if (metadata != null) {
-      requestBuilder.putAllMetadata(metadata);
-    }
-    DaprSecretProtos.GetSecretRequest req = requestBuilder.build();
-
-    return Mono.deferContextual(
-        context -> grpcCalls.<DaprSecretProtos.GetSecretResponse>createMono(
-            it -> grpcCalls.intercept(context).getSecret(req, it))
-    ).map(DaprSecretProtos.GetSecretResponse::getDataMap);
+    return this.secretsClient.getSecret(request);
   }
 
   /**
@@ -636,39 +606,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request) {
-    try {
-      final String storeName = request.getStoreName();
-      final Map<String, String> metadata = request.getMetadata();
-      if ((storeName == null) || (storeName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Secret store name cannot be null or empty.");
-      }
-
-      DaprSecretProtos.GetBulkSecretRequest.Builder builder = DaprSecretProtos.GetBulkSecretRequest.newBuilder()
-          .setStoreName(storeName);
-      if (metadata != null) {
-        builder.putAllMetadata(metadata);
-      }
-
-      DaprSecretProtos.GetBulkSecretRequest envelope = builder.build();
-
-      return Mono.deferContextual(
-          context ->
-              grpcCalls.<DaprSecretProtos.GetBulkSecretResponse>createMono(
-                  it -> grpcCalls.intercept(context).getBulkSecret(envelope, it)
-              )
-      ).map(it -> {
-        Map<String, DaprSecretProtos.SecretResponse> secretsMap = it.getDataMap();
-        if (secretsMap == null) {
-          return Collections.emptyMap();
-        }
-        return secretsMap
-            .entrySet()
-            .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
-      });
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
+    return this.secretsClient.getBulkSecret(request);
   }
 
   /**
@@ -676,47 +614,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public Mono<Boolean> tryLock(LockRequest request) {
-    try {
-      final String stateStoreName = request.getStoreName();
-      final String resourceId = request.getResourceId();
-      final String lockOwner = request.getLockOwner();
-      final Integer expiryInSeconds = request.getExpiryInSeconds();
-
-      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("State store name cannot be null or empty.");
-      }
-      if (resourceId == null || resourceId.isEmpty()) {
-        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
-      }
-      if (lockOwner == null || lockOwner.isEmpty()) {
-        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
-      }
-      if (expiryInSeconds < 0) {
-        throw new IllegalArgumentException("ExpiryInSeconds cannot be negative.");
-      }
-
-      DaprLockProtos.TryLockRequest.Builder builder = DaprLockProtos.TryLockRequest.newBuilder()
-              .setStoreName(stateStoreName)
-              .setResourceId(resourceId)
-              .setLockOwner(lockOwner)
-              .setExpiryInSeconds(expiryInSeconds);
-
-      DaprLockProtos.TryLockRequest tryLockRequest = builder.build();
-
-      return Mono.deferContextual(
-          context -> grpcCalls.<DaprLockProtos.TryLockResponse>createMono(
-                      it -> grpcCalls.intercept(context).tryLockAlpha1(tryLockRequest, it)
-              )
-      ).flatMap(response -> {
-        try {
-          return Mono.just(response.getSuccess());
-        } catch (Exception ex) {
-          return DaprException.wrapMono(ex);
-        }
-      });
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
+    return this.lockClient.tryLock(request);
   }
 
   /**
@@ -724,42 +622,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public Mono<UnlockResponseStatus> unlock(UnlockRequest request) {
-    try {
-      final String stateStoreName = request.getStoreName();
-      final String resourceId = request.getResourceId();
-      final String lockOwner = request.getLockOwner();
-
-      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("State store name cannot be null or empty.");
-      }
-      if (resourceId == null || resourceId.isEmpty()) {
-        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
-      }
-      if (lockOwner == null || lockOwner.isEmpty()) {
-        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
-      }
-
-      DaprLockProtos.UnlockRequest.Builder builder = DaprLockProtos.UnlockRequest.newBuilder()
-              .setStoreName(stateStoreName)
-              .setResourceId(resourceId)
-              .setLockOwner(lockOwner);
-
-      DaprLockProtos.UnlockRequest unlockRequest = builder.build();
-
-      return Mono.deferContextual(
-          context -> grpcCalls.<DaprLockProtos.UnlockResponse>createMono(
-                      it -> grpcCalls.intercept(context).unlockAlpha1(unlockRequest, it)
-              )
-      ).flatMap(response -> {
-        try {
-          return Mono.just(UnlockResponseStatus.valueOf(response.getStatus().getNumber()));
-        } catch (Exception ex) {
-          return DaprException.wrapMono(ex);
-        }
-      });
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
+    return this.lockClient.unlock(request);
   }
 
   /**
@@ -806,47 +669,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
-    try {
-      final String configurationStoreName = request.getStoreName();
-      final Map<String, String> metadata = request.getMetadata();
-      final List<String> keys = request.getKeys();
-      if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
-      }
-
-      DaprConfigurationProtos.GetConfigurationRequest.Builder builder = DaprConfigurationProtos.GetConfigurationRequest
-          .newBuilder()
-          .setStoreName(configurationStoreName).addAllKeys(keys);
-      if (metadata != null) {
-        builder.putAllMetadata(metadata);
-      }
-
-      DaprConfigurationProtos.GetConfigurationRequest envelope = builder.build();
-      return this.getConfiguration(envelope);
-
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
-  }
-
-  private Mono<Map<String, ConfigurationItem>> getConfiguration(DaprConfigurationProtos
-                                                                    .GetConfigurationRequest envelope) {
-    return Mono.deferContextual(
-        context ->
-            grpcCalls.<DaprConfigurationProtos.GetConfigurationResponse>createMono(
-                it -> grpcCalls.intercept(context).getConfiguration(envelope, it)
-            )
-    ).map(
-        it -> {
-          Map<String, ConfigurationItem> configMap = new HashMap<>();
-          Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
-          while (itr.hasNext()) {
-            Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
-            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
-          }
-          return Collections.unmodifiableMap(configMap);
-        }
-    );
+    return this.configurationClient.getConfiguration(request);
   }
 
   /**
@@ -854,43 +677,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request) {
-    try {
-      final String configurationStoreName = request.getStoreName();
-      final List<String> keys = request.getKeys();
-      final Map<String, String> metadata = request.getMetadata();
-
-      if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
-      }
-
-      // keys can and empty list for subscribe all scenario, so we do not need check for empty keys.
-      DaprConfigurationProtos.SubscribeConfigurationRequest.Builder builder = DaprConfigurationProtos
-          .SubscribeConfigurationRequest
-          .newBuilder()
-          .setStoreName(configurationStoreName)
-          .addAllKeys(keys);
-
-      if (metadata != null) {
-        builder.putAllMetadata(metadata);
-      }
-
-      DaprConfigurationProtos.SubscribeConfigurationRequest envelope = builder.build();
-      return grpcCalls.<DaprConfigurationProtos.SubscribeConfigurationResponse>createFlux(
-          it -> grpcCalls.intercept(null).subscribeConfiguration(envelope, it)
-      ).map(
-          it -> {
-            Map<String, ConfigurationItem> configMap = new HashMap<>();
-            Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItemsMap().entrySet().iterator();
-            while (itr.hasNext()) {
-              Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
-              configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
-            }
-            return new SubscribeConfigurationResponse(it.getId(), Collections.unmodifiableMap(configMap));
-          }
-      );
-    } catch (Exception ex) {
-      return DaprException.wrapFlux(ex);
-    }
+    return this.configurationClient.subscribeConfiguration(request);
   }
 
   /**
@@ -898,31 +685,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request) {
-    try {
-      final String configurationStoreName = request.getStoreName();
-      final String id = request.getSubscriptionId();
-
-      if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
-      }
-      if (id.isEmpty()) {
-        throw new IllegalArgumentException("Subscription id can not be null or empty.");
-      }
-      DaprConfigurationProtos.UnsubscribeConfigurationRequest.Builder builder =
-          DaprConfigurationProtos.UnsubscribeConfigurationRequest.newBuilder()
-              .setId(id)
-              .setStoreName(configurationStoreName);
-
-      DaprConfigurationProtos.UnsubscribeConfigurationRequest envelope = builder.build();
-
-      return grpcCalls.<DaprConfigurationProtos.UnsubscribeConfigurationResponse>createMono(
-          it -> grpcCalls.intercept(null).unsubscribeConfiguration(envelope, it)
-      ).map(
-          it -> new UnsubscribeConfigurationResponse(it.getOk(), it.getMessage())
-      );
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
+    return this.configurationClient.unsubscribeConfiguration(request);
   }
 
   /**
@@ -946,35 +709,9 @@ public class DaprClientImpl extends AbstractDaprClient {
     return this.jobsClient.deleteJob(deleteJobRequest);
   }
 
-  /**
-   * Build a new Configuration Item from provided parameter.
-   *
-   * @param configurationItem CommonProtos.ConfigurationItem
-   * @return io.dapr.client.domain.ConfigurationItem
-   */
-  private ConfigurationItem buildConfigurationItem(
-      CommonProtos.ConfigurationItem configurationItem, String key) {
-    return new ConfigurationItem(
-        key,
-        configurationItem.getValue(),
-        configurationItem.getVersion(),
-        configurationItem.getMetadataMap());
-  }
-
   @Override
   public Mono<DaprMetadata> getMetadata() {
-    DaprMetadataProtos.GetMetadataRequest metadataRequest = DaprMetadataProtos.GetMetadataRequest.newBuilder().build();
-    return Mono.deferContextual(
-            context -> grpcCalls.<DaprMetadataProtos.GetMetadataResponse>createMono(
-                it -> grpcCalls.intercept(context).getMetadata(metadataRequest, it)))
-        .map(
-            it -> {
-              try {
-                return buildDaprMetadata(it);
-              } catch (IOException ex) {
-                throw DaprException.propagate(ex);
-              }
-            });
+    return this.metadataClient.getMetadata();
   }
 
   /**
@@ -992,99 +729,6 @@ public class DaprClientImpl extends AbstractDaprClient {
   @Override
   public Mono<ConversationResponseAlpha2> converseAlpha2(ConversationRequestAlpha2 conversationRequestAlpha2) {
     return this.conversationClient.converseAlpha2(conversationRequestAlpha2);
-  }
-
-  private DaprMetadata buildDaprMetadata(DaprMetadataProtos.GetMetadataResponse response) throws IOException {
-    String id = response.getId();
-    String runtimeVersion = response.getRuntimeVersion();
-    List<String> enabledFeatures = response.getEnabledFeaturesList();
-    List<ActorMetadata> actors = getActors(response);
-    Map<String, String> attributes = response.getExtendedMetadataMap();
-    List<ComponentMetadata> components = getComponents(response);
-    List<HttpEndpointMetadata> httpEndpoints = getHttpEndpoints(response);
-    List<SubscriptionMetadata> subscriptions = getSubscriptions(response);
-    AppConnectionPropertiesMetadata appConnectionProperties = getAppConnectionProperties(response);
-
-    return new DaprMetadata(id, runtimeVersion, enabledFeatures, actors, attributes, components, httpEndpoints,
-      subscriptions, appConnectionProperties);
-  }
-
-  private List<ActorMetadata> getActors(DaprMetadataProtos.GetMetadataResponse response) {
-    DaprMetadataProtos.ActorRuntime actorRuntime = response.getActorRuntime();
-    List<DaprMetadataProtos.ActiveActorsCount> activeActorsList = actorRuntime.getActiveActorsList();
-
-    List<ActorMetadata> actors = new ArrayList<>();
-    for (DaprMetadataProtos.ActiveActorsCount aac : activeActorsList) {
-      actors.add(new ActorMetadata(aac.getType(), aac.getCount()));
-    }
-
-    return actors;
-  }
-
-  private List<ComponentMetadata> getComponents(DaprMetadataProtos.GetMetadataResponse response) {
-    List<DaprMetadataProtos.RegisteredComponents> registeredComponentsList = response.getRegisteredComponentsList();
-
-    List<ComponentMetadata> components = new ArrayList<>();
-    for (DaprMetadataProtos.RegisteredComponents rc : registeredComponentsList) {
-      components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion(), rc.getCapabilitiesList()));
-    }
-
-    return components;
-  }
-
-  private List<SubscriptionMetadata> getSubscriptions(DaprMetadataProtos.GetMetadataResponse response) {
-    List<DaprMetadataProtos.PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
-
-    List<SubscriptionMetadata> subscriptions = new ArrayList<>();
-    for (DaprMetadataProtos.PubsubSubscription s : subscriptionsList) {
-      List<DaprMetadataProtos.PubsubSubscriptionRule> rulesList = s.getRules().getRulesList();
-      List<RuleMetadata> rules = new ArrayList<>();
-      for (DaprMetadataProtos.PubsubSubscriptionRule r : rulesList) {
-        rules.add(new RuleMetadata(r.getMatch(), r.getPath()));
-      }
-      subscriptions.add(new SubscriptionMetadata(s.getPubsubName(), s.getTopic(), s.getMetadataMap(), rules,
-          s.getDeadLetterTopic()));
-    }
-
-    return subscriptions;
-  }
-
-  private List<HttpEndpointMetadata> getHttpEndpoints(DaprMetadataProtos.GetMetadataResponse response) {
-    List<DaprMetadataProtos.MetadataHTTPEndpoint> httpEndpointsList = response.getHttpEndpointsList();
-
-    List<HttpEndpointMetadata> httpEndpoints = new ArrayList<>();
-    for (DaprMetadataProtos.MetadataHTTPEndpoint m : httpEndpointsList) {
-      httpEndpoints.add(new HttpEndpointMetadata(m.getName()));
-    }
-
-    return httpEndpoints;
-  }
-
-  private AppConnectionPropertiesMetadata getAppConnectionProperties(DaprMetadataProtos.GetMetadataResponse response) {
-    DaprMetadataProtos.AppConnectionProperties appConnectionProperties = response.getAppConnectionProperties();
-    int port = appConnectionProperties.getPort();
-    String protocol = appConnectionProperties.getProtocol();
-    String channelAddress = appConnectionProperties.getChannelAddress();
-    int maxConcurrency = appConnectionProperties.getMaxConcurrency();
-    AppConnectionPropertiesHealthMetadata health = getAppConnectionPropertiesHealth(appConnectionProperties);
-
-    return new AppConnectionPropertiesMetadata(port, protocol, channelAddress, maxConcurrency, health);
-  }
-
-  private AppConnectionPropertiesHealthMetadata getAppConnectionPropertiesHealth(
-      DaprMetadataProtos.AppConnectionProperties appConnectionProperties) {
-    if (!appConnectionProperties.hasHealth()) {
-      return null;
-    }
-
-    DaprMetadataProtos.AppConnectionHealthProperties health = appConnectionProperties.getHealth();
-    String healthCheckPath = health.getHealthCheckPath();
-    String healthProbeInterval = health.getHealthProbeInterval();
-    String healthProbeTimeout = health.getHealthProbeTimeout();
-    int healthThreshold = health.getHealthThreshold();
-
-    return new AppConnectionPropertiesHealthMetadata(healthCheckPath, healthProbeInterval, healthProbeTimeout,
-        healthThreshold);
   }
 
   /**
