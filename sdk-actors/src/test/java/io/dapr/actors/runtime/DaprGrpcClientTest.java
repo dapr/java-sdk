@@ -64,8 +64,8 @@ public class DaprGrpcClientTest {
     private static final byte[] RESPONSE_PAYLOAD = "\"hello world\"".getBytes();
 
     private static final List<ActorStateOperation> OPERATIONS =  Arrays.asList(
-            new ActorStateOperation("upsert", "mykey", "hello world".getBytes()),
-            new ActorStateOperation("delete", "mykey", null));
+            new ActorStateOperation("upsert", new ActorState("mykey", "hello world".getBytes(), null)),
+            new ActorStateOperation("delete", new ActorState("mykey", null, null)));
 
     private final DaprGrpc.DaprImplBase serviceImpl = new CustomDaprClient();
 
@@ -93,7 +93,7 @@ public class DaprGrpcClientTest {
 
     @Test
     public void getActorStateException() {
-        Mono<byte[]> result = client.getState(ACTOR_TYPE, ACTOR_EXCEPTION, KEY);
+        Mono<ActorState<byte[]>> result = client.getState(ACTOR_TYPE, ACTOR_EXCEPTION, KEY);
         assertThrowsDaprException(
                 ExecutionException.class,
                 "UNKNOWN",
@@ -103,8 +103,8 @@ public class DaprGrpcClientTest {
 
     @Test
     public void getActorState() {
-        Mono<byte[]> result = client.getState(ACTOR_TYPE, ACTOR_ID, KEY);
-        assertArrayEquals(RESPONSE_PAYLOAD, result.block());
+        Mono<ActorState<byte[]>> result = client.getState(ACTOR_TYPE, ACTOR_ID, KEY);
+        assertArrayEquals(RESPONSE_PAYLOAD, result.block().getValue());
     }
 
     @Test
@@ -131,8 +131,8 @@ public class DaprGrpcClientTest {
     @Test
     public void saveActorStateTransactionallyInvalidValueType() {
         ActorStateOperation[] operations = new ActorStateOperation[]{
-                new ActorStateOperation("upsert", "mykey", 123),
-                new ActorStateOperation("delete", "mykey", null),
+                new ActorStateOperation("upsert", new ActorState("mykey", 123, null)),
+                new ActorStateOperation("delete", new ActorState("mykey", null, null)),
         };
 
         Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
@@ -257,9 +257,9 @@ public class DaprGrpcClientTest {
       for (ActorStateOperation operation : operations) {
         boolean found = false;
         for (DaprActorsProtos.TransactionalActorStateOperation grpcOperation : argument.getOperationsList()) {
-          if (operation.getKey().equals(grpcOperation.getKey())
+          if (operation.getState().getName().equals(grpcOperation.getKey())
               && operation.getOperationType().equals(grpcOperation.getOperationType())
-              && nullableEquals(operation.getValue(), grpcOperation.getValue())) {
+              && nullableEquals(operation.getState().getValue(), grpcOperation.getValue())) {
             found = true;
             break;
           }
@@ -416,4 +416,5 @@ public class DaprGrpcClientTest {
             responseObserver.onCompleted();
         }
     }
+
 }
