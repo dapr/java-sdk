@@ -708,8 +708,8 @@ public class ActorRuntimeTest {
     live.get(0).get(5, TimeUnit.SECONDS);
 
     Assertions.assertEquals(1, saved.size());
-    Assertions.assertEquals("value", saved.get(0).getKey());
-    Assertions.assertEquals("\"fresh\"", saved.get(0).getValue());
+    Assertions.assertEquals("value", saved.get(0).getState().getName());
+    Assertions.assertEquals("\"fresh\"", saved.get(0).getState().getValue());
     ExecutionException e = assertThrows(ExecutionException.class, () -> late.get(5, TimeUnit.SECONDS));
     Assertions.assertTrue(e.getCause() instanceof IllegalStateException, String.valueOf(e.getCause()));
   }
