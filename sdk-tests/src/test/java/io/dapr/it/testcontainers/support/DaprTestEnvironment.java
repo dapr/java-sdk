@@ -26,6 +26,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.lifecycle.Startable;
 import reactor.util.retry.Retry;
 
@@ -41,7 +42,7 @@ import java.util.UUID;
 
 import static io.dapr.it.testcontainers.ContainerConstants.JDK_17_TEMURIN_JAMMY;
 
-/** Owns one application, its sidecar, control plane and private network. */
+/** Owns an optional application, its sidecar, control plane and private network. */
 public final class DaprTestEnvironment implements Startable {
   private static final int APP_PORT = 8080;
   private static final String APP_RUNTIME = "/it-runtime";
@@ -76,6 +77,45 @@ public final class DaprTestEnvironment implements Startable {
   }
 
   /**
+   * Defines an isolated sidecar without an application or callback channel.
+   * @param appId Dapr application ID.
+   * @return Unstarted environment owning its control plane and private network.
+   */
+  public static DaprTestEnvironment withoutApplication(String appId) {
+    return new DaprTestEnvironment(appId, (String) null, DaprProtocol.HTTP, Duration.ofMinutes(2));
+  }
+
+  /**
+   * Adds explicit sidecar components before startup, without requiring a backing service.
+   * @param components Components using container-local or private network addresses.
+   * @return this environment.
+   */
+  public DaprTestEnvironment withComponents(List<Component> components) {
+    if (started) {
+      throw new IllegalStateException("Environment already started");
+    }
+    components.forEach(dapr::withComponent);
+    return this;
+  }
+
+  /**
+   * Copies a resource into the sidecar before startup using Testcontainers transfer APIs.
+   * @param resource Resource content to transfer.
+   * @param containerPath Absolute destination path inside daprd.
+   * @return this environment.
+   */
+  public DaprTestEnvironment withResource(Transferable resource, String containerPath) {
+    if (started) {
+      throw new IllegalStateException("Environment already started");
+    }
+    if (containerPath == null || !containerPath.startsWith("/")) {
+      throw new IllegalArgumentException("Resource destination must be an absolute container path");
+    }
+    dapr.withCopyToContainer(resource, containerPath);
+    return this;
+  }
+
+  /**
    * Adds one unstarted backing service and explicit sidecar components before startup.
    * @param container Backing service owned by this environment.
    * @param alias Stable private network alias.
@@ -93,7 +133,7 @@ public final class DaprTestEnvironment implements Startable {
         .withLabels(Map.of("io.dapr.it.environment", identity));
     prerequisiteAlias = alias;
     attachLogs(prerequisite, alias);
-    components.forEach(dapr::withComponent);
+    withComponents(components);
     return this;
   }
 
@@ -131,10 +171,10 @@ public final class DaprTestEnvironment implements Startable {
     scheduler = new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG)
         .withNetwork(network).withNetworkAliases("scheduler").withLabels(labels)
         .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(2)));
-    WaitStrategy appWait = protocol == DaprProtocol.GRPC
+    WaitStrategy appWait = mainClass == null ? null : protocol == DaprProtocol.GRPC
         ? new GrpcCallbackWaitStrategy(APP_PORT).withStartupTimeout(appReadinessTimeout)
         : Wait.forHttp("/health").forPort(APP_PORT).forStatusCode(200).withStartupTimeout(appReadinessTimeout);
-    app = new GenericContainer<>(JDK_17_TEMURIN_JAMMY)
+    app = mainClass == null ? null : new GenericContainer<>(JDK_17_TEMURIN_JAMMY)
         .withNetwork(network).withNetworkAliases("app").withLabels(labels)
         .withExposedPorts(APP_PORT)
         .waitingFor(appWait)
@@ -146,14 +186,19 @@ public final class DaprTestEnvironment implements Startable {
     dapr = new DaprContainer(DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG)
         .withNetwork(network).withNetworkAliases("dapr").withLabels(labels)
         .withAccessToHost(false)
-        .withAppName(appId).withAppPort(APP_PORT).withAppChannelAddress("app").withAppProtocol(protocol)
+        .withAppName(appId)
         .withPlacementContainer(placement).withSchedulerContainer(scheduler)
         .waitingFor(Wait.forHttp("/v1.0/healthz/outbound").forPort(3500)
             .forStatusCodeMatching(status -> status >= 200 && status <= 399)
             .withStartupTimeout(Duration.ofMinutes(2)));
+    if (app == null) {
+      dapr.withAppChannelAddress(null).withAppProtocol(null);
+    } else {
+      dapr.withAppPort(APP_PORT).withAppChannelAddress("app").withAppProtocol(protocol);
+      attachLogs(app, "app");
+    }
     attachLogs(placement, "placement");
     attachLogs(scheduler, "scheduler");
-    attachLogs(app, "app");
     attachLogs(dapr, "dapr");
   }
 
@@ -208,10 +253,12 @@ public final class DaprTestEnvironment implements Startable {
       System.out.printf("[%s] placement id=%s%n", identity, placement.getContainerId());
       resources.start(scheduler);
       System.out.printf("[%s] scheduler id=%s%n", identity, scheduler.getContainerId());
-      configureApplication();
-      resources.start(app);
-      System.out.printf("[%s] app id=%s image=%s protocol=%s address=%s%n", identity, app.getContainerId(),
-          JDK_17_TEMURIN_JAMMY, protocol, appAddress());
+      if (app != null) {
+        configureApplication();
+        resources.start(app);
+        System.out.printf("[%s] app id=%s image=%s protocol=%s address=%s%n", identity, app.getContainerId(),
+            JDK_17_TEMURIN_JAMMY, protocol, appAddress());
+      }
       resources.start(dapr);
       System.out.printf("[%s] dapr id=%s endpoint=%s grpc=%s:%d%n", identity, dapr.getContainerId(),
           Endpoints.http(dapr.getHost(), dapr.getHttpPort()), dapr.getHost(), dapr.getGrpcPort());
@@ -224,7 +271,8 @@ public final class DaprTestEnvironment implements Startable {
       }
 
       System.out.printf("[%s] app=%s (%s, %s), dapr=%s (%s), placement=%s, scheduler=%s%n", identity,
-          appAddress(), protocol, app.getContainerId(), Endpoints.http(dapr.getHost(), dapr.getHttpPort()),
+          app == null ? "none" : appAddress(), protocol, appContainerId(),
+          Endpoints.http(dapr.getHost(), dapr.getHttpPort()),
           dapr.getContainerId(), placement.getContainerId(), scheduler.getContainerId());
     } catch (RuntimeException | Error failure) {
       diagnosticLogs(prerequisite, prerequisiteAlias);
@@ -261,6 +309,7 @@ public final class DaprTestEnvironment implements Startable {
 
   /** Returns the HTTP application endpoint reachable by the test JVM. */
   public URI appEndpoint() {
+    requireApplication();
     if (protocol != DaprProtocol.HTTP) {
       throw new IllegalStateException("Application is not HTTP: " + protocol);
     }
@@ -273,7 +322,19 @@ public final class DaprTestEnvironment implements Startable {
    * @return Application authority reachable by the test JVM.
    */
   public String appAddress() {
+    requireApplication();
     return Endpoints.http(app.getHost(), app.getMappedPort(APP_PORT)).getRawAuthority();
+  }
+
+  private void requireApplication() {
+    if (app == null) {
+      throw new IllegalStateException("Environment has no application");
+    }
+  }
+
+  /** Returns whether the owned daprd process is still running, including after SDK shutdown. */
+  public boolean isSidecarRunning() {
+    return dapr.isRunning();
   }
 
   /** Returns a client builder configured for the mapped sidecar ports. */
@@ -299,6 +360,6 @@ public final class DaprTestEnvironment implements Startable {
   }
 
   String appContainerId() {
-    return app.getContainerId();
+    return app == null ? null : app.getContainerId();
   }
 }

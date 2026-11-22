@@ -266,6 +266,12 @@
                 <!-- Remove pre-migration classes left by incremental builds before Failsafe discovery. -->
                 <delete>
                   <fileset dir="${project.build.testOutputDirectory}" erroronmissingdir="false">
+                    <include name="io/dapr/it/api/ApiIT.class"/>
+                    <include name="io/dapr/it/api/ApiIT$*.class"/>
+                    <include name="io/dapr/it/secrets/SecretsClientIT.class"/>
+                    <include name="io/dapr/it/secrets/SecretsClientIT$*.class"/>
+                    <include name="io/dapr/it/testcontainers/secrets/DaprSecretsIT.class"/>
+                    <include name="io/dapr/it/testcontainers/secrets/DaprSecretsIT$*.class"/>
                     <include name="io/dapr/it/methodinvoke/http/MethodInvokeIT*.class"/>
                     <include name="io/dapr/it/methodinvoke/http/MethodInvokeService*.class"/>
                     <include name="io/dapr/it/methodinvoke/http/MethodInvokeController*.class"/>
