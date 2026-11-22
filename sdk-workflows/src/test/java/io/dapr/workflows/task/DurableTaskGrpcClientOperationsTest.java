@@ -65,6 +65,7 @@ class DurableTaskGrpcClientOperationsTest {
   private final AtomicReference<OrchestratorService.RerunWorkflowFromEventRequest> rerunRequest =
       new AtomicReference<>();
   private final AtomicReference<OrchestratorService.CreateInstanceRequest> createRequest = new AtomicReference<>();
+  private final AtomicReference<OrchestratorService.TerminateRequest> terminateRequest = new AtomicReference<>();
 
   @BeforeEach
   void setUp() throws Exception {
@@ -145,6 +146,15 @@ class DurableTaskGrpcClientOperationsTest {
             responseObserver.onNext(OrchestratorService.CreateInstanceResponse.newBuilder()
                 .setInstanceId(request.getInstanceId().isEmpty() ? "generated-1" : request.getInstanceId())
                 .build());
+            responseObserver.onCompleted();
+          }
+
+          @Override
+          public void terminateInstance(
+              OrchestratorService.TerminateRequest request,
+              StreamObserver<OrchestratorService.TerminateResponse> responseObserver) {
+            terminateRequest.set(request);
+            responseObserver.onNext(OrchestratorService.TerminateResponse.getDefaultInstance());
             responseObserver.onCompleted();
           }
         })
@@ -265,6 +275,38 @@ class DurableTaskGrpcClientOperationsTest {
   void shouldRequireASourceInstanceToRerunFrom() {
     assertThrows(IllegalArgumentException.class,
         () -> client.rerunWorkflowFromEvent(null, 5, null, null, false));
+  }
+
+  @Test
+  void shouldSendTheTerminationReasonUsingTheExistingOutputField() {
+    client.terminate(INSTANCE_ID, null, null, "operator requested");
+
+    OrchestratorService.TerminateRequest request = terminateRequest.get();
+    assertEquals(INSTANCE_ID, request.getInstanceId());
+    assertTrue(request.hasOutput());
+    assertEquals("operator requested", request.getOutput().getValue());
+  }
+
+  @Test
+  void shouldPreserveAnExplicitlyEmptyTerminationReason() {
+    client.terminate(INSTANCE_ID, null, null, "");
+
+    OrchestratorService.TerminateRequest request = terminateRequest.get();
+    assertTrue(request.hasOutput());
+    assertEquals("", request.getOutput().getValue());
+  }
+
+  @Test
+  void shouldRejectCombiningTerminationOutputAndReason() {
+    assertThrows(IllegalArgumentException.class,
+        () -> client.terminate(INSTANCE_ID, "cancelled", null, "operator requested"));
+  }
+
+  @Test
+  void shouldOmitTheTerminationInputForLegacyTerminationCalls() {
+    client.terminate(INSTANCE_ID, null);
+
+    assertFalse(terminateRequest.get().hasOutput());
   }
 
   @Test
