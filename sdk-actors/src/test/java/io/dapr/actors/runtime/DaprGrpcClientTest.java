@@ -33,6 +33,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -40,6 +41,8 @@ import java.util.concurrent.ExecutionException;
 import static io.dapr.actors.TestUtils.assertThrowsDaprException;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -52,6 +55,8 @@ public class DaprGrpcClientTest {
     private static final String ACTOR_ID = "1234567890";
 
     private static final String KEY = "MyKey";
+
+    private static final String TTL_KEY = "MyKeyWithTtl";
 
     private static final String ACTOR_EXCEPTION = "1_exception";
 
@@ -70,6 +75,8 @@ public class DaprGrpcClientTest {
     private final DaprGrpc.DaprImplBase serviceImpl = new CustomDaprClient();
 
     private DaprClientImpl client;
+
+    private DaprActorsProtos.ExecuteActorStateTransactionRequest lastTransactionRequest;
 
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
@@ -108,6 +115,21 @@ public class DaprGrpcClientTest {
     }
 
     @Test
+    public void getActorStateWithTtlExpireTime() {
+        Mono<ActorState<byte[]>> result = client.getState(ACTOR_TYPE, ACTOR_ID, TTL_KEY);
+        ActorState<byte[]> state = result.block();
+        assertArrayEquals(RESPONSE_PAYLOAD, state.getValue());
+        assertTrue(state.getExpiration().isAfter(Instant.now()));
+        assertTrue(state.getExpiration().isBefore(Instant.now().plusSeconds(3601)));
+    }
+
+    @Test
+    public void getActorStateWithoutTtlExpireTimeHasNoExpiration() {
+        Mono<ActorState<byte[]>> result = client.getState(ACTOR_TYPE, ACTOR_ID, KEY);
+        assertNull(result.block().getExpiration());
+    }
+
+    @Test
     public void saveActorStateTransactionallyException() {
         Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_EXCEPTION, OPERATIONS);
         assertThrowsDaprException(
@@ -126,6 +148,27 @@ public class DaprGrpcClientTest {
     public void saveActorStateTransactionallyByteArray() {
         Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, OPERATIONS);
         result.block();
+    }
+
+    @Test
+    public void saveActorStateTransactionallyWithTtl() {
+        List<ActorStateOperation> operations = Arrays.asList(
+                new ActorStateOperation("upsert",
+                        new ActorState("mykey", "hello world".getBytes(), Instant.now().plusSeconds(3600))),
+                new ActorStateOperation("delete", new ActorState("mykey", null, null)));
+
+        Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, operations);
+        result.block();
+
+        DaprActorsProtos.TransactionalActorStateOperation upsert =
+                this.lastTransactionRequest.getOperations(0);
+        assertTrue(upsert.getMetadataMap().containsKey("ttlInSeconds"));
+        long ttlInSeconds = Long.parseLong(upsert.getMetadataOrThrow("ttlInSeconds"));
+        assertTrue(ttlInSeconds >= 3590 && ttlInSeconds <= 3600);
+
+        DaprActorsProtos.TransactionalActorStateOperation delete =
+                this.lastTransactionRequest.getOperations(1);
+        assertFalse(delete.getMetadataMap().containsKey("ttlInSeconds"));
     }
 
     @Test
@@ -280,12 +323,17 @@ public class DaprGrpcClientTest {
         public void getActorState(DaprActorsProtos.GetActorStateRequest request,
                                   StreamObserver<DaprActorsProtos.GetActorStateResponse> responseObserver) {
             assertEquals(ACTOR_TYPE, request.getActorType());
-            assertEquals(KEY, request.getKey());
+            assertTrue(KEY.equals(request.getKey()) || TTL_KEY.equals(request.getKey()));
             assertEquals(ACTOR_ID, request.getActorId());
             switch (request.getActorId()) {
                 case ACTOR_ID:
-                  populateObserver(responseObserver, DaprActorsProtos.GetActorStateResponse.newBuilder().setData(ByteString.copyFrom(RESPONSE_PAYLOAD))
-                            .build());
+                  DaprActorsProtos.GetActorStateResponse.Builder response =
+                      DaprActorsProtos.GetActorStateResponse.newBuilder()
+                          .setData(ByteString.copyFrom(RESPONSE_PAYLOAD));
+                  if (TTL_KEY.equals(request.getKey())) {
+                    response.putMetadata("ttlExpireTime", Instant.now().plusSeconds(3600).toString());
+                  }
+                  populateObserver(responseObserver, response.build());
                     return;
 
                 case ACTOR_EXCEPTION:
@@ -299,6 +347,7 @@ public class DaprGrpcClientTest {
                                                  io.grpc.stub.StreamObserver<com.google.protobuf.Empty> responseObserver) {
             assertEquals(ACTOR_TYPE, request.getActorType());
             assertEquals(ACTOR_ID, request.getActorId());
+            lastTransactionRequest = request;
             assertTrue(new OperationsMatcher(OPERATIONS).matches(request));
             switch (request.getActorId()) {
                 case ACTOR_ID:

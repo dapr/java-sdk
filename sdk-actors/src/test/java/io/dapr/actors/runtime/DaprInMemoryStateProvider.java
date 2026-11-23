@@ -52,7 +52,7 @@ public class DaprInMemoryStateProvider extends DaprStateAsyncProvider {
             throw new IllegalStateException("State expired.");
           }
         }
-        var v =  this.serializer.deserialize(state.getValue(), type);
+        var v = this.serializer.deserialize(state.getValue(), type);
         return new ActorState<>(stateName, v, state.getExpiration());
       } catch (IOException e) {
         throw new RuntimeException(e);

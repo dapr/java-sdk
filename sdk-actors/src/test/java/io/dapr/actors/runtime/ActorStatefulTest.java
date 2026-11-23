@@ -201,7 +201,7 @@ public class ActorStatefulTest {
 
     @Override
     public Mono<Void> addMessage(String message) {
-      return super.getActorStateManager().add("message", message, null);
+      return super.getActorStateManager().add("message", message);
     }
 
     @Override
@@ -241,20 +241,20 @@ public class ActorStatefulTest {
     @Override
     public Mono<Void> forceDuplicateException() {
       // Second add should throw exception.
-      return super.getActorStateManager().add("message", "anything", null)
-        .then(super.getActorStateManager().add("message", "something else", null));
+      return super.getActorStateManager().add("message", "anything")
+        .then(super.getActorStateManager().add("message", "something else"));
     }
 
     @Override
     public Mono<Void> forcePartialChange() {
-      return super.getActorStateManager().add("message", "first message", null)
+      return super.getActorStateManager().add("message", "first message")
         .then(super.saveState())
-        .then(super.getActorStateManager().add("message", "second message", null));
+        .then(super.getActorStateManager().add("message", "second message"));
     }
 
     @Override
     public Mono<Void> throwsWithoutSaving() {
-      return super.getActorStateManager().add("message", "first message", null)
+      return super.getActorStateManager().add("message", "first message")
         .then(Mono.error(new IllegalCharsetNameException("random")));
     }
 
