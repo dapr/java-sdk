@@ -17,6 +17,7 @@ import io.dapr.testcontainers.ApiLoggingConfigurationSettings;
 import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.ComponentsConfigurationSettings;
 import io.dapr.testcontainers.Configuration;
+import io.dapr.testcontainers.Feature;
 import io.dapr.testcontainers.HttpMetricsConfigurationSettings;
 import io.dapr.testcontainers.HttpPipeline;
 import io.dapr.testcontainers.ListEntry;
@@ -278,6 +279,20 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
       }
 
       configurationSpec.put("secrets", secretsMap);
+    }
+
+    List<Feature> features = configuration.getFeatures();
+    if (features != null && !features.isEmpty()) {
+      List<Map<String, Object>> featuresList = new ArrayList<>();
+
+      for (Feature feature : features) {
+        Map<String, Object> featureMap = new LinkedHashMap<>();
+        featureMap.put("name", feature.getName());
+        putIfNotNull(featureMap, "enabled", feature.getEnabled());
+        featuresList.add(featureMap);
+      }
+
+      configurationSpec.put("features", featuresList);
     }
 
     configurationProps.put("spec", configurationSpec);
