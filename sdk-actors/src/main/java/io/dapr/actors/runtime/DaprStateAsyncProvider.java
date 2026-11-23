@@ -20,9 +20,13 @@ import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Instant;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 
 /**
@@ -67,8 +71,8 @@ class DaprStateAsyncProvider {
     this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
   }
 
-  <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
-    Mono<byte[]> result = this.daprClient.getState(actorType, actorId.toString(), stateName);
+  <T> Mono<ActorState<T>> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
+    Mono<ActorState<byte[]>> result = this.daprClient.getState(actorType, actorId.toString(), stateName);
 
     return result.flatMap(s -> {
       try {
@@ -76,19 +80,19 @@ class DaprStateAsyncProvider {
           return Mono.empty();
         }
 
-        T response = this.stateSerializer.deserialize(s, type);
+        T response = this.stateSerializer.deserialize(s.getValue(), type);
         if (this.isStateSerializerDefault && (response instanceof byte[])) {
-          if (s.length == 0) {
+          if ((s.getValue() == null) || (s.getValue().length == 0)) {
             return Mono.empty();
           }
           // Default serializer just passes through byte arrays, so we need to decode it here.
-          response = (T) OBJECT_MAPPER.readValue(s, byte[].class);
+          response = (T) OBJECT_MAPPER.readValue(s.getValue(), byte[].class);
         }
         if (response == null) {
           return Mono.empty();
         }
 
-        return Mono.just(response);
+        return Mono.just(new ActorState<>(s.getName(), response, s.getExpiration()));
       } catch (IOException e) {
         return Mono.error(new RuntimeException(e));
       }
@@ -96,8 +100,8 @@ class DaprStateAsyncProvider {
   }
 
   Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
-    Mono<byte[]> result = this.daprClient.getState(actorType, actorId.toString(), stateName);
-    return result.map(s -> s.length > 0).defaultIfEmpty(false);
+    var result = this.daprClient.getState(actorType, actorId.toString(), stateName);
+    return result.map(s -> (s.getValue() != null) && (s.getValue().length > 0)).defaultIfEmpty(false);
   }
 
   /**
@@ -139,14 +143,15 @@ class DaprStateAsyncProvider {
         continue;
       }
 
-      String key = stateChange.getStateName();
+      var state = stateChange.getState();
+      String key = state.getName();
       Object value = null;
       if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE)
           || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
         try {
-          byte[] data = this.stateSerializer.serialize(stateChange.getValue());
+          byte[] data = this.stateSerializer.serialize(state.getValue());
           if (data != null) {
-            if (this.isStateSerializerDefault && !(stateChange.getValue() instanceof byte[])) {
+            if (this.isStateSerializerDefault && !(state.getValue() instanceof byte[])) {
               // DefaultObjectSerializer is a JSON serializer, so we just pass it on.
               value = new String(data, CHARSET);
             } else {
@@ -160,7 +165,7 @@ class DaprStateAsyncProvider {
         }
       }
 
-      operations.add(new ActorStateOperation(operationName, key, value));
+      operations.add(new ActorStateOperation(operationName, new ActorState(key, value, state.getExpiration())));
     }
 
     return this.daprClient.saveStateTransactionally(actorType, actorId.toString(), operations);
