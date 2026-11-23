@@ -381,6 +381,20 @@ public abstract class BaseContainerIT {
   }
 
   /**
+   * MySQL-backed state store. Lazily starts the shared MySQL container before
+   * returning the component. Used only by the actor state TTL test: MySQL
+   * returns the ttlExpireTime of a state key, which Redis does not, so the
+   * other actor tests stay on Redis.
+   */
+  protected static Component mysqlStateStore(String name) {
+    SharedTestInfra.mysql();   // ensure MySQL is up before DaprContainer needs it
+    return new Component(name, "state.mysql", "v1", Map.of(
+        "connectionString", SharedTestInfra.mysqlConnectionString(),
+        "actorStateStore", "true"
+    ));
+  }
+
+  /**
    * Kafka-backed input/output binding. Lazily starts the shared Kafka container
    * before returning the component. The {@code {appID}} placeholders in
    * {@code topics}/{@code publishTopic}/{@code consumerGroup} resolve to the
