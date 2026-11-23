@@ -29,18 +29,13 @@ import io.dapr.testcontainers.MetricsRule;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.NameResolutionConfigurationSettings;
+import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.SecretScope;
 import io.dapr.testcontainers.SecretScopeAccess;
 import io.dapr.testcontainers.SecretsConfigurationSettings;
-import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
-
-import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,9 +43,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 class ConfigurationYamlConverterTest {
-  private final Yaml MAPPER = YamlMapperFactory.create();
-  private final ConfigurationYamlConverter converter = new ConfigurationYamlConverter(MAPPER);
+  private final Yaml mapper = YamlMapperFactory.create();
+  private final ConfigurationYamlConverter converter = new ConfigurationYamlConverter(mapper);
 
   @Test
   public void testConfigurationToYaml() {
@@ -374,6 +374,7 @@ class ConfigurationYamlConverterTest {
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
+
   @Test
   public void testConfigurationWithMetricsToYaml() {
     Map<String, String> regex = new LinkedHashMap<>();

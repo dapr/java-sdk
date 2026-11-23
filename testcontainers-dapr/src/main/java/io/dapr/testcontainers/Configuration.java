@@ -13,11 +13,11 @@ limitations under the License.
 
 package io.dapr.testcontainers;
 
+import java.util.List;
+
 /**
  * Represents a Dapr component.
  */
-import java.util.List;
-
 public class Configuration {
   private final String name;
   private final TracingConfigurationSettings tracing;
