@@ -18,6 +18,7 @@ import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.ComponentsConfigurationSettings;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.Feature;
 import io.dapr.testcontainers.HttpMetricsConfigurationSettings;
 import io.dapr.testcontainers.HttpPipeline;
 import io.dapr.testcontainers.ListEntry;
@@ -28,18 +29,13 @@ import io.dapr.testcontainers.MetricsRule;
 import io.dapr.testcontainers.MtlsConfigurationSettings;
 import io.dapr.testcontainers.MtlsTokenValidator;
 import io.dapr.testcontainers.NameResolutionConfigurationSettings;
+import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.SecretScope;
 import io.dapr.testcontainers.SecretScopeAccess;
 import io.dapr.testcontainers.SecretsConfigurationSettings;
-import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
-
-import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,9 +43,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 class ConfigurationYamlConverterTest {
-  private final Yaml MAPPER = YamlMapperFactory.create();
-  private final ConfigurationYamlConverter converter = new ConfigurationYamlConverter(MAPPER);
+  private final Yaml mapper = YamlMapperFactory.create();
+  private final ConfigurationYamlConverter converter = new ConfigurationYamlConverter(mapper);
 
   @Test
   public void testConfigurationToYaml() {
@@ -170,6 +171,28 @@ class ConfigurationYamlConverterTest {
         + "    enabled: true\n"
         + "    workloadCertTTL: 24h\n"
         + "    allowedClockSkew: 15m\n";
+
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
+  @Test
+  public void testConfigurationWithFeaturesToYaml() {
+    List<Feature> features = new ArrayList<>();
+    features.add(new Feature("ActorStateTTL", true));
+
+    Configuration configuration = new Configuration(
+        "my-config", null, null, null, null, null, null, null, null, null, features);
+
+    String configurationYaml = converter.convert(configuration);
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
+        + "spec:\n"
+        + "  features:\n"
+        + "  - name: ActorStateTTL\n"
+        + "    enabled: true\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
@@ -351,6 +374,7 @@ class ConfigurationYamlConverterTest {
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
+
   @Test
   public void testConfigurationWithMetricsToYaml() {
     Map<String, String> regex = new LinkedHashMap<>();

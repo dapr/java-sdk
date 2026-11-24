@@ -17,6 +17,8 @@ public interface StatefulActor {
 
   void writeMessage(String something);
 
+  void writeMessageWithTtl(String something);
+
   String readMessage();
 
   void writeName(String something);

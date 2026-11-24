@@ -32,6 +32,7 @@ public final class SharedTestInfra {
   private static final String REDIS_NETWORK_ALIAS = "redis";
   private static final String ZIPKIN_NETWORK_ALIAS = "zipkin";
   private static final String MONGO_NETWORK_ALIAS = "mongo";
+  private static final String MYSQL_NETWORK_ALIAS = "mysql";
   private static final String KAFKA_NETWORK_ALIAS = "kafka";
   private static final String PLACEMENT_NETWORK_ALIAS = "placement";
   private static final String SCHEDULER_NETWORK_ALIAS = "scheduler";
@@ -40,6 +41,7 @@ public final class SharedTestInfra {
   private static volatile GenericContainer<?> redis;
   private static volatile GenericContainer<?> zipkin;
   private static volatile GenericContainer<?> mongo;
+  private static volatile GenericContainer<?> mysql;
   private static volatile org.testcontainers.kafka.KafkaContainer kafka;
   private static volatile DaprPlacementContainer placement;
   private static volatile DaprSchedulerContainer scheduler;
@@ -99,6 +101,38 @@ public final class SharedTestInfra {
 
   public static String mongoInternalHost() {
     return MONGO_NETWORK_ALIAS + ":27017";
+  }
+
+  /**
+   * MySQL 8 shared by the actor state TTL test. Unlike Redis, MySQL returns
+   * the ttlExpireTime of a state key, which is what the actor state TTL
+   * support needs to know a cached value has expired.
+   */
+  public static synchronized GenericContainer<?> mysql() {
+    if (mysql == null) {
+      mysql = new GenericContainer<>(DockerImageName.parse("mysql:8"))
+          .withNetwork(network())
+          .withNetworkAliases(MYSQL_NETWORK_ALIAS)
+          .withEnv("MYSQL_ROOT_PASSWORD", "dapr")
+          .withEnv("MYSQL_DATABASE", "dapr")
+          .withExposedPorts(3306)
+          .withReuse(true);
+      mysql.start();
+    }
+    return mysql;
+  }
+
+  public static String mysqlInternalHost() {
+    return MYSQL_NETWORK_ALIAS + ":3306";
+  }
+
+  /**
+   * Connection string for the shared MySQL, as the Dapr MySQL state store expects it.
+   * No database name: the store appends its own schema name to the path, so a name
+   * here would be mangled into it.
+   */
+  public static String mysqlConnectionString() {
+    return "root:dapr@tcp(" + mysqlInternalHost() + ")/";
   }
 
   public static synchronized org.testcontainers.kafka.KafkaContainer kafka() {

@@ -29,6 +29,7 @@ import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -79,7 +80,7 @@ class DaprClientImpl implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> getState(String actorType, String actorId, String keyName) {
+  public Mono<ActorState<byte[]>> getState(String actorType, String actorId, final String keyName) {
     DaprActorsProtos.GetActorStateRequest req =
         DaprActorsProtos.GetActorStateRequest.newBuilder()
                     .setActorType(actorType)
@@ -88,7 +89,14 @@ class DaprClientImpl implements DaprClient {
                     .build();
 
     return Mono.<DaprActorsProtos.GetActorStateResponse>create(it ->
-            client.getActorState(req, createStreamObserver(it))).map(r -> r.getData().toByteArray());
+            client.getActorState(req, createStreamObserver(it))).map(r -> {
+              var expirationStr = r.getMetadataOrDefault("ttlExpireTime", null);
+              Instant expiration = null;
+              if ((expirationStr != null) && !expirationStr.isEmpty()) {
+                expiration = Instant.parse(expirationStr);
+              }
+              return new ActorState<>(keyName, r.getData().toByteArray(), expiration);
+            });
   }
 
   /**
@@ -102,12 +110,26 @@ class DaprClientImpl implements DaprClient {
     List<DaprActorsProtos.TransactionalActorStateOperation> grpcOps = new ArrayList<>();
     for (ActorStateOperation op : operations) {
       String operationType = op.getOperationType();
-      String key = op.getKey();
-      Object value = op.getValue();
+      String key = op.getState().getName();
+      Object value = op.getState().getValue();
+      Instant expiration = op.getState().getExpiration();
+      Long ttlInSeconds = null;
+      if (expiration != null) {
+        ttlInSeconds = expiration.getEpochSecond() - Instant.now().getEpochSecond();
+      }
       DaprActorsProtos.TransactionalActorStateOperation.Builder opBuilder =
           DaprActorsProtos.TransactionalActorStateOperation.newBuilder()
               .setOperationType(operationType)
               .setKey(key);
+
+      if (ttlInSeconds != null) {
+        if (ttlInSeconds <= 0) {
+          // already expired, min is 1s.
+          ttlInSeconds = 1L;
+        }
+        opBuilder.putMetadata("ttlInSeconds", ttlInSeconds.toString());
+      }
+
       if (value != null) {
         if (value instanceof String) {
           opBuilder.setValue(Any.newBuilder().setValue(ByteString.copyFrom((String) value, CHARSET)));

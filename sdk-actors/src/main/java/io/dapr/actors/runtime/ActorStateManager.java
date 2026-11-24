@@ -17,6 +17,8 @@ import io.dapr.actors.ActorId;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +79,25 @@ public class ActorStateManager {
    * @return Asynchronous void operation.
    */
   public <T> Mono<Void> add(String stateName, T value) {
+    return this.add(stateName, value, null);
+  }
+
+  /**
+   * Adds a given key/value to the Actor's state store's cache, with an expiration.
+   * The cached value is not served once it expires.
+   *
+   * <p>Actor state TTL is a preview feature in the Dapr runtime: saving a state with an
+   * expiration fails unless the ActorStateTTL feature is enabled. The cache only knows
+   * the expiration when the state store returns it (ttlExpireTime); stores that do not,
+   * such as Redis, keep serving the cached value until the store itself expires it.
+   *
+   * @param stateName  Name of the state being added.
+   * @param value      Value to be added.
+   * @param expiration When the state expires, or null for no expiration.
+   * @param <T>        Type of the object being added.
+   * @return Asynchronous void operation.
+   */
+  public <T> Mono<Void> add(String stateName, T value, Instant expiration) {
     return Mono.fromSupplier(() -> {
       if (stateName == null) {
         throw new IllegalArgumentException("State's name cannot be null.");
@@ -89,7 +110,8 @@ public class ActorStateManager {
             StateChangeMetadata metadata = this.stateChangeTracker.get(stateName);
 
             if (metadata.kind == ActorStateChangeKind.REMOVE) {
-              this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.UPDATE, value));
+              this.stateChangeTracker.put(
+                  stateName, new StateChangeMetadata(ActorStateChangeKind.UPDATE, value, expiration));
               return true;
             }
 
@@ -100,7 +122,8 @@ public class ActorStateManager {
             throw new IllegalStateException("Duplicate state: " + stateName);
           }
 
-          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.ADD, value));
+          this.stateChangeTracker.put(
+              stateName, new StateChangeMetadata(ActorStateChangeKind.ADD, value, expiration));
           return true;
         }))
         .then();
@@ -135,6 +158,10 @@ public class ActorStateManager {
       if (this.stateChangeTracker.containsKey(stateName)) {
         StateChangeMetadata metadata = this.stateChangeTracker.get(stateName);
 
+        if (metadata.isExpired()) {
+          throw new NoSuchElementException("State is expired: " + stateName);
+        }
+
         if (metadata.kind == ActorStateChangeKind.REMOVE) {
           throw new NoSuchElementException("State is marked for removal: " + stateName);
         }
@@ -147,8 +174,9 @@ public class ActorStateManager {
         this.stateProvider.load(this.actorTypeName, this.actorId, stateName, type)
             .switchIfEmpty(Mono.error(new NoSuchElementException("State not found: " + stateName)))
             .map(v -> {
-              this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.NONE, v));
-              return (T) v;
+              this.stateChangeTracker.put(
+                  stateName, new StateChangeMetadata(ActorStateChangeKind.NONE, v.getValue(), v.getExpiration()));
+              return (T) v.getValue();
             }));
   }
 
@@ -161,6 +189,26 @@ public class ActorStateManager {
    * @return Asynchronous void result.
    */
   public <T> Mono<Void> set(String stateName, T value) {
+    return this.set(stateName, value, Duration.ZERO);
+  }
+
+  /**
+   * Updates a given key/value pair in the state store's cache, with a time to live.
+   * A null, zero, or negative TTL stores the value with no expiration.
+   * Using a TTL is recommended to avoid state being left in the store forever.
+   *
+   * <p>Actor state TTL is a preview feature in the Dapr runtime: saving a state with a
+   * TTL fails unless the ActorStateTTL feature is enabled. The cache only knows the
+   * expiration when the state store returns it (ttlExpireTime); stores that do not,
+   * such as Redis, keep serving the cached value until the store itself expires it.
+   *
+   * @param stateName Name of the state being updated.
+   * @param value     Value to be set for given state.
+   * @param ttl       Time to live.
+   * @param <T>       Type of the value being set.
+   * @return Asynchronous void result.
+   */
+  public <T> Mono<Void> set(String stateName, T value, Duration ttl) {
     return Mono.fromSupplier(() -> {
       if (stateName == null) {
         throw new IllegalArgumentException("State's name cannot be null.");
@@ -170,11 +218,12 @@ public class ActorStateManager {
         StateChangeMetadata metadata = this.stateChangeTracker.get(stateName);
 
         ActorStateChangeKind kind = metadata.kind;
-        if ((kind == ActorStateChangeKind.NONE) || (kind == ActorStateChangeKind.REMOVE)) {
+        if (metadata.isExpired() || (kind == ActorStateChangeKind.NONE) || (kind == ActorStateChangeKind.REMOVE)) {
           kind = ActorStateChangeKind.UPDATE;
         }
 
-        this.stateChangeTracker.put(stateName, new StateChangeMetadata(kind, value));
+        var expiration = buildExpiration(ttl);
+        this.stateChangeTracker.put(stateName, new StateChangeMetadata(kind, value, expiration));
         return true;
       }
 
@@ -182,8 +231,10 @@ public class ActorStateManager {
     }).filter(x -> x)
         .switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName)
             .map(exists -> {
+              var expiration = buildExpiration(ttl);
               this.stateChangeTracker.put(stateName,
-                  new StateChangeMetadata(exists ? ActorStateChangeKind.UPDATE : ActorStateChangeKind.ADD, value));
+                  new StateChangeMetadata(
+                      exists ? ActorStateChangeKind.UPDATE : ActorStateChangeKind.ADD, value, expiration));
               return exists;
             }))
         .then();
@@ -213,7 +264,7 @@ public class ActorStateManager {
           return true;
         }
 
-        this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, null));
+        this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, null, null));
         return true;
       }
 
@@ -223,7 +274,7 @@ public class ActorStateManager {
         .switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName))
         .filter(exists -> exists)
         .map(exists -> {
-          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, null));
+          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, null, null));
           return exists;
         })
         .then();
@@ -244,7 +295,7 @@ public class ActorStateManager {
           return this.stateChangeTracker.get(stateName);
         }
     ).map(metadata -> {
-      if (metadata.kind == ActorStateChangeKind.REMOVE) {
+      if (metadata.isExpired() || (metadata.kind == ActorStateChangeKind.REMOVE)) {
         return Boolean.FALSE;
       }
 
@@ -275,7 +326,8 @@ public class ActorStateManager {
           continue;
         }
 
-        changes.add(new ActorStateChange(tuple.getKey(), tuple.getValue().value, tuple.getValue().kind));
+        var actorState = new ActorState<>(tuple.getKey(), tuple.getValue().value, tuple.getValue().expiration);
+        changes.add(new ActorStateChange(actorState, tuple.getValue().kind));
       }
 
       return changes.toArray(new ActorStateChange[0]);
@@ -306,10 +358,15 @@ public class ActorStateManager {
       if (tuple.getValue().kind == ActorStateChangeKind.REMOVE) {
         this.stateChangeTracker.remove(stateName);
       } else {
-        StateChangeMetadata metadata = new StateChangeMetadata(ActorStateChangeKind.NONE, tuple.getValue().value);
+        StateChangeMetadata metadata =
+            new StateChangeMetadata(ActorStateChangeKind.NONE, tuple.getValue().value, tuple.getValue().expiration);
         this.stateChangeTracker.put(stateName, metadata);
       }
     }
+  }
+
+  private static Instant buildExpiration(Duration ttl) {
+    return (ttl != null) && !ttl.isNegative() && !ttl.isZero() ? Instant.now().plus(ttl) : null;
   }
 
   /**
@@ -328,14 +385,25 @@ public class ActorStateManager {
     private final Object value;
 
     /**
+     * Expiration.
+     */
+    private final Instant expiration;
+
+    /**
      * Creates a new instance of the metadata on state change.
      *
      * @param kind  Kind of change.
      * @param value Value to be set.
+     * @param expiration When the value is set to expire (recommended but accepts null).
      */
-    private StateChangeMetadata(ActorStateChangeKind kind, Object value) {
+    private StateChangeMetadata(ActorStateChangeKind kind, Object value, Instant expiration) {
       this.kind = kind;
       this.value = value;
+      this.expiration = expiration;
+    }
+
+    private boolean isExpired() {
+      return (this.expiration != null) && Instant.now().isAfter(this.expiration);
     }
   }
 }

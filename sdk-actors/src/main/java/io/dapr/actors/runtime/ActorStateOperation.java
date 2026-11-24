@@ -25,28 +25,19 @@ final class ActorStateOperation {
   private String operationType;
 
   /**
-   * Key for the state to be persisted.
+   * State to be persisted.
    */
-  private String key;
-
-  /**
-   * Value of the state to be persisted.
-   */
-  private Object value;
+  private ActorState state;
 
   /**
    * Instantiates a new Actor Timer.
    *
    * @param operationType Type of state operation.
-   * @param key Key to be persisted.
-   * @param value Value to be persisted.
+   * @param state Key to be persisted.
    */
-  ActorStateOperation(String operationType,
-                      String key,
-                      Object value) {
+  ActorStateOperation(String operationType, ActorState state) {
     this.operationType = operationType;
-    this.key = key;
-    this.value = value;
+    this.state = state;
   }
 
   /**
@@ -59,20 +50,12 @@ final class ActorStateOperation {
   }
 
   /**
-   * Gets the key to be persisted.
+   * Gets the state to be persisted.
    *
-   * @return Key to be persisted.
+   * @return State to be persisted.
    */
-  public String getKey() {
-    return key;
+  public ActorState getState() {
+    return state;
   }
 
-  /**
-   * Gets the value to be persisted.
-   *
-   * @return Value to be persisted.
-   */
-  public Object getValue() {
-    return value;
-  }
 }
