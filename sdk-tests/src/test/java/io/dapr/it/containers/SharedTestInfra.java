@@ -126,9 +126,13 @@ public final class SharedTestInfra {
     return MYSQL_NETWORK_ALIAS + ":3306";
   }
 
-  /** Connection string for the shared MySQL, as the Dapr MySQL state store expects it. */
+  /**
+   * Connection string for the shared MySQL, as the Dapr MySQL state store expects it.
+   * No database name: the store appends its own schema name to the path, so a name
+   * here would be mangled into it.
+   */
   public static String mysqlConnectionString() {
-    return "root:dapr@tcp(" + mysqlInternalHost() + ")/dapr";
+    return "root:dapr@tcp(" + mysqlInternalHost() + ")/";
   }
 
   public static synchronized org.testcontainers.kafka.KafkaContainer kafka() {
