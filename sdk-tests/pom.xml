@@ -26,7 +26,6 @@
     <!-- The JaCoCo plugin was expecting coverage for this module, but since it's a test module
     and code coverage typically doesn't apply to tests, the coverage is set to 0. -->
     <jacoco-maven-plugin.coverage-ratio>0%</jacoco-maven-plugin.coverage-ratio>
-    <springboot4.version>4.0.8</springboot4.version>
     <!-- Spring Boot 4 ITs (Testcontainers/@SpringBootTest) require JUnit 6; align this test module to it. -->
     <junit-bom.version>6.0.2</junit-bom.version>
   </properties>
@@ -62,7 +61,7 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>${springboot4.version}</version>
+        <version>${springboot.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

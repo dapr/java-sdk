@@ -119,6 +119,8 @@ dependencies {
 
 ##### Spring Boot projects
 
+Your Spring Boot parent or BOM sets the Spring Boot version, not the Dapr BOM. See [SUPPORT.md](SUPPORT.md#which-spring-boot-version-you-get) for the supported Spring Boot versions and the BOM import order.
+
 For Maven:
 ```xml
 <project>

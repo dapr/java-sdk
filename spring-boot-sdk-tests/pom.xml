@@ -19,7 +19,6 @@
     <maven.deploy.skip>true</maven.deploy.skip>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
-    <springboot4.version>4.0.8</springboot4.version>
     <!-- Override JUnit version to align with Spring Boot 4.x -->
     <junit-bom.version>6.0.2</junit-bom.version>
     <!-- The JaCoCo plugin was expecting coverage for this module, but since it's a test module
@@ -56,7 +55,7 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>${springboot4.version}</version>
+        <version>${springboot.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -198,4 +197,18 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>custom-spring-boot-version</id>
+      <activation>
+        <property>
+          <name>env.PRODUCT_SPRING_BOOT_VERSION</name>
+        </property>
+      </activation>
+      <properties>
+        <springboot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</springboot.version>
+      </properties>
+    </profile>
+  </profiles>
 </project>

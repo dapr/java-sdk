@@ -9,7 +9,8 @@ at a given version pins the whole stack, core and Spring, to that single version
 
 | SDK line    | Dapr runtime API | Spring Boot (Spring modules only) | JDK | Status                                            |
 |-------------|------------------|-----------------------------------|-----|---------------------------------------------------|
-| **1.19.x+** | v1.18            | 4.0.x                             | 17+ | Active — new features and fixes                   |
+| **1.20.x+** | v1.19            | 4.1.x, 4.2.x                      | 17+ | Active — new features and fixes                   |
+| **1.19.x**  | v1.18            | 4.0.x                             | 17+ | Maintenance — best-effort security/critical fixes |
 | **1.18.x**  | v1.18            | 3.5.x                             | 17+ | Maintenance — best-effort security/critical fixes |
 
 ### Migrating to the unified workflows module
@@ -31,7 +32,7 @@ For the Spring integration modules, each Spring Boot generation implies the foll
 
 | Spring Boot | Spring Framework | Jakarta EE | Jackson             | JUnit |
 |-------------|------------------|------------|---------------------|-------|
-| 4.0.x       | 7.x              | 11         | 3 (`tools.jackson`) | 6     |
+| 4.0.x–4.2.x | 7.x              | 11         | 3 (`tools.jackson`) | 6     |
 | 3.5.x       | 6.x              | 10         | 2 (`com.fasterxml`) | 5     |
 
 Spring Boot 4 is **not** binary-compatible with Spring Boot 3 (Spring Framework 6→7, Jakarta EE
@@ -40,13 +41,53 @@ across SDK lines.
 
 ## Choosing a version
 
-- **Spring integration on Spring Boot 4.0.x** → **1.19.x+**
+- **Spring integration on Spring Boot 4.1.x or 4.2.x** → **1.20.x+**
+- **Spring integration on Spring Boot 4.0.x** → **1.19.x**
 - **Spring integration on Spring Boot 3.5.x** → **1.18.x**
 - **Core SDK only (no Spring)** → any supported line; choose by the Dapr runtime you target.
 
 Mixing a 1.19.x Spring starter into a Spring Boot 3 application (or a 1.18.x starter into Spring
 Boot 4) results in runtime failures such as `NoClassDefFoundError` / `NoSuchMethodError`, caused by
 the incompatible Spring Framework, Jakarta namespace, and Jackson versions.
+
+## Which Spring Boot version you get
+
+The Dapr BOMs do not set the Spring Boot version. Your application's Spring Boot parent
+(`spring-boot-starter-parent`) or Spring Boot BOM (`spring-boot-dependencies`) does. The Spring
+modules are compiled against the lowest Spring Boot version of their line (4.1.x for 1.20.x) and
+tested in CI against every Spring Boot version listed for that line.
+
+`dapr-sdk-bom` also manages Netty, Jackson and OpenTelemetry, which Spring Boot manages too. In
+Maven, the first BOM imported in `<dependencyManagement>` wins, so import order decides whose
+versions you get:
+
+- **Recommended:** use `spring-boot-starter-parent`, or import `spring-boot-dependencies` before
+  `dapr-spring-bom`. You get the versions Spring Boot manages. This is the combination CI tests.
+- Import `dapr-spring-bom` first only if you need a Netty, Jackson or OpenTelemetry fix that your
+  Spring Boot version does not have yet.
+
+```xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-dependencies</artifactId>
+      <version>4.2.0</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-bom</artifactId>
+      <version>1.20.0</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+
+In Gradle, the highest requested version wins regardless of order.
 
 ## Dapr runtime compatibility
 
@@ -59,7 +100,9 @@ runtime's own supported-version window.
 
 ## Support policy
 
-- **1.19.x (Spring Boot 4.0)** is the actively developed line.
+- **1.20.x (Spring Boot 4.1 and 4.2)** is the actively developed line.
+- **1.19.x (Spring Boot 4.0)** is maintained on a best-effort basis for security and critical fixes.
+  Spring Boot 4.0's own OSS support ends on 2026-12-31.
 - **1.18.x (Spring Boot 3.5)** is maintained on a best-effort basis for security and critical fixes,
   as a bridge for users still on Spring Boot 3.5 while they move to Spring Boot 4. Spring Boot 3.5's
   own OSS support window has ended (see the

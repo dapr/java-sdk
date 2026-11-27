@@ -15,7 +15,6 @@
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <springboot4.version>4.0.8</springboot4.version>
     <!-- Override JUnit version to align with Spring Boot 4.x -->
     <junit-bom.version>6.0.2</junit-bom.version>
   </properties>
@@ -62,25 +61,25 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>${springboot4.version}</version>
+        <version>${springboot.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-webmvc</artifactId>
-        <version>${springboot4.version}</version>
+        <version>${springboot.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-webmvc-test</artifactId>
-        <version>${springboot4.version}</version>
+        <version>${springboot.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-restclient</artifactId>
-        <version>${springboot4.version}</version>
+        <version>${springboot.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
