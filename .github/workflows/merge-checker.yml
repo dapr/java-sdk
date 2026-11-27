@@ -58,11 +58,13 @@ jobs:
             total=$((total + 1))
             # Filter with jq rather than the API's event, status and branch query
             # parameters, which sometimes return runs that are weeks old.
+            # The API returns 404 until the workflow file exists on the default
+            # branch; that counts as no run.
             run=$(gh api "repos/${{ github.repository }}/actions/workflows/$wf/runs?per_page=100" --jq "
               [.workflow_runs[] | select(.event == \"$event\" and .status == \"completed\" and .head_branch == \"master\")][0] // empty
               | (now - (.created_at | fromdateiso8601)) as \$s
               | (if \$s < 3600 then \"\\(\$s / 60 | floor)m ago\" elif \$s < 172800 then \"\\(\$s / 3600 | floor)h ago\" else \"\\(\$s / 86400 | floor)d ago\" end) as \$age
-              | [.conclusion, \$age, .html_url, .name] | join(\"\\t\")")
+              | [.conclusion, \$age, .html_url, .name] | join(\"\\t\")" 2>/dev/null) || run=""
             if [ -z "$run" ]; then
               missing=$((missing + 1))
               echo "::warning::$wf has no completed $event run on master"
