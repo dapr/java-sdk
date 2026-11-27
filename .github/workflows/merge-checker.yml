@@ -1,0 +1,161 @@
+#
+# Copyright 2026 The Dapr Authors
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Reports on every pull request whether the scheduled test workflows are
+# currently green on master, and whether the latest commit of master and of the
+# two newest release branches passed CI. It does not test the pull request
+# itself, and it is not a required check: a red result means one of those is
+# failing, so reviewers can see that before merging.
+
+name: master-health (maintainers only)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+      - release-*
+
+permissions: {}
+
+jobs:
+  health:
+    name: Scheduled tests and latest commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      statuses: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # Workflow files to check, as <file> or <file>:<event>. The latest
+      # completed run on master with that event counts; the default event is
+      # schedule.
+      WORKFLOWS: >-
+        spring-boot-compat.yml
+      # Check runs that are not part of a commit's CI. GitHub attaches the
+      # automerge bot's scheduled runs to the default branch's latest commit.
+      IGNORE: '^(Automerge and update PRs\.|notify-on-failure)$'
+    steps:
+      - name: Check the latest run of each workflow
+        run: |
+          total=0
+          failed=0
+          missing=0
+          rows=""
+          for entry in $WORKFLOWS; do
+            wf=${entry%%:*}
+            event=schedule
+            if [ "$entry" != "$wf" ]; then
+              event=${entry#*:}
+            fi
+            total=$((total + 1))
+            # Filter with jq rather than the API's event, status and branch query
+            # parameters, which sometimes return runs that are weeks old.
+            # The API returns 404 until the workflow file exists on the default
+            # branch; that counts as no run.
+            run=$(gh api "repos/${{ github.repository }}/actions/workflows/$wf/runs?per_page=100" --jq "
+              [.workflow_runs[] | select(.event == \"$event\" and .status == \"completed\" and .head_branch == \"master\")][0] // empty
+              | (now - (.created_at | fromdateiso8601)) as \$s
+              | (if \$s < 3600 then \"\\(\$s / 60 | floor)m ago\" elif \$s < 172800 then \"\\(\$s / 3600 | floor)h ago\" else \"\\(\$s / 86400 | floor)d ago\" end) as \$age
+              | [.conclusion, \$age, .html_url, .name] | join(\"\\t\")" 2>/dev/null) || run=""
+            if [ -z "$run" ]; then
+              missing=$((missing + 1))
+              echo "::warning::$wf has no completed $event run on master"
+              rows+="| \`$wf\` | ⚠️ no run | | $event |"$'\n'
+              continue
+            fi
+            IFS=$'\t' read -r conclusion age url name <<< "$run"
+            if [ "$conclusion" = "success" ]; then
+              icon="✅ success"
+            else
+              icon="❌ $conclusion"
+              failed=$((failed + 1))
+              echo "::error title=$name::latest $event run on master ($age) is $conclusion: $url"
+            fi
+            rows+="| $name | $icon | [$age]($url) | $event |"$'\n'
+          done
+          if [ "$failed" -eq 0 ] && [ "$missing" -eq 0 ]; then
+            title="✅ All $total workflows are green on master"
+          elif [ "$failed" -eq 0 ]; then
+            title="⚠️ $((total - missing)) of $total workflows are green on master, $missing with no run"
+          else
+            title="❌ $failed of $total workflows are not green on master"
+          fi
+          {
+            echo "## $title"
+            echo
+            echo "| Workflow | Result | Last run | Event |"
+            echo "| --- | --- | --- | --- |"
+            printf '%s' "$rows"
+            echo
+            echo "_Latest completed run of each workflow on \`master\`. This check does not test the pull request._"
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ "$failed" -eq 0 ]
+
+      - name: Check the latest commit of each branch
+        # Run even when the previous step failed, so both results are reported.
+        if: ${{ !cancelled() }}
+        run: |
+          repo=${{ github.repository }}
+          releases=$(gh api --paginate "repos/$repo/branches?per_page=100" --jq '.[].name' \
+            | grep -E '^release-[0-9]+\.[0-9]+$' | sort -V | tail -2 | sort -rV)
+          failed=0
+          running=0
+          rows=""
+          for branch in master $releases; do
+            sha=$(gh api "repos/$repo/commits/$branch" --jq .sha)
+            checks=$(gh api --paginate "repos/$repo/commits/$sha/check-runs?per_page=100" \
+              --jq '.check_runs[] | [.name, (.conclusion // .status), .html_url] | @tsv' \
+              | awk -F'\t' -v re="$IGNORE" '$1 !~ re')
+            total=$(printf '%s\n' "$checks" | grep -c . || true)
+            bad=$(printf '%s\n' "$checks" | awk -F'\t' '$2 !~ /^(success|skipped|neutral|queued|in_progress|pending|waiting)$/ && $2 != ""')
+            pending=$(printf '%s\n' "$checks" | awk -F'\t' '$2 ~ /^(queued|in_progress|pending|waiting)$/' | grep -c . || true)
+            status=$(gh api "repos/$repo/commits/$sha/status" --jq '.state')
+            link="[\`${sha:0:9}\`](${{ github.server_url }}/$repo/commit/$sha)"
+            if [ -n "$bad" ] || [ "$status" = "failure" ] || [ "$status" = "error" ]; then
+              failed=$((failed + 1))
+              names=$(printf '%s\n' "$bad" | cut -f1 | sort -u | paste -sd, - | sed 's/,/, /g')
+              [ -z "$names" ] && names="commit status: $status"
+              echo "::error title=$branch::latest commit $sha is not green: $names"
+              rows+="| \`$branch\` | $link | ❌ $names |"$'\n'
+            elif [ "$pending" -gt 0 ]; then
+              running=$((running + 1))
+              echo "::warning title=$branch::latest commit $sha still has $pending of $total checks running"
+              rows+="| \`$branch\` | $link | ⏳ $pending of $total checks still running |"$'\n'
+            elif [ "$total" -eq 0 ]; then
+              echo "::warning::$branch latest commit $sha has no check runs"
+              rows+="| \`$branch\` | $link | ⚠️ no checks |"$'\n'
+            else
+              rows+="| \`$branch\` | $link | ✅ $total checks passed |"$'\n'
+            fi
+          done
+          if [ "$failed" -eq 0 ] && [ "$running" -gt 0 ]; then
+            title="⏳ No failures yet; CI is still running on $running branch(es)"
+          elif [ "$failed" -eq 0 ]; then
+            title="✅ Latest commit is green on master and the newest release branches"
+          else
+            title="❌ $failed branch(es) have a failing latest commit"
+          fi
+          {
+            echo "## $title"
+            echo
+            echo "| Branch | Commit | Result |"
+            echo "| --- | --- | --- |"
+            printf '%s' "$rows"
+            echo
+            echo "_Check runs on the latest commit of each branch. This check does not test the pull request._"
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ "$failed" -eq 0 ]
