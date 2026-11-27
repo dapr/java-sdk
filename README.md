@@ -46,7 +46,7 @@ IDE setup and the tools needed to work on the SDK itself are under [Development]
 
 ### Importing Dapr's Java SDK
 
-> **Spring Boot compatibility:** from **1.19.0** onward, the SDK's Spring integration targets **Spring Boot 4.0**. If you are on **Spring Boot 3.5**, use the **1.18.x** line instead. See **[SUPPORT.md](SUPPORT.md)** for the full compatibility matrix and version-support policy.
+> **Spring Boot compatibility:** from **1.20.0** onward, the SDK's Spring integration targets **Spring Boot 4.1** and is tested against **4.2**. If you are on **Spring Boot 4.0**, use the **1.19.x** line. If you are on **Spring Boot 3.5**, use the **1.18.x** line. See **[SUPPORT.md](SUPPORT.md)** for the full compatibility matrix and version-support policy.
 
 #### Using a BOM (recommended)
 

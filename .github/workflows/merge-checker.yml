@@ -119,6 +119,7 @@ jobs:
           releases=$(gh api --paginate "repos/$repo/branches?per_page=100" --jq '.[].name' \
             | grep -E '^release-[0-9]+\.[0-9]+$' | sort -V | tail -2 | sort -rV)
           failed=0
+          running=0
           rows=""
           for branch in master $releases; do
             sha=$(gh api "repos/$repo/commits/$branch" --jq .sha)
@@ -137,6 +138,8 @@ jobs:
               echo "::error title=$branch::latest commit $sha is not green: $names"
               rows+="| \`$branch\` | $link | ❌ $names |"$'\n'
             elif [ "$pending" -gt 0 ]; then
+              running=$((running + 1))
+              echo "::warning title=$branch::latest commit $sha still has $pending of $total checks running"
               rows+="| \`$branch\` | $link | ⏳ $pending of $total checks still running |"$'\n'
             elif [ "$total" -eq 0 ]; then
               echo "::warning::$branch latest commit $sha has no check runs"
@@ -145,7 +148,9 @@ jobs:
               rows+="| \`$branch\` | $link | ✅ $total checks passed |"$'\n'
             fi
           done
-          if [ "$failed" -eq 0 ]; then
+          if [ "$failed" -eq 0 ] && [ "$running" -gt 0 ]; then
+            title="⏳ No failures yet; CI is still running on $running branch(es)"
+          elif [ "$failed" -eq 0 ]; then
             title="✅ Latest commit is green on master and the newest release branches"
           else
             title="❌ $failed branch(es) have a failing latest commit"

@@ -30,7 +30,7 @@
       <dependency>
         <groupId>tools.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>3.1.7</version>
+        <version>${jackson3.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -119,4 +119,18 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>custom-spring-boot-version</id>
+      <activation>
+        <property>
+          <name>env.PRODUCT_SPRING_BOOT_VERSION</name>
+        </property>
+      </activation>
+      <properties>
+        <springboot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</springboot.version>
+      </properties>
+    </profile>
+  </profiles>
 </project>
