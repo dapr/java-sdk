@@ -29,12 +29,15 @@ on:
 permissions: {}
 
 jobs:
-  workflows:
-    name: Scheduled tests on master
+  health:
+    name: Scheduled tests and latest commits
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       actions: read
+      checks: read
+      contents: read
+      statuses: read
     env:
       GH_TOKEN: ${{ github.token }}
       # Workflow files to check, as <file> or <file>:<event>. The latest
@@ -42,6 +45,9 @@ jobs:
       # schedule.
       WORKFLOWS: >-
         spring-boot-compat.yml
+      # Check runs that are not part of a commit's CI. GitHub attaches the
+      # automerge bot's scheduled runs to the default branch's latest commit.
+      IGNORE: '^(Automerge and update PRs\.|notify-on-failure)$'
     steps:
       - name: Check the latest run of each workflow
         run: |
@@ -99,21 +105,9 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           [ "$failed" -eq 0 ]
 
-  branches:
-    name: Latest commit on master and release branches
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      checks: read
-      contents: read
-      statuses: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-      # Check runs that are not part of a commit's CI. GitHub attaches the
-      # automerge bot's scheduled runs to the default branch's latest commit.
-      IGNORE: '^(Automerge and update PRs\.|notify-on-failure)$'
-    steps:
       - name: Check the latest commit of each branch
+        # Run even when the previous step failed, so both results are reported.
+        if: ${{ !cancelled() }}
         run: |
           repo=${{ github.repository }}
           releases=$(gh api --paginate "repos/$repo/branches?per_page=100" --jq '.[].name' \
